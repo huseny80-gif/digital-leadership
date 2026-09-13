@@ -306,4 +306,28 @@ Full rationale for each is in `DATABASE_DESIGN.md` and `DATABASE_SECURITY.md`.
 
 ---
 
-*This log will continue to grow in Phase 9C and beyond as concrete implementation decisions are made.*
+## Phase 9C Decisions (Admin Console)
+
+## D57: "Delete" is soft-delete everywhere the schema already supports it; hard delete only where the schema already made it safe by design
+- **Decision:** Subjects/lectures/lecture_items/question_banks/questions/quizzes are "deleted" via the existing `deleted_at` column. `question_options` and `quiz_questions` are hard-deleted — the only two assessment tables without a `deleted_at` column — with `question_options` additionally guarded against deleting one still referenced by a learner's recorded answer.
+- **Reasoning:** No schema change was authorized for this phase; inspection showed every soft-deletable table's existing read paths already treat a soft-deleted parent's children as invisible (the visibility chain), so nothing needs a manual cascade or dependency check to stay safe. The two hard-delete cases were already designed to be safe by their foreign keys (`quiz_questions` is a pure link table; `question_options.id` is referenced with `on delete set null`) — this phase adds one deliberate guard beyond that FK for `question_options`, rejecting deletion of an option still selected by a `quiz_attempt_answers` row, to preserve grading history rather than silently nulling it.
+- **Alternatives considered:** Adding a `deleted_at` column to `question_options`/`quiz_questions` for consistency — rejected as an unauthorized, unnecessary schema change; the existing design already handles both cases correctly without one.
+
+## D58: Separate admin assessment repository/service/types, not a shared one with an `isAdmin` flag
+- **Decision:** `AdminAssessmentsRepository`/`AdminAssessmentsService`/`AdminQuestion`/`AdminQuestionOption` are entirely separate from Phase 9B's learner-facing `AssessmentsRepository`/`AssessmentsService`/`QuestionForAttempt` — no shared base class, no `isAdmin` boolean threaded through a single set of methods.
+- **Reasoning:** The single most important security requirement in this phase is that `is_correct` never reaches a learner. A shared implementation with an admin/learner branch is one refactor away from that branch being removed or miswired; two structurally separate trees, in separate files, with separate types, make the boundary impossible to blur by accident — there is no method in the learner path that could be called with `isAdmin: true` to leak the answer key, because that method doesn't exist there at all.
+- **Alternatives considered:** One repository with an `isAdmin` parameter controlling which columns are selected — rejected as strictly riskier for no benefit; the two query sets share almost no SQL anyway (question delivery vs. full CRUD + answer key).
+
+## D59: A single generic `/api/admin/[...path]` BFF proxy, not one Route Handler per admin endpoint
+- **Decision:** Every admin page's read/write goes through one catch-all Next.js Route Handler that forwards method, path, query string, and JSON body to the matching `/api/v1/admin/*` backend route, rather than the one-file-per-endpoint pattern Phase 9A/9B used for the (much smaller) PDF-viewer and quiz-attempt proxies.
+- **Reasoning:** The admin API surface is an order of magnitude larger (30+ endpoints) than anything proxied before it; writing 30 near-identical files would be pure duplication with no behavioral difference, violating this project's repeated "avoid unnecessary abstraction/duplication" guidance in the other direction. The proxy makes no authorization decision itself beyond the same 401-if-no-session defense-in-depth every other proxy already has — the backend's `requireAdmin`, re-checked on every forwarded request, is what actually protects the data, so consolidating the forwarding logic changes nothing about the security boundary.
+- **Alternatives considered:** One file per endpoint (the established pattern) — rejected as disproportionate duplication at this surface's size; a typed RPC-style client generated from the route table — rejected as unnecessary tooling for this phase's scope.
+
+## D60: File upload/replace/delete are NOT proxied through the generic admin route
+- **Decision:** File upload uses its own dedicated multipart-forwarding proxy (`/api/admin/upload-file`); file deletion uses a `DELETE` handler added to the existing per-file `/api/files/[fileId]` proxy from Phase 9A. Neither goes through `/api/admin/[...path]`.
+- **Reasoning:** The generic proxy is JSON-only (it calls `apiPost`/`apiPatch`, both JSON); a PDF upload is `multipart/form-data`, and the backend's file endpoints live at `/api/v1/files/*`, not `/api/v1/admin/*`, since Phase 8 never nested them under `/admin` (they were already `requireAdmin`-gated directly). Forcing file operations through the generic proxy would require either teaching it to also speak multipart (widening its contract for one caller) or moving the backend's file routes (an unnecessary API-shape change outside this phase's scope) — keeping them separate was the smaller, more honest change.
+- **Alternatives considered:** Moving `backend/src/files/filesRoutes.ts` under `/admin` — rejected as an unnecessary backend API-surface change; teaching the generic proxy to detect and forward multipart bodies — rejected as added complexity for a single caller.
+
+---
+
+*This log will continue to grow in Phase 10 and beyond as concrete implementation decisions are made.*

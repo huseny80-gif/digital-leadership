@@ -88,8 +88,13 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - **Not done, explicitly out of scope:** Admin quiz/question authoring, assignment/exercise submission UI (no submission-tracking table exists — D23 reaffirmed), short-answer auto-grading (schema has no free-text answer key — D55), Admin Console (Phase 9C), Flutter (Phase 10). No database schema change.
 - Gate: explicit approval required before Phase 9C begins.
 
-### Phase 9C — Admin Console (not started)
-- Subject/lecture management, file upload/replace/delete UI, user/role administration, audit-log administration.
+### Phase 9C — Admin Console (COMPLETE; pending approval)
+- INSPECT: reviewed the Phase 3/5 schema, Phase 6 authorization, Phase 7 API architecture, Phase 8 file storage, Phase 9A shell, Phase 9B assessments, the existing admin placeholders/RBAC tables, and `audit_logs` — confirmed no schema change was needed for any planned admin capability.
+- PLAN/IMPLEMENT: full admin API (subjects, lectures, lecture items, file listing reusing Phase 8's storage exactly, question banks, questions, options with the answer key, quizzes and their question links, users/roles with self-lockout and final-admin protection, read-only audit logs, real dashboard counts) behind `requireAdmin`; a responsive Admin Console web UI (sidebar shell, role-gated layout, CRUD pages, a shared confirm-dialog component for destructive actions) built on a single generic BFF proxy plus two dedicated file-operation proxies.
+- TEST: 32 new backend tests (153 total) covering all 18 required security scenarios; 17 new web tests (89 total) covering the role gate, dashboard, confirm dialog, and BFF proxy.
+- Deliverable: ADMIN_ARCHITECTURE.md, ADMIN_API.md, ADMIN_SECURITY.md, ADMIN_TEST_PLAN.md + updated DECISIONS.md (D57-D60), TODO.md.
+- **Not done, explicitly out of scope:** Instructor role, a generic permission editor, password/local-login functionality, Flutter, broad security hardening beyond this phase's own required tests. No database schema change.
+- Gate: explicit approval required before Phase 10 begins.
 
 ## Phase 10 — Mobile Applications (iOS & Android)
 - IMPLEMENT: mobile apps consuming the same shared backend; Google sign-in via Supabase on mobile; core content/assessment flows.

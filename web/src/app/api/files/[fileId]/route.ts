@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { SignedFileUrl } from "@shared/index";
-import { apiGet, ApiError } from "@/lib/api/client";
+import { apiGet, apiDelete, ApiError } from "@/lib/api/client";
 import { getCurrentAccessToken } from "@/lib/auth/session";
 
 /**
@@ -41,6 +41,34 @@ export async function GET(_request: Request, context: { params: Promise<{ fileId
     }
     return NextResponse.json(
       { error: { code: "internal_error", message: "Unable to open this PDF. Please try again." } },
+      { status: 500 },
+    );
+  }
+}
+
+/** Proxies `DELETE /api/v1/files/:fileId` (PHASE 09C "File Management").
+ * Admin-only in effect: the backend's own `requireAdmin` rejects this for
+ * any non-admin caller regardless of what reaches it here. */
+export async function DELETE(_request: Request, context: { params: Promise<{ fileId: string }> }) {
+  const { fileId } = await context.params;
+
+  const token = await getCurrentAccessToken();
+  if (!token) {
+    return NextResponse.json(
+      { error: { code: "unauthenticated", message: "Your session has expired. Please sign in again." } },
+      { status: 401 },
+    );
+  }
+
+  try {
+    await apiDelete(`/api/v1/files/${fileId}`);
+    return new NextResponse(null, { status: 204 });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      return NextResponse.json(err.body, { status: err.status });
+    }
+    return NextResponse.json(
+      { error: { code: "internal_error", message: "Unable to delete this file. Please try again." } },
       { status: 500 },
     );
   }

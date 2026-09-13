@@ -149,8 +149,24 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [ ] **Known limitation, not fixed this phase:** `short_answer` questions are recorded but not auto-graded — no free-text answer key exists in the approved schema (DECISIONS.md D55)
 - [ ] **Not built this phase (tracked for later):** assignment/exercise submission UI (no submission-tracking table — D23), Admin quiz/question authoring (Phase 9C)
 
-## Phase 9C — Admin Console (not started)
-- [ ] Subject/lecture management, file upload/replace/delete UI, user/role administration, audit-log administration
+## Phase 9C — Admin Console (implementation COMPLETE — see final report)
+- [x] Inspected the existing schema/RBAC/audit tables and every prior phase's implementation before writing any code — confirmed no schema change was needed
+- [x] Admin API: subjects, lectures, lecture items, file listing (Phase 8 upload/replace/delete reused unmodified), question banks, questions + options (answer key, admin-only), quizzes + quiz-question links, users (role/status), read-only paginated audit logs, real dashboard counts — every route behind `requireAdmin`
+- [x] Self-lockout and final-admin protection on role/status changes, server-side, re-checked against live counts on every request
+- [x] Destructive-operation safety: soft delete everywhere the schema supports it; a guarded hard delete for `question_options` (rejects if referenced by a recorded answer)
+- [x] Audit logging via the existing `audit_logs` table for every administrative write; verified no secrets/tokens/signed URLs in metadata
+- [x] Web: role-gated Admin Console shell (sidebar, breadcrumbs, mobile-friendly), dashboard, full CRUD pages for subjects/lectures/lecture-items/files/question-banks/questions/quizzes/users/audit-logs, a shared confirm-dialog component for destructive actions
+- [x] Structural answer-key separation: a distinct admin assessments module/type tree, never imported by any learner route
+- [x] 32 new backend tests (153 total) covering all 18 required security scenarios + 17 new web tests (89 total)
+- [x] Zero regression: all pre-existing backend/web tests still pass (one Phase 7 test and one Phase 9B test updated to reflect real implementations, not weakened)
+- [x] `tsc --noEmit`, `npm run lint`, `npm run build` clean for backend/web/shared (30 web routes generated)
+- [x] Security validation: no service-role key/secret in client code or build output, `is_correct` absent from the learner-facing bundle and every learner API response, mass-assignment rejected, IDOR/UUID validation on every route
+- [x] Verified `quiz digital leadership.html` untouched
+- [x] Create ADMIN_ARCHITECTURE.md, ADMIN_API.md, ADMIN_SECURITY.md, ADMIN_TEST_PLAN.md
+- [x] Update DECISIONS.md (D57-D60), IMPLEMENTATION_ROADMAP.md, TODO.md
+- [ ] Project owner reviews and explicitly approves Phase 9C before Phase 10 begins
+- [ ] **Known limitation, not fixed this phase:** individual CRUD pages beyond the shared primitives (role gate, dashboard, confirm dialog, proxy) don't each have a dedicated component test — see ADMIN_TEST_PLAN.md §5
+- [ ] **Not built this phase (tracked for later):** Instructor role, a generic permission editor, a searchable file/question picker (IDs are copied by hand between admin pages)
 
 ## Phase 10 — Mobile Applications (not started)
 - [ ] Build iOS app

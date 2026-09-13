@@ -114,9 +114,11 @@ describe("authenticated access", () => {
 
     const res = await request(app).get("/api/v1/admin/users").set("Authorization", `Bearer ${token}`);
 
-    // Authorization passed (not 401/403); the handler itself is still
-    // Phase 7 work, so it correctly reports 501 not-implemented.
-    expect(res.status).toBe(501);
+    // Authorization passed (not 401/403); Phase 09C implements this
+    // handler for real, so it now returns the actual user list rather
+    // than the Phase 7 stub's 501.
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
   });
 });
 

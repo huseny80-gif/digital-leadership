@@ -67,6 +67,18 @@ export class FilesRepository {
     return toFileMetadata(result.rows[0]!);
   }
 
+  /** Admin-only listing (PHASE 09C "File Management") — the only place
+   * in this codebase that lists `files` without going through the
+   * content-visibility chain, because it is gated by `requireAdmin` at
+   * the route layer, not by publication status. */
+  async listFilesAdmin(): Promise<FileMetadata[]> {
+    const result = await this.pool.query<FileRow>(
+      `select id, original_filename, mime_type, size_bytes, status, uploaded_by, created_at, storage_key
+       from files where deleted_at is null order by created_at desc`,
+    );
+    return result.rows.map(toFileMetadata);
+  }
+
   async getFileById(id: string): Promise<(FileMetadata & { storageKey: string }) | null> {
     const result = await this.pool.query<FileRow>(
       `select id, original_filename, mime_type, size_bytes, status, uploaded_by, created_at, storage_key

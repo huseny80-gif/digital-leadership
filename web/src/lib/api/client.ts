@@ -18,7 +18,7 @@ export class ApiError extends Error {
   }
 }
 
-async function requestJson(method: "GET" | "POST", path: string, jsonBody?: unknown): Promise<unknown> {
+async function requestJson(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, jsonBody?: unknown): Promise<unknown> {
   const token = await getCurrentAccessToken();
   const headers: HeadersInit = token ? { authorization: `Bearer ${token}` } : {};
   if (jsonBody !== undefined) {
@@ -31,8 +31,13 @@ async function requestJson(method: "GET" | "POST", path: string, jsonBody?: unkn
     cache: "no-store",
     ...(jsonBody !== undefined ? { body: JSON.stringify(jsonBody) } : {}),
   });
-  const body = await res.json();
 
+  if (res.status === 204) {
+    if (!res.ok) throw new ApiError({ error: { code: "error", message: "Request failed." } }, res.status);
+    return { data: null };
+  }
+
+  const body = await res.json();
   if (!res.ok) {
     throw new ApiError(body as ApiErrorBody, res.status);
   }
@@ -47,6 +52,14 @@ export async function apiGet<T>(path: string): Promise<ApiResult<T>> {
 
 export async function apiPost<T>(path: string, jsonBody?: unknown): Promise<ApiResult<T>> {
   return (await requestJson("POST", path, jsonBody ?? {})) as ApiResult<T>;
+}
+
+export async function apiPatch<T>(path: string, jsonBody: unknown): Promise<ApiResult<T>> {
+  return (await requestJson("PATCH", path, jsonBody)) as ApiResult<T>;
+}
+
+export async function apiDelete(path: string): Promise<void> {
+  await requestJson("DELETE", path);
 }
 
 /** For collection endpoints, whose body IS the `PaginatedResult<T>`

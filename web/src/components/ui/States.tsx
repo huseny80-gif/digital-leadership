@@ -46,6 +46,23 @@ export function ErrorState({
   );
 }
 
+/** Rendered when an authenticated caller lacks the role required for a
+ * page (PHASE 09C "Admin Route"). Frontend-only convenience — the
+ * backend's own `requireAdmin` is what actually protects any data or
+ * action; this exists purely so a non-admin sees a clear message instead
+ * of a confusing empty/broken admin page. */
+export function UnauthorizedState({ message }: { message: string }) {
+  return (
+    <div className="state-block" data-variant="error" role="alert">
+      <p className="state-title">Access denied</p>
+      <p className="state-message">{message}</p>
+      <a className="btn btn-secondary" href="/dashboard">
+        Back to dashboard
+      </a>
+    </div>
+  );
+}
+
 export function NotFoundState({ message }: { message: string }) {
   return (
     <div className="state-block">
