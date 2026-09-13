@@ -107,4 +107,43 @@ Full rationale and alternatives for each of these are in `TECH_STACK.md`, `ARCHI
 
 ---
 
-*This log will continue to grow in Phase 3 and beyond as concrete implementation decisions are made.*
+## Phase 3 Decisions (Database Design)
+
+Full rationale for each is in `DATABASE_DESIGN.md` and `DATABASE_SECURITY.md`.
+
+## D21: Single role per user (no `user_roles` join table)
+- **Decision:** `users.role_id` is a single FK to `roles`, not a many-to-many join table.
+- **Reasoning:** Matches the actual requirement (one role per user: Admin or User); a join table would add authorization complexity with no current use case. Migrating to multi-role later is additive if ever needed. See `DATABASE_DESIGN.md` §1.
+
+## D22: Generalized `lecture_items` table for PDF/Summary/Assignment/Exercise
+- **Decision:** One table with an `item_type` discriminator, rather than four separate near-identical tables.
+- **Reasoning:** These four content kinds are structurally identical (belongs to a lecture, ordered, publishable, optional file, optional body text); a shared table avoids duplicated CRUD/index logic without resorting to an unjustified polymorphic design. See `DATABASE_DESIGN.md` §3 for the full evaluation of both options.
+
+## D23: No submission-tracking table for assignments/exercises in this phase
+- **Decision:** Assignments and exercises are delivered as content (via `lecture_items`); no `assignment_submissions` table is introduced yet.
+- **Reasoning:** No approved requirement specifies a distinct submission/grading workflow beyond what the quiz system already provides; adding one now would be speculative. Additive later if required.
+
+## D24: No categories/tags table
+- **Decision:** No `tags`/`categories` table is introduced.
+- **Reasoning:** `subjects` already provide the top-level categorization the requirements describe; no requirement calls for cross-cutting tagging. Additive later (`tags` + join table) without disrupting this design.
+
+## D25: No file versioning subsystem
+- **Decision:** File replacement creates a new `files` row (old row archived via `status`), rather than a full version-history table.
+- **Reasoning:** Matches MVP scope; full versioning is a Future Feature per `PROJECT_SCOPE.md`, not required now.
+
+## D26: `audit_logs` uses a single generalized table with a `jsonb metadata` column
+- **Decision:** One append-only audit table with a JSON metadata column, rather than a rigid column per possible audit fact or per-entity audit tables.
+- **Reasoning:** Audit entries are inherently heterogeneous event data, not core queryable domain state — this is the justified exception to the "avoid unnecessary JSON blobs" guidance, not a violation of it. See `DATABASE_DESIGN.md` §6.
+
+## D27: Data-access boundary — backend-mediated by default, direct-Supabase reads reserved as an explicit future option
+- **Decision:** All writes, and all reads involving business logic (quiz-taking, file access, admin views), go through the custom backend. Simple read-only listing of already-published content *may* later go directly client → Supabase under RLS as a performance optimization, but this is not adopted now — the initial implementation routes all data access through the backend for a single, centralized, auditable authorization surface.
+- **Reasoning:** Keeps `ARCHITECTURE.md`'s centralized-authorization principle intact; avoids splitting permission logic between backend code and RLS policy for anything beyond the simplest, already-public-once-published reads. See `DATABASE_SECURITY.md` §7 for the full architectural check.
+- **Alternatives considered:** Allowing direct client→Supabase reads broadly under RLS — rejected as the default because it would fragment the authorization surface described in Phase 2; retained as a documented, opt-in optimization if the project owner later prioritizes it.
+
+## D28: RLS is defense-in-depth only; no blanket admin bypass role
+- **Decision:** RLS policies mirror the backend's authorization rules table-by-table; the application does not use a `BYPASSRLS` superuser-style connection for ordinary admin traffic.
+- **Reasoning:** Preserves RLS as a genuine second line of defense rather than a policy surface that admin traffic routinely ignores. See `DATABASE_SECURITY.md` §4.
+
+---
+
+*This log will continue to grow in Phase 4 and beyond as concrete implementation decisions are made.*
