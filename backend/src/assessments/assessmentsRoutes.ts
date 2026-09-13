@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuthenticated } from "../middleware/authInstance.js";
 import { notImplemented } from "../lib/httpError.js";
 
 /**
@@ -11,15 +11,15 @@ import { notImplemented } from "../lib/httpError.js";
 export function assessmentsRoutes(): Router {
   const router = Router();
 
-  router.get("/quizzes/:quizId", requireAuth, (_req, _res, next) => {
+  router.get("/quizzes/:quizId", requireAuthenticated, (_req, _res, next) => {
     next(notImplemented("Fetching a quiz"));
   });
 
-  router.post("/quizzes/:quizId/attempts", requireAuth, (_req, _res, next) => {
+  router.post("/quizzes/:quizId/attempts", requireAuthenticated, (_req, _res, next) => {
     next(notImplemented("Starting a quiz attempt"));
   });
 
-  router.post("/attempts/:attemptId/answers", requireAuth, (_req, _res, next) => {
+  router.post("/attempts/:attemptId/answers", requireAuthenticated, (_req, _res, next) => {
     next(notImplemented("Submitting a quiz answer"));
   });
 

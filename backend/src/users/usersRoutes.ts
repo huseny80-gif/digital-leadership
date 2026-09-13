@@ -1,17 +1,19 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import { notImplemented } from "../lib/httpError.js";
+import type { ApiResult, UserProfile } from "@shared/index";
+import { requireAuthenticated } from "../middleware/authInstance.js";
 
 /**
- * User profile routes. Backed by a `UsersRepository`/`UsersService` pair
- * (added in Phase 5/6, following the same layering as `content/`) once a
- * database connection exists.
+ * User profile routes. `GET /me` returns exactly the resolved,
+ * database-backed profile attached by the `authenticate` middleware —
+ * never anything derived from a client-supplied value (PHASE 06 §7.6:
+ * "return only the minimum required user information").
  */
 export function usersRoutes(): Router {
   const router = Router();
 
-  router.get("/me", requireAuth, (_req, _res, next) => {
-    next(notImplemented("Reading the current user's profile"));
+  router.get("/me", requireAuthenticated, (req, res) => {
+    const body: ApiResult<UserProfile> = { data: req.user! };
+    res.json(body);
   });
 
   return router;

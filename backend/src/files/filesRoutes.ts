@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuthenticated } from "../middleware/authInstance.js";
 import { notImplemented } from "../lib/httpError.js";
 
 /**
@@ -11,11 +11,11 @@ import { notImplemented } from "../lib/httpError.js";
 export function filesRoutes(): Router {
   const router = Router();
 
-  router.get("/:fileId/signed-url", requireAuth, (_req, _res, next) => {
+  router.get("/:fileId/signed-url", requireAuthenticated, (_req, _res, next) => {
     next(notImplemented("Issuing a signed URL for a file"));
   });
 
-  router.post("/upload", requireAuth, (_req, _res, next) => {
+  router.post("/upload", requireAuthenticated, (_req, _res, next) => {
     next(notImplemented("Uploading a file"));
   });
 

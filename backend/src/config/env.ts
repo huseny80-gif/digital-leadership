@@ -18,17 +18,20 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(4000),
 
-  // Phase 5+ (Database Implementation) — never used or connected to in this phase.
+  // Database (Phase 5 schema implemented; live project not yet created —
+  // see DATABASE_IMPLEMENTATION_REPORT.md). Used by src/lib/db.ts once set.
   DATABASE_URL: z.string().optional(),
   SUPABASE_URL: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
 
-  // Phase 6 (Authentication & Authorization) — never used in this phase.
-  GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
-  GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
-  SESSION_SIGNING_SECRET: z.string().optional(),
+  // Phase 6 (Authentication & Authorization). Google OAuth itself is
+  // configured entirely inside the Supabase dashboard (GOOGLE_OAUTH_SETUP.md)
+  // — the backend never holds a Google client secret. SUPABASE_JWT_SECRET
+  // is what the backend uses to verify a Supabase-issued session token
+  // (AUTHENTICATION.md) without a network round-trip per request.
+  SUPABASE_JWT_SECRET: z.string().optional(),
 
-  // File storage (Phase 6/7) — never used in this phase.
+  // File storage (Phase 7+) — never used yet.
   FILE_STORAGE_BUCKET: z.string().optional(),
 });
 

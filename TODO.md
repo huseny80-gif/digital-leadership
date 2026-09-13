@@ -65,12 +65,21 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [ ] Once a real project exists: confirm the same schema/RLS behavior verified locally in DATABASE_IMPLEMENTATION_REPORT.md holds identically there
 - [ ] Project owner reviews and explicitly approves Phase 5 before Phase 6 (Authentication & Authorization) begins
 
-## Phase 6 — Authentication & Authorization (not started)
-- [ ] Implement Google OAuth login flow (backend)
-- [ ] Implement session/token issuance
-- [ ] Implement RBAC middleware
-- [ ] Implement login screen (web)
-- [ ] Test unauthenticated access is blocked everywhere
+## Phase 6 — Authentication & Authorization (implementation COMPLETE — see PHASE 06 REPORT; live Supabase/Google verification still required)
+- [x] Backend: Supabase token verification (`verifySupabaseToken.ts`, real HS256 signature/expiry checks)
+- [x] Backend: user provisioning on first login, default role `user`, never `admin` (`provisioning.ts`, `usersRepository.ts`)
+- [x] Backend: auth middleware — `authenticate`/`requireAuthenticated`/`requireRole`/`requireAdmin` (`middleware/auth.ts`)
+- [x] Backend: `/auth/session` and `/auth/logout` endpoints; `/users/me`, `/subjects`, `/admin/users`, `/admin/subjects` wired to the new middleware
+- [x] Web: real Login page (Google sign-in via Supabase, loading/error states)
+- [x] Web: OAuth callback route (`/auth/callback`) exchanging the code for a session
+- [x] Web: hard authentication wall (`proxy.ts`) protecting `/dashboard`, `/subjects` (incl. nested), `/admin`, `/profile`
+- [x] Web: logout button (Supabase `signOut()` + best-effort backend audit call)
+- [x] 35 backend tests + 16 web tests, all passing (real local DB, real JWT verification, forgery resistance, fail-safe config)
+- [x] Create AUTHENTICATION.md, GOOGLE_OAUTH_SETUP.md, AUTHORIZATION.md, SESSION_SECURITY.md, AUTHENTICATION_TEST_PLAN.md
+- [x] Update DECISIONS.md (D36-D39), IMPLEMENTATION_ROADMAP.md, `.env.example` files
+- [ ] **Blocked on project owner:** create a real Supabase project (if not already done for Phase 5) and a Google Cloud OAuth client; complete every step in GOOGLE_OAUTH_SETUP.md
+- [ ] Once live: run through GOOGLE_OAUTH_SETUP.md §8's verification checklist end-to-end
+- [ ] Project owner reviews and explicitly approves Phase 6 before Phase 7 begins
 
 ## Phase 7 — Core Backend APIs (not started)
 - [ ] CRUD APIs for all educational content types

@@ -11,5 +11,18 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    env: {
+      // Local-only test fixtures — NOT production secrets. This JWT secret
+      // is used solely to sign fake-but-correctly-shaped Supabase tokens
+      // in tests (see tests/integration/auth.test.ts); it never touches a
+      // real Supabase project. DATABASE_URL points at a local PostgreSQL
+      // database seeded with the Phase 5 migrations, used only for this
+      // test run — see AUTHENTICATION_TEST_PLAN.md "Local Test Database"
+      // for how to recreate it.
+      SUPABASE_JWT_SECRET: "test-only-jwt-secret-do-not-use-in-production",
+      DATABASE_URL:
+        process.env.TEST_DATABASE_URL ??
+        "postgres://postgres:postgres@127.0.0.1:5432/digital_leadership_backend_test",
+    },
   },
 });

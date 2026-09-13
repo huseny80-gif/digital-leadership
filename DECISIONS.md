@@ -187,4 +187,27 @@ Full rationale for each is in `DATABASE_DESIGN.md` and `DATABASE_SECURITY.md`.
 
 ---
 
-*This log will continue to grow in Phase 6 and beyond as concrete implementation decisions are made.*
+## Phase 6 Decisions (Authentication + Google OAuth)
+
+## D36: Supabase Auth collapses the Phase 2 "pluggable identity provider" abstraction
+- **Decision:** The backend does not implement a custom `IdentityProvider` interface with a `GoogleIdentityProvider` class (as Phase 4 scaffolded). Instead, the backend verifies whatever Supabase-issued token it receives and reads `app_metadata.provider` to know which underlying provider authenticated the session.
+- **Reasoning:** Supabase Auth itself is now the pluggable, multi-provider layer Phase 2 anticipated — adding OTP/email later is a Supabase dashboard configuration change, not new backend code. Building a second, redundant abstraction on top would not add extensibility, only indirection.
+- **Alternatives considered:** Keeping the Phase 4 `IdentityProvider` interface and wrapping Supabase behind it — rejected as unnecessary layering once Supabase already provides the abstraction at a better level (its own dashboard/config, not our code).
+
+## D37: Backend verifies the Supabase access token directly; it does not mint its own session token
+- **Decision:** There is one session credential (Supabase's), not two. The backend performs local JWT signature verification (`SUPABASE_JWT_SECRET`, HS256) on every request rather than issuing and tracking its own session token.
+- **Reasoning:** Avoids "a second competing authentication system" (this phase's explicit instruction). Standard, secure pattern for a stateless resource-server backend; avoids a hard runtime dependency on Supabase's availability for every single API request (a network round-trip per request would be needed if the backend called Supabase to verify instead).
+- **Alternatives considered:** Backend calls Supabase's `/auth/v1/user` endpoint to verify every request — rejected as slower and adding an availability dependency with no security benefit over local signature verification.
+- **Note:** this refines, rather than contradicts, Phase 2's `ARCHITECTURE.md` §5 language ("the backend issues its own session credential distinct from the [provider] token") — the distinction that mattered in Phase 2 (never trust the raw *Google* token as the ongoing session) is preserved: the ongoing session credential is Supabase's token, never Google's, and the backend independently verifies it rather than blindly trusting it.
+
+## D38: Removed `GOOGLE_OAUTH_CLIENT_ID`/`SECRET` and `SESSION_SIGNING_SECRET` from backend configuration
+- **Decision:** These three environment variables, scaffolded as placeholders in Phase 4, are removed from `backend/src/config/env.ts` and `.env.example`, replaced by `SUPABASE_JWT_SECRET`.
+- **Reasoning:** Direct consequences of D36/D37 — the backend never holds a Google client secret (Supabase does, inside its own dashboard) and never signs its own session tokens (so has no signing secret of its own to manage).
+
+## D39: `question_banks`/`questions`/`question_options` RLS restriction (D32) is unaffected by authentication
+- **Decision:** No change to the Phase 5 RLS policies was needed to implement authentication — role resolution happens entirely in the backend's own database queries (using the trusted/privileged `DATABASE_URL` connection), not through a client's direct RLS-governed Supabase session.
+- **Reasoning:** Confirms D27's "backend-mediated by default" architecture held up under real implementation — authentication did not require reopening or weakening any RLS policy from Phase 5.
+
+---
+
+*This log will continue to grow in Phase 7 and beyond as concrete implementation decisions are made.*

@@ -1,14 +1,28 @@
 import type { ReactNode } from "react";
+import type { UserProfile } from "@shared/index";
 import { AppShell } from "@/components/layout/AppShell";
+import { apiGet } from "@/lib/api/client";
 
 /**
- * Layout for all authenticated application routes.
+ * Layout for all authenticated application routes. Actual route
+ * protection happens in `middleware.ts` (PHASE 06 §5) before this layout
+ * ever renders — this layout does not re-implement that check. It only
+ * fetches the current role for the nav's "Admin" link visibility (a UX
+ * convenience, not a security boundary — see AppShell's doc comment).
  *
- * This route group (`(app)`) is where Phase 6 will add the actual
- * session-guard: an unauthenticated request reaching any route under this
- * group must be redirected to `/login` (ARCHITECTURE.md §5, DATA_FLOW.md
- * "USER Flow"). No guard is implemented yet — this is scaffolding only.
+ * If the backend is unreachable, this fails open to "not admin" for
+ * *display* purposes only — it never grants access to anything, since
+ * the real `/admin` route and every admin API call are independently
+ * protected server-side.
  */
-export default function AppLayout({ children }: { children: ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+export default async function AppLayout({ children }: { children: ReactNode }) {
+  let isAdmin = false;
+  try {
+    const { data } = await apiGet<UserProfile>("/api/v1/users/me");
+    isAdmin = data.role === "admin";
+  } catch {
+    isAdmin = false;
+  }
+
+  return <AppShell isAdmin={isAdmin}>{children}</AppShell>;
 }

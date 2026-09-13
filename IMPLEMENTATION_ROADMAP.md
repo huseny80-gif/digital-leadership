@@ -45,13 +45,14 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - **Not done:** no real Supabase project was created (no credentials were available, and none were invented) — the migrations are Supabase-ready but unapplied to any live project. No Google OAuth, authentication UI, Storage, PDF upload, or quiz UI was implemented.
 - Gate: explicit approval required before Phase 6 — and, separately, Supabase project credentials are required before the schema can be applied to a live database.
 
-## Phase 6 — Authentication & Authorization
-- INSPECT: review chosen identity-provider abstraction and the implemented user/role schema.
-- PLAN: implement Google OAuth login flow end-to-end; implement session/token issuance from the shared backend; implement RBAC middleware for Admin/User roles.
-- IMPLEMENT: backend auth endpoints, protected-route middleware, login screen on web.
-- TEST: verify unauthenticated access is blocked on every protected route/API; verify role checks (Admin vs. User) enforced server-side.
-- Deliverable: working login flow (web first) with enforced authorization.
-- Gate: explicit approval before Phase 7.
+## Phase 6 — Authentication & Authorization (COMPLETE for implementable-without-live-Supabase scope; pending approval to proceed)
+- INSPECT: reviewed the identity-provider abstraction, user/role schema, and all Phase 1-5 documents.
+- PLAN: Supabase Auth (Google provider) as the identity layer; backend verifies Supabase's token directly rather than minting its own session (DECISIONS.md D36/D37).
+- IMPLEMENT: backend token verification (`verifySupabaseToken.ts`), user provisioning (`provisioning.ts`, default role `user`, never `admin`), auth middleware (`authenticate`/`requireAuthenticated`/`requireRole`/`requireAdmin`), `/auth/session` and `/auth/logout` endpoints; web login page with real Google sign-in via Supabase, OAuth callback route, the hard authentication wall (`proxy.ts`, formerly `middleware.ts`), logout.
+- TEST: 35 backend tests (real local database, real JWT verification, forged-claim resistance, fail-safe config) + 16 web tests, all passing; manual verification of fail-safe behavior in both dev and production web builds.
+- Deliverable: AUTHENTICATION.md, GOOGLE_OAUTH_SETUP.md, AUTHORIZATION.md, SESSION_SECURITY.md, AUTHENTICATION_TEST_PLAN.md + updated DECISIONS.md (D36-D39), TODO.md, `.env.example` files.
+- **Not done, and explicitly out of scope for this phase:** no real Supabase project or Google Cloud OAuth client exists — none were invented. Storage, PDF upload, educational content UI, quiz UI, mobile UI, and the Admin dashboard's real content were not implemented.
+- Gate: explicit approval required before Phase 7 — and, separately, real Supabase + Google Cloud credentials are required before Google sign-in can be exercised end-to-end (see GOOGLE_OAUTH_SETUP.md).
 
 ## Phase 7 — Core Backend & Educational Content APIs
 - INSPECT/PLAN/IMPLEMENT: CRUD APIs for Subjects, Lectures, Lecture Items (PDFs/Summaries/Assignments/Exercises), Quizzes, Question Banks; file storage integration with access control.
