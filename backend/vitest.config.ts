@@ -29,6 +29,12 @@ export default defineConfig({
       DATABASE_URL:
         process.env.TEST_DATABASE_URL ??
         "postgres://postgres:postgres@127.0.0.1:5432/digital_leadership_backend_test",
+      // SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY are deliberately left unset
+      // here so storageProviderFactory.ts selects the local-filesystem
+      // substitute (STORAGE_TEST_PLAN.md "Test Environment") — no live
+      // Supabase project exists to test against (see
+      // STORAGE_IMPLEMENTATION.md "Live Supabase Verification Status").
+      LOCAL_STORAGE_DIR: ".local-storage-test",
     },
   },
 });

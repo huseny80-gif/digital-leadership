@@ -4,3 +4,5 @@ dist/
 .env
 .env.local
 coverage/
+.local-storage/
+.local-storage-test/

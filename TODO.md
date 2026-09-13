@@ -81,7 +81,7 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [ ] Once live: run through GOOGLE_OAUTH_SETUP.md §8's verification checklist end-to-end
 - [ ] Project owner reviews and explicitly approves Phase 6 before Phase 7 begins
 
-## Phase 7 — Core Backend & Educational Content APIs (implementation COMPLETE — see PHASE 07 REPORT)
+## Phase 7 — Core Backend & Educational Content APIs (APPROVED)
 - [x] Read APIs: `GET /me`, `GET /subjects`, `GET /subjects/:id`, `GET /subjects/:id/lectures`, `GET /lectures/:id`, `GET /lectures/:id/items`
 - [x] Explicit response DTOs (shared types + new `LectureItemResponse` with embedded safe file metadata)
 - [x] Page-based pagination (`page`/`limit`/`total`/`data`), rejecting (not clamping) excessive limits
@@ -94,15 +94,23 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [x] 23 new automated tests (58 total backend tests passing)
 - [x] Create API_V1.md, API_SECURITY.md, API_TEST_PLAN.md, API_IMPLEMENTATION.md
 - [x] Update DECISIONS.md (D40-D44), IMPLEMENTATION_ROADMAP.md (renumbered to insert Phase 8 = Storage)
-- [ ] Project owner reviews and explicitly approves Phase 7 before Phase 8 (File Storage & Secure PDF Access) begins
-- [ ] **Not built this phase (tracked for later):** admin content-management CRUD (`POST /admin/subjects` etc. remain `501`), assessment/quiz endpoints, standalone file-metadata endpoint
+- [x] Project owner reviews and explicitly approves Phase 7
 
-## Phase 8 — File Storage & Secure PDF Access (not started)
-- [ ] Supabase Storage integration
-- [ ] PDF upload (admin-only, validated type/size)
-- [ ] Signed-URL issuance for authorized reads (short-lived, single-file-scoped)
-- [ ] File lifecycle management (replace/archive per DATABASE_DESIGN.md §5)
-- [ ] Automated tests: upload authorization, signed-URL expiry, no direct public storage access
+## Phase 8 — File Storage & Secure PDF Access (implementation COMPLETE — see PHASE 08 REPORT)
+- [x] `StorageProvider` abstraction: real `SupabaseStorageProvider` + local-filesystem development/testing substitute (auto-selected from environment)
+- [x] PDF upload (admin-only): subject/lecture existence validated, three-signal PDF validation (MIME + extension + magic bytes), configurable size limit, server-generated object path (no client-controlled storage key)
+- [x] Secure access (`GET /api/v1/files/:fileId`): reuses Phase 7's content-visibility predicate exactly; identical 404 for nonexistent vs. unauthorized
+- [x] Signed URLs: short-lived (default 5 min, configurable), generated only after authorization, never persisted
+- [x] Replace (`POST /:fileId/replace`) and delete (`DELETE /:fileId`) following the approved archive-not-hard-delete lifecycle (DECISIONS.md D25, D48)
+- [x] Stricter rate limiting on upload/access/replace/delete; audit logging (`file.uploaded`/`file.replaced`/`file.deleted`/`file.access_denied`) via the existing `audit_logs` table
+- [x] 33 new automated tests (97 total backend tests passing) + a full manual end-to-end upload/signed-URL/fetch smoke test
+- [x] One real bug found and fixed (`sanitizeFilename` case-normalization) — see DECISIONS.md / STORAGE_IMPLEMENTATION.md
+- [x] Create STORAGE_ARCHITECTURE.md, STORAGE_SECURITY.md, FILE_API.md, STORAGE_TEST_PLAN.md, STORAGE_IMPLEMENTATION.md
+- [x] Update DECISIONS.md (D45-D49), IMPLEMENTATION_ROADMAP.md
+- [ ] **Blocked on project owner:** create the `educational-files` private bucket in a real Supabase project (once one exists per Phase 5's blocker) and provide credentials, then verify actual upload/signed-URL/expiry/denial behavior against it (STORAGE_IMPLEMENTATION.md "Live Supabase Verification Status")
+- [ ] Once live: configure the bucket's Storage CORS for the deployed web origin (STORAGE_SECURITY.md §12)
+- [ ] Project owner reviews and explicitly approves Phase 8 before Phase 9 (Web Application MVP) begins
+- [ ] **Not built this phase (tracked for later):** admin content-management CRUD (`POST /admin/subjects` etc. remain `501`), an API to attach an uploaded file to a lecture item, assessment/quiz endpoints
 
 ## Phase 9 — Web Application MVP (not started)
 - [ ] Build responsive UI for content browsing, assessments, admin console (login/auth UI already exists from Phase 6)

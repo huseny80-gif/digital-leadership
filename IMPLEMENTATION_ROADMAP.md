@@ -54,7 +54,7 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - **Not done, and explicitly out of scope for this phase:** no real Supabase project or Google Cloud OAuth client exists — none were invented. Storage, PDF upload, educational content UI, quiz UI, mobile UI, and the Admin dashboard's real content were not implemented.
 - Gate: explicit approval required before Phase 7 — and, separately, real Supabase + Google Cloud credentials are required before Google sign-in can be exercised end-to-end (see GOOGLE_OAUTH_SETUP.md).
 
-## Phase 7 — Core Backend & Educational Content APIs (COMPLETE; pending approval to proceed)
+## Phase 7 — Core Backend & Educational Content APIs (APPROVED)
 - INSPECT: reviewed all Phase 1-6 documents and the current backend/web/shared/migrations implementation.
 - PLAN/IMPLEMENT: read APIs for Subjects, Lectures, and Lecture Items under `/api/v1`, reusing the Phase 6 auth middleware unchanged; explicit response DTOs (existing shared types + new `LectureItemResponse`); page-based pagination; UUID/query validation; standardized error contract; CORS allow-list; basic in-memory rate limiting.
 - TEST: 23 new automated tests (58 total) covering authentication, authorization, IDOR, publication-status enforcement, SQL-injection resistance, pagination limits, error-safety, and the quiz answer-key boundary.
@@ -62,11 +62,13 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - **Not done, explicitly out of scope:** Storage, PDF upload/download, admin content-management CRUD, quiz-taking endpoints, any UI (web/mobile/admin). No database schema change — the approved 17-table design and Phase 5 migrations are untouched.
 - Gate: explicit approval required before Phase 8 begins.
 
-## Phase 8 — File Storage & Secure PDF Access
-- IMPLEMENT: Supabase Storage integration, PDF upload (admin), signed-URL issuance for authorized reads, file lifecycle management (replace/archive per DATABASE_DESIGN.md §5) — building on the file-metadata API shape already established in Phase 7.
-- TEST: upload/access authorization, signed-URL expiry, no direct public storage access.
-- Deliverable: working, secure file upload/download.
-- Gate: explicit approval before Phase 9.
+## Phase 8 — File Storage & Secure PDF Access (COMPLETE; pending approval to proceed)
+- INSPECT: reviewed all Phase 1-7 documents and the current backend/web/shared/migrations implementation.
+- PLAN/IMPLEMENT: `StorageProvider` abstraction with a real `SupabaseStorageProvider` and a local-filesystem development/testing substitute; PDF upload (admin-only, three-signal validation — MIME + extension + magic bytes), secure signed-URL access reusing Phase 7's content-visibility predicate, replace (archive-old/create-new, no versioning table), and delete (admin-only, refuses if referenced) under `/api/v1/files`; stricter rate limiting on file operations; audit logging via the existing `audit_logs` table.
+- TEST: 33 new automated tests (97 total) covering storage privacy, MIME/size/path validation, authorization, IDOR, signed-URL expiry/non-persistence, upload-consistency failure modes, and the replace/delete lifecycle — plus a full manual end-to-end upload → signed-URL → fetch smoke test against a running instance.
+- Deliverable: STORAGE_ARCHITECTURE.md, STORAGE_SECURITY.md, FILE_API.md, STORAGE_TEST_PLAN.md, STORAGE_IMPLEMENTATION.md + updated DECISIONS.md (D45-D49), TODO.md.
+- **Not done, explicitly out of scope:** no real Supabase project or bucket exists — none were invented. No Web/Mobile/Admin UI, no PDF viewer, no quiz UI. No database schema change — the approved 17-table design and every Phase 5 migration are untouched (verified: zero diffs under `supabase/migrations/`).
+- Gate: explicit approval required before Phase 9 begins — and, separately, a live Supabase project + bucket are required before Storage can be considered production-verified (see STORAGE_IMPLEMENTATION.md).
 
 ## Phase 9 — Web Application (MVP UI)
 - IMPLEMENT: responsive web UI consuming the backend APIs — content browsing, PDF viewing, assignments/exercises/quizzes, admin console (login/auth UI already exists from Phase 6).

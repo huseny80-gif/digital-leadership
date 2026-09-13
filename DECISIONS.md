@@ -237,4 +237,30 @@ Full rationale for each is in `DATABASE_DESIGN.md` and `DATABASE_SECURITY.md`.
 
 ---
 
-*This log will continue to grow in Phase 8 and beyond as concrete implementation decisions are made.*
+## Phase 8 Decisions (File Storage & Secure PDF Access)
+
+## D45: Local-filesystem storage substitute, not a mocked Supabase SDK
+- **Decision:** `LocalFilesystemStorageProvider` — a second, real implementation of the `StorageProvider` interface backed by a real filesystem and a real HMAC-signed, expiring URL scheme — is used automatically in place of `SupabaseStorageProvider` when live Supabase credentials are absent.
+- **Reasoning:** Mocking the `@supabase/supabase-js` SDK in tests would only prove the code calls the SDK correctly, not that the upload → authorize → signed-URL → fetch architecture actually works end-to-end. A real, if non-production, second implementation of the same interface lets the whole flow be genuinely exercised. Mirrors the same reasoning as Phase 5's local-database substitute and Phase 6's local-JWT-secret substitute.
+- **Alternatives considered:** Mocking the Supabase client — rejected as weaker evidence; skipping storage-flow testing entirely until a live project exists — rejected as leaving the entire phase's core mechanism unverified.
+
+## D46: Object path always includes a fresh, server-generated `fileId`; filename sanitization is defense-in-depth only
+- **Decision:** Every upload/replacement mints a new UUID `fileId` that becomes part of the object path; the sanitized display filename is only ever the final path segment.
+- **Reasoning:** Guarantees uniqueness and no-overwrite-on-replace by construction, independent of filename sanitization quality. Filename sanitization is a second, independent layer of defense against path traversal/injection, not the only one — consistent with `PHASE 08 §5`'s requirement.
+
+## D47: Upload writes storage before database metadata (Option B)
+- **Decision:** The storage object is uploaded before the `files` row is inserted; a metadata-insert failure triggers best-effort deletion of the just-uploaded object.
+- **Reasoning:** An orphaned storage object (bytes with no database row) is inert and unreachable through any API. The reverse ordering (metadata first) would risk a `files` row referencing a nonexistent object, which would fail confusingly on every future access attempt — a worse failure mode. See `STORAGE_IMPLEMENTATION.md` "Upload Consistency" for the full failure-mode analysis, including the explicitly acknowledged narrow window where a crash mid-cleanup leaves a genuinely orphaned (but never API-discoverable) object.
+
+## D48: Deletion archives metadata; it never hard-deletes a `files` row
+- **Decision:** `DELETE /api/v1/files/:fileId` sets `status = 'archived'` (after confirming no `lecture_items` row still references the file) rather than removing the row.
+- **Reasoning:** Consistent with `DECISIONS.md` D25's approved lifecycle (no file-versioning table; replace/retire via status) and with every other soft-deletable table in the approved schema. A hard delete of a referenced file would also violate the database's own `on delete restrict` foreign key (`DATABASE_DESIGN.md` §3) — this decision avoids ever attempting that, surfacing a clean `409 conflict` instead.
+- **Alternatives considered:** Hard row deletion after manually clearing references — rejected as unnecessarily destructive and inconsistent with the approved schema's soft-delete conventions.
+
+## D49: File visibility reuses Phase 7's content-visibility predicate exactly, not a new one
+- **Decision:** `FilesRepository.isFileVisibleToNonAdmin` queries the identical published-item/published-lecture/published-subject join Phase 7's content repository already established.
+- **Reasoning:** A second, independently-written visibility predicate would risk drifting out of sync with the first over time — exactly the failure class that caused the Phase 5 anonymous-access bug. Reusing the same logic (even though it lives in a different repository class, since `files` and `lecture_items` are different aggregates) keeps the security-critical predicate defined once, conceptually, everywhere it appears.
+
+---
+
+*This log will continue to grow in Phase 9 and beyond as concrete implementation decisions are made.*

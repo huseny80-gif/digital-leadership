@@ -31,3 +31,18 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+/**
+ * Stricter limit for file upload/replace/delete/signed-URL generation
+ * (PHASE 08 §22, STORAGE_SECURITY.md "Rate Limiting"). These are more
+ * expensive (upload writes bytes to storage) and higher-value targets
+ * (repeated signed-URL requests, upload abuse) than an ordinary read, so
+ * they get a tighter budget than the general API limiter while still
+ * being well within legitimate admin/content-access usage patterns.
+ */
+export const fileOperationRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});

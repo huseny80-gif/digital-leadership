@@ -31,14 +31,28 @@ const envSchema = z.object({
   // (AUTHENTICATION.md) without a network round-trip per request.
   SUPABASE_JWT_SECRET: z.string().optional(),
 
-  // File storage (Phase 8) — never used yet.
-  FILE_STORAGE_BUCKET: z.string().optional(),
-
   // Phase 7 (Core Backend & Educational Content APIs). Comma-separated
   // list of allowed CORS origins (API_SECURITY.md "CORS"). Never `*` for
   // an authenticated API. Defaults to the local web dev server so `npm
   // run dev` works out of the box without requiring this to be set.
   CORS_ALLOWED_ORIGINS: z.string().default("http://localhost:3000"),
+
+  // Phase 8 (File Storage & Secure PDF Access) — see STORAGE_ARCHITECTURE.md.
+  // Storage provider is chosen automatically: if SUPABASE_URL and
+  // SUPABASE_SERVICE_ROLE_KEY are both set, the real Supabase Storage
+  // provider is used; otherwise the local-filesystem provider is used
+  // (development/testing only — never intended for production, since no
+  // live Supabase project exists in this environment to verify against).
+  SUPABASE_STORAGE_BUCKET: z.string().default("educational-files"),
+  MAX_PDF_SIZE_BYTES: z.coerce.number().int().positive().default(20 * 1024 * 1024), // 20 MB
+  SIGNED_URL_EXPIRY_SECONDS: z.coerce.number().int().positive().default(300), // 5 minutes
+  LOCAL_STORAGE_DIR: z.string().default(".local-storage"),
+  // Signs local-mode "signed URLs" (HMAC) — distinct from SUPABASE_JWT_SECRET
+  // since it protects a different thing (storage object access, not
+  // session identity) and must remain valid even if the JWT secret rotates.
+  // Server-only; irrelevant once a live Supabase project provides real
+  // Storage signed URLs.
+  LOCAL_STORAGE_SIGNING_SECRET: z.string().default("local-dev-storage-signing-secret-not-for-production"),
 });
 
 export type Env = z.infer<typeof envSchema>;
