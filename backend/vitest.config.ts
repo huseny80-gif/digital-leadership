@@ -11,6 +11,12 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    // Integration test files share one real local Postgres database and
+    // several truncate/reseed shared tables (users, subjects, ...) between
+    // tests — running test files in parallel would race against each
+    // other's truncates. Sequential execution trades some wall-clock speed
+    // for determinism, appropriate at this test suite's current size.
+    fileParallelism: false,
     env: {
       // Local-only test fixtures — NOT production secrets. This JWT secret
       // is used solely to sign fake-but-correctly-shaped Supabase tokens

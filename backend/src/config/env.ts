@@ -31,8 +31,14 @@ const envSchema = z.object({
   // (AUTHENTICATION.md) without a network round-trip per request.
   SUPABASE_JWT_SECRET: z.string().optional(),
 
-  // File storage (Phase 7+) — never used yet.
+  // File storage (Phase 8) — never used yet.
   FILE_STORAGE_BUCKET: z.string().optional(),
+
+  // Phase 7 (Core Backend & Educational Content APIs). Comma-separated
+  // list of allowed CORS origins (API_SECURITY.md "CORS"). Never `*` for
+  // an authenticated API. Defaults to the local web dev server so `npm
+  // run dev` works out of the box without requiring this to be set.
+  CORS_ALLOWED_ORIGINS: z.string().default("http://localhost:3000"),
 });
 
 export type Env = z.infer<typeof envSchema>;

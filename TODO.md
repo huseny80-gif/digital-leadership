@@ -52,7 +52,7 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [ ] **Follow-up (non-blocking):** resolve the moderate-severity dev-only `vitest`/`@vitest/mocker` advisory in `web` and `backend` (requires coordinating a `vitest@5` + `@types/node@22` upgrade — see DEVELOPMENT.md "Known Limitations")
 - [ ] Choose migration tooling (per DATABASE_MIGRATION_PLAN.md §2) — deferred to Phase 5
 
-## Phase 5 — Database Implementation (schema/migrations COMPLETE — see DATABASE_IMPLEMENTATION_REPORT.md; Supabase project NOT created)
+## Phase 5 — Database Implementation (APPROVED — schema/migrations complete; Supabase project NOT created)
 - [x] Implement migrations in the sequence defined by DATABASE_MIGRATION_PLAN.md §3 (11 files, `supabase/migrations/`)
 - [x] Seed roles/permissions per DATABASE_MIGRATION_PLAN.md §4 (idempotency verified)
 - [x] Implement and test RLS policies (all 17 tables) — 32 scenarios in DATABASE_TEST_PLAN.md, all passing after one fix
@@ -65,7 +65,7 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [ ] Once a real project exists: confirm the same schema/RLS behavior verified locally in DATABASE_IMPLEMENTATION_REPORT.md holds identically there
 - [ ] Project owner reviews and explicitly approves Phase 5 before Phase 6 (Authentication & Authorization) begins
 
-## Phase 6 — Authentication & Authorization (implementation COMPLETE — see PHASE 06 REPORT; live Supabase/Google verification still required)
+## Phase 6 — Authentication & Authorization (APPROVED — implementation complete; live Supabase/Google verification still required)
 - [x] Backend: Supabase token verification (`verifySupabaseToken.ts`, real HS256 signature/expiry checks)
 - [x] Backend: user provisioning on first login, default role `user`, never `admin` (`provisioning.ts`, `usersRepository.ts`)
 - [x] Backend: auth middleware — `authenticate`/`requireAuthenticated`/`requireRole`/`requireAdmin` (`middleware/auth.ts`)
@@ -81,34 +81,53 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [ ] Once live: run through GOOGLE_OAUTH_SETUP.md §8's verification checklist end-to-end
 - [ ] Project owner reviews and explicitly approves Phase 6 before Phase 7 begins
 
-## Phase 7 — Core Backend APIs (not started)
-- [ ] CRUD APIs for all educational content types
-- [ ] File storage integration with access control (signed URLs)
-- [ ] Automated tests for all endpoints and authorization edge cases
+## Phase 7 — Core Backend & Educational Content APIs (implementation COMPLETE — see PHASE 07 REPORT)
+- [x] Read APIs: `GET /me`, `GET /subjects`, `GET /subjects/:id`, `GET /subjects/:id/lectures`, `GET /lectures/:id`, `GET /lectures/:id/items`
+- [x] Explicit response DTOs (shared types + new `LectureItemResponse` with embedded safe file metadata)
+- [x] Page-based pagination (`page`/`limit`/`total`/`data`), rejecting (not clamping) excessive limits
+- [x] UUID/query validation via `zod`, applied before any database query
+- [x] Standardized error contract (400/401/403/404/409/500/501) with no internal-detail leakage
+- [x] CORS allow-list (environment-driven, no wildcard) + basic in-memory rate limiting
+- [x] Reused Phase 6 auth middleware unchanged — no second authentication mechanism
+- [x] Publication/status visibility enforced consistently (subject → lecture → lecture item chain), with the Phase 5 anonymous-access bug class explicitly regression-tested
+- [x] Quiz answer-key boundary confirmed: no Phase 7 endpoint touches `questions`/`question_options`/`quiz_attempts` at all
+- [x] 23 new automated tests (58 total backend tests passing)
+- [x] Create API_V1.md, API_SECURITY.md, API_TEST_PLAN.md, API_IMPLEMENTATION.md
+- [x] Update DECISIONS.md (D40-D44), IMPLEMENTATION_ROADMAP.md (renumbered to insert Phase 8 = Storage)
+- [ ] Project owner reviews and explicitly approves Phase 7 before Phase 8 (File Storage & Secure PDF Access) begins
+- [ ] **Not built this phase (tracked for later):** admin content-management CRUD (`POST /admin/subjects` etc. remain `501`), assessment/quiz endpoints, standalone file-metadata endpoint
 
-## Phase 8 — Web Application MVP (not started)
-- [ ] Build responsive UI for login, content browsing, assessments, admin console
+## Phase 8 — File Storage & Secure PDF Access (not started)
+- [ ] Supabase Storage integration
+- [ ] PDF upload (admin-only, validated type/size)
+- [ ] Signed-URL issuance for authorized reads (short-lived, single-file-scoped)
+- [ ] File lifecycle management (replace/archive per DATABASE_DESIGN.md §5)
+- [ ] Automated tests: upload authorization, signed-URL expiry, no direct public storage access
+
+## Phase 9 — Web Application MVP (not started)
+- [ ] Build responsive UI for content browsing, assessments, admin console (login/auth UI already exists from Phase 6)
 - [ ] Cross-device functional testing
 - [ ] Accessibility pass (WCAG 2.1 AA baseline)
 
-## Phase 9 — Mobile Applications (not started)
+## Phase 10 — Mobile Applications (not started)
 - [ ] Build iOS app
 - [ ] Build Android app
 - [ ] Device/simulator testing
 
-## Phase 10 — Hardening & Security Review (not started)
+## Phase 11 — Hardening & Security Review (not started)
 - [ ] Full security review
 - [ ] Accessibility audit
 - [ ] Performance/load testing baseline
 - [ ] Confirm compliance posture (FERPA/GDPR/COPPA) against actual user base
+- [ ] Revisit Phase 7's in-memory rate limiting if the deployment is multi-instance by now (DECISIONS.md D43)
 
-## Phase 11 — Production Deployment (not started)
+## Phase 12 — Production Deployment (not started)
 - [ ] Set up production infrastructure and CI/CD
 - [ ] Deploy backend and web
 - [ ] Submit iOS app to App Store
 - [ ] Submit Android app to Play Store
 
-## Phase 12+ — Future Features (not started)
+## Phase 13+ — Future Features (not started)
 - [ ] Additional authentication methods (OTP/email, other OAuth providers)
 - [ ] Additional roles (e.g., Instructor)
 - [ ] Advanced admin analytics/reporting

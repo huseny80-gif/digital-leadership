@@ -18,7 +18,7 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - No database tables, SQL, Supabase configuration, authentication implementation, or UI were created.
 - Gate: explicitly approved.
 
-## Phase 3 — Database Design (COMPLETE, pending approval to proceed)
+## Phase 3 — Database Design (APPROVED)
 - INSPECT: reviewed all Phase 1 and Phase 2 documents.
 - PLAN/IMPLEMENT (as documentation): designed the complete normalized PostgreSQL schema — RBAC (users/roles/permissions/identities), educational content (subjects/lectures/lecture_items), assessments (question banks/questions/options/quizzes/attempts/answers), file metadata, and audit logging.
 - Evaluated and resolved: separate-vs-generalized content tables (chose generalized `lecture_items`), single-vs-multi role per user (chose single), categories/tags (rejected as unjustified), file versioning (deferred), and the client/backend/Supabase/storage data-access boundary (backend-mediated by default; direct-Supabase reads reserved as an explicit future option).
@@ -27,7 +27,7 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - No SQL was executed, no Supabase project or table was created — design/documentation only.
 - Gate: explicit approval required before Phase 4 begins.
 
-## Phase 4 — Environment & Project Scaffolding (COMPLETE, pending approval to proceed)
+## Phase 4 — Environment & Project Scaffolding (APPROVED)
 - INSPECT: reviewed all Phase 1-3 documents.
 - PLAN: repository/module layout per PROJECT_STRUCTURE.md, refined with the concrete directory structure documented in DEVELOPMENT.md.
 - IMPLEMENT: initialized the Next.js/React/TypeScript web app with structural placeholder routes (login, dashboard, subjects, lecture, admin, profile); the Express/TypeScript backend with separated auth/authorization/business-logic/data-access/route module boundaries and a centralized RBAC + error-handling layer; the Flutter mobile app shell (navigation + placeholder screens, hand-authored due to SDK unavailability); the `shared` TypeScript contracts package; environment variable templates; and initial testing infrastructure for all three clients.
@@ -36,7 +36,7 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - No database tables, SQL, Supabase connection, Google OAuth configuration, or real business/UI features were created — scaffolding only.
 - Gate: explicit approval required before Phase 5 begins.
 
-## Phase 5 — Database Implementation (COMPLETE for schema/migrations; Supabase project not yet created — pending approval to proceed)
+## Phase 5 — Database Implementation (APPROVED — schema/migrations complete; live Supabase project still pending creation)
 - INSPECT: reviewed the approved DATABASE_DESIGN.md, DATABASE_ERD.md, DATABASE_SECURITY.md, DATABASE_MIGRATION_PLAN.md.
 - PLAN: used the Supabase CLI migration convention (`supabase/migrations/`, plain ordered SQL files).
 - IMPLEMENT: created 11 migrations implementing the full 17-table schema exactly as approved, seed data (roles/permissions), `updated_at` triggers, and RLS enabled with policies on all 17 tables.
@@ -45,7 +45,7 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - **Not done:** no real Supabase project was created (no credentials were available, and none were invented) — the migrations are Supabase-ready but unapplied to any live project. No Google OAuth, authentication UI, Storage, PDF upload, or quiz UI was implemented.
 - Gate: explicit approval required before Phase 6 — and, separately, Supabase project credentials are required before the schema can be applied to a live database.
 
-## Phase 6 — Authentication & Authorization (COMPLETE for implementable-without-live-Supabase scope; pending approval to proceed)
+## Phase 6 — Authentication & Authorization (APPROVED — implementation complete; live Google/Supabase verification still pending)
 - INSPECT: reviewed the identity-provider abstraction, user/role schema, and all Phase 1-5 documents.
 - PLAN: Supabase Auth (Google provider) as the identity layer; backend verifies Supabase's token directly rather than minting its own session (DECISIONS.md D36/D37).
 - IMPLEMENT: backend token verification (`verifySupabaseToken.ts`), user provisioning (`provisioning.ts`, default role `user`, never `admin`), auth middleware (`authenticate`/`requireAuthenticated`/`requireRole`/`requireAdmin`), `/auth/session` and `/auth/logout` endpoints; web login page with real Google sign-in via Supabase, OAuth callback route, the hard authentication wall (`proxy.ts`, formerly `middleware.ts`), logout.
@@ -54,38 +54,46 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - **Not done, and explicitly out of scope for this phase:** no real Supabase project or Google Cloud OAuth client exists — none were invented. Storage, PDF upload, educational content UI, quiz UI, mobile UI, and the Admin dashboard's real content were not implemented.
 - Gate: explicit approval required before Phase 7 — and, separately, real Supabase + Google Cloud credentials are required before Google sign-in can be exercised end-to-end (see GOOGLE_OAUTH_SETUP.md).
 
-## Phase 7 — Core Backend & Educational Content APIs
-- INSPECT/PLAN/IMPLEMENT: CRUD APIs for Subjects, Lectures, Lecture Items (PDFs/Summaries/Assignments/Exercises), Quizzes, Question Banks; file storage integration with access control.
-- TEST: automated tests for each endpoint, including authorization edge cases.
-- Deliverable: fully functional, tested backend API surface.
-- Gate: explicit approval before Phase 8.
+## Phase 7 — Core Backend & Educational Content APIs (COMPLETE; pending approval to proceed)
+- INSPECT: reviewed all Phase 1-6 documents and the current backend/web/shared/migrations implementation.
+- PLAN/IMPLEMENT: read APIs for Subjects, Lectures, and Lecture Items under `/api/v1`, reusing the Phase 6 auth middleware unchanged; explicit response DTOs (existing shared types + new `LectureItemResponse`); page-based pagination; UUID/query validation; standardized error contract; CORS allow-list; basic in-memory rate limiting.
+- TEST: 23 new automated tests (58 total) covering authentication, authorization, IDOR, publication-status enforcement, SQL-injection resistance, pagination limits, error-safety, and the quiz answer-key boundary.
+- Deliverable: API_V1.md, API_SECURITY.md, API_TEST_PLAN.md, API_IMPLEMENTATION.md + updated DECISIONS.md (D40-D44), TODO.md.
+- **Not done, explicitly out of scope:** Storage, PDF upload/download, admin content-management CRUD, quiz-taking endpoints, any UI (web/mobile/admin). No database schema change — the approved 17-table design and Phase 5 migrations are untouched.
+- Gate: explicit approval required before Phase 8 begins.
 
-## Phase 8 — Web Application (MVP UI)
-- IMPLEMENT: responsive web UI consuming the backend APIs — login, content browsing, PDF viewing, assignments/exercises/quizzes, admin console.
+## Phase 8 — File Storage & Secure PDF Access
+- IMPLEMENT: Supabase Storage integration, PDF upload (admin), signed-URL issuance for authorized reads, file lifecycle management (replace/archive per DATABASE_DESIGN.md §5) — building on the file-metadata API shape already established in Phase 7.
+- TEST: upload/access authorization, signed-URL expiry, no direct public storage access.
+- Deliverable: working, secure file upload/download.
+- Gate: explicit approval before Phase 9.
+
+## Phase 9 — Web Application (MVP UI)
+- IMPLEMENT: responsive web UI consuming the backend APIs — content browsing, PDF viewing, assignments/exercises/quizzes, admin console (login/auth UI already exists from Phase 6).
 - TEST: functional testing across desktop/tablet/mobile browser widths; accessibility pass (WCAG 2.1 AA baseline).
 - Deliverable: MVP web application.
-- Gate: explicit approval before Phase 9 (this may be the MVP release gate).
+- Gate: explicit approval before Phase 10 (this may be the MVP release gate).
 
-## Phase 9 — Mobile Applications (iOS & Android)
-- IMPLEMENT: mobile apps consuming the same shared backend; Google OAuth login on mobile; core content/assessment flows.
+## Phase 10 — Mobile Applications (iOS & Android)
+- IMPLEMENT: mobile apps consuming the same shared backend; Google sign-in via Supabase on mobile; core content/assessment flows.
 - TEST: device/simulator testing on both platforms.
 - Deliverable: functional iOS and Android apps.
-- Gate: explicit approval before Phase 10.
+- Gate: explicit approval before Phase 11.
 
-## Phase 10 — Hardening & Security Review
-- Full security review: authentication, authorization, injection risks, file upload validation, secrets management, rate limiting.
+## Phase 11 — Hardening & Security Review
+- Full security review: authentication, authorization, injection risks, file upload validation, secrets management, rate limiting (revisit the Phase 7 in-memory limiter's shared-store question if the deployment is multi-instance by now).
 - Accessibility audit across web and mobile.
 - Performance/load testing baseline.
 - Deliverable: security and accessibility sign-off.
-- Gate: explicit approval before Phase 11.
+- Gate: explicit approval before Phase 12.
 
-## Phase 11 — Production Deployment
+## Phase 12 — Production Deployment
 - Set up production infrastructure, CI/CD, monitoring, backups.
 - Deploy backend, web, and submit mobile apps to App Store / Play Store.
 - Deliverable: live production system.
 - Gate: post-launch review.
 
-## Phase 12+ — Future Features
+## Phase 13+ — Future Features
 - Additional authentication methods (OTP/email), additional roles (e.g., Instructor), advanced admin analytics, notifications, content versioning, search, localization — as prioritized in PROJECT_SCOPE.md's FUTURE FEATURES section.
 
 ---

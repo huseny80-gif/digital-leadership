@@ -30,3 +30,17 @@ export function unauthenticated(): HttpError {
 export function forbidden(): HttpError {
   return new HttpError(403, "forbidden", "You do not have permission to perform this action.");
 }
+
+/** Used for both "row doesn't exist" and "row exists but you're not
+ * authorized to see it" — deliberately the same response in both cases
+ * (SECURITY_ARCHITECTURE.md §13: "does not distinguish 'resource doesn't
+ * exist' vs 'you don't have access' ... to avoid leaking information
+ * about resource existence"), e.g. an unpublished subject a non-admin
+ * requests by ID. */
+export function notFound(resource: string): HttpError {
+  return new HttpError(404, "not_found", `${resource} not found.`);
+}
+
+export function conflict(message: string): HttpError {
+  return new HttpError(409, "conflict", message);
+}

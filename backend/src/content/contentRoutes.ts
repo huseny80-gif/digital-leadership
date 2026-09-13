@@ -1,29 +1,67 @@
 import { Router } from "express";
+import type { Lecture, PaginatedResult, Subject } from "@shared/index";
 import { requireAuthenticated } from "../middleware/authInstance.js";
 import { ContentService } from "./contentService.js";
-import { NotImplementedContentRepository } from "./contentRepository.js";
+import { PgContentRepository } from "./contentRepository.js";
+import { getPool } from "../lib/db.js";
+import { parsePagination, requireUuidParam } from "../lib/validation.js";
 
 /**
- * Route/controller layer: translates HTTP <-> service calls. No business
- * logic or data access lives here (ARCHITECTURE.md §3).
+ * Route/controller layer for Subjects (API_V1.md). No business logic or
+ * data access lives here (ARCHITECTURE.md §3) — every handler is a thin
+ * translation of HTTP <-> `ContentService` calls.
  *
- * `GET /subjects` is this phase's "protected endpoint" example (PHASE 06
- * §10) — proving an authenticated request of either role is allowed
- * through, while an anonymous one is rejected by `requireAuthenticated`.
- * Real subject-listing logic remains Phase 7 work (`NotImplementedContentRepository`).
+ * Every route requires authentication (PHASE 07 §5) — there is no public,
+ * unauthenticated read path anywhere in this API, matching
+ * PROJECT_REQUIREMENTS.md §4 and closing the Phase 5 anonymous-access gap
+ * (PHASE 07 §17) at the API layer too, not just the database's RLS.
  */
 export function contentRoutes(): Router {
   const router = Router();
-  const service = new ContentService(new NotImplementedContentRepository());
+  const service = new ContentService(new PgContentRepository(getPool()));
 
-  router.get("/subjects", requireAuthenticated, async (_req, res, next) => {
+  router.get("/subjects", requireAuthenticated, async (req, res, next) => {
     try {
-      const subjects = await service.listSubjectsVisibleToCurrentUser();
-      res.json({ data: subjects });
+      const pagination = parsePagination(req.query);
+      const isAdmin = req.user!.role === "admin";
+      const { items, total } = await service.listSubjects(isAdmin, pagination);
+      const body: PaginatedResult<Subject> = { data: items, page: pagination.page, limit: pagination.limit, total };
+      res.json(body);
     } catch (err) {
       next(err);
     }
   });
+
+  router.get("/subjects/:subjectId", requireAuthenticated, requireUuidParam("subjectId"), async (req, res, next) => {
+    try {
+      const isAdmin = req.user!.role === "admin";
+      const subject = await service.getSubjectOrThrow(req.params.subjectId as string, isAdmin);
+      res.json({ data: subject });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get(
+    "/subjects/:subjectId/lectures",
+    requireUuidParam("subjectId"),
+    requireAuthenticated,
+    async (req, res, next) => {
+      try {
+        const pagination = parsePagination(req.query);
+        const isAdmin = req.user!.role === "admin";
+        const { items, total } = await service.listLecturesForSubjectOrThrow(
+          req.params.subjectId as string,
+          isAdmin,
+          pagination,
+        );
+        const body: PaginatedResult<Lecture> = { data: items, page: pagination.page, limit: pagination.limit, total };
+        res.json(body);
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
 
   return router;
 }

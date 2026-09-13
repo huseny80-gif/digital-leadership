@@ -1,7 +1,10 @@
 import express, { type Express } from "express";
+import cors from "cors";
 import { apiV1Router } from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { authenticate } from "./middleware/authInstance.js";
+import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimit.js";
+import { getEnv } from "./config/env.js";
 
 /**
  * Builds the Express application without starting a listener, so tests can
@@ -18,6 +21,19 @@ import { authenticate } from "./middleware/authInstance.js";
  */
 export function createApp(): Express {
   const app = express();
+  const env = getEnv();
+
+  // CORS (API_SECURITY.md "CORS"): explicit allow-list from environment,
+  // never a wildcard, for an API that serves authenticated requests
+  // (PHASE 07 §22). Origins with credentials must be enumerated, not `*`.
+  const allowedOrigins = env.CORS_ALLOWED_ORIGINS.split(",").map((origin) => origin.trim());
+  app.use(
+    cors({
+      origin: allowedOrigins,
+      credentials: true,
+    }),
+  );
+
   app.use(express.json());
   app.use(authenticate);
 
@@ -25,7 +41,8 @@ export function createApp(): Express {
     res.json({ status: "ok" });
   });
 
-  app.use("/api/v1", apiV1Router());
+  app.use("/api/v1/auth", authRateLimiter);
+  app.use("/api/v1", apiRateLimiter, apiV1Router());
 
   // Must be registered last: Express treats a 4-arg middleware as an error
   // handler only if it comes after every route.

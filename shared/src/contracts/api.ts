@@ -14,9 +14,17 @@ export interface ApiErrorBody {
   };
 }
 
-export interface Paginated<T> {
-  items: T[];
-  nextCursor: string | null;
+/**
+ * Pagination contract for every collection endpoint (API_V1.md "Pagination").
+ * Page-based (not cursor-based) — chosen in Phase 7 as this is the first
+ * phase to actually implement pagination; no prior contract depended on
+ * cursor semantics (see DECISIONS.md D40).
+ */
+export interface PaginatedResult<T> {
+  data: T[];
+  page: number;
+  limit: number;
+  total: number;
 }
 
 /** Standard success envelope. Kept intentionally thin — most endpoints

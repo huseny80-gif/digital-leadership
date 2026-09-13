@@ -210,4 +210,31 @@ Full rationale for each is in `DATABASE_DESIGN.md` and `DATABASE_SECURITY.md`.
 
 ---
 
-*This log will continue to grow in Phase 7 and beyond as concrete implementation decisions are made.*
+## Phase 7 Decisions (Core Backend / Educational Content APIs)
+
+## D40: Page-based pagination, replacing the unused cursor-based `Paginated<T>`
+- **Decision:** `shared/src/contracts/api.ts`'s `Paginated<T>` (`{items, nextCursor}`, defined in Phase 4, never consumed by any code) is replaced by `PaginatedResult<T>` (`{data, page, limit, total}`).
+- **Reasoning:** `PHASE 07 §12` explicitly asks for page/limit/total/data; nothing depended on the old cursor shape, so this is a clarification of an unused placeholder, not a breaking change to an established contract.
+- **Alternatives considered:** Keeping cursor-based pagination — rejected as needlessly more complex for this API's actual access patterns (deterministically ordered, bounded collections), and not what this phase's instructions asked for.
+
+## D41: Existing shared types serve as the API response DTOs; no separate DTO layer
+- **Decision:** `SubjectResponse`/`LectureResponse`/`FileMetadataResponse`/`UserProfileResponse` are the pre-existing `Subject`/`Lecture`/`FileMetadata`/`UserProfile` shared types, not new duplicate types. Only `LectureItemResponse` is newly added (base `LectureItem` + embedded `file`).
+- **Reasoning:** Those types were already API-shaped (camelCase, no internal-only columns) since Phase 4 — introducing parallel "Response" types with identical fields would be pure duplication with no behavioral difference, contradicting `PHASE 07 §15`'s "avoid unnecessary abstraction."
+- **Alternatives considered:** A fully separate DTO module mapping 1:1 from each shared type — rejected as redundant given the shared types already satisfy every DTO requirement (no raw DB rows, explicit contract, shared across clients).
+
+## D42: Visibility (404-vs-403) collapses "not found" and "not authorized" into one response
+- **Decision:** A real but unpublished subject/lecture requested by a non-admin returns `404`, identical to a nonexistent ID — never a `403` that would confirm the resource exists.
+- **Reasoning:** Directly required by `SECURITY_ARCHITECTURE.md` §13 ("does not distinguish resource-doesn't-exist from you-don't-have-access... to avoid leaking information about resource existence"), already decided in Phase 2 and simply implemented faithfully here.
+
+## D43: In-memory rate limiting, no external store
+- **Decision:** `express-rate-limit` with default in-memory storage; documented (not silently accepted) limitation that this doesn't share state across multiple backend instances.
+- **Reasoning:** `PHASE 07 §21` explicitly asks not to introduce an external infrastructure dependency unless necessary; this project has no multi-instance deployment yet (`IMPLEMENTATION_ROADMAP.md` Phase 11 hasn't happened), so a shared store would be speculative infrastructure today.
+- **Revisit trigger:** horizontal scaling of the backend in a future deployment phase.
+
+## D44: Test files run sequentially, not in parallel
+- **Decision:** `backend/vitest.config.ts` sets `fileParallelism: false`.
+- **Reasoning:** Integration test files now share one real local database and `truncate` overlapping tables between tests; parallel file execution would race. Traded a small amount of wall-clock test time for determinism at the current suite size (58 tests, ~6s) — see `API_TEST_PLAN.md`'s "Known Limitation" for the revisit trigger if the suite grows much larger.
+
+---
+
+*This log will continue to grow in Phase 8 and beyond as concrete implementation decisions are made.*
