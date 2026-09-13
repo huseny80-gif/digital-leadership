@@ -168,10 +168,24 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [ ] **Known limitation, not fixed this phase:** individual CRUD pages beyond the shared primitives (role gate, dashboard, confirm dialog, proxy) don't each have a dedicated component test — see ADMIN_TEST_PLAN.md §5
 - [ ] **Not built this phase (tracked for later):** Instructor role, a generic permission editor, a searchable file/question picker (IDs are copied by hand between admin pages)
 
-## Phase 10 — Mobile Applications (not started)
-- [ ] Build iOS app
-- [ ] Build Android app
-- [ ] Device/simulator testing
+## Phase 10 — Mobile Applications (implementation COMPLETE — SDK-verified build/test NOT performed; see final report)
+- [x] Inspected the Phase 4 Flutter shell and every relevant architecture/security/API/auth document before writing any code; confirmed the Flutter/Dart SDK is unavailable in this environment (neither `flutter` nor `dart` on PATH)
+- [x] Google sign-in via Supabase Auth (no second auth system), secure-storage-backed session (`flutter_secure_storage`, never SharedPreferences), session restoration, logout, expired-session handling
+- [x] Centralized typed API client reusing every existing `/api/v1` endpoint — no new backend endpoint added
+- [x] Learner screens: splash/session-check, login, dashboard, subjects, subject detail, lecture detail, secure PDF access (external launch, on-demand signed URL, never persisted/logged), assessments browsing, quiz detail, quiz attempt (autosaved answers, navigation, submit), quiz result, profile
+- [x] Answer-key boundary preserved structurally: no Dart model or repository method can carry or send `isCorrect`/`pointsAwarded`/a client score
+- [x] Admin Console NOT rebuilt in Flutter — a pointer screen only, per explicit instruction
+- [x] Bottom-navigation shell; admin-only 5th tab shown solely based on the backend-resolved role
+- [x] 8 test files written covering all 16 required test areas (to varying depth) — see MOBILE_TEST_PLAN.md for exactly what
+- [x] Manual static security scan (grep) for secrets and answer-key fields in `lib/` — clean
+- [x] Zero regression: backend (153 tests), web (89 tests), and shared package all re-verified passing/building after this phase's changes (which touch only `mobile/`)
+- [x] Verified `quiz digital leadership.html` untouched
+- [x] Create MOBILE_ARCHITECTURE.md, MOBILE_AUTH.md, MOBILE_API.md, MOBILE_TEST_PLAN.md, MOBILE_SETUP.md
+- [x] Update DECISIONS.md (D61-D66), IMPLEMENTATION_ROADMAP.md, TODO.md
+- [ ] Project owner reviews and explicitly approves Phase 10 before Phase 11 begins
+- [ ] **Blocked on developer with Flutter SDK:** run `flutter pub get`, `flutter create . --platforms=ios,android`, `flutter analyze`, `flutter test`, `flutter build apk --debug` (MOBILE_SETUP.md) — none of this was possible in this environment, and none of it is claimed as done
+- [ ] **Blocked on project owner:** create/confirm a real Supabase project + Google Cloud OAuth client (if not already done for Phase 5/6), register the mobile deep link redirect URL, and complete the Android/iOS OAuth configuration in MOBILE_SETUP.md
+- [ ] **Known limitation, not fixed this phase:** no widget-level tests for `SubjectDetailScreen`/`LectureDetailScreen`/`QuizAttemptScreen`/`PdfViewerScreen`; `auth_controller_test.dart`'s `Session`/`User` construction is the highest-risk untested assumption (MOBILE_TEST_PLAN.md §6)
 
 ## Phase 11 — Hardening & Security Review (not started)
 - [ ] Full security review

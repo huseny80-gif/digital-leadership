@@ -330,4 +330,38 @@ Full rationale for each is in `DATABASE_DESIGN.md` and `DATABASE_SECURITY.md`.
 
 ---
 
-*This log will continue to grow in Phase 10 and beyond as concrete implementation decisions are made.*
+## Phase 10 Decisions (Flutter Mobile Application)
+
+## D61: Google sign-in via Supabase's own OAuth flow, no separate Google SDK integration
+- **Decision:** `AuthController.signInWithGoogle` calls Supabase Auth's `signInWithOAuth(OAuthProvider.google)`, opening the system browser, rather than integrating a native `google_sign_in` package.
+- **Reasoning:** Identical to D36's web-side reasoning: Supabase Auth is already the pluggable identity layer this project chose; adding a second, platform-native Google SDK on top would duplicate an abstraction that already exists and would need its own token-exchange code to hand a credential to Supabase anyway. Reusing Supabase's own OAuth flow means the mobile app needs zero additional Google Cloud configuration beyond what already exists for the web app (`GOOGLE_OAUTH_SETUP.md`), only a redirect URL registration.
+- **Alternatives considered:** `google_sign_in` package + manual Supabase token exchange — rejected as unnecessary complexity and an unverifiable additional native integration surface, given the Flutter SDK was unavailable to actually build and test it.
+
+## D62: Session storage backed by `flutter_secure_storage`, not `supabase_flutter`'s default
+- **Decision:** `SecureLocalStorage` implements `supabase_flutter`'s `LocalStorage` contract using `flutter_secure_storage` (iOS Keychain / Android Keystore-backed encrypted storage) instead of the package's default (SharedPreferences-based) persistence.
+- **Reasoning:** Explicit, non-negotiable requirement (PHASE 10 §5): authentication material must use secure platform storage, never SharedPreferences. This is the standard, documented way to override `supabase_flutter`'s storage backend.
+- **Alternatives considered:** None — the requirement was explicit and unconditional.
+
+## D63: `AuthGateway` interface between `AuthController` and Supabase, for testability
+- **Decision:** `AuthController` depends on an `AuthGateway` abstraction (`SupabaseAuthGateway` the only production implementation) rather than calling `Supabase.instance.client.auth` directly.
+- **Reasoning:** `AuthController`'s session-restore/sign-in/sign-out logic is exactly the kind of state-machine code the phase's required test list asks to be covered ("1. Login/auth guard," "2. Session restoration," "3. Logout"). Testing it against the real Supabase singleton would require `Supabase.initialize` to have run against a real or emulated project — unavailable in this environment, and undesirable even where available (a unit test for pure state-transition logic should not depend on a live network service). The interface split introduces no behavior of its own; `SupabaseAuthGateway` only forwards.
+- **Alternatives considered:** Testing `AuthController` only via widget tests that never reach real assertions about its internal state transitions — rejected as materially weaker coverage of exactly the logic the phase asked to be tested.
+
+## D64: PDF viewing launches the OS's own viewer externally, rather than embedding a PDF-rendering package
+- **Decision:** `PdfViewerScreen` requests a signed URL and hands it to `url_launcher`'s external-application launch mode, instead of adding a PDF-rendering Flutter package.
+- **Reasoning:** The Flutter SDK was unavailable to compile, run, or debug any such package's integration in this environment — adding one would be an unverifiable dependency with real risk of a silently broken build. Launching externally needs no additional native configuration, is trivially correct by inspection, and still satisfies every stated security requirement (no persisted URL, no public bucket access, on-demand re-request). This is recorded as a deliberate scope choice given the environment's constraints, not a permanent architectural position — worth revisiting once a real build/test cycle exists.
+- **Alternatives considered:** An embedded PDF-rendering/WebView package — rejected for this phase specifically because it could not be verified to actually work.
+
+## D65: Assessments tab lists subjects first; no new "list all quizzes" endpoint was added
+- **Decision:** The mobile Assessments tab shows the subjects list (reusing `ContentRepository.listSubjects`) and lets the learner drill into `GET /subjects/:id/assessments` from there, rather than requesting a new aggregate "all quizzes across all subjects" backend endpoint.
+- **Reasoning:** The phase's explicit instruction: "Do not invent new backend endpoints unless absolutely necessary." The existing subject-scoped endpoint is sufficient to build a coherent (if two-tap) browsing flow; adding a new aggregate endpoint would be backend-API-surface growth for a UX convenience, not a requirement.
+- **Alternatives considered:** A new `GET /assessments` aggregate endpoint — rejected as unnecessary backend growth for this phase's scope; could be reconsidered later if this navigation proves genuinely awkward in real usage.
+
+## D66: No native `android/`/`ios/` platform folders generated
+- **Decision:** Consistent with Phase 4's D31, this phase still does not hand-author the native Android/iOS platform project folders.
+- **Reasoning:** The Flutter SDK remained unavailable in this environment, so `flutter create . --platforms=ios,android` could not be run, and hand-authoring Gradle/Xcode project files without the toolchain to verify them is exactly the high-risk-of-subtle-error scenario D31 already identified. This is a genuine, documented blocker to producing a real build (`MOBILE_TEST_PLAN.md`, `MOBILE_SETUP.md`), not an oversight.
+- **Alternatives considered:** Hand-authoring approximate Gradle/Xcode project files — rejected for the same reasoning as D31.
+
+---
+
+*This log will continue to grow in Phase 11 and beyond as concrete implementation decisions are made.*

@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../features/admin/admin_screen.dart';
+import '../core/auth/auth_controller.dart';
+import '../core/theme/app_theme.dart';
 import '../features/auth/login_screen.dart';
-import '../features/dashboard/dashboard_screen.dart';
-import '../features/profile/profile_screen.dart';
-import '../features/subjects/subjects_screen.dart';
-import 'routes.dart';
+import 'root_shell.dart';
 
-/// Root widget and route table.
+/// Root widget (PHASE 10 §7 "Splash / Session Check").
 ///
-/// Per ARCHITECTURE.md §5 and PROJECT_REQUIREMENTS.md §4, the app must
-/// never open directly into the application — the initial route is
-/// `AppRoutes.login`. The real session-check-and-redirect logic (skip
-/// straight to the dashboard when already authenticated) is added in
-/// Phase 9 (Mobile Applications) once session handling exists; this
-/// scaffolding phase only fixes the navigation shell and route names.
+/// [AuthGate] is the entire authentication wall for this client: an
+/// unauthenticated (or not-yet-restored) session can reach nothing but
+/// [LoginScreen] — there is no route table an unauthenticated user could
+/// navigate around, because [RootShell] and every learner screen only
+/// exist inside the `authenticated` branch below. This mirrors the web
+/// app's `proxy.ts` hard wall (SECURITY_ARCHITECTURE.md §14) adapted to
+/// Flutter's navigation model: the backend re-verifies every request
+/// regardless (`middleware/auth.ts`, unchanged), so this gate is
+/// convenience/UX, not the actual security boundary — exactly the same
+/// relationship the web middleware has to the backend.
 class DigitalLeadershipApp extends StatelessWidget {
   const DigitalLeadershipApp({super.key});
 
@@ -23,14 +26,27 @@ class DigitalLeadershipApp extends StatelessWidget {
     return MaterialApp(
       title: 'Digital Leadership',
       debugShowCheckedModeBanner: false,
-      initialRoute: AppRoutes.login,
-      routes: {
-        AppRoutes.login: (context) => const LoginScreen(),
-        AppRoutes.dashboard: (context) => const DashboardScreen(),
-        AppRoutes.subjects: (context) => const SubjectsScreen(),
-        AppRoutes.admin: (context) => const AdminScreen(),
-        AppRoutes.profile: (context) => const ProfileScreen(),
-      },
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      home: const AuthGate(),
     );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = context.watch<AuthController>().status;
+
+    switch (status) {
+      case AuthStatus.restoring:
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      case AuthStatus.unauthenticated:
+        return const LoginScreen();
+      case AuthStatus.authenticated:
+        return const RootShell();
+    }
   }
 }

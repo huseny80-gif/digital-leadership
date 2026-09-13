@@ -96,11 +96,13 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - **Not done, explicitly out of scope:** Instructor role, a generic permission editor, password/local-login functionality, Flutter, broad security hardening beyond this phase's own required tests. No database schema change.
 - Gate: explicit approval required before Phase 10 begins.
 
-## Phase 10 — Mobile Applications (iOS & Android)
-- IMPLEMENT: mobile apps consuming the same shared backend; Google sign-in via Supabase on mobile; core content/assessment flows.
-- TEST: device/simulator testing on both platforms.
-- Deliverable: functional iOS and Android apps.
-- Gate: explicit approval before Phase 11.
+## Phase 10 — Mobile Applications (iOS & Android) (COMPLETE — implementation done; SDK-verified build/test NOT performed; pending approval)
+- INSPECT: reviewed the Phase 4 Flutter shell, every architecture/security/API/assessment/admin/auth document, and the full Phase 9A-9C web implementation to mirror its contracts and flows exactly, before writing any mobile code. Confirmed the Flutter/Dart SDK is unavailable in this environment (neither `flutter` nor `dart` resolve on PATH) — unchanged since Phase 4.
+- PLAN/IMPLEMENT: a full learner-facing Flutter app — Google sign-in via Supabase Auth (no second auth system), secure-storage-backed session persistence, a centralized typed API client reusing every existing `/api/v1` endpoint (content browsing, secure on-demand PDF access via external launch, the complete Phase 9B assessment flow with the answer-key boundary preserved structurally in the Dart models), a profile screen, and an "Admin Console — available on Web" pointer rather than a Flutter rebuild of Phase 9C.
+- TEST: 8 test files written (unit + widget) covering all 16 required test areas to varying depth — **none executed**, since the SDK to run `flutter test` is unavailable. A manual `grep`-based static security scan for secrets/answer-key fields was performed directly.
+- Deliverable: MOBILE_ARCHITECTURE.md, MOBILE_AUTH.md, MOBILE_API.md, MOBILE_TEST_PLAN.md, MOBILE_SETUP.md + updated DECISIONS.md (D61-D66), TODO.md.
+- **Not done, explicitly out of scope:** `flutter pub get`/`analyze`/`test`/`build` (SDK unavailable — see MOBILE_TEST_PLAN.md), native `android/`/`ios/` platform folders (never hand-authored, per D31/D66), any real Supabase/Google OAuth configuration (no real credentials exist in this environment), a rebuilt Admin Console, Phase 11 hardening, production deployment, App/Play Store submission, push notifications, offline-first architecture, chat, payments. No database or backend change.
+- Gate: explicit approval required before Phase 11 — and, separately, a developer with the Flutter SDK must run the verification steps in MOBILE_SETUP.md before this app is built, tested, or run for real.
 
 ## Phase 11 — Hardening & Security Review
 - Full security review: authentication, authorization, injection risks, file upload validation, secrets management, rate limiting (revisit the Phase 7 in-memory limiter's shared-store question if the deployment is multi-instance by now).
