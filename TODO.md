@@ -12,23 +12,34 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [ ] Project owner reviews and approves Phase 1 documents
 - [ ] Resolve any open questions raised during validation (see below)
 
-## Open Questions for Project Owner
-- [ ] Should the Instructor/content-author role be pulled into MVP scope, or remain post-MVP as currently scoped?
-- [ ] Should mobile apps (iOS/Android) ship simultaneously with the web MVP, or follow after the web MVP is validated (current roadmap assumes web-first, then mobile)?
-- [ ] Any preferred technology constraints (e.g., existing cloud provider, existing Google Workspace/OAuth tenant to integrate with) that should inform Phase 2 Architecture decisions?
-- [ ] Any compliance requirements (e.g., FERPA, GDPR, COPPA if minors are users) that must be factored into Architecture and Security design?
+## Open Questions for Project Owner (answered as assumptions in Phase 2 — see DECISIONS.md D17-D20; revisit if incorrect)
+- [x] Should the Instructor/content-author role be pulled into MVP scope, or remain post-MVP as currently scoped? → Assumed post-MVP (D17).
+- [x] Should mobile apps (iOS/Android) ship simultaneously with the web MVP, or follow after the web MVP is validated? → Assumed mobile follows web MVP (D18).
+- [x] Any preferred technology constraints (e.g., existing cloud provider, existing Google Workspace/OAuth tenant to integrate with)? → None provided; assumed free choice of platform (D19). **Confirm with project owner before Phase 3.**
+- [x] Any compliance requirements (e.g., FERPA, GDPR, COPPA if minors are users)? → No specific regime assumed yet; design is compliance-compatible (D20). **Confirm actual user base/geography/age range before Phase 9 (Hardening).**
 
-## Phase 2 — Architecture (not started)
-- [ ] Select backend language/framework
-- [ ] Select database engine
-- [ ] Select API style (REST vs. GraphQL)
-- [ ] Select web framework
-- [ ] Decide mobile strategy (fully native vs. cross-platform) for iOS and Android
-- [ ] Select file/object storage provider
-- [ ] Design full data model / ER diagram
-- [ ] Design authentication abstraction (pluggable identity-provider layer)
-- [ ] Design authorization model (RBAC) in detail
-- [ ] Document all decisions in DECISIONS.md
+## Phase 2 — Architecture (COMPLETE — see PHASE 02 REPORT below and in chat)
+- [x] Design high-level system architecture
+- [x] Design client architecture (web/iOS/Android)
+- [x] Design backend architecture
+- [x] Design database architecture (conceptual — no schema/SQL)
+- [x] Design authentication architecture
+- [x] Design authorization/RBAC architecture
+- [x] Design file storage architecture
+- [x] Design PDF access architecture
+- [x] Design admin architecture
+- [x] Design user architecture
+- [x] Design educational content architecture
+- [x] Design API/data access architecture
+- [x] Design security architecture
+- [x] Design testing architecture
+- [x] Design deployment architecture
+- [x] Design monitoring/logging architecture
+- [x] Evaluate and recommend tech stack (web, mobile, backend, database, auth, storage, API, testing, deployment)
+- [x] Evaluate Flutter / web frontend / Supabase explicitly against alternatives
+- [x] Create ARCHITECTURE.md, ARCHITECTURE_DIAGRAM.md, TECH_STACK.md, SECURITY_ARCHITECTURE.md, DATA_FLOW.md
+- [x] Update DECISIONS.md, IMPLEMENTATION_ROADMAP.md, TODO.md
+- [ ] Project owner reviews and explicitly approves Phase 2 before Phase 3 (Scaffolding) begins
 
 ## Phase 3 — Scaffolding (not started)
 - [ ] Initialize backend project skeleton

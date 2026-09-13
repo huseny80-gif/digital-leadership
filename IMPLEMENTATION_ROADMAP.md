@@ -8,14 +8,15 @@ This roadmap defines the complete sequence from zero to production. Each phase f
 - Deliverable: this document set, validated for contradictions and completeness.
 - Gate: explicit approval from project owner before Phase 2 starts.
 
-## Phase 2 — Architecture
-- INSPECT: review Phase 1 documents.
-- PLAN: choose backend framework, database engine, API style, web framework, mobile app strategy (native vs. cross-platform), file storage provider, hosting/infra approach.
-- Document each major decision in DECISIONS.md with rationale and alternatives considered.
-- Produce a data model / ER diagram (subjects, lectures, resources, summaries, assignments, exercises, quizzes, question banks, users, roles).
-- Design the authentication abstraction (pluggable identity-provider layer) and the authorization model (RBAC) at a conceptual level.
-- Deliverable: Architecture document(s) + updated DECISIONS.md.
-- Gate: explicit approval before Phase 3.
+## Phase 2 — Architecture (COMPLETE, pending approval to proceed)
+- INSPECT: reviewed Phase 1 documents.
+- PLAN/IMPLEMENT (as documentation): designed high-level, client, backend, database, authentication, authorization, file storage, PDF access, admin, user, content, API, security, testing, deployment, and monitoring/logging architecture.
+- Evaluated technology candidates (web, mobile, backend, database, auth, storage, API style, testing, deployment) with alternatives and tradeoffs, including an explicit Flutter/web-frontend/Supabase evaluation, in TECH_STACK.md.
+- Documented every major decision in DECISIONS.md (D9-D20) with rationale and alternatives considered, including resolution of all four Phase 1 open questions as assumptions.
+- Produced Mermaid diagrams for all required flows in ARCHITECTURE_DIAGRAM.md.
+- Deliverable: ARCHITECTURE.md, ARCHITECTURE_DIAGRAM.md, TECH_STACK.md, SECURITY_ARCHITECTURE.md, DATA_FLOW.md + updated DECISIONS.md/TODO.md.
+- No database tables, SQL, Supabase configuration, authentication implementation, or UI were created — architecture/documentation only.
+- Gate: explicit approval required before Phase 3 begins.
 
 ## Phase 3 — Environment & Project Scaffolding
 - INSPECT: confirm architecture decisions are final.
