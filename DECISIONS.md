@@ -165,4 +165,26 @@ Full rationale for each is in `DATABASE_DESIGN.md` and `DATABASE_SECURITY.md`.
 
 ---
 
-*This log will continue to grow in Phase 5 and beyond as concrete implementation decisions are made.*
+## Phase 5 Decisions (Database Implementation)
+
+## D32: `question_banks`/`questions`/`question_options` RLS restricted to admin-only (clarifies DATABASE_SECURITY.md §3)
+- **Decision:** Since these three tables have no `status` column in the approved schema, non-admin authenticated sessions get no direct RLS `select` access to them at all, rather than attempting a transitive "published via its quiz" check.
+- **Reasoning:** `DATABASE_SECURITY.md` §3's original wording described a uniform "published" predicate across seven tables, three of which have no such column. The chosen resolution is strictly more restrictive (not less) than the original intent, and reinforces the separately-required protection of `question_options.is_correct` (DATABASE_SECURITY.md §5). No table, column, or relationship was changed. See `DATABASE_IMPLEMENTATION.md` for full detail.
+- **Alternatives considered:** Adding a `status` column to these tables to make the original predicate literally expressible — rejected as an unapproved schema change outside this phase's authority ("do not redesign the database").
+
+## D33: `updated_at` maintained via a database trigger, not application code
+- **Decision:** A single `set_updated_at()` trigger function, applied to the 8 tables with an `updated_at` column, maintains that column on every `update`.
+- **Reasoning:** `DATABASE_DESIGN.md` explicitly left this as an implementation-time choice. A trigger is correct regardless of which code path performs the write (including a future direct-Supabase path per D27), rather than depending on every application code path remembering to set it.
+
+## D34: RLS anonymous-access bug found and fixed during Phase 5 testing
+- **Decision:** The `subjects`/`lectures`/`lecture_items`/`quizzes` "published" RLS policies require `auth.uid() is not null` in addition to `status = 'published'`.
+- **Reasoning:** The first draft of these policies allowed an anonymous session to read published content, contradicting `PROJECT_REQUIREMENTS.md` §4 (no unauthenticated access to any part of the application) and `DATABASE_SECURITY.md`'s own data classification (published content is "authenticated shared," not public). Caught by this phase's own required anonymous-access test before being considered complete; fixed immediately. See `DATABASE_IMPLEMENTATION_REPORT.md` for the before/after test evidence.
+
+## D35: No real Supabase project created in this phase
+- **Decision:** Migrations were implemented and verified against a local PostgreSQL substitute (with a local-only compatibility shim for Supabase's `auth.uid()`/roles), rather than a live Supabase project, because no Supabase account/project credentials were available in this environment.
+- **Reasoning:** This phase's explicit instruction: do not invent credentials, do not claim a connection that didn't happen. The migrations are Supabase-ready (standard `supabase/migrations/` layout, plain SQL, no local-only construct) and can be applied to a real project via `supabase db push` once credentials exist.
+- **Follow-up required:** a project owner with Supabase account access must create the project and supply credentials before the database can be considered "live" rather than "designed and locally verified."
+
+---
+
+*This log will continue to grow in Phase 6 and beyond as concrete implementation decisions are made.*

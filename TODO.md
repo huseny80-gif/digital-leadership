@@ -52,12 +52,18 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [ ] **Follow-up (non-blocking):** resolve the moderate-severity dev-only `vitest`/`@vitest/mocker` advisory in `web` and `backend` (requires coordinating a `vitest@5` + `@types/node@22` upgrade — see DEVELOPMENT.md "Known Limitations")
 - [ ] Choose migration tooling (per DATABASE_MIGRATION_PLAN.md §2) — deferred to Phase 5
 
-## Phase 5 — Database Implementation (not started)
-- [ ] Create Supabase project (or chosen Postgres host) — first phase where this happens
-- [ ] Implement migrations in the sequence defined by DATABASE_MIGRATION_PLAN.md §3
-- [ ] Seed roles/permissions per DATABASE_MIGRATION_PLAN.md §4
-- [ ] Implement and test RLS policies per DATABASE_SECURITY.md §3
-- [ ] Validate constraints, indexes, and delete behaviors against DATABASE_DESIGN.md
+## Phase 5 — Database Implementation (schema/migrations COMPLETE — see DATABASE_IMPLEMENTATION_REPORT.md; Supabase project NOT created)
+- [x] Implement migrations in the sequence defined by DATABASE_MIGRATION_PLAN.md §3 (11 files, `supabase/migrations/`)
+- [x] Seed roles/permissions per DATABASE_MIGRATION_PLAN.md §4 (idempotency verified)
+- [x] Implement and test RLS policies (all 17 tables) — 32 scenarios in DATABASE_TEST_PLAN.md, all passing after one fix
+- [x] Validate constraints, indexes, delete behaviors, and triggers against DATABASE_DESIGN.md (52 constraints, 42 indexes, 8 triggers, all matching)
+- [x] Fix RLS bug found during testing (anonymous access to published content) — see DECISIONS.md D34
+- [x] Correct DATABASE_SECURITY.md §3 wording to match the schema (DECISIONS.md D32)
+- [x] Create DATABASE_IMPLEMENTATION.md, DATABASE_TEST_PLAN.md, DATABASE_IMPLEMENTATION_REPORT.md
+- [x] Update DECISIONS.md (D32-D35), IMPLEMENTATION_ROADMAP.md, backend/.env.example
+- [ ] **Blocked on project owner:** create a real Supabase project and provide `DATABASE_URL`/`SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` via `backend/.env` (never committed), then run `supabase link` + `supabase db push` from `supabase/` to apply these migrations to it
+- [ ] Once a real project exists: confirm the same schema/RLS behavior verified locally in DATABASE_IMPLEMENTATION_REPORT.md holds identically there
+- [ ] Project owner reviews and explicitly approves Phase 5 before Phase 6 (Authentication & Authorization) begins
 
 ## Phase 6 — Authentication & Authorization (not started)
 - [ ] Implement Google OAuth login flow (backend)

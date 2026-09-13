@@ -36,13 +36,14 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - No database tables, SQL, Supabase connection, Google OAuth configuration, or real business/UI features were created — scaffolding only.
 - Gate: explicit approval required before Phase 5 begins.
 
-## Phase 5 — Database Implementation
-- INSPECT: review the approved DATABASE_DESIGN.md, DATABASE_ERD.md, DATABASE_SECURITY.md, DATABASE_MIGRATION_PLAN.md.
-- PLAN: finalize migration tooling choice (per DATABASE_MIGRATION_PLAN.md §2).
-- IMPLEMENT: create the database schema and migrations, apply seed data (roles/permissions), enable and apply RLS policies — this is the first phase where SQL/schema is created and where a Supabase project (if adopted) is actually configured.
-- TEST: migrations run cleanly; constraints validated; RLS policies tested from unauthenticated, user, and admin perspectives per DATABASE_MIGRATION_PLAN.md §6.
-- Deliverable: working shared database schema, implemented exactly as designed in Phase 3 (or with Phase 3 updated first if deviation is required).
-- Gate: explicit approval before Phase 6.
+## Phase 5 — Database Implementation (COMPLETE for schema/migrations; Supabase project not yet created — pending approval to proceed)
+- INSPECT: reviewed the approved DATABASE_DESIGN.md, DATABASE_ERD.md, DATABASE_SECURITY.md, DATABASE_MIGRATION_PLAN.md.
+- PLAN: used the Supabase CLI migration convention (`supabase/migrations/`, plain ordered SQL files).
+- IMPLEMENT: created 11 migrations implementing the full 17-table schema exactly as approved, seed data (roles/permissions), `updated_at` triggers, and RLS enabled with policies on all 17 tables.
+- TEST: applied all migrations to a local PostgreSQL instance (no Supabase project was available — see DATABASE_IMPLEMENTATION_REPORT.md); ran all 32 scenarios in DATABASE_TEST_PLAN.md covering anonymous/user/admin access, isolation, constraint enforcement, and the quiz-answer-key protection. One RLS bug (anonymous access to published content) was found and fixed during this testing.
+- Deliverable: DATABASE_IMPLEMENTATION.md, DATABASE_TEST_PLAN.md, DATABASE_IMPLEMENTATION_REPORT.md + updated DATABASE_SECURITY.md (one clarifying correction), DECISIONS.md (D32-D35), TODO.md.
+- **Not done:** no real Supabase project was created (no credentials were available, and none were invented) — the migrations are Supabase-ready but unapplied to any live project. No Google OAuth, authentication UI, Storage, PDF upload, or quiz UI was implemented.
+- Gate: explicit approval required before Phase 6 — and, separately, Supabase project credentials are required before the schema can be applied to a live database.
 
 ## Phase 6 — Authentication & Authorization
 - INSPECT: review chosen identity-provider abstraction and the implemented user/role schema.
