@@ -34,13 +34,23 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [ ] Project owner reviews and explicitly approves Phase 3 before Phase 4 (Scaffolding) begins
 - [ ] No SQL executed, no Supabase project/table created — confirmed
 
-## Phase 4 — Environment & Project Scaffolding (not started)
-- [ ] Initialize backend project skeleton
-- [ ] Initialize web project skeleton
-- [ ] Initialize iOS project skeleton
-- [ ] Initialize Android project skeleton
-- [ ] Set up shared linting/formatting/CI tooling
-- [ ] Choose migration tooling (per DATABASE_MIGRATION_PLAN.md §2)
+## Phase 4 — Environment & Project Scaffolding (COMPLETE — see PHASE 04 REPORT)
+- [x] Initialize backend project skeleton (Express + TypeScript, module-separated)
+- [x] Initialize web project skeleton (Next.js + React + TypeScript)
+- [x] Initialize Flutter mobile project skeleton (hand-authored — SDK unavailable, see below)
+- [x] Create `shared` TypeScript contracts package
+- [x] Set up linting/formatting/typecheck tooling for web and backend
+- [x] Set up initial testing infrastructure (Vitest+Testing Library+Playwright for web; Vitest+Supertest for backend; Flutter test scaffolding for mobile)
+- [x] Create environment variable templates (`.env.example` at root, web, and backend) with no real secrets
+- [x] Create DEVELOPMENT.md, ENVIRONMENT.md, API_ARCHITECTURE.md
+- [x] Update DECISIONS.md (D29-D31), IMPLEMENTATION_ROADMAP.md, TODO.md
+- [x] Verify web builds, lints, typechecks, dev server serves placeholder pages, unit tests pass
+- [x] Verify backend builds, lints, typechecks, unit+integration tests pass (including unauthenticated-rejection test)
+- [ ] Project owner reviews and explicitly approves Phase 4 before Phase 5 (Database Implementation) begins
+- [ ] **Follow-up needed:** a developer with the Flutter SDK must run `flutter pub get`, `flutter create . --platforms=ios,android`, `flutter analyze`, and `flutter test` in `mobile/` before Phase 9 feature work begins (SDK was unavailable in this environment — see mobile/README.md)
+- [ ] **Follow-up needed:** run `npx playwright install` in `web/` in an environment with access to `cdn.playwright.dev`, then verify `npm run test:e2e` passes (blocked by this environment's network allowlist)
+- [ ] **Follow-up (non-blocking):** resolve the moderate-severity dev-only `vitest`/`@vitest/mocker` advisory in `web` and `backend` (requires coordinating a `vitest@5` + `@types/node@22` upgrade — see DEVELOPMENT.md "Known Limitations")
+- [ ] Choose migration tooling (per DATABASE_MIGRATION_PLAN.md §2) — deferred to Phase 5
 
 ## Phase 5 — Database Implementation (not started)
 - [ ] Create Supabase project (or chosen Postgres host) — first phase where this happens

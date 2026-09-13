@@ -27,13 +27,14 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - No SQL was executed, no Supabase project or table was created — design/documentation only.
 - Gate: explicit approval required before Phase 4 begins.
 
-## Phase 4 — Environment & Project Scaffolding
-- INSPECT: confirm architecture and database design are final.
-- PLAN: repository/module layout per PROJECT_STRUCTURE.md (revised as needed).
-- IMPLEMENT: initialize backend project skeleton, web project skeleton, mobile project skeletons, shared config/tooling (linting, formatting, CI skeleton) — no business logic yet.
-- TEST: verify each skeleton builds/runs locally ("hello world" level).
-- Deliverable: empty-but-running project shells for backend, web, iOS, Android.
-- Gate: explicit approval before Phase 5.
+## Phase 4 — Environment & Project Scaffolding (COMPLETE, pending approval to proceed)
+- INSPECT: reviewed all Phase 1-3 documents.
+- PLAN: repository/module layout per PROJECT_STRUCTURE.md, refined with the concrete directory structure documented in DEVELOPMENT.md.
+- IMPLEMENT: initialized the Next.js/React/TypeScript web app with structural placeholder routes (login, dashboard, subjects, lecture, admin, profile); the Express/TypeScript backend with separated auth/authorization/business-logic/data-access/route module boundaries and a centralized RBAC + error-handling layer; the Flutter mobile app shell (navigation + placeholder screens, hand-authored due to SDK unavailability); the `shared` TypeScript contracts package; environment variable templates; and initial testing infrastructure for all three clients.
+- TEST: web build/lint/typecheck/unit tests pass and the dev server serves the placeholder pages; backend build/lint/typecheck/unit+integration tests pass, including an explicit "unauthenticated request to a protected route is rejected" test; mobile tests were authored but could not be executed (Flutter SDK unavailable in this environment).
+- Deliverable: DEVELOPMENT.md, ENVIRONMENT.md, API_ARCHITECTURE.md + running (or, for mobile, structurally complete but unverified) project shells for backend, web, and mobile.
+- No database tables, SQL, Supabase connection, Google OAuth configuration, or real business/UI features were created — scaffolding only.
+- Gate: explicit approval required before Phase 5 begins.
 
 ## Phase 5 — Database Implementation
 - INSPECT: review the approved DATABASE_DESIGN.md, DATABASE_ERD.md, DATABASE_SECURITY.md, DATABASE_MIGRATION_PLAN.md.
