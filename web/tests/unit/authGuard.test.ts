@@ -18,6 +18,10 @@ describe("isProtectedPath", () => {
     "/admin",
     "/admin/users",
     "/profile",
+    "/quizzes",
+    "/quizzes/abc-123",
+    "/quizzes/abc-123/attempt/def-456",
+    "/quizzes/abc-123/result/def-456",
   ])("protects %s", (path) => {
     expect(isProtectedPath(path)).toBe(true);
   });

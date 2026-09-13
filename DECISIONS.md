@@ -282,4 +282,28 @@ Full rationale for each is in `DATABASE_DESIGN.md` and `DATABASE_SECURITY.md`.
 
 ---
 
-*This log will continue to grow in Phase 9B/9C and beyond as concrete implementation decisions are made.*
+## Phase 9B Decisions (Assignments, Exercises & Quizzes)
+
+## D53: `/quizzes` added to the authentication wall — a Phase 9A gap, fixed because it blocks Phase 9B
+- **Decision:** `web/src/lib/authGuard.ts`'s protected-root list and `web/src/proxy.ts`'s middleware matcher both gained `/quizzes`.
+- **Reasoning:** `/quizzes` did not exist as a route in Phase 9A, so it was never added to either file — a genuine gap, not a deliberate choice. Left unfixed, quiz pages would render without a session (though every underlying API call would still be independently rejected by the backend's own auth middleware — SECURITY_ARCHITECTURE.md's defense-in-depth held even here). Fixed as the minimum necessary change per this phase's explicit "fix only if it directly blocks Phase 9B" instruction — no other part of Phase 9A's shell/auth wiring was touched.
+- **Alternatives considered:** Leaving it unfixed and only relying on the backend's independent check — rejected as an unnecessary, easily-fixed inconsistency once found, and explicitly permitted to fix under this phase's own rules.
+
+## D54: Grading happens synchronously at submit time; `submitted` is not used as a distinct pre-grading state
+- **Decision:** `POST /attempts/:attemptId/submit` sets `quiz_attempts.status` directly to `graded` (not `submitted` followed by a separate grading step).
+- **Reasoning:** Every question type this phase can actually grade (`multiple_choice`/`true_false`) already has everything needed to compute correctness the instant an answer is recorded (`scoreOption` runs then, not at submit time) — `submitAttempt` only aggregates already-computed per-answer results. There is no asynchronous or manual grading step in this phase's scope, so introducing a distinct `submitted`-but-ungraded window would add a state transition with no actual work happening during it. The schema's `submitted` status value remains available and unused-but-not-removed, ready for a future phase that adds a real deferred-grading workflow (e.g., short-answer manual grading) without a migration.
+- **Alternatives considered:** Setting `submitted` then a second internal step to `graded` — rejected as pure ceremony given nothing happens between the two in this phase's implementation.
+
+## D55: `short_answer` questions are recorded but not auto-graded
+- **Decision:** An answer to a `short_answer` question is stored (`answer_text`) with `is_correct`/`points_awarded` left `null`; it counts toward "answered" but never toward "correct" or score.
+- **Reasoning:** The approved schema has no free-text answer-key column anywhere reachable from a `short_answer` question — `question_options` (the only place `is_correct` lives) structurally applies to `multiple_choice`/`true_false` only. Grading free text would require either an unapproved schema change (a new answer-key field) or a manual-grading admin workflow (out of scope, arguably Phase 9C+). Recording-but-not-scoring was chosen over rejecting the answer type entirely, since the approved requirements do include `short_answer` as a `question_type` and a learner should still be able to submit one.
+- **Alternatives considered:** Silently scoring every `short_answer` submission as incorrect — rejected as actively misleading (a learner's genuinely correct free-text answer would show as wrong with no explanation); rejecting `short_answer` answers outright — rejected as contradicting the schema's own inclusion of that question type.
+
+## D56: Idempotent attempt start — resuming, not duplicating, an in-progress attempt
+- **Decision:** `POST /quizzes/:quizId/attempts` returns the caller's existing `in_progress` attempt for that quiz if one exists, rather than always creating a new row.
+- **Reasoning:** A page refresh, a double-click on "Start Quiz," or navigating back to a quiz already in progress would otherwise silently orphan the learner's first attempt and its already-saved answers behind a second, empty one — a real usability and data-integrity risk given this phase's explicit "do not lose answers accidentally during navigation" requirement. The schema already supports this without any change: `quiz_attempts` has no uniqueness constraint forcing one row per (quiz, user), so the idempotency is enforced in the service layer (`findInProgressAttempt` before `createAttempt`), not the database.
+- **Alternatives considered:** Always creating a new attempt row — rejected as the most likely source of accidental data loss under this phase's own stated constraints; adding a partial unique index to enforce it at the database level — deferred as unnecessary for this phase (the service-layer check is sufficient and does not require a migration).
+
+---
+
+*This log will continue to grow in Phase 9C and beyond as concrete implementation decisions are made.*

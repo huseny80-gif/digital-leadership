@@ -18,11 +18,19 @@ export class ApiError extends Error {
   }
 }
 
-async function requestJson(method: "GET" | "POST", path: string): Promise<unknown> {
+async function requestJson(method: "GET" | "POST", path: string, jsonBody?: unknown): Promise<unknown> {
   const token = await getCurrentAccessToken();
   const headers: HeadersInit = token ? { authorization: `Bearer ${token}` } : {};
+  if (jsonBody !== undefined) {
+    headers["content-type"] = "application/json";
+  }
 
-  const res = await fetch(`${getApiBaseUrl()}${path}`, { method, headers, cache: "no-store" });
+  const res = await fetch(`${getApiBaseUrl()}${path}`, {
+    method,
+    headers,
+    cache: "no-store",
+    ...(jsonBody !== undefined ? { body: JSON.stringify(jsonBody) } : {}),
+  });
   const body = await res.json();
 
   if (!res.ok) {
@@ -37,8 +45,8 @@ export async function apiGet<T>(path: string): Promise<ApiResult<T>> {
   return (await requestJson("GET", path)) as ApiResult<T>;
 }
 
-export async function apiPost<T>(path: string): Promise<ApiResult<T>> {
-  return (await requestJson("POST", path)) as ApiResult<T>;
+export async function apiPost<T>(path: string, jsonBody?: unknown): Promise<ApiResult<T>> {
+  return (await requestJson("POST", path, jsonBody ?? {})) as ApiResult<T>;
 }
 
 /** For collection endpoints, whose body IS the `PaginatedResult<T>`

@@ -80,8 +80,13 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - **Not done, explicitly out of scope:** Assignments/Exercises/Quizzes/quiz attempts/results UI (Phase 9B), Admin console/content-management/file-upload UI/user-role administration (Phase 9C), Flutter mobile (Phase 10). No database schema change, no new auth mechanism, no backend authorization change — verified by `git diff` scope.
 - Gate: explicit approval required before Phase 9B begins.
 
-### Phase 9B — Assignments, Exercises, Quizzes (not started)
-- Question interaction, quiz attempts, results UI.
+### Phase 9B — Assignments, Exercises & Quizzes (COMPLETE; pending approval)
+- INSPECT: reviewed the Phase 3/5 assessment schema (`question_banks`/`questions`/`question_options`/`quizzes`/`quiz_questions`/`quiz_attempts`/`quiz_attempt_answers`), Phase 7's already-scaffolded (`501`) assessment routes, Phase 9A's shell/API-client/route conventions, and the already-anticipated `shared/src/types/quiz.ts` contracts. Confirmed no schema change was needed.
+- PLAN/IMPLEMENT: full learner-facing assessment API (`AssessmentsRepository`/`AssessmentsService`/`assessmentsRoutes`) — quiz visibility (reusing the Phase 7/8 published-content-chain pattern), learner-safe question delivery (answer key never selected, not just filtered), idempotent attempt start/resume, server-side answer validation + grading, attempt submission, and result retrieval. Web: assessments listing, quiz detail, a client-side quiz-taking runner (radio/textarea inputs, per-answer autosave through a same-origin proxy, Next/Previous navigation, submit with double-submit protection), and a result screen — all built on Phase 9A's shell/design tokens/API client, with three new Route Handlers proxying the POST actions a client component must issue.
+- TEST: 24 new backend tests (121 total) including the mandatory answer-key-leakage test against a real HTTP response; 30 new web tests (72 total) including a static answer-key source scan. A genuine Phase 9A gap (`/quizzes` missing from the auth wall) was found and fixed (`DECISIONS.md` D53).
+- Deliverable: ASSESSMENT_ARCHITECTURE.md, QUIZ_SECURITY.md, ASSESSMENT_API.md, ASSESSMENT_TEST_PLAN.md + updated DECISIONS.md (D53-D56), TODO.md.
+- **Not done, explicitly out of scope:** Admin quiz/question authoring, assignment/exercise submission UI (no submission-tracking table exists — D23 reaffirmed), short-answer auto-grading (schema has no free-text answer key — D55), Admin Console (Phase 9C), Flutter (Phase 10). No database schema change.
+- Gate: explicit approval required before Phase 9C begins.
 
 ### Phase 9C — Admin Console (not started)
 - Subject/lecture management, file upload/replace/delete UI, user/role administration, audit-log administration.

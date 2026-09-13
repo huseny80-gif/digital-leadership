@@ -48,3 +48,28 @@ export interface SubmitAnswerInput {
   selectedOptionId?: string;
   answerText?: string;
 }
+
+/** Acknowledges that an answer was recorded — deliberately carries no
+ * correctness/scoring information (PHASE 09B "Answer Submission": the
+ * client never learns whether an individual answer is right until the
+ * attempt is submitted and graded, and even then only via the aggregate
+ * `QuizAttemptResult`, never a per-question answer key). */
+export interface SubmitAnswerAck {
+  questionId: string;
+  recorded: boolean;
+}
+
+/** Server-computed result of a submitted attempt. Never includes the
+ * answer key or per-question correctness — only the aggregate the
+ * approved requirements support (PHASE 09B "Result Security"). */
+export interface QuizAttemptResult {
+  attemptId: string;
+  quizId: string;
+  status: QuizAttemptStatus;
+  totalQuestions: number;
+  answeredQuestions: number;
+  correctAnswers: number;
+  score: number;
+  percentage: number;
+  submittedAt: string | null;
+}

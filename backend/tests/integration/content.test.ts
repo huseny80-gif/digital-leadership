@@ -351,13 +351,15 @@ describe("Quiz answer-key boundary (PHASE 07 §18)", () => {
       expect(JSON.stringify(res.body)).not.toMatch(/is_correct|isCorrect/);
     }
 
-    // There is no endpoint in this phase that could ever be asked to
-    // return this question — confirming the boundary is "no assessment
-    // endpoint exists yet" (API_SECURITY.md "Quiz Security Boundary"),
-    // not "an endpoint exists but happens to filter well".
+    // Phase 09B implements the assessment endpoints; `questionId` is not a
+    // quiz ID, so this correctly 404s rather than ever resolving to
+    // anything that could leak an answer key — the boundary is now
+    // "the endpoint exists and still never returns this field"
+    // (see tests/integration/assessments.test.ts for the full Phase 09B
+    // answer-key-leakage coverage against real quiz/question responses).
     const quizRes = await request(app)
       .get(`/api/v1/quizzes/${questionId}`)
       .set("Authorization", `Bearer ${userToken}`);
-    expect(quizRes.status).toBe(501);
+    expect(quizRes.status).toBe(404);
   });
 });

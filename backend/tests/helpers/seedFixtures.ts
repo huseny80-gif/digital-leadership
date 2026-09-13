@@ -102,3 +102,24 @@ export async function createQuestionBankWithAnswer(
 
   return { bankId, questionId };
 }
+
+export async function createQuiz(
+  pool: Pool,
+  opts: { subjectId: string; lectureId?: string | null; title: string; status: "draft" | "published"; createdBy: string },
+) {
+  const result = await pool.query<{ id: string }>(
+    "insert into quizzes (subject_id, lecture_id, title, status, created_by) values ($1, $2, $3, $4, $5) returning id",
+    [opts.subjectId, opts.lectureId ?? null, opts.title, opts.status, opts.createdBy],
+  );
+  return result.rows[0]!.id;
+}
+
+export async function addQuestionToQuiz(
+  pool: Pool,
+  opts: { quizId: string; questionId: string; orderIndex?: number },
+) {
+  await pool.query(
+    "insert into quiz_questions (quiz_id, question_id, order_index) values ($1, $2, $3)",
+    [opts.quizId, opts.questionId, opts.orderIndex ?? 0],
+  );
+}

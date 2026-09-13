@@ -131,8 +131,23 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [ ] **Known limitation, not fixed this phase:** Playwright browser binaries still unavailable in this environment (unchanged since Phase 4) — no real-browser/E2E responsive verification was performed; CSS breakpoints were reviewed by source, not against a running browser
 - [ ] **Not built this phase (tracked for later):** Assignments/Exercises/Quizzes submission and results UI (Phase 9B), Admin console and content-management UI (Phase 9C)
 
-## Phase 9B — Assignments, Exercises, Quizzes (not started)
-- [ ] Question interaction, quiz attempts, results UI
+## Phase 9B — Assignments, Exercises & Quizzes (implementation COMPLETE — see final report)
+- [x] Inspected the existing Phase 3/5 assessment schema and Phase 7 stub routes/contracts before writing any code — confirmed no schema change was needed
+- [x] Learner assessment API: subject assessments list, quiz detail, learner-safe question delivery (no answer key selected, not just filtered), idempotent attempt start/resume, answer submission with full validation (attempt ownership, active status, question-in-quiz, option-in-question), server-side scoring, attempt submission/grading, result retrieval
+- [x] Answer-key protection: `is_correct` never selected by any learner-facing query; verified against a real HTTP response body, not just a type
+- [x] Web: assessments listing page, quiz detail page with Start/Resume, a full quiz-taking runner (accessible radio/textarea inputs, per-answer autosave, Next/Previous, submit with double-submit protection), a result screen — all built on Phase 9A's shell/tokens/API client
+- [x] Assignments/Exercises: confirmed Phase 9A's existing read-only display + placeholder already satisfies this phase's requirement; no new code needed or added
+- [x] 24 new backend tests (121 total) + 30 new web tests (72 total), including the mandatory answer-key-leakage test
+- [x] Found and fixed a genuine Phase 9A gap (`/quizzes` missing from the authentication wall) — DECISIONS.md D53
+- [x] Zero regression: all pre-existing backend/web tests still pass (one Phase 7 test updated, not weakened, to reflect the now-implemented endpoint)
+- [x] `tsc --noEmit`, `npm run lint`, `npm run build` clean for backend/web/shared (17 web routes generated)
+- [x] Security validation: no service-role key in client code, `/quizzes` protected by the auth wall, build output scanned for `is_correct`/answer-key leakage (zero matches)
+- [x] Verified `quiz digital leadership.html` untouched
+- [x] Create ASSESSMENT_ARCHITECTURE.md, QUIZ_SECURITY.md, ASSESSMENT_API.md, ASSESSMENT_TEST_PLAN.md
+- [x] Update DECISIONS.md (D53-D56), IMPLEMENTATION_ROADMAP.md, TODO.md
+- [ ] Project owner reviews and explicitly approves Phase 9B before Phase 9C begins
+- [ ] **Known limitation, not fixed this phase:** `short_answer` questions are recorded but not auto-graded — no free-text answer key exists in the approved schema (DECISIONS.md D55)
+- [ ] **Not built this phase (tracked for later):** assignment/exercise submission UI (no submission-tracking table — D23), Admin quiz/question authoring (Phase 9C)
 
 ## Phase 9C — Admin Console (not started)
 - [ ] Subject/lecture management, file upload/replace/delete UI, user/role administration, audit-log administration

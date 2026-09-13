@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Lecture, Subject } from "@shared/index";
 import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
@@ -52,6 +53,10 @@ export default async function SubjectDetailPage({
       <Breadcrumbs items={[{ label: "Subjects", href: "/subjects" }, { label: subject!.title }]} />
       <h1 className="page-heading">{subject!.title}</h1>
       {subject!.description ? <p className="page-subheading">{subject!.description}</p> : null}
+
+      <Link href={`/subjects/${subjectId}/assessments`} className="btn btn-secondary" style={{ marginBottom: "var(--space-5)", display: "inline-flex" }}>
+        View Assessments
+      </Link>
 
       <h2 style={{ fontSize: "var(--font-size-lg)", fontWeight: 600, marginBottom: "var(--space-4)" }}>Lectures</h2>
 

@@ -8,6 +8,13 @@
  * routing — see PROJECT_STRUCTURE.md/ARCHITECTURE.md — as
  * /subjects/[subjectId]/lectures/[lectureId]), /profile, /admin. The
  * login page itself, and its OAuth callback, are always public.
+ *
+ * PHASE 09B addition: /quizzes and /quizzes/:path* (quiz detail, attempt,
+ * result) are protected the same way — a genuine Phase 09A gap found and
+ * fixed here because it directly blocks Phase 09B (see DECISIONS.md D53):
+ * this route root did not exist in Phase 9A, so it was never added to
+ * either this list or `middleware.ts`'s matcher, and would otherwise have
+ * been reachable without authentication.
  */
 const PUBLIC_PATHS = ["/login", "/auth/callback"];
 
@@ -21,6 +28,6 @@ export function isPublicPath(pathname: string): boolean {
  * is protected by construction, not by remembering to update this file. */
 export function isProtectedPath(pathname: string): boolean {
   if (isPublicPath(pathname)) return false;
-  const protectedRoots = ["/dashboard", "/subjects", "/admin", "/profile"];
+  const protectedRoots = ["/dashboard", "/subjects", "/admin", "/profile", "/quizzes"];
   return protectedRoots.some((root) => pathname === root || pathname.startsWith(`${root}/`));
 }
