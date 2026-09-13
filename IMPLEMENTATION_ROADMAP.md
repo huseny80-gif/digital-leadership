@@ -70,11 +70,21 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - **Not done, explicitly out of scope:** no real Supabase project or bucket exists — none were invented. No Web/Mobile/Admin UI, no PDF viewer, no quiz UI. No database schema change — the approved 17-table design and every Phase 5 migration are untouched (verified: zero diffs under `supabase/migrations/`).
 - Gate: explicit approval required before Phase 9 begins — and, separately, a live Supabase project + bucket are required before Storage can be considered production-verified (see STORAGE_IMPLEMENTATION.md).
 
-## Phase 9 — Web Application (MVP UI)
-- IMPLEMENT: responsive web UI consuming the backend APIs — content browsing, PDF viewing, assignments/exercises/quizzes, admin console (login/auth UI already exists from Phase 6).
-- TEST: functional testing across desktop/tablet/mobile browser widths; accessibility pass (WCAG 2.1 AA baseline).
-- Deliverable: MVP web application.
-- Gate: explicit approval before Phase 10 (this may be the MVP release gate).
+## Phase 9 — Web Application (MVP UI) — split into 9A/9B/9C
+
+### Phase 9A — Web Application Shell + Content Browsing + Secure PDF Viewer (COMPLETE; pending approval)
+- INSPECT: reviewed all Phase 1-8 documents and the current backend/web/shared implementation, including the actual Phase 7/8 API response shapes (not guessed).
+- PLAN/IMPLEMENT: responsive application shell (header, primary nav, mobile nav, breadcrumbs, skip-link), authenticated dashboard, Subjects browsing, Subject detail, Lecture detail (lecture items), a secure on-demand PDF viewer (Next.js Route Handler BFF proxy to the existing signed-URL file endpoint), consistent Loading/Empty/Error/NotFound states, a CSS custom-property design token layer — all using real backend data via a centralized typed API client (`apiGetPaginated` added this phase, `DECISIONS.md` D51).
+- TEST: 42 web tests (9 files) covering all 15 required scenarios, zero regressions to the 97 backend tests or the pre-existing web tests; lint/typecheck/build all clean.
+- Deliverable: WEB_APPLICATION_ARCHITECTURE.md, PDF_VIEWER.md, WEB_TEST_PLAN.md + updated DECISIONS.md (D50-D52), TODO.md.
+- **Not done, explicitly out of scope:** Assignments/Exercises/Quizzes/quiz attempts/results UI (Phase 9B), Admin console/content-management/file-upload UI/user-role administration (Phase 9C), Flutter mobile (Phase 10). No database schema change, no new auth mechanism, no backend authorization change — verified by `git diff` scope.
+- Gate: explicit approval required before Phase 9B begins.
+
+### Phase 9B — Assignments, Exercises, Quizzes (not started)
+- Question interaction, quiz attempts, results UI.
+
+### Phase 9C — Admin Console (not started)
+- Subject/lecture management, file upload/replace/delete UI, user/role administration, audit-log administration.
 
 ## Phase 10 — Mobile Applications (iOS & Android)
 - IMPLEMENT: mobile apps consuming the same shared backend; Google sign-in via Supabase on mobile; core content/assessment flows.

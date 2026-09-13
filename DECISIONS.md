@@ -263,4 +263,23 @@ Full rationale for each is in `DATABASE_DESIGN.md` and `DATABASE_SECURITY.md`.
 
 ---
 
-*This log will continue to grow in Phase 9 and beyond as concrete implementation decisions are made.*
+## Phase 9A Decisions (Web Application Shell + Content Browsing + Secure PDF Viewer)
+
+## D50: Keep the existing nested lecture route (`/subjects/[subjectId]/lectures/[lectureId]`) rather than adding a flat `/lectures/[lectureId]` route
+- **Decision:** The lecture detail page continues to live at the nested path already scaffolded since Phase 4, instead of introducing the flat route named in the phase instructions.
+- **Reasoning:** The instructions explicitly said to preserve the existing route structure "if sensible rather than duplicating"; the nested route was already in place, already worked with the breadcrumb trail (subject → lecture), and a second, flat route to the same content would be a pure duplicate with no behavioral difference. `subjectId` in the URL is used only for the breadcrumb link — the backend independently re-derives and enforces the subject/lecture relationship regardless of which URL segment supplied it, so nothing about authorization depends on the nesting.
+- **Alternatives considered:** Adding the flat route as instructed literally — rejected as needless duplication once the nested route was confirmed sufficient and already correct.
+
+## D51: `apiGetPaginated<T>()` added as a dedicated client function, not a cast of `apiGet`
+- **Decision:** `web/src/lib/api/client.ts` gained a second typed function, `apiGetPaginated<T>()`, returning `PaginatedResult<T>` (`{data, page, limit, total}`) directly as the parsed response body, rather than reusing `apiGet<T[]>` and casting its `ApiResult<T[]>` (`{data: T[]}`) shape to `PaginatedResult<T>`.
+- **Reasoning:** The two response envelopes are genuinely different shapes on the wire (Phase 7's paginated endpoints return the `PaginatedResult` object as the entire body; single-resource endpoints wrap the resource in `{data}`). A cast would type-check but silently drop `page`/`limit`/`total` at runtime — a real bug caught while implementing the dashboard/subjects pages, fixed before any page shipped depending on it.
+- **Alternatives considered:** Casting the existing `apiGet` result — rejected once the shape mismatch was identified as a genuine runtime bug, not just a type-safety nicety.
+
+## D52: Testing-Library `cleanup()` added to the shared test setup; a static-scan regex was tightened to match usage, not prose
+- **Decision:** `web/tests/unit/setup.ts` now calls `cleanup()` in a global `afterEach`. `pdfSecurity.test.ts`'s "never touches localStorage/sessionStorage" assertion now matches only member-access syntax (`localStorage.`/`sessionStorage.`), not any occurrence of those words.
+- **Reasoning:** Without global cleanup, DOM trees rendered by earlier tests in the same file persisted into later tests, causing a real `getMultipleElementsFoundError` on `screen.getByRole("alert")` and four unhandled "window is not defined" errors from React's scheduler continuing to process an uncleaned tree after test-environment teardown. Separately, the security-scan regex was flagging `PdfViewer.tsx`'s own doc comment (written to explain that it deliberately avoids those APIs) as if it were a violation — a self-inflicted false positive in the test, not a defect in the component. Both were found and fixed during this phase's own required testing, not left unresolved.
+- **Alternatives considered:** Manually calling `cleanup()` at the end of each test — rejected as easy to forget on every future test file; a global `afterEach` in the shared setup file is the standard Testing-Library pattern and fixes every current and future test file at once.
+
+---
+
+*This log will continue to grow in Phase 9B/9C and beyond as concrete implementation decisions are made.*

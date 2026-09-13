@@ -112,10 +112,30 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [ ] Project owner reviews and explicitly approves Phase 8 before Phase 9 (Web Application MVP) begins
 - [ ] **Not built this phase (tracked for later):** admin content-management CRUD (`POST /admin/subjects` etc. remain `501`), an API to attach an uploaded file to a lecture item, assessment/quiz endpoints
 
-## Phase 9 — Web Application MVP (not started)
-- [ ] Build responsive UI for content browsing, assessments, admin console (login/auth UI already exists from Phase 6)
-- [ ] Cross-device functional testing
-- [ ] Accessibility pass (WCAG 2.1 AA baseline)
+## Phase 9A — Web Application Shell + Content Browsing + Secure PDF Viewer (implementation COMPLETE — see final report)
+- [x] Application shell: header, responsive primary nav, mobile nav (hamburger), breadcrumbs, skip-link, user/account area, logout (existing auth)
+- [x] Authenticated dashboard using real API data (`/api/v1/me` + `/api/v1/subjects`)
+- [x] Subjects browsing, Subject detail (lectures), Lecture detail (lecture items) — real API data, correct loading/empty/error/not-found states
+- [x] Secure on-demand PDF viewer reusing the existing signed-URL file endpoint via a same-origin Route Handler proxy; signed URL never logged/persisted
+- [x] Consistent LoadingState/EmptyState/ErrorState/NotFoundState components; no raw backend error ever shown
+- [x] CSS custom-property design token layer (no UI framework introduced)
+- [x] `apiGetPaginated` added to the typed API client (real bug fix — see DECISIONS.md D51)
+- [x] 42 web tests covering all 15 required scenarios; two test-suite bugs found and fixed this phase (missing cleanup, false-positive security-scan regex — DECISIONS.md D52)
+- [x] Zero regression: 97 backend tests still passing, pre-existing web tests still passing
+- [x] `tsc --noEmit`, `npm run lint`, `npm run build` all clean (10 routes generated)
+- [x] Security validation: no service-role key/secret in client code or build output, no direct Supabase Storage access, signed URL never logged/persisted, protected routes still protected
+- [x] Verified `quiz digital leadership.html` untouched
+- [x] Create WEB_APPLICATION_ARCHITECTURE.md, PDF_VIEWER.md, WEB_TEST_PLAN.md
+- [x] Update DECISIONS.md (D50-D52), IMPLEMENTATION_ROADMAP.md, TODO.md
+- [ ] Project owner reviews and explicitly approves Phase 9A before Phase 9B begins
+- [ ] **Known limitation, not fixed this phase:** Playwright browser binaries still unavailable in this environment (unchanged since Phase 4) — no real-browser/E2E responsive verification was performed; CSS breakpoints were reviewed by source, not against a running browser
+- [ ] **Not built this phase (tracked for later):** Assignments/Exercises/Quizzes submission and results UI (Phase 9B), Admin console and content-management UI (Phase 9C)
+
+## Phase 9B — Assignments, Exercises, Quizzes (not started)
+- [ ] Question interaction, quiz attempts, results UI
+
+## Phase 9C — Admin Console (not started)
+- [ ] Subject/lecture management, file upload/replace/delete UI, user/role administration, audit-log administration
 
 ## Phase 10 — Mobile Applications (not started)
 - [ ] Build iOS app
