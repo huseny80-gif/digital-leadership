@@ -187,20 +187,34 @@ Tracks all remaining tasks across the project lifecycle. Items are grouped by ph
 - [ ] **Blocked on project owner:** create/confirm a real Supabase project + Google Cloud OAuth client (if not already done for Phase 5/6), register the mobile deep link redirect URL, and complete the Android/iOS OAuth configuration in MOBILE_SETUP.md
 - [ ] **Known limitation, not fixed this phase:** no widget-level tests for `SubjectDetailScreen`/`LectureDetailScreen`/`QuizAttemptScreen`/`PdfViewerScreen`; `auth_controller_test.dart`'s `Session`/`User` construction is the highest-risk untested assumption (MOBILE_TEST_PLAN.md §6)
 
-## Phase 11 — Hardening & Security Review (not started)
+## Phase 11 — Flutter Client Foundation and Project Integration (implementation COMPLETE — Flutter-SDK verification BLOCKED BY ENVIRONMENT; see final report)
+- [x] Inspected the current `mobile/lib` structure and Phase 10 documentation before changing anything, confirming most required deliverables (layering, API layer, config, models, auth foundation, error/loading states) already existed from Phase 10
+- [x] Named-route foundation (`lib/app/routes.dart`, `AppRoutes`) for login/dashboard/subjects/subject-detail/lecture-detail/profile, additive to the existing `AuthGate`/`Navigator.push` flow
+- [x] Protected-route guard: any route except `login` resolves to `LoginScreen` while unauthenticated
+- [x] Responsive foundation (`lib/core/responsive/breakpoints.dart`) — one codebase, `RootShell` switches bottom-nav (mobile) vs. `NavigationRail` (tablet/desktop) by width
+- [x] No new backend endpoint invented; no database/backend file touched
+- [x] No fake authentication introduced; no credentials committed
+- [x] 2 new test files written (`breakpoints_test.dart`, `routes_test.dart`) — not executed, Flutter SDK unavailable
+- [x] Static verification performed in place of `flutter analyze`: class/constructor cross-reference, brace-balance check, secret-pattern grep (clean), diff-scope check (only `mobile/` + docs changed)
+- [x] Update MOBILE_ARCHITECTURE.md (§10), MOBILE_TEST_PLAN.md (§9), DECISIONS.md (D67-D68), IMPLEMENTATION_ROADMAP.md, this file
+- [x] Phase 10 status left unchanged: still PARTIAL / NOT VERIFIED
+- [ ] Project owner reviews and explicitly approves Phase 11 before Phase 12 begins
+- [ ] **Blocked on developer with Flutter SDK:** run `flutter pub get`, `flutter analyze`, `flutter test` against this branch — none of this was possible in this environment, and none of it is claimed as done for either Phase 10 or Phase 11
+
+## Phase 12 — Hardening & Security Review (not started)
 - [ ] Full security review
 - [ ] Accessibility audit
 - [ ] Performance/load testing baseline
 - [ ] Confirm compliance posture (FERPA/GDPR/COPPA) against actual user base
 - [ ] Revisit Phase 7's in-memory rate limiting if the deployment is multi-instance by now (DECISIONS.md D43)
 
-## Phase 12 — Production Deployment (not started)
+## Phase 13 — Production Deployment (not started)
 - [ ] Set up production infrastructure and CI/CD
 - [ ] Deploy backend and web
 - [ ] Submit iOS app to App Store
 - [ ] Submit Android app to Play Store
 
-## Phase 13+ — Future Features (not started)
+## Phase 14+ — Future Features (not started)
 - [ ] Additional authentication methods (OTP/email, other OAuth providers)
 - [ ] Additional roles (e.g., Instructor)
 - [ ] Advanced admin analytics/reporting

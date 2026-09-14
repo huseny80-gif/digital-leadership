@@ -104,20 +104,28 @@ Note: the phase numbering below was adjusted after Phase 2 to insert **Database 
 - **Not done, explicitly out of scope:** `flutter pub get`/`analyze`/`test`/`build` (SDK unavailable — see MOBILE_TEST_PLAN.md), native `android/`/`ios/` platform folders (never hand-authored, per D31/D66), any real Supabase/Google OAuth configuration (no real credentials exist in this environment), a rebuilt Admin Console, Phase 11 hardening, production deployment, App/Play Store submission, push notifications, offline-first architecture, chat, payments. No database or backend change.
 - Gate: explicit approval required before Phase 11 — and, separately, a developer with the Flutter SDK must run the verification steps in MOBILE_SETUP.md before this app is built, tested, or run for real.
 
-## Phase 11 — Hardening & Security Review
+## Phase 11 — Flutter Client Foundation and Project Integration (COMPLETE — implementation done; Flutter-SDK verification BLOCKED BY ENVIRONMENT; pending approval)
+- INSPECT: reviewed the existing Phase 10 `mobile/lib` structure, `app.dart`/`root_shell.dart`/`auth_controller.dart`, and the current mobile documentation before making any change, to confirm which Phase 11 deliverables (§4A-G — layering, API abstraction, configuration, models, auth foundation, error/loading states) were already satisfied by Phase 10 rather than duplicating them.
+- PLAN/IMPLEMENT: added the two genuinely missing pieces — a named-route table (`lib/app/routes.dart`, `AppRoutes`) covering the six required routes (login/dashboard/subjects/subject-detail/lecture-detail/profile) with a protected-route guard, additive to the existing `AuthGate`/`Navigator.push` flow; and a responsive layout foundation (`lib/core/responsive/breakpoints.dart`) that switches `RootShell`'s navigation chrome between a bottom nav bar (mobile) and a `NavigationRail` (tablet/desktop) within the one existing codebase.
+- TEST: 2 new test files (`test/unit/breakpoints_test.dart`, `test/widget/routes_test.dart`) — **not executed**, Flutter SDK unavailable (BLOCKED BY ENVIRONMENT). Static verification performed instead: class/constructor cross-reference check, brace-balance check on every changed file, secret-pattern grep (zero matches), and a diff-scope check confirming only `mobile/` and documentation changed.
+- Deliverable: `lib/app/routes.dart`, `lib/core/responsive/breakpoints.dart`, updated `root_shell.dart`/`app.dart`, 2 new test files, updated MOBILE_ARCHITECTURE.md (§10), MOBILE_TEST_PLAN.md (§9), DECISIONS.md (D67-D68).
+- **Not done, explicitly out of scope:** `flutter pub get`/`analyze`/`test` (BLOCKED BY ENVIRONMENT — Flutter/Dart SDK unavailable in this container; not installed per explicit instruction), full course/quiz/admin page implementation (already exists from Phase 10 and was not re-implemented), visual redesign, offline-first architecture, push notifications, database/backend changes. Phase 10 status was NOT changed and remains PARTIAL / NOT VERIFIED.
+- Gate: explicit approval required before Phase 12 — and, separately, a developer with the Flutter SDK must run `flutter pub get`/`analyze`/`test` against this branch before either phase's mobile code can be called VERIFIED.
+
+## Phase 12 — Hardening & Security Review
 - Full security review: authentication, authorization, injection risks, file upload validation, secrets management, rate limiting (revisit the Phase 7 in-memory limiter's shared-store question if the deployment is multi-instance by now).
 - Accessibility audit across web and mobile.
 - Performance/load testing baseline.
 - Deliverable: security and accessibility sign-off.
-- Gate: explicit approval before Phase 12.
+- Gate: explicit approval before Phase 13.
 
-## Phase 12 — Production Deployment
+## Phase 13 — Production Deployment
 - Set up production infrastructure, CI/CD, monitoring, backups.
 - Deploy backend, web, and submit mobile apps to App Store / Play Store.
 - Deliverable: live production system.
 - Gate: post-launch review.
 
-## Phase 13+ — Future Features
+## Phase 14+ — Future Features
 - Additional authentication methods (OTP/email), additional roles (e.g., Instructor), advanced admin analytics, notifications, content versioning, search, localization — as prioritized in PROJECT_SCOPE.md's FUTURE FEATURES section.
 
 ---

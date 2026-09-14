@@ -364,4 +364,18 @@ Full rationale for each is in `DATABASE_DESIGN.md` and `DATABASE_SECURITY.md`.
 
 ---
 
-*This log will continue to grow in Phase 11 and beyond as concrete implementation decisions are made.*
+## Phase 11 Decisions
+
+## D67: Named-route table added as an additive layer, not a replacement for `AuthGate`/`Navigator.push`
+- **Decision:** `lib/app/routes.dart` (`AppRoutes`) adds named routes (`login`, `dashboard`, `subjects`, `subjectDetail`, `lectureDetail`, `profile`) via `MaterialApp.onGenerateRoute`. It does not replace `AuthGate` as the app's startup auth wall, and it does not replace the existing `Navigator.push`/`MaterialPageRoute` calls screens already use to navigate to each other.
+- **Reasoning:** Phase 11 §4B requires "routes/placeholders" for six screens with authentication enforceable on protected ones. Phase 10 already had a working, tested auth wall (`AuthGate`) and inter-screen navigation; replacing either to introduce named routes would have been scope growth and regression risk for no functional gain. Adding `AppRoutes` on top gives deep-link-able, documented route names for future use (e.g. OAuth redirect handling, push-notification deep links in a later phase) without disturbing what already works.
+- **Alternatives considered:** Replacing `AuthGate`/`home:` entirely with `initialRoute`/named-route-driven auth guarding — rejected as unnecessary churn to working, tested Phase 10 code, and against the phase's own "do not remove existing functionality merely to simplify" constraint.
+
+## D68: Responsive layout implemented as a width-threshold switch inside `RootShell`, not separate desktop/mobile widget trees
+- **Decision:** `lib/core/responsive/breakpoints.dart` (`Breakpoints`) exposes pure width-classification functions; `RootShell` uses them to switch between a bottom `NavigationBar` (mobile) and a side `NavigationRail` (tablet/desktop) while keeping the same tab list, same screens, and same selected-index state.
+- **Reasoning:** Phase 11 §4H requires "one Flutter codebase with responsive layouts," explicitly forbidding "three unrelated applications." A single shell that branches on width satisfies this directly; the width-threshold functions take a `double` rather than `BuildContext` so they are unit-testable without a widget pump.
+- **Alternatives considered:** A full `LayoutBuilder`-per-screen responsive redesign — rejected as exceeding Phase 11's stated UI scope ("Create only enough UI to prove that... the shell/layout exists" — §5), which explicitly defers "advanced visual polish" to a later phase.
+
+---
+
+*This log will continue to grow in Phase 12 and beyond as concrete implementation decisions are made.*

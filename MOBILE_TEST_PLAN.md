@@ -118,3 +118,20 @@ This report does NOT claim:
 - "Tests passing" (no tests were run).
 - Any real Google OAuth or Supabase project was exercised end-to-end.
 - Production readiness of any kind.
+
+## 9. Phase 11 Verification Attempt
+
+Phase 11 (routing foundation + responsive layout) was implemented in the same isolated Ubuntu 24.04.4 Linux container described in §1a. `which flutter dart`/`command -v flutter dart` were re-checked before Phase 11 work began and again returned no output; `flutter --version` again failed with `command not found` (exit 127). Per Phase 11's own instructions, no Flutter SDK was installed or provisioned to work around this.
+
+- `flutter --version` → **BLOCKED BY ENVIRONMENT**
+- `flutter pub get` → **BLOCKED BY ENVIRONMENT** (not run)
+- `flutter analyze` → **BLOCKED BY ENVIRONMENT** (not run)
+- `flutter test` → **BLOCKED BY ENVIRONMENT** (not run — this includes the two new Phase 11 test files, `test/unit/breakpoints_test.dart` and `test/widget/routes_test.dart`)
+
+**What was VERIFIED instead, without a Flutter/Dart runtime:**
+- Every class/constructor `lib/app/routes.dart` references (`LoginScreen`, `RootShell`, `SubjectsScreen`, `SubjectDetailScreen(subjectId:)`, `LectureDetailScreen(lectureId:)`, `ProfileScreen`) was confirmed to exist with a matching signature by reading the referenced files directly.
+- Brace balance on every new/changed Phase 11 file (`lib/app/routes.dart`, `lib/core/responsive/breakpoints.dart`, `lib/app/root_shell.dart`, `lib/app/app.dart`, and both new test files) — open/close counts matched.
+- `grep -rniE "service_role|SUPABASE_SERVICE_ROLE|client_secret|database_password"` across the new/changed Phase 11 files — zero matches.
+- `git status --porcelain` / `git diff --stat` confirmed the Phase 11 diff touches only files under `mobile/` plus this documentation.
+
+These are static/manual checks, not a substitute for `flutter analyze`/`flutter test` — they do not catch type errors, null-safety violations, or `provider`/`supabase_flutter` API mismatches the way the real toolchain would. **Phase 11's new Dart code is therefore NOT VERIFIED by any compiler or test runner**, same as the rest of `mobile/lib` since Phase 10.

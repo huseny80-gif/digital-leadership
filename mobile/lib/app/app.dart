@@ -5,6 +5,7 @@ import '../core/auth/auth_controller.dart';
 import '../core/theme/app_theme.dart';
 import '../features/auth/login_screen.dart';
 import 'root_shell.dart';
+import 'routes.dart';
 
 /// Root widget (PHASE 10 §7 "Splash / Session Check").
 ///
@@ -29,6 +30,11 @@ class DigitalLeadershipApp extends StatelessWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       home: const AuthGate(),
+      // PHASE 11 §4B: named-route foundation, additive to `home`/`AuthGate`
+      // above (which remains the actual startup auth wall). Lets any
+      // screen navigate via `Navigator.pushNamed(context, AppRoutes.x)`
+      // once callers are updated to use it in a later phase.
+      onGenerateRoute: AppRoutes.generateRoute,
     );
   }
 }
