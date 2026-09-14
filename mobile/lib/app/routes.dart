@@ -7,6 +7,7 @@ import '../features/lectures/lecture_detail_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/subjects/subject_detail_screen.dart';
 import '../features/subjects/subjects_screen.dart';
+import '../widgets/states.dart';
 import 'root_shell.dart';
 
 /// Named-route foundation (PHASE 11 §4B). This does not replace the
@@ -56,8 +57,24 @@ abstract final class AppRoutes {
     login: (_, __) => const LoginScreen(),
     dashboard: (_, __) => const RootShell(),
     subjects: (_, __) => const SubjectsScreen(),
-    subjectDetail: (_, args) => SubjectDetailScreen(subjectId: args as String),
-    lectureDetail: (_, args) => LectureDetailScreen(lectureId: args as String),
+    subjectDetail: (_, args) => args is String ? SubjectDetailScreen(subjectId: args) : const _InvalidRouteArguments(),
+    lectureDetail: (_, args) => args is String ? LectureDetailScreen(lectureId: args) : const _InvalidRouteArguments(),
     profile: (_, __) => const ProfileScreen(),
   };
+}
+
+/// Shown instead of an uncaught `TypeError` when a route that requires a
+/// `String` argument (`subjectDetail`/`lectureDetail`) is requested with a
+/// missing or wrong-typed one — reuses the existing safe error state
+/// rather than introducing a new screen.
+class _InvalidRouteArguments extends StatelessWidget {
+  const _InvalidRouteArguments();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Error')),
+      body: const ErrorContentState(message: 'This link is missing information needed to open it.'),
+    );
+  }
 }

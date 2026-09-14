@@ -50,19 +50,23 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       final uri = Uri.parse(signed.url);
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!opened) {
+        if (!mounted) return;
         setState(() {
           _state = _PdfState.error;
           _errorMessage = 'Unable to open this PDF. Please try again.';
         });
         return;
       }
+      if (!mounted) return;
       setState(() => _state = _PdfState.idle);
     } on ApiException catch (e) {
+      if (!mounted) return;
       setState(() {
         _state = _PdfState.error;
         _errorMessage = e.toSafeMessage(context: 'this PDF');
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         _state = _PdfState.error;
         _errorMessage = 'Unable to open this PDF. Please try again.';

@@ -62,8 +62,10 @@ class _QuizAttemptScreenState extends State<QuizAttemptScreen> {
         }
         return;
       }
+      if (!mounted) return;
       setState(() => _saveError = 'Unable to save your answer. Please try again.');
     } catch (_) {
+      if (!mounted) return;
       setState(() => _saveError = 'Unable to save your answer. Please try again.');
     } finally {
       if (mounted) setState(() => _savingQuestionId = null);
@@ -96,8 +98,10 @@ class _QuizAttemptScreenState extends State<QuizAttemptScreen> {
         }
         return;
       }
+      if (!mounted) return;
       setState(() => _submitError = 'Unable to submit your quiz. Please try again.');
     } catch (_) {
+      if (!mounted) return;
       setState(() => _submitError = 'Unable to submit your quiz. Please try again.');
     } finally {
       if (mounted) setState(() => _submitting = false);

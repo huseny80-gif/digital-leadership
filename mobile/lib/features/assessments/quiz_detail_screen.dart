@@ -50,8 +50,10 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
         MaterialPageRoute(builder: (_) => QuizAttemptScreen(quizId: widget.quizId, attemptId: attempt.id)),
       );
     } on ApiException catch (e) {
+      if (!mounted) return;
       setState(() => _startError = e.toSafeMessage(context: 'this quiz'));
     } catch (_) {
+      if (!mounted) return;
       setState(() => _startError = 'Unable to start this quiz. Please try again.');
     } finally {
       if (mounted) setState(() => _starting = false);
