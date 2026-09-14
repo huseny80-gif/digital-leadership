@@ -15,6 +15,30 @@ bash: dart: command not found
 
 Both the Flutter SDK and the standalone Dart SDK are absent. This is unchanged from Phase 4 (`mobile/README.md`'s original "Known limitation of this scaffolding phase"). Per the phase's explicit instruction, no build/test/analyze result is fabricated anywhere in this report.
 
+## 1a. Phase 10 Verification Attempt (post-implementation)
+
+After Phase 10 implementation was complete, a dedicated verification pass was requested and attempted, in this same Claude Code execution environment, to try to move this phase's status from PARTIAL to VERIFIED. It did not succeed, for environment reasons recorded here.
+
+**Execution environment for this attempt:** an isolated Ubuntu 24.04.4 LTS Linux container (`uname -a`: `Linux vm 6.18.44-fc-v24 ... x86_64 GNU/Linux`), working directory `/home/user/digital-leadership`. This is a separate, sandboxed machine from the user's own Windows host — it has no access to the Windows filesystem, and nothing installed there is visible inside this container.
+
+**Commands executed, in order, with exact results:**
+
+1. `flutter --version` → **FAILED**: `/bin/bash: line 1: flutter: command not found` (exit code 127)
+2. `flutter pub get` → **NOT RUN** — Flutter was unavailable per step 1
+3. `flutter analyze` → **NOT RUN** — Flutter was unavailable per step 1
+4. `flutter test` → **NOT RUN** — Flutter was unavailable per step 1
+
+Additional checks:
+- `which flutter dart` → no output; neither binary resolves on `PATH`
+- `command -v flutter dart` → no output; same result
+- Checked common install locations (`/usr/local/flutter`, `/opt/flutter`, `/snap/flutter`) → none exist in this container
+
+**No Flutter SDK or Dart SDK was installed or provisioned as part of this verification attempt.** No project files were modified by this attempt, except for this documentation update itself (this section of `MOBILE_TEST_PLAN.md`).
+
+**Phase 10 verification status: PARTIAL / NOT VERIFIED.** It must not be read as VERIFIED. None of the four required commands produced a pass result in this environment; only the first even executed, and it failed at the binary-resolution step.
+
+**Separately, and outside this Claude Code session:** the user reports that Flutter 3.47.4 and Android SDK 36.0.0 are installed and working on their own Windows host (`C:\src\flutter`), that the project checked out at `C:\FlutterProjects\digital_leadership_app` runs successfully via `flutter run -d web-server`, and that the resulting web app was manually opened and viewed at `localhost`. **This verification was performed by the user on their own machine, not by Claude Code** — this Claude Code session has no access to that Windows host, cannot observe or confirm those results directly, and did not run any command against that environment. That host-side result does not change the PARTIAL/NOT VERIFIED status of the verification performed in this document, which reflects only what this Claude Code session itself could execute.
+
 ## 2. What This Means for Every Test File Below
 
 Every test file in `mobile/test/` was written by hand, against the documented API of Flutter, `provider`, `http`, and `supabase_flutter` (from training knowledge of their public interfaces, not from an installed copy of the packages). **None of them has been run.** They may contain syntax errors, API-signature mismatches (especially against `supabase_flutter`'s `Session`/`User`/`LocalStorage` constructors, which have changed across versions), or import errors that only `flutter pub get` + `flutter analyze` would surface. This is stated here explicitly rather than claimed as "tests passing."
