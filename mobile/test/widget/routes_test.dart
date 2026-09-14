@@ -69,7 +69,11 @@ void main() {
     await tester.pump();
 
     final context = tester.element(find.byType(SizedBox));
-    await Navigator.of(context).pushNamed(AppRoutes.profile);
+    // `pushNamed`'s returned Future only completes when the pushed route
+    // is later popped — nothing here pops it, so awaiting it directly
+    // hangs forever. Fire-and-forget the push; pumpAndSettle below is
+    // what actually advances the frame that builds LoginScreen.
+    unawaited(Navigator.of(context).pushNamed(AppRoutes.profile));
     await tester.pumpAndSettle();
 
     expect(find.byType(LoginScreen), findsOneWidget);
