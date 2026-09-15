@@ -35,6 +35,12 @@ class DigitalLeadershipApp extends StatelessWidget {
       // screen navigate via `Navigator.pushNamed(context, AppRoutes.x)`
       // once callers are updated to use it in a later phase.
       onGenerateRoute: AppRoutes.generateRoute,
+      // Defense in depth (Phase 13 OAuth callback fix): a stray/unknown
+      // route — such as an OAuth redirect URI landing on the Navigator
+      // instead of being fully consumed by supabase_flutter's own deep
+      // link handling — must never crash the app. Fall back to whatever
+      // AuthGate currently shows rather than throwing.
+      onUnknownRoute: (settings) => MaterialPageRoute(builder: (_) => const AuthGate()),
     );
   }
 }

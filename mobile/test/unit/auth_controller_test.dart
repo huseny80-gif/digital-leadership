@@ -40,6 +40,16 @@ class _FakeAuthGateway implements AuthGateway {
     _controller.add(AuthState(AuthChangeEvent.signedOut, null));
   }
 
+  /// Simulates the OAuth deep-link callback completing and Supabase
+  /// firing `signedIn` on the long-lived `onAuthStateChange` stream —
+  /// independent of whether `signInWithGoogle` is still "in flight"
+  /// (PHASE 13 OAuth callback fix: this must trigger `_loadProfile`
+  /// regardless of timing).
+  void emitSignedIn(Session session) {
+    _session = session;
+    _controller.add(AuthState(AuthChangeEvent.signedIn, session));
+  }
+
   void dispose() => _controller.close();
 }
 
@@ -134,6 +144,25 @@ void main() {
 
     expect(controller.status, AuthStatus.unauthenticated);
     expect(gateway.signOutCalls, 1);
+    gateway.dispose();
+  });
+
+  test('a signedIn event on the long-lived stream (OAuth deep-link callback) loads the profile and reaches dashboard, without signInWithGoogle still being in flight', () async {
+    final gateway = _FakeAuthGateway(); // starts with no session, like a fresh app launch
+    final client = ApiClient(tokenProvider: const _NoAccessTokenProvider(), httpClient: _profileClient(profile: _learnerProfile));
+    final controller = AuthController(apiClient: client, gateway: gateway);
+
+    await Future<void>.delayed(Duration.zero);
+    expect(controller.status, AuthStatus.unauthenticated);
+
+    // The deep-link callback arrives on its own, well after
+    // signInWithGoogle's own await has already returned — this is what
+    // actually happens on a device (the external browser round-trip).
+    gateway.emitSignedIn(_fakeSession());
+    await Future<void>.delayed(Duration.zero);
+
+    expect(controller.status, AuthStatus.authenticated);
+    expect(controller.profile!.email, 'learner@example.com');
     gateway.dispose();
   });
 

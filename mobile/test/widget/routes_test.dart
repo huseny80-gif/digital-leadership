@@ -40,7 +40,7 @@ class _NoAccessTokenProvider implements AccessTokenProvider {
   Future<String?> getAccessToken() async => null;
 }
 
-Widget _wrap() {
+Widget _wrap({RouteFactory? onUnknownRoute}) {
   final gateway = _FakeAuthGateway();
   final client = ApiClient(
     tokenProvider: const _NoAccessTokenProvider(),
@@ -52,9 +52,16 @@ Widget _wrap() {
     value: auth,
     child: MaterialApp(
       onGenerateRoute: AppRoutes.generateRoute,
+      onUnknownRoute: onUnknownRoute,
       home: const SizedBox.shrink(),
     ),
   );
+}
+
+class _FallbackMarker extends StatelessWidget {
+  const _FallbackMarker();
+  @override
+  Widget build(BuildContext context) => const Text('fallback-shown');
 }
 
 void main() {
@@ -79,6 +86,27 @@ void main() {
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.byType(ProfileScreen), findsNothing);
   });
+
+  testWidgets(
+    'an OAuth-style stray route (e.g. "/?code=...") never crashes the app when onUnknownRoute is wired, matching PHASE 13\'s fix',
+    (tester) async {
+      await tester.pumpWidget(_wrap(onUnknownRoute: (settings) => MaterialPageRoute(builder: (_) => const _FallbackMarker())));
+      await tester.pump();
+
+      final context = tester.element(find.byType(SizedBox));
+      // Simulates the exact failure reported: an OAuth redirect URI
+      // reaching the Navigator instead of being fully consumed by
+      // supabase_flutter's own deep-link handling.
+      unawaited(Navigator.of(context).pushNamed('/?code=bdb8fbd6-14c7-41e1-a377-3e49a70a322f'));
+
+      // Without onUnknownRoute wired, this exact push throws
+      // "Could not find a generator for route" (the reported bug).
+      expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('fallback-shown'), findsOneWidget);
+    },
+  );
 
   test('every required Phase 11 route name is registered', () {
     for (final name in [

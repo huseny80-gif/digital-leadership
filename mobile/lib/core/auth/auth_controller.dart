@@ -70,6 +70,15 @@ class AuthController extends ChangeNotifier {
       _profile = null;
       _status = AuthStatus.unauthenticated;
       notifyListeners();
+      return;
+    }
+    // Handled here (the long-lived listener registered at construction,
+    // i.e. app startup) rather than via a one-shot listener set up only
+    // inside `signInWithGoogle` — this fires reliably however/whenever the
+    // OAuth deep link callback actually arrives, not contingent on this
+    // exact call still being "in flight" (PHASE 13 OAuth callback fix).
+    if (state.event == AuthChangeEvent.signedIn) {
+      unawaited(_loadProfile());
     }
   }
 
@@ -86,9 +95,9 @@ class AuthController extends ChangeNotifier {
     try {
       await _gateway.signInWithOAuth(OAuthProvider.google, redirectTo: redirectTo);
       // The OAuth redirect completes asynchronously via the deep link;
-      // `onAuthStateChange` (signedIn) fires once Supabase processes it,
-      // at which point `_loadProfile` runs to fetch the backend profile.
-      _gateway.onAuthStateChange.firstWhere((s) => s.event == AuthChangeEvent.signedIn).then((_) => _loadProfile());
+      // `_onAuthStateChange` (the listener registered in the constructor)
+      // handles `signedIn` and runs `_loadProfile` once Supabase processes
+      // the callback — nothing further to do here.
     } catch (e) {
       _error = 'Unable to sign in with Google. Please try again.';
     } finally {

@@ -36,6 +36,18 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- The OAuth deep link (com.digitalleadership.app://login-callback)
+             is handled entirely by supabase_flutter's own app_links-based
+             listener. Without this flag, Flutter's own engine ALSO tries to
+             forward the same incoming URI to the Navigator as a named route
+             (e.g. "/?code=..."), which no route in this app recognizes and
+             which crashes with "Could not find a generator for route" —
+             racing with, and disrupting, Supabase's own correct handling of
+             the same link. -->
+        <meta-data
+            android:name="flutter_deeplinking_enabled"
+            android:value="false" />
     </application>
 
     <queries>
