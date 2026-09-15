@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/env.dart';
@@ -35,6 +36,10 @@ class ApiClient {
 
   Future<Map<String, String>> _headers({bool json = false}) async {
     final token = await tokenProvider.getAccessToken();
+    // TEMPORARY DIAGNOSTIC (Phase 13 OAuth/session investigation) — never
+    // logs the token value itself, only whether it is present and its
+    // length. Remove once the auth flow is diagnosed.
+    debugPrint('API_AUTH_DEBUG: tokenPresent=${token != null}, tokenLength=${token?.length ?? 0}');
     return {
       if (token != null) 'authorization': 'Bearer $token',
       if (json) 'content-type': 'application/json',
@@ -69,6 +74,9 @@ class ApiClient {
   Future<dynamic> _send(String method, String path, [Object? jsonBody]) async {
     final uri = Uri.parse('$baseUrl$path');
     final headers = await _headers(json: jsonBody != null);
+    // TEMPORARY DIAGNOSTIC (Phase 13 OAuth/session investigation) — remove
+    // once the auth flow is diagnosed.
+    debugPrint('API_AUTH_DEBUG: request=$method $path');
 
     http.Response res;
     try {
