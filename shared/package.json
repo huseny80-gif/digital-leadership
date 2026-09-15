@@ -1,0 +1,16 @@
+{
+  "name": "@digital-leadership/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared TypeScript types/contracts consumed by the web and backend projects, so both agree on one API shape (per ARCHITECTURE.md §12). Not consumed by the Flutter mobile app directly — Dart clients rely on the same contract documented in API_ARCHITECTURE.md instead.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

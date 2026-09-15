@@ -1,0 +1,7 @@
+# Repo-wide OS/editor noise. Each project (web/, backend/, mobile/, shared/)
+# has its own .gitignore for its own build artifacts and dependencies.
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/

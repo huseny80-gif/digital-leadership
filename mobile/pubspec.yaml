@@ -1,0 +1,39 @@
+name: digital_leadership
+description: >
+  Digital Leadership educational platform — Flutter client for iOS and
+  Android, sharing the same backend API and Supabase Auth as the web app
+  (ARCHITECTURE.md §2.2, PHASE 10). Learner experience implemented:
+  authentication, subjects/lectures, secure PDF access, assessments, and
+  profile — the Admin Console remains web-only (MOBILE_ARCHITECTURE.md).
+publish_to: "none"
+version: 0.2.0
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  # Supabase Auth (Google OAuth) — the SAME identity layer the web app
+  # uses (AUTHENTICATION.md, DECISIONS.md D36); no second auth system.
+  supabase_flutter: ^2.8.0
+  # Secure platform storage (iOS Keychain / Android Keystore) for the
+  # Supabase session — PHASE 10 §5, never SharedPreferences.
+  flutter_secure_storage: ^9.2.2
+  # HTTP client for the centralized ApiClient (core/networking).
+  http: ^1.2.2
+  # Opens a signed PDF URL in the OS's own viewer/browser rather than
+  # embedding an unverified PDF-rendering package (PHASE 10 §11).
+  url_launcher: ^6.3.1
+  # Lightweight, official-pattern state management (ChangeNotifier +
+  # InheritedWidget) — not a large framework, per PHASE 10 §21.
+  provider: ^6.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
