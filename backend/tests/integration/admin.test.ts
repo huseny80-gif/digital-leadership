@@ -39,14 +39,14 @@ beforeEach(async () => {
 async function seedAdminAndUser() {
   const adminId = await createUser(pool, { email: "admin@example.com", roleName: "admin", providerSubject: "admin-sub" });
   const userId = await createUser(pool, { email: "user@example.com", roleName: "user", providerSubject: "user-sub" });
-  const adminToken = signFakeSupabaseToken({ sub: "admin-sub", email: "admin@example.com" });
-  const userToken = signFakeSupabaseToken({ sub: "user-sub", email: "user@example.com" });
+  const adminToken = await signFakeSupabaseToken({ sub: "admin-sub", email: "admin@example.com" });
+  const userToken = await signFakeSupabaseToken({ sub: "user-sub", email: "user@example.com" });
   return { adminId, userId, adminToken, userToken };
 }
 
 async function seedSecondAdmin() {
   const secondAdminId = await createUser(pool, { email: "admin2@example.com", roleName: "admin", providerSubject: "admin2-sub" });
-  const secondAdminToken = signFakeSupabaseToken({ sub: "admin2-sub", email: "admin2@example.com" });
+  const secondAdminToken = await signFakeSupabaseToken({ sub: "admin2-sub", email: "admin2@example.com" });
   return { secondAdminId, secondAdminToken };
 }
 

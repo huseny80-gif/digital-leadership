@@ -68,7 +68,7 @@ describe("authenticate", () => {
   it("resolves and attaches the user for a valid token", async () => {
     const repo = new FakeUsersRepository();
     const { authenticate } = createAuthMiddleware(() => repo);
-    const token = signFakeSupabaseToken({ sub: "s1", email: "a@example.com" });
+    const token = await signFakeSupabaseToken({ sub: "s1", email: "a@example.com" });
     const { req, res, next } = mockReqRes({ authorization: `Bearer ${token}` });
 
     await authenticate(req, res, next);

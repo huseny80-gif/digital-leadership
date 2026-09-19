@@ -72,9 +72,9 @@ async function seedQuizScenario() {
     createdBy: adminId,
   });
 
-  const userToken = signFakeSupabaseToken({ sub: "user-sub", email: "user@example.com" });
-  const otherUserToken = signFakeSupabaseToken({ sub: "other-sub", email: "other@example.com" });
-  const adminToken = signFakeSupabaseToken({ sub: "admin-sub", email: "admin@example.com" });
+  const userToken = await signFakeSupabaseToken({ sub: "user-sub", email: "user@example.com" });
+  const otherUserToken = await signFakeSupabaseToken({ sub: "other-sub", email: "other@example.com" });
+  const adminToken = await signFakeSupabaseToken({ sub: "admin-sub", email: "admin@example.com" });
 
   return {
     adminId,

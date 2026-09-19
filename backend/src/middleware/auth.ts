@@ -57,7 +57,7 @@ export function createAuthMiddleware(getRepository: () => UsersRepository) {
       return;
     }
     try {
-      const claims = verifySupabaseToken(token);
+      const claims = await verifySupabaseToken(token);
       const user = await resolveOrProvisionUser(getRepository(), claims);
       req.user = user;
       next();

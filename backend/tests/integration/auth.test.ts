@@ -1,8 +1,10 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { Pool } from "pg";
+import { SignJWT } from "jose";
 import { createApp } from "../../src/app.js";
 import { signFakeSupabaseToken } from "../helpers/fakeSupabaseToken.js";
+import { TEST_KID, testPrivateKey, generateEs256KeyPair } from "../helpers/testJwt.js";
 
 /**
  * These tests run against a real local PostgreSQL database seeded with the
@@ -49,7 +51,7 @@ describe("anonymous access", () => {
 describe("first-login provisioning", () => {
   it("creates a new user with the default 'user' role, never 'admin'", async () => {
     const app = createApp();
-    const token = signFakeSupabaseToken({ sub: "sub-new-user-1", email: "newperson@example.com" });
+    const token = await signFakeSupabaseToken({ sub: "sub-new-user-1", email: "newperson@example.com" });
 
     const res = await request(app).post("/api/v1/auth/session").set("Authorization", `Bearer ${token}`);
 
@@ -65,7 +67,7 @@ describe("first-login provisioning", () => {
 
   it("is idempotent: the same identity resolves to the same user on a second request", async () => {
     const app = createApp();
-    const token = signFakeSupabaseToken({ sub: "sub-repeat-1", email: "repeat@example.com" });
+    const token = await signFakeSupabaseToken({ sub: "sub-repeat-1", email: "repeat@example.com" });
 
     const first = await request(app).post("/api/v1/auth/session").set("Authorization", `Bearer ${token}`);
     const second = await request(app).post("/api/v1/auth/session").set("Authorization", `Bearer ${token}`);
@@ -80,7 +82,7 @@ describe("first-login provisioning", () => {
 describe("authenticated access", () => {
   it("GET /api/v1/users/me → 200 with only the resolved profile", async () => {
     const app = createApp();
-    const token = signFakeSupabaseToken({ sub: "sub-plain-user", email: "plain@example.com" });
+    const token = await signFakeSupabaseToken({ sub: "sub-plain-user", email: "plain@example.com" });
 
     const res = await request(app).get("/api/v1/users/me").set("Authorization", `Bearer ${token}`);
 
@@ -90,7 +92,7 @@ describe("authenticated access", () => {
 
   it("GET /api/v1/admin/users as a non-admin user → 403", async () => {
     const app = createApp();
-    const token = signFakeSupabaseToken({ sub: "sub-plain-user-2", email: "plain2@example.com" });
+    const token = await signFakeSupabaseToken({ sub: "sub-plain-user-2", email: "plain2@example.com" });
 
     const res = await request(app).get("/api/v1/admin/users").set("Authorization", `Bearer ${token}`);
 
@@ -110,7 +112,7 @@ describe("authenticated access", () => {
     ]);
 
     const app = createApp();
-    const token = signFakeSupabaseToken({ sub: "sub-real-admin", email: "admin@example.com" });
+    const token = await signFakeSupabaseToken({ sub: "sub-real-admin", email: "admin@example.com" });
 
     const res = await request(app).get("/api/v1/admin/users").set("Authorization", `Bearer ${token}`);
 
@@ -125,16 +127,21 @@ describe("authenticated access", () => {
 describe("forged identity / privilege escalation resistance", () => {
   it("ignores a forged role claim in the token — resolved role always comes from the database", async () => {
     const app = createApp();
-    const token = signFakeSupabaseToken({ sub: "sub-attacker-1", email: "attacker@example.com" });
+    const token = await signFakeSupabaseToken({ sub: "sub-attacker-1", email: "attacker@example.com" });
     // Manually craft a token with an extra top-level "role" claim, as an
     // attacker fully controlling the JSON payload (but not the signature)
-    // might attempt.
-    const jwt = await import("jsonwebtoken");
-    const forged = jwt.default.sign(
-      { sub: "sub-attacker-1", email: "attacker@example.com", role: "admin", user_id: "11111111-1111-1111-1111-111111111111" },
-      process.env.SUPABASE_JWT_SECRET!,
-      { algorithm: "HS256", expiresIn: 3600 },
-    );
+    // might attempt. Still validly signed with the shared test key — only
+    // the payload is attacker-controlled, not the signature.
+    const forged = await new SignJWT({
+      email: "attacker@example.com",
+      role: "admin",
+      user_id: "11111111-1111-1111-1111-111111111111",
+    })
+      .setProtectedHeader({ alg: "ES256", kid: TEST_KID })
+      .setSubject("sub-attacker-1")
+      .setIssuedAt()
+      .setExpirationTime(Math.floor(Date.now() / 1000) + 3600)
+      .sign(testPrivateKey);
 
     const profileRes = await request(app).post("/api/v1/auth/session").set("Authorization", `Bearer ${forged}`);
     expect(profileRes.body.data.role).toBe("user");
@@ -146,12 +153,13 @@ describe("forged identity / privilege escalation resistance", () => {
     void token;
   });
 
-  it("rejects a token signed with the wrong secret", async () => {
+  it("rejects a token signed with a different (unregistered) key", async () => {
     const app = createApp();
-    const badToken = signFakeSupabaseToken({
+    const { privateKey: wrongKey } = await generateEs256KeyPair();
+    const badToken = await signFakeSupabaseToken({
       sub: "sub-x",
       email: "x@example.com",
-      secret: "not-the-real-secret",
+      privateKey: wrongKey,
     });
 
     const res = await request(app).get("/api/v1/users/me").set("Authorization", `Bearer ${badToken}`);
@@ -161,7 +169,7 @@ describe("forged identity / privilege escalation resistance", () => {
 
   it("rejects an expired token", async () => {
     const app = createApp();
-    const expired = signFakeSupabaseToken({ sub: "sub-y", email: "y@example.com", expiresInSeconds: -10 });
+    const expired = await signFakeSupabaseToken({ sub: "sub-y", email: "y@example.com", expiresInSeconds: -10 });
 
     const res = await request(app).get("/api/v1/users/me").set("Authorization", `Bearer ${expired}`);
     expect(res.status).toBe(401);
@@ -179,7 +187,7 @@ describe("forged identity / privilege escalation resistance", () => {
 describe("logout", () => {
   it("records an audit log entry for an authenticated logout", async () => {
     const app = createApp();
-    const token = signFakeSupabaseToken({ sub: "sub-logout-1", email: "logout@example.com" });
+    const token = await signFakeSupabaseToken({ sub: "sub-logout-1", email: "logout@example.com" });
 
     await request(app).post("/api/v1/auth/session").set("Authorization", `Bearer ${token}`);
     const res = await request(app).post("/api/v1/auth/logout").set("Authorization", `Bearer ${token}`);

@@ -1,4 +1,5 @@
-import jwt from "jsonwebtoken";
+import { createRemoteJWKSet, jwtVerify, errors as joseErrors } from "jose";
+import type { JWTVerifyGetKey } from "jose";
 import { getEnv } from "../config/env.js";
 import { HttpError } from "../lib/httpError.js";
 
@@ -42,59 +43,79 @@ export class AuthNotConfiguredError extends HttpError {
   }
 }
 
+let cachedRemoteJwks: { url: string; jwks: JWTVerifyGetKey } | null = null;
+
+function getProductionJwks(supabaseUrl: string): JWTVerifyGetKey {
+  if (cachedRemoteJwks && cachedRemoteJwks.url === supabaseUrl) {
+    return cachedRemoteJwks.jwks;
+  }
+  const jwks = createRemoteJWKSet(new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`));
+  cachedRemoteJwks = { url: supabaseUrl, jwks };
+  return jwks;
+}
+
 /**
- * Verifies a Supabase-issued access token's signature and expiry using the
- * project's JWT secret (`SUPABASE_JWT_SECRET` — see ENVIRONMENT.md), and
- * extracts only the narrow claim set this backend trusts.
- *
- * This performs real cryptographic verification (HS256, Supabase's default
- * signing algorithm for the shared-secret JWT scheme) — it is not a stub.
- * What is NOT implemented here: Supabase's newer asymmetric (ES256/JWKS)
- * signing-key option. If a live project uses that instead, this function
- * would need to fetch and verify against the project's JWKS endpoint
- * instead of a shared secret — documented as a known limitation in
- * AUTHENTICATION.md since it could not be exercised against a real
- * project in this environment (DATABASE_IMPLEMENTATION_REPORT.md:
- * "Supabase status: Not connected").
+ * Test-only dependency injection point. When set, `verifySupabaseToken`
+ * verifies against this JWKS instead of fetching Supabase's real one over
+ * the network. Production code (this file, `middleware/auth.ts`, and
+ * every route) never calls this — it stays `null` for the entire
+ * lifetime of a real server process, so production behavior is
+ * completely unaffected by this existing. The only caller is
+ * `tests/helpers/testJwt.ts`.
  */
-export function verifySupabaseToken(token: string): SupabaseTokenClaims {
+let testJwksOverride: JWTVerifyGetKey | null = null;
+
+export function __setJwksForTesting(jwks: JWTVerifyGetKey | null): void {
+  testJwksOverride = jwks;
+}
+
+/**
+ * Verifies a Supabase-issued access token's signature and expiry against
+ * Supabase's own published signing keys (ES256, fetched from
+ * `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` — Supabase's current
+ * asymmetric signing-key scheme), and extracts only the narrow claim set
+ * this backend trusts.
+ *
+ * `SUPABASE_URL` is the only configuration this depends on now — the
+ * legacy shared-secret (`SUPABASE_JWT_SECRET`, HS256) scheme is no longer
+ * used to verify tokens.
+ */
+export async function verifySupabaseToken(token: string): Promise<SupabaseTokenClaims> {
   const env = getEnv();
-  if (!env.SUPABASE_JWT_SECRET) {
+  const jwks = testJwksOverride ?? (env.SUPABASE_URL ? getProductionJwks(env.SUPABASE_URL) : null);
+  if (!jwks) {
     throw new AuthNotConfiguredError();
   }
 
-  let decoded: jwt.JwtPayload;
+  let payload: Record<string, unknown>;
   try {
-    const result = jwt.verify(token, env.SUPABASE_JWT_SECRET, { algorithms: ["HS256"] });
-    if (typeof result === "string") {
-      throw new InvalidSessionError("unexpected token payload shape");
-    }
-    decoded = result;
+    const result = await jwtVerify(token, jwks, { algorithms: ["ES256"] });
+    payload = result.payload;
   } catch (err) {
-    if (err instanceof jwt.TokenExpiredError) {
+    if (err instanceof joseErrors.JWTExpired) {
       throw new InvalidSessionError("expired");
     }
-    if (err instanceof jwt.JsonWebTokenError) {
+    if (err instanceof joseErrors.JOSEError) {
       throw new InvalidSessionError("malformed or invalid signature");
     }
     throw err;
   }
 
-  if (typeof decoded.sub !== "string" || !decoded.sub) {
+  if (typeof payload.sub !== "string" || !payload.sub) {
     throw new InvalidSessionError("missing subject claim");
   }
-  if (typeof decoded.email !== "string" || !decoded.email) {
+  if (typeof payload.email !== "string" || !payload.email) {
     throw new InvalidSessionError("missing email claim");
   }
 
-  const appMetadata = (decoded as { app_metadata?: { provider?: unknown } }).app_metadata;
-  const userMetadata = (decoded as {
+  const appMetadata = (payload as { app_metadata?: { provider?: unknown } }).app_metadata;
+  const userMetadata = (payload as {
     user_metadata?: { full_name?: unknown; name?: unknown; avatar_url?: unknown };
   }).user_metadata;
 
   return {
-    sub: decoded.sub,
-    email: decoded.email,
+    sub: payload.sub,
+    email: payload.email,
     provider: typeof appMetadata?.provider === "string" ? appMetadata.provider : "unknown",
     displayName:
       (typeof userMetadata?.full_name === "string" && userMetadata.full_name) ||

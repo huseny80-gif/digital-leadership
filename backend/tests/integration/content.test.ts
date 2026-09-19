@@ -82,8 +82,8 @@ async function seedBasicScenario() {
 
   const { questionId } = await createQuestionBankWithAnswer(pool, { subjectId: publishedSubjectId, createdBy: adminId });
 
-  const userToken = signFakeSupabaseToken({ sub: "user-sub", email: "user@example.com" });
-  const adminToken = signFakeSupabaseToken({ sub: "admin-sub", email: "admin@example.com" });
+  const userToken = await signFakeSupabaseToken({ sub: "user-sub", email: "user@example.com" });
+  const adminToken = await signFakeSupabaseToken({ sub: "admin-sub", email: "admin@example.com" });
 
   return {
     adminId,
