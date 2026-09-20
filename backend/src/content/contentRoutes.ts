@@ -18,10 +18,16 @@ import { parsePagination, requireUuidParam } from "../lib/validation.js";
  */
 export function contentRoutes(): Router {
   const router = Router();
-  const service = new ContentService(new PgContentRepository(getPool()));
+  // Lazy: getPool() throws DatabaseNotConfiguredError if DATABASE_URL is
+  // unset. Building the service eagerly here would make that throw happen
+  // at router-construction time (i.e. server startup, inside createApp()),
+  // crashing the entire process before app.listen() — instead of the
+  // intended graceful per-request 500 this error is designed to produce.
+  const getService = () => new ContentService(new PgContentRepository(getPool()));
 
   router.get("/subjects", requireAuthenticated, async (req, res, next) => {
     try {
+      const service = getService();
       const pagination = parsePagination(req.query);
       const isAdmin = req.user!.role === "admin";
       const { items, total } = await service.listSubjects(isAdmin, pagination);
@@ -34,6 +40,7 @@ export function contentRoutes(): Router {
 
   router.get("/subjects/:subjectId", requireAuthenticated, requireUuidParam("subjectId"), async (req, res, next) => {
     try {
+      const service = getService();
       const isAdmin = req.user!.role === "admin";
       const subject = await service.getSubjectOrThrow(req.params.subjectId as string, isAdmin);
       res.json({ data: subject });
@@ -48,6 +55,7 @@ export function contentRoutes(): Router {
     requireAuthenticated,
     async (req, res, next) => {
       try {
+        const service = getService();
         const pagination = parsePagination(req.query);
         const isAdmin = req.user!.role === "admin";
         const { items, total } = await service.listLecturesForSubjectOrThrow(

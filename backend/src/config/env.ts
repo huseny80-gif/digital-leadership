@@ -9,10 +9,13 @@ import { z } from "zod";
  * the full variable list and where each value comes from in later phases
  * (e.g., Supabase project settings, Google Cloud Console OAuth client).
  *
- * This schema intentionally makes secret-shaped variables optional in this
- * scaffolding phase (nothing yet reads/uses them — no Supabase or OAuth
- * connection exists), but fixes their name and shape now so later phases
- * do not have to invent a new configuration surface.
+ * Secret-shaped variables remain typed `.optional()` in this schema so a
+ * misconfigured/incomplete environment fails per-request (a clear 500 from
+ * the code that actually needs the missing value) rather than refusing to
+ * even parse — but most of them ARE now actively read: DATABASE_URL by
+ * src/lib/db.ts, SUPABASE_URL by src/auth/verifySupabaseToken.ts (required
+ * for authentication — see that field's own comment below). Do not read
+ * "optional" here as "not used yet".
  */
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -26,9 +29,11 @@ const envSchema = z.object({
 
   // Phase 6 (Authentication & Authorization). Google OAuth itself is
   // configured entirely inside the Supabase dashboard (GOOGLE_OAUTH_SETUP.md)
-  // — the backend never holds a Google client secret. SUPABASE_JWT_SECRET
-  // is what the backend uses to verify a Supabase-issued session token
-  // (AUTHENTICATION.md) without a network round-trip per request.
+  // — the backend never holds a Google client secret. Session tokens are
+  // now verified against Supabase's real JWKS endpoint (ES256, see
+  // SUPABASE_URL above and src/auth/verifySupabaseToken.ts) — this shared
+  // secret is no longer used for verification and is kept optional here
+  // only for backward compatibility.
   SUPABASE_JWT_SECRET: z.string().optional(),
 
   // Phase 7 (Core Backend & Educational Content APIs). Comma-separated

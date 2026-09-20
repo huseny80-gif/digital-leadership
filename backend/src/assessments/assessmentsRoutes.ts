@@ -35,7 +35,10 @@ function buildService(): AssessmentsService {
  */
 export function assessmentsRoutes(): Router {
   const router = Router();
-  const service = buildService();
+  // Lazy for the same reason as contentRoutes.ts: getPool() (called inside
+  // buildService()) must not throw at router-construction time (server
+  // startup) — each handler below calls this itself instead.
+  const getService = buildService;
 
   router.get(
     "/subjects/:subjectId/assessments",
@@ -43,6 +46,7 @@ export function assessmentsRoutes(): Router {
     requireUuidParam("subjectId"),
     async (req, res, next) => {
       try {
+        const service = getService();
         const isAdmin = req.user!.role === "admin";
         const quizzes = await service.listQuizzesForSubject(req.params.subjectId as string, isAdmin);
         const body: ApiResult<Quiz[]> = { data: quizzes };
@@ -55,6 +59,7 @@ export function assessmentsRoutes(): Router {
 
   router.get("/quizzes/:quizId", requireAuthenticated, requireUuidParam("quizId"), async (req, res, next) => {
     try {
+      const service = getService();
       const isAdmin = req.user!.role === "admin";
       const quiz = await service.getQuizOrThrow(req.params.quizId as string, isAdmin);
       const body: ApiResult<Quiz> = { data: quiz };
@@ -70,6 +75,7 @@ export function assessmentsRoutes(): Router {
     requireUuidParam("quizId"),
     async (req, res, next) => {
       try {
+        const service = getService();
         const isAdmin = req.user!.role === "admin";
         const questions = await service.getQuestionsOrThrow(req.params.quizId as string, isAdmin);
         const body: ApiResult<QuestionForAttempt[]> = { data: questions };
@@ -86,6 +92,7 @@ export function assessmentsRoutes(): Router {
     requireUuidParam("quizId"),
     async (req, res, next) => {
       try {
+        const service = getService();
         const isAdmin = req.user!.role === "admin";
         const attempt = await service.startAttempt(req.params.quizId as string, req.user!.id, isAdmin);
         const body: ApiResult<QuizAttempt> = { data: attempt };
@@ -102,6 +109,7 @@ export function assessmentsRoutes(): Router {
     requireUuidParam("attemptId"),
     async (req, res, next) => {
       try {
+        const service = getService();
         const parsed = submitAnswerSchema.safeParse(req.body);
         if (!parsed.success) {
           throw new ValidationError("A valid 'questionId' and either 'selectedOptionId' or 'answerText' are required.");
@@ -126,6 +134,7 @@ export function assessmentsRoutes(): Router {
     requireUuidParam("attemptId"),
     async (req, res, next) => {
       try {
+        const service = getService();
         const result = await service.submitAttempt(req.params.attemptId as string, req.user!.id);
         const body: ApiResult<QuizAttemptResult> = { data: result };
         res.json(body);
@@ -141,6 +150,7 @@ export function assessmentsRoutes(): Router {
     requireUuidParam("attemptId"),
     async (req, res, next) => {
       try {
+        const service = getService();
         const isAdmin = req.user!.role === "admin";
         const result = await service.getResultOrThrow(req.params.attemptId as string, req.user!.id, isAdmin);
         const body: ApiResult<QuizAttemptResult> = { data: result };

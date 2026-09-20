@@ -1,4 +1,4 @@
-import type { KeyLike } from "jose";
+import type { CryptoKey } from "jose";
 import { signSupabaseStyleJwt } from "./testJwt.js";
 
 /**
@@ -23,7 +23,7 @@ export function signFakeSupabaseToken(claims: {
   expiresInSeconds?: number;
   /** Sign with a different (unregistered) private key instead of the
    * shared test key, to simulate a forged/wrong-key token. */
-  privateKey?: KeyLike;
+  privateKey?: CryptoKey;
 }): Promise<string> {
   return signSupabaseStyleJwt(claims);
 }

@@ -13,10 +13,13 @@ import { parsePagination, requireUuidParam } from "../lib/validation.js";
  */
 export function lectureRoutes(): Router {
   const router = Router();
-  const service = new ContentService(new PgContentRepository(getPool()));
+  // Lazy for the same reason as contentRoutes.ts: getPool() must not throw
+  // at router-construction time (server startup).
+  const getService = () => new ContentService(new PgContentRepository(getPool()));
 
   router.get("/:lectureId", requireAuthenticated, requireUuidParam("lectureId"), async (req, res, next) => {
     try {
+      const service = getService();
       const isAdmin = req.user!.role === "admin";
       const lecture = await service.getLectureOrThrow(req.params.lectureId as string, isAdmin);
       res.json({ data: lecture });
@@ -27,6 +30,7 @@ export function lectureRoutes(): Router {
 
   router.get("/:lectureId/items", requireAuthenticated, requireUuidParam("lectureId"), async (req, res, next) => {
     try {
+      const service = getService();
       const pagination = parsePagination(req.query);
       const isAdmin = req.user!.role === "admin";
       const { items, total } = await service.listItemsForLectureOrThrow(

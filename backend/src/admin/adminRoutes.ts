@@ -145,16 +145,37 @@ function stripUndefined<T extends object>(obj: T): { [K in keyof T]?: Exclude<T[
  */
 export function adminRoutes(): Router {
   const router = Router();
-  const pool = getPool();
 
-  const contentService = new AdminContentService(pool, new AdminContentRepository(pool));
-  const assessmentsService = new AdminAssessmentsService(pool, new AdminAssessmentsRepository(pool));
-  const usersService = new AdminUsersService(pool, new AdminUsersRepository(pool));
-  const auditRepository = new AdminAuditRepository(pool);
-  const overviewRepository = new AdminOverviewRepository(pool);
-  const filesRepository = new FilesRepository(pool);
+  // Lazy: getPool() throws DatabaseNotConfiguredError if DATABASE_URL is
+  // unset. Constructing these eagerly here would make that throw happen at
+  // router-construction time (server startup, inside createApp()),
+  // crashing the entire process before app.listen() — instead of the
+  // intended graceful per-request 500. Deferred to the first actual
+  // request that passes `requireAdmin` below; every handler in this file
+  // still references these same variables unchanged via closure.
+  let contentService!: AdminContentService;
+  let assessmentsService!: AdminAssessmentsService;
+  let usersService!: AdminUsersService;
+  let auditRepository!: AdminAuditRepository;
+  let overviewRepository!: AdminOverviewRepository;
+  let filesRepository!: FilesRepository;
+  let initialized = false;
 
   router.use(requireAdmin);
+
+  router.use((_req, _res, next) => {
+    if (!initialized) {
+      const pool = getPool();
+      contentService = new AdminContentService(pool, new AdminContentRepository(pool));
+      assessmentsService = new AdminAssessmentsService(pool, new AdminAssessmentsRepository(pool));
+      usersService = new AdminUsersService(pool, new AdminUsersRepository(pool));
+      auditRepository = new AdminAuditRepository(pool);
+      overviewRepository = new AdminOverviewRepository(pool);
+      filesRepository = new FilesRepository(pool);
+      initialized = true;
+    }
+    next();
+  });
 
   // ---------- Overview ----------
   router.get("/overview", async (_req, res, next) => {

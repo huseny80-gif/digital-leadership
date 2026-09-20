@@ -1,5 +1,5 @@
 import { SignJWT, exportJWK, generateKeyPair, createLocalJWKSet } from "jose";
-import type { JWTVerifyGetKey, KeyLike } from "jose";
+import type { JWTVerifyGetKey, CryptoKey } from "jose";
 import { __setJwksForTesting } from "../../src/auth/verifySupabaseToken.js";
 
 /**
@@ -27,7 +27,7 @@ const publicJwk = await exportJWK(publicKey);
 /** The private key every fake token in this test suite is signed with,
  * unless a test explicitly passes a different one (e.g. to simulate a
  * token forged with the wrong key). */
-export const testPrivateKey: KeyLike = privateKey as KeyLike;
+export const testPrivateKey: CryptoKey = privateKey as CryptoKey;
 
 /** The local JWKS `verifySupabaseToken` is pointed at for the duration of
  * this process's test run — contains only the public half of
@@ -42,9 +42,9 @@ __setJwksForTesting(testJwks);
  * NOT in `testJwks`, so a token signed with its private half fails
  * signature verification even though its header still claims `TEST_KID`.
  * Used to simulate a forged/wrong-key token. */
-export async function generateEs256KeyPair(): Promise<{ publicKey: KeyLike; privateKey: KeyLike }> {
+export async function generateEs256KeyPair(): Promise<{ publicKey: CryptoKey; privateKey: CryptoKey }> {
   const pair = await generateKeyPair("ES256", { extractable: true });
-  return { publicKey: pair.publicKey as KeyLike, privateKey: pair.privateKey as KeyLike };
+  return { publicKey: pair.publicKey as CryptoKey, privateKey: pair.privateKey as CryptoKey };
 }
 
 /** Builds a token shaped exactly like a real Supabase access token
@@ -60,7 +60,7 @@ export async function signSupabaseStyleJwt(claims: {
   fullName?: string;
   avatarUrl?: string;
   expiresInSeconds?: number;
-  privateKey?: KeyLike;
+  privateKey?: CryptoKey;
 }): Promise<string> {
   const key = claims.privateKey ?? testPrivateKey;
   const expiresInSeconds = claims.expiresInSeconds ?? 3600;
