@@ -82,7 +82,14 @@ export function __setJwksForTesting(jwks: JWTVerifyGetKey | null): void {
  */
 export async function verifySupabaseToken(token: string): Promise<SupabaseTokenClaims> {
   const env = getEnv();
-  const jwks = testJwksOverride ?? (env.SUPABASE_URL ? getProductionJwks(env.SUPABASE_URL) : null);
+  // `.trim()` guards against a SUPABASE_URL that is present but
+  // whitespace-only (e.g. a stray trailing \r from a CRLF-saved .env, or
+  // an empty-but-set shell/OS environment variable silently overriding a
+  // correctly filled-in .env value — see .env.example's precedence
+  // warning) — such a value must be treated as "not configured", not
+  // passed to `new URL(...)` where it would fail differently.
+  const supabaseUrl = env.SUPABASE_URL?.trim();
+  const jwks = testJwksOverride ?? (supabaseUrl ? getProductionJwks(supabaseUrl) : null);
   if (!jwks) {
     throw new AuthNotConfiguredError();
   }
