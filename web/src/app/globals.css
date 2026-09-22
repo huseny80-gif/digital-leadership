@@ -633,6 +633,38 @@ button {
   min-height: 2.5rem;
 }
 
+/* input[type="file"] renders its own native control (a browse button +
+ * filename text) that this text-input padding/min-height was never
+ * designed for — applying them the same way as a text input clips/hides
+ * that native control in Chromium-based browsers, making the file picker
+ * appear to vanish even though the element itself is present and valid.
+ * Reset the outer box to plain, unpadded flow and style the actual
+ * button via the standard ::file-selector-button pseudo-element instead,
+ * reusing the same tokens .btn already uses elsewhere on this page for
+ * visual consistency. */
+.form-input[type="file"] {
+  padding: 0;
+  border: none;
+  background: transparent;
+  min-height: auto;
+}
+
+.form-input[type="file"]::file-selector-button {
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  margin-inline-end: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.form-input[type="file"]::file-selector-button:hover {
+  background: var(--color-primary-hover);
+}
+
 .form-textarea {
   min-height: 6rem;
   resize: vertical;
