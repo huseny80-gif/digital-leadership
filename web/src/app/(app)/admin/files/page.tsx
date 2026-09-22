@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { FileMetadata } from "@shared/index";
+import type { FileMetadata, SignedFileUrl } from "@shared/index";
 import { adminGet } from "@/lib/api/adminBrowserClient";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/States";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
@@ -26,6 +26,8 @@ export default function AdminFilesPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [openingFileId, setOpeningFileId] = useState<string | null>(null);
+  const [openError, setOpenError] = useState<string | null>(null);
 
   async function load() {
     setError(null);
@@ -73,6 +75,28 @@ export default function AdminFilesPage() {
       setUploadError("Unable to upload this file. Please try again.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  // Opens a file via the backend-mediated signed-URL flow — the bucket
+  // stays private; this page only ever handles the short-lived URL the
+  // proxy returns, never a storage path or credential.
+  async function handleOpen(id: string) {
+    setOpenError(null);
+    setOpeningFileId(id);
+    try {
+      const res = await fetch(`/api/files/${id}`);
+      const body = await res.json();
+      if (!res.ok) {
+        setOpenError(body.error?.message ?? "Unable to open this file. Please try again.");
+        return;
+      }
+      const data = body.data as SignedFileUrl;
+      window.open(data.url, "_blank", "noopener,noreferrer");
+    } catch {
+      setOpenError("Unable to open this file. Please try again.");
+    } finally {
+      setOpeningFileId(null);
     }
   }
 
@@ -134,6 +158,12 @@ export default function AdminFilesPage() {
         </div>
       </form>
 
+      {openError ? (
+        <p role="alert" style={{ color: "var(--color-danger)" }}>
+          {openError}
+        </p>
+      ) : null}
+
       {error ? <ErrorState message={error} retryHref="/admin/files" /> : null}
       {!error && files === null ? <LoadingState label="Loading files…" /> : null}
       {!error && files && files.length === 0 ? <EmptyState title="No files yet" message="Upload one above." /> : null}
@@ -160,6 +190,15 @@ export default function AdminFilesPage() {
                   </td>
                   <td style={{ fontFamily: "monospace", fontSize: "var(--font-size-sm)" }}>{file.id}</td>
                   <td>
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={openingFileId === file.id}
+                      onClick={() => handleOpen(file.id)}
+                      style={{ marginRight: "var(--space-2)" }}
+                    >
+                      {openingFileId === file.id ? "Opening…" : "Open"}
+                    </button>
                     <ConfirmButton
                       label="Delete"
                       confirmTitle="Delete this file?"
