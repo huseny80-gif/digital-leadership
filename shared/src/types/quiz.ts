@@ -59,6 +59,17 @@ export interface SubmitAnswerAck {
   recorded: boolean;
 }
 
+/** One previously-recorded answer for an attempt, as returned to the
+ * owning learner for resuming/re-hydrating their in-progress selections
+ * (PHASE 09B "Quiz Navigation"). Deliberately carries only what the UI
+ * needs to re-select an option or re-populate a text answer — no
+ * `isCorrect`/points/any answer-key data. */
+export interface AttemptAnswer {
+  questionId: string;
+  selectedOptionId: string | null;
+  answerText: string | null;
+}
+
 /** Server-computed result of a submitted attempt. Never includes the
  * answer key or per-question correctness — only the aggregate the
  * approved requirements support (PHASE 09B "Result Security"). */

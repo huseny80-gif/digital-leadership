@@ -2,9 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { ApiErrorBody, Quiz, QuestionForAttempt, SubmitAnswerAck } from "@shared/index";
+import type { ApiErrorBody, Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer } from "@shared/index";
 
 type AnswerState = { selectedOptionId?: string; answerText?: string };
+
+function toInitialAnswers(initialAnswers: AttemptAnswer[]): Record<string, AnswerState> {
+  const initial: Record<string, AnswerState> = {};
+  for (const answer of initialAnswers) {
+    initial[answer.questionId] = {
+      ...(answer.selectedOptionId !== null ? { selectedOptionId: answer.selectedOptionId } : {}),
+      ...(answer.answerText !== null ? { answerText: answer.answerText } : {}),
+    };
+  }
+  return initial;
+}
 
 /**
  * Learner-facing quiz-taking experience (PHASE 09B "Quiz UI"). Holds the
@@ -19,19 +30,28 @@ type AnswerState = { selectedOptionId?: string; answerText?: string };
  * until a final submit) so that "next/previous" navigation never loses an
  * already-made selection, and so a partial attempt is always recoverable
  * server-side even if the browser is closed mid-quiz.
+ *
+ * `initialAnswers` re-hydrates this component's state from whatever the
+ * backend already has recorded for this attempt (`GET
+ * /attempts/:attemptId/answers`, fetched server-side by the page above) —
+ * a refresh or reopening an in-progress attempt shows the same selections
+ * instead of a blank form, since the answers were never actually lost,
+ * only not re-displayed before this existed.
  */
 export function QuizAttemptRunner({
   quiz,
   questions,
   attemptId,
+  initialAnswers,
 }: {
   quiz: Quiz;
   questions: QuestionForAttempt[];
   attemptId: string;
+  initialAnswers?: AttemptAnswer[];
 }) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, AnswerState>>({});
+  const [answers, setAnswers] = useState<Record<string, AnswerState>>(() => toInitialAnswers(initialAnswers ?? []));
   const [savingQuestionId, setSavingQuestionId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);

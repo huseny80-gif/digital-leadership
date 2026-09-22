@@ -1,4 +1,4 @@
-import type { Quiz, QuestionForAttempt, QuizAttempt, QuizAttemptResult, SubmitAnswerAck, SubmitAnswerInput } from "@shared/index";
+import type { Quiz, QuestionForAttempt, QuizAttempt, QuizAttemptResult, SubmitAnswerAck, SubmitAnswerInput, AttemptAnswer } from "@shared/index";
 import type { AssessmentsRepository } from "./assessmentsRepository.js";
 import { conflict, forbidden, notFound } from "../lib/httpError.js";
 import { ValidationError } from "../lib/validation.js";
@@ -61,6 +61,24 @@ export class AssessmentsService {
       throw conflict("This quiz attempt has already been submitted.");
     }
     return attempt;
+  }
+
+  /**
+   * Re-hydration for resuming an attempt (PHASE 09B "Quiz Navigation"):
+   * lets the owning learner re-fetch what they already answered, so a
+   * page refresh or reopening an in-progress attempt re-selects the same
+   * options instead of showing a blank form — the answers were never
+   * lost server-side, only not re-displayed. Same ownership rule as every
+   * other attempt-scoped read: identical 404 whether the attempt doesn't
+   * exist or belongs to someone else. Not restricted to `in_progress`
+   * attempts — reading one's own already-submitted answers is harmless
+   * and keeps this method simple; only the answer-key data itself
+   * (`isCorrect`) is ever gated, and the repository doesn't select it.
+   */
+  async getAnswersOrThrow(attemptId: string, userId: string): Promise<AttemptAnswer[]> {
+    const attempt = await this.repository.getAttemptById(attemptId);
+    if (!attempt || attempt.userId !== userId) throw notFound("Quiz attempt");
+    return this.repository.listAnswersForAttempt(attemptId);
   }
 
   /**

@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import type { Quiz, QuestionForAttempt, QuizAttempt, QuizAttemptStatus, QuestionType } from "@shared/index";
+import type { Quiz, QuestionForAttempt, QuizAttempt, QuizAttemptStatus, QuestionType, AttemptAnswer } from "@shared/index";
 
 /**
  * Data-access boundary for assessments (DATABASE_DESIGN.md §4;
@@ -30,6 +30,7 @@ export interface AssessmentsRepository {
   findInProgressAttempt(quizId: string, userId: string): Promise<QuizAttempt | null>;
   createAttempt(quizId: string, userId: string): Promise<QuizAttempt>;
   getAttemptById(attemptId: string): Promise<QuizAttempt | null>;
+  listAnswersForAttempt(attemptId: string): Promise<AttemptAnswer[]>;
   upsertAnswer(input: {
     attemptId: string;
     questionId: string;
@@ -223,6 +224,31 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       [attemptId],
     );
     return result.rows[0] ? toAttempt(result.rows[0]) : null;
+  }
+
+  /**
+   * Re-hydration support for resuming an attempt (PHASE 09B "Quiz
+   * Navigation"). Selects only what the learner already chose —
+   * `is_correct`/`points_awarded` are not in the select list, matching
+   * `listQuestionsForAttempt`'s same never-select-it-at-all approach
+   * (QUIZ_SECURITY.md "Answer-Key Protection").
+   */
+  async listAnswersForAttempt(attemptId: string): Promise<AttemptAnswer[]> {
+    const result = await this.pool.query<{
+      question_id: string;
+      selected_option_id: string | null;
+      answer_text: string | null;
+    }>(
+      `select question_id, selected_option_id, answer_text
+       from quiz_attempt_answers
+       where attempt_id = $1`,
+      [attemptId],
+    );
+    return result.rows.map((row) => ({
+      questionId: row.question_id,
+      selectedOptionId: row.selected_option_id,
+      answerText: row.answer_text,
+    }));
   }
 
   /**

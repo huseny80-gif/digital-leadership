@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import type { Quiz, QuestionForAttempt } from "@shared/index";
+import type { Quiz, QuestionForAttempt, AttemptAnswer } from "@shared/index";
 
 const pushMock = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -172,5 +172,22 @@ describe("QuizAttemptRunner", () => {
     // The submit call itself carries no body — no score/correctness field
     // is ever constructed client-side to send.
     expect(fetchMock).toHaveBeenCalledWith("/api/attempts/attempt-1/submit", expect.objectContaining({ method: "POST" }));
+  });
+
+  it("re-hydrates previously-saved selections from initialAnswers (refresh/reopen)", () => {
+    const initialAnswers: AttemptAnswer[] = [{ questionId: "q1", selectedOptionId: "opt-4", answerText: null }];
+
+    render(<QuizAttemptRunner quiz={quiz} questions={questions} attemptId="attempt-1" initialAnswers={initialAnswers} />);
+
+    expect(screen.getByLabelText("4")).toBeChecked();
+    expect(screen.getByText(/1 of 2 answered/i)).toBeInTheDocument();
+  });
+
+  it("with no initialAnswers (or an empty list), starts with nothing selected — same as before this feature", () => {
+    render(<QuizAttemptRunner quiz={quiz} questions={questions} attemptId="attempt-1" initialAnswers={[]} />);
+
+    expect(screen.getByLabelText("3")).not.toBeChecked();
+    expect(screen.getByLabelText("4")).not.toBeChecked();
+    expect(screen.getByText(/0 of 2 answered/i)).toBeInTheDocument();
   });
 });

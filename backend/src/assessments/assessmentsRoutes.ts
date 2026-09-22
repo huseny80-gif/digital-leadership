@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import type { ApiResult, Quiz, QuestionForAttempt, QuizAttempt, QuizAttemptResult, SubmitAnswerAck } from "@shared/index";
+import type { ApiResult, Quiz, QuestionForAttempt, QuizAttempt, QuizAttemptResult, SubmitAnswerAck, AttemptAnswer } from "@shared/index";
 import { requireAuthenticated } from "../middleware/authInstance.js";
 import { requireUuidParam, ValidationError } from "../lib/validation.js";
 import { getPool } from "../lib/db.js";
@@ -97,6 +97,22 @@ export function assessmentsRoutes(): Router {
         const attempt = await service.startAttempt(req.params.quizId as string, req.user!.id, isAdmin);
         const body: ApiResult<QuizAttempt> = { data: attempt };
         res.status(201).json(body);
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  router.get(
+    "/attempts/:attemptId/answers",
+    requireAuthenticated,
+    requireUuidParam("attemptId"),
+    async (req, res, next) => {
+      try {
+        const service = getService();
+        const answers = await service.getAnswersOrThrow(req.params.attemptId as string, req.user!.id);
+        const body: ApiResult<AttemptAnswer[]> = { data: answers };
+        res.json(body);
       } catch (err) {
         next(err);
       }

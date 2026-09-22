@@ -307,6 +307,87 @@ describe("Answer submission", () => {
   });
 });
 
+describe("Attempt answer re-hydration (resume/refresh)", () => {
+  async function startAttempt(app: ReturnType<typeof createApp>, quizId: string, token: string) {
+    const res = await request(app).post(`/api/v1/quizzes/${quizId}/attempts`).set("Authorization", `Bearer ${token}`);
+    return res.body.data.id as string;
+  }
+
+  it("returns previously-saved answers for the attempt's own owner", async () => {
+    const { publishedQuizId, userToken, questionId, correctOptionId } = await seedQuizScenario();
+    const app = createApp();
+    const attemptId = await startAttempt(app, publishedQuizId, userToken);
+
+    await request(app)
+      .post(`/api/v1/attempts/${attemptId}/answers`)
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ questionId, selectedOptionId: correctOptionId });
+
+    const res = await request(app)
+      .get(`/api/v1/attempts/${attemptId}/answers`)
+      .set("Authorization", `Bearer ${userToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([{ questionId, selectedOptionId: correctOptionId, answerText: null }]);
+  });
+
+  it("returns an empty list for a fresh attempt with no saved answers yet", async () => {
+    const { publishedQuizId, userToken } = await seedQuizScenario();
+    const app = createApp();
+    const attemptId = await startAttempt(app, publishedQuizId, userToken);
+
+    const res = await request(app)
+      .get(`/api/v1/attempts/${attemptId}/answers`)
+      .set("Authorization", `Bearer ${userToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+  });
+
+  it("rejects access to another user's attempt answers (404, not 403)", async () => {
+    const { publishedQuizId, userToken, otherUserToken, questionId, correctOptionId } = await seedQuizScenario();
+    const app = createApp();
+    const attemptId = await startAttempt(app, publishedQuizId, userToken);
+    await request(app)
+      .post(`/api/v1/attempts/${attemptId}/answers`)
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ questionId, selectedOptionId: correctOptionId });
+
+    const res = await request(app)
+      .get(`/api/v1/attempts/${attemptId}/answers`)
+      .set("Authorization", `Bearer ${otherUserToken}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects an unauthenticated request", async () => {
+    const { publishedQuizId, userToken } = await seedQuizScenario();
+    const app = createApp();
+    const attemptId = await startAttempt(app, publishedQuizId, userToken);
+
+    const res = await request(app).get(`/api/v1/attempts/${attemptId}/answers`);
+
+    expect(res.status).toBe(401);
+  });
+
+  it("never leaks is_correct/points/any answer-key data", async () => {
+    const { publishedQuizId, userToken, questionId, correctOptionId } = await seedQuizScenario();
+    const app = createApp();
+    const attemptId = await startAttempt(app, publishedQuizId, userToken);
+    await request(app)
+      .post(`/api/v1/attempts/${attemptId}/answers`)
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ questionId, selectedOptionId: correctOptionId });
+
+    const res = await request(app)
+      .get(`/api/v1/attempts/${attemptId}/answers`)
+      .set("Authorization", `Bearer ${userToken}`);
+
+    expect(res.status).toBe(200);
+    expect(JSON.stringify(res.body)).not.toMatch(/isCorrect|is_correct|pointsAwarded|points_awarded/i);
+  });
+});
+
 describe("Scoring and results", () => {
   async function startAttempt(app: ReturnType<typeof createApp>, quizId: string, token: string) {
     const res = await request(app).post(`/api/v1/quizzes/${quizId}/attempts`).set("Authorization", `Bearer ${token}`);
