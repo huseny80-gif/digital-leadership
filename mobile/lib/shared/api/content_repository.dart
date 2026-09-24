@@ -1,4 +1,5 @@
 import '../../core/networking/api_client.dart';
+import '../models/assignment.dart';
 import '../models/lecture.dart';
 import '../models/file_metadata.dart';
 import '../models/paginated_result.dart';
@@ -37,5 +38,14 @@ class ContentRepository {
   Future<PaginatedResult<LectureItem>> listLectureItems(String lectureId, {int page = 1, int limit = 100}) async {
     final json = await _client.get('/api/v1/lectures/$lectureId/items?page=$page&limit=$limit');
     return PaginatedResult.fromJson(json as Map<String, dynamic>, LectureItem.fromJson);
+  }
+
+  /// PHASE 12S — `GET /api/v1/subjects/:id/assignments` (PHASE 12P). Same
+  /// no-client-side-filtering rule as every other method here: the
+  /// backend's own published/draft + subject-visibility enforcement is
+  /// authoritative.
+  Future<PaginatedResult<Assignment>> listAssignments(String subjectId, {int page = 1, int limit = 50}) async {
+    final json = await _client.get('/api/v1/subjects/$subjectId/assignments?page=$page&limit=$limit');
+    return PaginatedResult.fromJson(json as Map<String, dynamic>, Assignment.fromJson);
   }
 }

@@ -52,6 +52,78 @@ void main() {
 
       expect(() => repo.listSubjects(), throwsA(isA<ApiException>().having((e) => e.isUnauthenticated, 'isUnauthenticated', isTrue)));
     });
+
+    test('PHASE 12S: listAssignments calls GET /api/v1/subjects/:id/assignments with the bearer token attached', () async {
+      Uri? calledUri;
+      Map<String, String>? calledHeaders;
+      final client = ApiClient(
+        tokenProvider: const _StaticTokenProvider('tok-123'),
+        httpClient: MockClient((request) async {
+          calledUri = request.url;
+          calledHeaders = request.headers;
+          return http.Response(
+            jsonEncode({
+              'data': [
+                {
+                  'id': 'a1',
+                  'subjectId': 's1',
+                  'lectureId': null,
+                  'title': 'Essay 1',
+                  'description': 'Write about X.',
+                  'orderIndex': 0,
+                  'status': 'published',
+                  'createdBy': 'admin-1',
+                  'createdAt': '2026-01-01T00:00:00Z',
+                  'updatedAt': '2026-01-01T00:00:00Z',
+                },
+              ],
+              'page': 1,
+              'limit': 50,
+              'total': 1,
+            }),
+            200,
+          );
+        }),
+        baseUrl: 'http://test',
+      );
+      final repo = ContentRepository(client);
+
+      final result = await repo.listAssignments('s1');
+
+      expect(calledUri!.path, '/api/v1/subjects/s1/assignments');
+      expect(calledHeaders!['authorization'], 'Bearer tok-123');
+      expect(result.data, hasLength(1));
+      expect(result.data[0].title, 'Essay 1');
+      expect(result.data[0].lectureId, isNull);
+    });
+
+    test('PHASE 12S: listAssignments returns an empty list for a subject with no assignments', () async {
+      final client = ApiClient(
+        tokenProvider: const _StaticTokenProvider('tok-123'),
+        httpClient: MockClient((request) async {
+          return http.Response(jsonEncode({'data': [], 'page': 1, 'limit': 50, 'total': 0}), 200);
+        }),
+        baseUrl: 'http://test',
+      );
+      final repo = ContentRepository(client);
+
+      final result = await repo.listAssignments('s1');
+
+      expect(result.data, isEmpty);
+    });
+
+    test('PHASE 12S: listAssignments surfaces a 404 (invalid/invisible subject) as ApiException, never an unhandled crash', () async {
+      final client = ApiClient(
+        tokenProvider: const _StaticTokenProvider('tok-123'),
+        httpClient: MockClient((request) async {
+          return http.Response(jsonEncode({'error': {'code': 'not_found', 'message': 'Subject not found.'}}), 404);
+        }),
+        baseUrl: 'http://test',
+      );
+      final repo = ContentRepository(client);
+
+      expect(() => repo.listAssignments('missing'), throwsA(isA<ApiException>().having((e) => e.isNotFound, 'isNotFound', isTrue)));
+    });
   });
 
   group('FilesRepository (PHASE 10 §11)', () {

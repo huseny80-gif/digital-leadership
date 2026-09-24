@@ -8,6 +8,7 @@ import '../../shared/models/subject.dart';
 import '../../widgets/states.dart';
 import '../assessments/subject_assessments_screen.dart';
 import '../lectures/lecture_detail_screen.dart';
+import 'subject_assignments_screen.dart';
 
 class _SubjectDetail {
   const _SubjectDetail(this.subject, this.lectures);
@@ -87,6 +88,16 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => SubjectAssessmentsScreen(subjectId: widget.subjectId, subjectTitle: detail.subject.title),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.assignment_outlined),
+                  label: const Text('View Assignments'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => SubjectAssignmentsScreen(subjectId: widget.subjectId, subjectTitle: detail.subject.title),
                     ),
                   ),
                 ),
