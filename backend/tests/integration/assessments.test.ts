@@ -328,7 +328,9 @@ describe("Attempt answer re-hydration (resume/refresh)", () => {
       .set("Authorization", `Bearer ${userToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toEqual([{ questionId, selectedOptionId: correctOptionId, answerText: null }]);
+    expect(res.body.data).toEqual([
+      { questionId, selectedOptionId: correctOptionId, answerText: null, matchAnswer: null, orderAnswer: null },
+    ]);
   });
 
   it("returns an empty list for a fresh attempt with no saved answers yet", async () => {

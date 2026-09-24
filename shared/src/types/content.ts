@@ -60,6 +60,27 @@ export interface LectureItem {
  * `LectureItem` plus embedded, already-safe file metadata for `pdf` items
  * (`null` for every other `itemType`, and `null` if the item is `pdf` but
  * the referenced file could not be resolved). */
+/**
+ * PHASE 12H — dedicated, subject-scoped assignment (Phase 12G-R's
+ * recommended Option B: mirrors `quizzes`' own subject_id-required /
+ * lecture_id-optional design, not a repurposed `lecture_items` row —
+ * Finquiz assignments are 100% subject-scoped with no lecture reference,
+ * which `lecture_items.lecture_id NOT NULL` cannot represent without
+ * weakening that table's existing invariant, per the approved analysis).
+ */
+export interface Assignment {
+  id: string;
+  subjectId: string;
+  lectureId: string | null;
+  title: string;
+  description: string | null;
+  orderIndex: number;
+  status: PublicationStatus;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface LectureItemResponse extends LectureItem {
   file: FileMetadata | null;
 }

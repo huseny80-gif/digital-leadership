@@ -16,6 +16,16 @@ export interface AdminQuestionOption {
   orderIndex: number;
 }
 
+/** One grading criterion within a `rubric` (PHASE 12H) — reviewer/admin
+ * data for a manually-graded `open` question, exactly mirroring the
+ * source Finquiz shape. This type — and `AdminQuestion.rubric` below —
+ * must NEVER be imported by any learner-facing route or component, same
+ * boundary discipline as `AdminQuestionOption.isCorrect` above. */
+export interface RubricItem {
+  text: string;
+  keywords: string[];
+}
+
 export interface AdminQuestion {
   id: string;
   questionBankId: string;
@@ -23,6 +33,10 @@ export interface AdminQuestion {
   prompt: string;
   points: number;
   options: AdminQuestionOption[];
+  /** Reviewer-only grading guide for `open` questions; `null` for every
+   * other question type or when unset. Never learner-facing, at any
+   * attempt status (stricter than `explanation`'s post-graded rule). */
+  rubric: RubricItem[] | null;
 }
 
 export interface QuestionBank {

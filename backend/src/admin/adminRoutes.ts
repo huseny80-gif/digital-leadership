@@ -7,6 +7,7 @@ import type {
   AdminQuizQuestionLink,
   AdminUser,
   ApiResult,
+  Assignment,
   AuditLogEntry,
   FileMetadata,
   Lecture,
@@ -17,6 +18,7 @@ import type {
   Subject,
 } from "@shared/index";
 import { requireAdmin } from "../middleware/authInstance.js";
+import { notFound } from "../lib/httpError.js";
 import { requireUuidParam, ValidationError, parsePagination } from "../lib/validation.js";
 import { getPool } from "../lib/db.js";
 import { FilesRepository } from "../files/filesRepository.js";
@@ -24,12 +26,35 @@ import { AdminContentRepository } from "./adminContentRepository.js";
 import { AdminContentService } from "./adminContentService.js";
 import { AdminAssessmentsRepository } from "./adminAssessmentsRepository.js";
 import { AdminAssessmentsService } from "./adminAssessmentsService.js";
+import { AssessmentsService } from "../assessments/assessmentsService.js";
+import { PgAssessmentsRepository } from "../assessments/assessmentsRepository.js";
+import { AdminAssignmentsRepository } from "./adminAssignmentsRepository.js";
 import { AdminUsersRepository } from "./adminUsersRepository.js";
 import { AdminUsersService } from "./adminUsersService.js";
 import { AdminAuditRepository } from "./adminAuditRepository.js";
 import { AdminOverviewRepository } from "./adminOverviewRepository.js";
 
 const publicationStatusSchema = z.enum(["draft", "published"]);
+
+const openAnswerReviewSchema = z.object({
+  pointsAwarded: z.number().min(0),
+  reviewNote: z.string().max(2000).optional(),
+});
+
+// PHASE 12H — assignments (subject-scoped, Phase 12G-R Option B).
+const assignmentCreateSchema = z.object({
+  subjectId: z.string().uuid(),
+  lectureId: z.string().uuid().nullable().optional(),
+  title: z.string().min(1).max(200),
+  description: z.string().max(20000).nullable().optional(),
+  orderIndex: z.number().int().min(0).optional().default(0),
+});
+const assignmentUpdateSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(20000).nullable().optional(),
+  orderIndex: z.number().int().min(0).optional(),
+  status: publicationStatusSchema.optional(),
+});
 
 const subjectCreateSchema = z.object({
   title: z.string().min(1).max(200),
@@ -159,6 +184,8 @@ export function adminRoutes(): Router {
   let auditRepository!: AdminAuditRepository;
   let overviewRepository!: AdminOverviewRepository;
   let filesRepository!: FilesRepository;
+  let learnerAssessmentsService!: AssessmentsService;
+  let assignmentsRepository!: AdminAssignmentsRepository;
   let initialized = false;
 
   router.use(requireAdmin);
@@ -172,6 +199,13 @@ export function adminRoutes(): Router {
       auditRepository = new AdminAuditRepository(pool);
       overviewRepository = new AdminOverviewRepository(pool);
       filesRepository = new FilesRepository(pool);
+      // Reuses the learner-facing AssessmentsService for its
+      // `reviewOpenAnswer` method (PHASE 12F-BE §7) rather than
+      // duplicating the open-question manual-review lifecycle logic
+      // here — this router only adds the admin-only auth gate
+      // (`requireAdmin`, already applied above) around it.
+      learnerAssessmentsService = new AssessmentsService(new PgAssessmentsRepository(pool));
+      assignmentsRepository = new AdminAssignmentsRepository(pool);
       initialized = true;
     }
     next();
@@ -634,6 +668,98 @@ export function adminRoutes(): Router {
       next(err);
     }
   });
+
+  // ---------- Assignments (PHASE 12H — subject-scoped, Phase 12G-R Option B) ----------
+  router.get("/subjects/:subjectId/assignments", requireUuidParam("subjectId"), async (req, res, next) => {
+    try {
+      const subjectId = req.params.subjectId as string;
+      const exists = await assignmentsRepository.subjectExists(subjectId);
+      if (!exists) throw new ValidationError("The specified subject does not exist.");
+      const assignments = await assignmentsRepository.listForSubject(subjectId);
+      const body: ApiResult<Assignment[]> = { data: assignments };
+      res.json(body);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/assignments", async (req, res, next) => {
+    try {
+      const parsed = assignmentCreateSchema.safeParse(req.body);
+      if (!parsed.success) throw new ValidationError("A valid 'subjectId' and 'title' are required.");
+      const exists = await assignmentsRepository.subjectExists(parsed.data.subjectId);
+      if (!exists) throw new ValidationError("The specified subject does not exist.");
+      const assignment = await assignmentsRepository.create({
+        subjectId: parsed.data.subjectId,
+        lectureId: parsed.data.lectureId ?? null,
+        title: parsed.data.title,
+        description: parsed.data.description ?? null,
+        orderIndex: parsed.data.orderIndex,
+        createdBy: req.user!.id,
+      });
+      const body: ApiResult<Assignment> = { data: assignment };
+      res.status(201).json(body);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.patch("/assignments/:assignmentId", requireUuidParam("assignmentId"), async (req, res, next) => {
+    try {
+      const parsed = assignmentUpdateSchema.safeParse(req.body);
+      if (!parsed.success) throw new ValidationError("Invalid assignment update payload.");
+      const updated = await assignmentsRepository.update(req.params.assignmentId as string, stripUndefined(parsed.data));
+      if (!updated) throw notFound("Assignment");
+      const body: ApiResult<Assignment> = { data: updated };
+      res.json(body);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.delete("/assignments/:assignmentId", requireUuidParam("assignmentId"), async (req, res, next) => {
+    try {
+      const deleted = await assignmentsRepository.softDelete(req.params.assignmentId as string);
+      if (!deleted) throw notFound("Assignment");
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ---------- Open-question manual review (PHASE 12F-BE §7) ----------
+  // No AI/heuristic grading anywhere in this path — `pointsAwarded` is
+  // entirely the reviewer's own input. `requireAdmin` (applied to the
+  // whole router above) is the sole authorization gate; there is no
+  // separate "reviewer" role or per-attempt reviewer scoping in this
+  // project's existing RBAC model, so this matches every other
+  // admin-only route's authorization exactly, not a new mechanism.
+  router.patch(
+    "/attempts/:attemptId/answers/:questionId/review",
+    requireUuidParam("attemptId"),
+    requireUuidParam("questionId"),
+    async (req, res, next) => {
+      try {
+        const parsed = openAnswerReviewSchema.safeParse(req.body);
+        if (!parsed.success) {
+          throw new ValidationError("A valid 'pointsAwarded' (>= 0) is required.");
+        }
+        // `reviewNote` is accepted for forward-compatibility but not yet
+        // persisted anywhere — no schema field exists for it (Phase
+        // 12F-BE contract review §2 "Remaining Open Questions" flagged
+        // this as a non-blocking sub-detail, not resolved here).
+        const result = await learnerAssessmentsService.reviewOpenAnswer(
+          req.params.attemptId as string,
+          req.params.questionId as string,
+          parsed.data.pointsAwarded,
+        );
+        const body: ApiResult<{ questionId: string; reviewed: boolean; attemptStatus: string }> = { data: result };
+        res.json(body);
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
 
   // ---------- Audit logs ----------
   router.get("/audit-logs", async (req, res, next) => {

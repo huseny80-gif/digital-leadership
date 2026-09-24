@@ -123,3 +123,83 @@ export async function addQuestionToQuiz(
     [opts.quizId, opts.questionId, opts.orderIndex ?? 0],
   );
 }
+
+/** PHASE 12F-BE fixture helpers for the 4 new question types. */
+
+export async function createFillQuestion(
+  pool: Pool,
+  opts: { bankId: string; createdBy: string; prompt?: string; acceptedAnswers: string[]; points?: number },
+) {
+  const questionResult = await pool.query<{ id: string }>(
+    "insert into questions (question_bank_id, question_type, prompt, points, created_by) values ($1, 'fill', $2, $3, $4) returning id",
+    [opts.bankId, opts.prompt ?? "Fill in the blank", opts.points ?? 1, opts.createdBy],
+  );
+  const questionId = questionResult.rows[0]!.id;
+  for (let i = 0; i < opts.acceptedAnswers.length; i++) {
+    await pool.query(
+      "insert into question_accepted_answers (question_id, answer_text, order_index) values ($1, $2, $3)",
+      [questionId, opts.acceptedAnswers[i], i],
+    );
+  }
+  return questionId;
+}
+
+export async function createMatchQuestion(
+  pool: Pool,
+  opts: { bankId: string; createdBy: string; prompt?: string; pairs: Array<{ left: string; right: string }>; points?: number },
+) {
+  const questionResult = await pool.query<{ id: string }>(
+    "insert into questions (question_bank_id, question_type, prompt, points, created_by) values ($1, 'match', $2, $3, $4) returning id",
+    [opts.bankId, opts.prompt ?? "Match the items", opts.points ?? 1, opts.createdBy],
+  );
+  const questionId = questionResult.rows[0]!.id;
+  const pairIds: string[] = [];
+  for (let i = 0; i < opts.pairs.length; i++) {
+    const pair = opts.pairs[i]!;
+    const result = await pool.query<{ id: string }>(
+      "insert into question_pairs (question_id, left_text, right_text, order_index) values ($1, $2, $3, $4) returning id",
+      [questionId, pair.left, pair.right, i],
+    );
+    pairIds.push(result.rows[0]!.id);
+  }
+  return { questionId, pairIds };
+}
+
+export async function createOrderQuestion(
+  pool: Pool,
+  opts: { bankId: string; createdBy: string; prompt?: string; items: string[]; points?: number },
+) {
+  const questionResult = await pool.query<{ id: string }>(
+    "insert into questions (question_bank_id, question_type, prompt, points, created_by) values ($1, 'order', $2, $3, $4) returning id",
+    [opts.bankId, opts.prompt ?? "Order the items", opts.points ?? 1, opts.createdBy],
+  );
+  const questionId = questionResult.rows[0]!.id;
+  const itemIds: string[] = [];
+  for (let i = 0; i < opts.items.length; i++) {
+    const result = await pool.query<{ id: string }>(
+      "insert into question_items (question_id, item_text, correct_order_index) values ($1, $2, $3) returning id",
+      [questionId, opts.items[i], i],
+    );
+    itemIds.push(result.rows[0]!.id);
+  }
+  return { questionId, itemIds };
+}
+
+export async function createOpenQuestion(
+  pool: Pool,
+  opts: { bankId: string; createdBy: string; prompt?: string; points?: number },
+) {
+  const questionResult = await pool.query<{ id: string }>(
+    "insert into questions (question_bank_id, question_type, prompt, points, created_by) values ($1, 'open', $2, $3, $4) returning id",
+    [opts.bankId, opts.prompt ?? "Explain your reasoning", opts.points ?? 1, opts.createdBy],
+  );
+  return questionResult.rows[0]!.id;
+}
+
+export async function createEmptyQuestionBank(pool: Pool, opts: { subjectId: string; createdBy: string }) {
+  const bankResult = await pool.query<{ id: string }>(
+    "insert into question_banks (subject_id, title, created_by) values ($1, 'Multi-type bank', $2) returning id",
+    [opts.subjectId, opts.createdBy],
+  );
+  return bankResult.rows[0]!.id;
+}

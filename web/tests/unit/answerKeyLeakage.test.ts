@@ -73,4 +73,32 @@ describe("no answer-key field in LEARNER-facing web client source", () => {
     expect(content).not.toMatch(/\bis_correct\s*[:?]/);
     expect(content).not.toMatch(/\bisCorrect\s*[:?]/);
   });
+
+  /**
+   * PHASE 12F-BE extension: the same never-select-it-at-all discipline
+   * for the 3 new answer-key-bearing identifiers introduced by the
+   * match/order/fill question types (Phase 12D-R schema,
+   * Phase 12F-BE contract review §H). No learner-facing Web UI for these
+   * types exists yet as of this phase (explicitly out of scope — see the
+   * implementation report), so this currently passes vacuously; it is
+   * added now so a future implementation phase cannot introduce a leak
+   * without this test catching it on the very first offending file.
+   */
+  it("web/src contains no reference to question_accepted_answers/correct_order_index/questions.explanation (learner-facing, excluding the Admin Console)", () => {
+    const srcDir = join(__dirname, "..", "..", "src");
+    const offenders = listFiles(srcDir)
+      .filter((file) => /\.(ts|tsx)$/.test(file))
+      .filter((file) => !file.includes(ADMIN_ONLY_PATH_SEGMENT))
+      .filter((file) => /question_accepted_answers|correct_order_index|correctOrderIndex/i.test(readFileSync(file, "utf8")));
+    expect(offenders).toEqual([]);
+  });
+
+  it("the shared QuestionForAttempt contract's matchItems/orderItems have no correctness/order-index field", () => {
+    const quizTypes = join(__dirname, "..", "..", "..", "shared", "src", "types", "quiz.ts");
+    const content = readFileSync(quizTypes, "utf8");
+    // Same convention as the is_correct check above: prose mentions
+    // explaining the omission are fine, a *field declaration* is not.
+    expect(content).not.toMatch(/\bcorrect_order_index\s*[:?]/);
+    expect(content).not.toMatch(/\bcorrectOrderIndex\s*[:?]/);
+  });
 });

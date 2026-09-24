@@ -73,8 +73,8 @@ export class AdminAssessmentsRepository {
   }
 
   async listQuestions(questionBankId: string): Promise<AdminQuestion[]> {
-    const questionsResult = await this.pool.query<{ id: string; question_bank_id: string; question_type: QuestionType; prompt: string; points: number }>(
-      `select id, question_bank_id, question_type, prompt, points
+    const questionsResult = await this.pool.query<{ id: string; question_bank_id: string; question_type: QuestionType; prompt: string; points: number; rubric: unknown }>(
+      `select id, question_bank_id, question_type, prompt, points, rubric
        from questions where question_bank_id = $1 and deleted_at is null order by created_at asc`,
       [questionBankId],
     );
@@ -100,12 +100,13 @@ export class AdminAssessmentsRepository {
       prompt: q.prompt,
       points: q.points,
       options: optionsByQuestion.get(q.id) ?? [],
+      rubric: (q.rubric as AdminQuestion["rubric"]) ?? null,
     }));
   }
 
   async getQuestion(id: string): Promise<AdminQuestion | null> {
-    const result = await this.pool.query<{ id: string; question_bank_id: string; question_type: QuestionType; prompt: string; points: number }>(
-      `select id, question_bank_id, question_type, prompt, points from questions where id = $1 and deleted_at is null`,
+    const result = await this.pool.query<{ id: string; question_bank_id: string; question_type: QuestionType; prompt: string; points: number; rubric: unknown }>(
+      `select id, question_bank_id, question_type, prompt, points, rubric from questions where id = $1 and deleted_at is null`,
       [id],
     );
     const row = result.rows[0];
@@ -121,6 +122,7 @@ export class AdminAssessmentsRepository {
       prompt: row.prompt,
       points: row.points,
       options: optionsResult.rows.map((o) => ({ id: o.id, optionText: o.option_text, isCorrect: o.is_correct, orderIndex: o.order_index })),
+      rubric: (row.rubric as AdminQuestion["rubric"]) ?? null,
     };
   }
 
@@ -139,10 +141,19 @@ export class AdminAssessmentsRepository {
     return { id: result.rows[0]!.id };
   }
 
-  async updateQuestion(id: string, fields: { prompt?: string; points?: number }): Promise<boolean> {
+  async updateQuestion(id: string, fields: { prompt?: string; points?: number; rubric?: AdminQuestion["rubric"] }): Promise<boolean> {
+    // `rubric` is written only when the caller explicitly supplies the key
+    // (including an explicit `null` to clear it) -- `undefined` (the key
+    // absent entirely) leaves the stored value untouched, matching
+    // prompt/points' existing coalesce-on-undefined behavior.
+    const rubricProvided = Object.prototype.hasOwnProperty.call(fields, "rubric");
     const result = await this.pool.query(
-      `update questions set prompt = coalesce($2, prompt), points = coalesce($3, points) where id = $1 and deleted_at is null`,
-      [id, fields.prompt ?? null, fields.points ?? null],
+      `update questions set
+         prompt = coalesce($2, prompt),
+         points = coalesce($3, points),
+         rubric = case when $4 then $5::jsonb else rubric end
+       where id = $1 and deleted_at is null`,
+      [id, fields.prompt ?? null, fields.points ?? null, rubricProvided, rubricProvided ? JSON.stringify(fields.rubric ?? null) : null],
     );
     return result.rowCount! > 0;
   }

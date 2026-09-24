@@ -35,6 +35,8 @@ const questions: QuestionForAttempt[] = [
       { id: "opt-3", optionText: "3", orderIndex: 0 },
       { id: "opt-4", optionText: "4", orderIndex: 1 },
     ],
+    matchItems: null,
+    orderItems: null,
   },
   {
     id: "q2",
@@ -45,6 +47,8 @@ const questions: QuestionForAttempt[] = [
       { id: "opt-true", optionText: "True", orderIndex: 0 },
       { id: "opt-false", optionText: "False", orderIndex: 1 },
     ],
+    matchItems: null,
+    orderItems: null,
   },
 ];
 
@@ -175,7 +179,9 @@ describe("QuizAttemptRunner", () => {
   });
 
   it("re-hydrates previously-saved selections from initialAnswers (refresh/reopen)", () => {
-    const initialAnswers: AttemptAnswer[] = [{ questionId: "q1", selectedOptionId: "opt-4", answerText: null }];
+    const initialAnswers: AttemptAnswer[] = [
+      { questionId: "q1", selectedOptionId: "opt-4", answerText: null, matchAnswer: null, orderAnswer: null },
+    ];
 
     render(<QuizAttemptRunner quiz={quiz} questions={questions} attemptId="attempt-1" initialAnswers={initialAnswers} />);
 
