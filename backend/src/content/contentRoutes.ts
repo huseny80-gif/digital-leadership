@@ -1,5 +1,5 @@
 import { Router } from "express";
-import type { Lecture, PaginatedResult, Subject } from "@shared/index";
+import type { Assignment, Lecture, PaginatedResult, Subject } from "@shared/index";
 import { requireAuthenticated } from "../middleware/authInstance.js";
 import { ContentService } from "./contentService.js";
 import { PgContentRepository } from "./contentRepository.js";
@@ -64,6 +64,28 @@ export function contentRoutes(): Router {
           pagination,
         );
         const body: PaginatedResult<Lecture> = { data: items, page: pagination.page, limit: pagination.limit, total };
+        res.json(body);
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  router.get(
+    "/subjects/:subjectId/assignments",
+    requireUuidParam("subjectId"),
+    requireAuthenticated,
+    async (req, res, next) => {
+      try {
+        const service = getService();
+        const pagination = parsePagination(req.query);
+        const isAdmin = req.user!.role === "admin";
+        const { items, total } = await service.listAssignmentsForSubjectOrThrow(
+          req.params.subjectId as string,
+          isAdmin,
+          pagination,
+        );
+        const body: PaginatedResult<Assignment> = { data: items, page: pagination.page, limit: pagination.limit, total };
         res.json(body);
       } catch (err) {
         next(err);

@@ -1,4 +1,4 @@
-import type { Lecture, LectureItemResponse, Subject } from "@shared/index";
+import type { Assignment, Lecture, LectureItemResponse, Subject } from "@shared/index";
 import type { ContentRepository } from "./contentRepository.js";
 import type { PaginationParams } from "../lib/validation.js";
 import { notFound } from "../lib/httpError.js";
@@ -51,5 +51,17 @@ export class ContentService {
   ): Promise<{ items: LectureItemResponse[]; total: number }> {
     await this.getLectureOrThrow(lectureId, isAdmin);
     return this.repository.listItemsForLecture(lectureId, isAdmin, pagination);
+  }
+
+  async listAssignmentsForSubjectOrThrow(
+    subjectId: string,
+    isAdmin: boolean,
+    pagination: PaginationParams,
+  ): Promise<{ items: Assignment[]; total: number }> {
+    // Same rationale as listLecturesForSubjectOrThrow: confirm the subject
+    // itself is visible before listing its assignments, so a draft
+    // subject's existence can't be inferred from an empty-vs-404 response.
+    await this.getSubjectOrThrow(subjectId, isAdmin);
+    return this.repository.listAssignmentsForSubject(subjectId, isAdmin, pagination);
   }
 }

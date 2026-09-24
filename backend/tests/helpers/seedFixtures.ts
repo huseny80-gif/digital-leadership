@@ -50,6 +50,24 @@ export async function createLecture(
   return result.rows[0]!.id;
 }
 
+export async function createAssignment(
+  pool: Pool,
+  opts: {
+    subjectId: string;
+    lectureId?: string | null;
+    title: string;
+    status: "draft" | "published";
+    createdBy: string;
+    orderIndex?: number;
+  },
+) {
+  const result = await pool.query<{ id: string }>(
+    "insert into assignments (subject_id, lecture_id, title, status, created_by, order_index) values ($1, $2, $3, $4, $5, $6) returning id",
+    [opts.subjectId, opts.lectureId ?? null, opts.title, opts.status, opts.createdBy, opts.orderIndex ?? 0],
+  );
+  return result.rows[0]!.id;
+}
+
 export async function createFile(pool: Pool, opts: { storageKey: string; uploadedBy: string }) {
   const result = await pool.query<{ id: string }>(
     `insert into files (storage_key, original_filename, mime_type, size_bytes, uploaded_by)

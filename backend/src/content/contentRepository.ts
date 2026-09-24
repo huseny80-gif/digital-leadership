@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import type { FileMetadata, Lecture, LectureItemResponse, Subject } from "@shared/index";
+import type { Assignment, FileMetadata, Lecture, LectureItemResponse, Subject } from "@shared/index";
 import type { PaginationParams } from "../lib/validation.js";
 
 /**
@@ -29,6 +29,11 @@ export interface ContentRepository {
     isAdmin: boolean,
     pagination: PaginationParams,
   ): Promise<{ items: LectureItemResponse[]; total: number }>;
+  listAssignmentsForSubject(
+    subjectId: string,
+    isAdmin: boolean,
+    pagination: PaginationParams,
+  ): Promise<{ items: Assignment[]; total: number }>;
 }
 
 interface SubjectRow {
@@ -72,6 +77,19 @@ interface LectureItemRow {
   file_status: "active" | "archived" | null;
   file_uploaded_by: string | null;
   file_created_at: Date | null;
+}
+
+interface AssignmentRow {
+  id: string;
+  subject_id: string;
+  lecture_id: string | null;
+  title: string;
+  description: string | null;
+  order_index: number;
+  status: "draft" | "published";
+  created_by: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 function toSubject(row: SubjectRow): Subject {
@@ -127,6 +145,21 @@ function toLectureItem(row: LectureItemRow): LectureItemResponse {
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
     file,
+  };
+}
+
+function toAssignment(row: AssignmentRow): Assignment {
+  return {
+    id: row.id,
+    subjectId: row.subject_id,
+    lectureId: row.lecture_id,
+    title: row.title,
+    description: row.description,
+    orderIndex: row.order_index,
+    status: row.status,
+    createdBy: row.created_by,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
   };
 }
 
@@ -215,5 +248,22 @@ export class PgContentRepository implements ContentRepository {
       [lectureId],
     );
     return { items: rows.rows.map(toLectureItem), total: Number(countResult.rows[0]?.count ?? 0) };
+  }
+
+  async listAssignmentsForSubject(subjectId: string, isAdmin: boolean, pagination: PaginationParams) {
+    const visibilityClause = isAdmin ? "" : "and status = 'published'";
+    const rows = await this.pool.query<AssignmentRow>(
+      `select id, subject_id, lecture_id, title, description, order_index, status, created_by, created_at, updated_at
+       from assignments
+       where subject_id = $1 and deleted_at is null ${visibilityClause}
+       order by order_index asc, title asc
+       limit $2 offset $3`,
+      [subjectId, pagination.limit, pagination.offset],
+    );
+    const countResult = await this.pool.query<{ count: string }>(
+      `select count(*) from assignments where subject_id = $1 and deleted_at is null ${visibilityClause}`,
+      [subjectId],
+    );
+    return { items: rows.rows.map(toAssignment), total: Number(countResult.rows[0]?.count ?? 0) };
   }
 }
