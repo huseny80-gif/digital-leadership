@@ -21,6 +21,7 @@ import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import SubjectsPage from "@/app/(app)/subjects/page";
 import SubjectDetailPage from "@/app/(app)/subjects/[subjectId]/page";
 import LectureDetailPage from "@/app/(app)/subjects/[subjectId]/lectures/[lectureId]/page";
+import SubjectAssignmentsPage from "@/app/(app)/subjects/[subjectId]/assignments/page";
 import DashboardPage from "@/app/(app)/dashboard/page";
 
 const mockApiGet = vi.mocked(apiGet);
@@ -114,6 +115,16 @@ describe("SubjectDetailPage", () => {
     expect(screen.getByText("Intro")).toBeInTheDocument();
   });
 
+  it("exposes a View Assignments entry point linking to the subject-scoped assignments route", async () => {
+    mockApiGet.mockResolvedValue({ data: { id: "s1", title: "Mathematics", description: "Numbers", orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" } });
+    mockApiGetPaginated.mockResolvedValue({ data: [], page: 1, limit: 50, total: 0 });
+
+    const element = await SubjectDetailPage({ params: Promise.resolve({ subjectId: "s1" }) });
+    render(element);
+
+    expect(screen.getByRole("link", { name: /view assignments/i })).toHaveAttribute("href", "/subjects/s1/assignments");
+  });
+
   it("renders NotFoundState for a 404 (nonexistent or not-visible subject)", async () => {
     mockApiGet.mockRejectedValue(new ApiError({ error: { code: "not_found", message: "Subject not found." } }, 404));
     mockApiGetPaginated.mockRejectedValue(new ApiError({ error: { code: "not_found", message: "Subject not found." } }, 404));
@@ -122,6 +133,94 @@ describe("SubjectDetailPage", () => {
     render(element);
 
     expect(screen.getByText(/not found/i)).toBeInTheDocument();
+  });
+});
+
+describe("SubjectAssignmentsPage", () => {
+  it("loads the subject and its assignments", async () => {
+    mockApiGet.mockResolvedValue({ data: { id: "s1", title: "Mathematics", description: "Numbers", orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" } });
+    mockApiGetPaginated.mockResolvedValue({
+      data: [
+        { id: "a1", subjectId: "s1", lectureId: null, title: "Essay 1", description: "Write about X.", orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" },
+      ],
+      page: 1,
+      limit: 50,
+      total: 1,
+    });
+
+    const element = await SubjectAssignmentsPage({ params: Promise.resolve({ subjectId: "s1" }) });
+    render(element);
+
+    expect(screen.getByRole("heading", { name: "Assignments" })).toBeInTheDocument();
+    expect(screen.getByText("Essay 1")).toBeInTheDocument();
+    expect(screen.getByText("Write about X.")).toBeInTheDocument();
+  });
+
+  it("renders an empty state when there are no assignments", async () => {
+    mockApiGet.mockResolvedValue({ data: { id: "s1", title: "Mathematics", description: null, orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" } });
+    mockApiGetPaginated.mockResolvedValue({ data: [], page: 1, limit: 50, total: 0 });
+
+    const element = await SubjectAssignmentsPage({ params: Promise.resolve({ subjectId: "s1" }) });
+    render(element);
+
+    expect(screen.getByText(/no assignments yet/i)).toBeInTheDocument();
+  });
+
+  it("lectureId = null does not break rendering (assignments are subject-scoped)", async () => {
+    mockApiGet.mockResolvedValue({ data: { id: "s1", title: "Mathematics", description: null, orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" } });
+    mockApiGetPaginated.mockResolvedValue({
+      data: [
+        { id: "a1", subjectId: "s1", lectureId: null, title: "Subject-only assignment", description: null, orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" },
+      ],
+      page: 1,
+      limit: 50,
+      total: 1,
+    });
+
+    const element = await SubjectAssignmentsPage({ params: Promise.resolve({ subjectId: "s1" }) });
+    render(element);
+
+    expect(screen.getByText("Subject-only assignment")).toBeInTheDocument();
+  });
+
+  it("renders NotFoundState for a 404 (nonexistent or not-visible subject)", async () => {
+    mockApiGet.mockRejectedValue(new ApiError({ error: { code: "not_found", message: "Subject not found." } }, 404));
+    mockApiGetPaginated.mockRejectedValue(new ApiError({ error: { code: "not_found", message: "Subject not found." } }, 404));
+
+    const element = await SubjectAssignmentsPage({ params: Promise.resolve({ subjectId: "missing" }) });
+    render(element);
+
+    expect(screen.getByText(/not found/i)).toBeInTheDocument();
+  });
+
+  it("renders a safe error state on API failure, never the raw error", async () => {
+    mockApiGet.mockResolvedValue({ data: { id: "s1", title: "Mathematics", description: null, orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" } });
+    mockApiGetPaginated.mockRejectedValue(
+      new ApiError({ error: { code: "internal_error", message: "select * from assignments failed: connection refused" } }, 500),
+    );
+
+    const element = await SubjectAssignmentsPage({ params: Promise.resolve({ subjectId: "s1" }) });
+    render(element);
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByText(/select \* from/i)).not.toBeInTheDocument();
+  });
+
+  it("security: no rubric or answer-key field is ever rendered", async () => {
+    mockApiGet.mockResolvedValue({ data: { id: "s1", title: "Mathematics", description: null, orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" } });
+    mockApiGetPaginated.mockResolvedValue({
+      data: [
+        { id: "a1", subjectId: "s1", lectureId: null, title: "Essay 1", description: "Write about X.", orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" },
+      ],
+      page: 1,
+      limit: 50,
+      total: 1,
+    });
+
+    const element = await SubjectAssignmentsPage({ params: Promise.resolve({ subjectId: "s1" }) });
+    const { container } = render(element);
+
+    expect(container.innerHTML).not.toMatch(/rubric|is_correct|isCorrect|correct_order_index|correctOrderIndex/i);
   });
 });
 
