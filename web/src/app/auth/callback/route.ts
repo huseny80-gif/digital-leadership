@@ -15,10 +15,24 @@ import { createSupabaseServerClient } from "@/lib/supabase/serverClient";
  * AUTHENTICATION.md). This route's only job is finishing the Supabase
  * handshake and redirecting into the app.
  */
+const DEFAULT_REDIRECT = "/dashboard";
+
+// Only same-origin absolute paths ("/dashboard") are allowed. Rejects
+// external and protocol-relative URLs, schemes like javascript:/data:,
+// backslashes, and control characters, since browsers normalize
+// "/\evil" and "/\t/evil" into the protocol-relative "//evil".
+function safeRedirectPath(value: string | null, origin: string): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return DEFAULT_REDIRECT;
+  if (value.includes("\\") || /[\u0000-\u001f\u007f]/.test(value)) return DEFAULT_REDIRECT;
+  const resolved = new URL(value, origin);
+  if (resolved.origin !== origin) return DEFAULT_REDIRECT;
+  return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
+  const redirectTo = safeRedirectPath(searchParams.get("redirectTo"), origin);
   const oauthError = searchParams.get("error");
 
   if (oauthError) {

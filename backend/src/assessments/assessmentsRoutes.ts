@@ -7,15 +7,38 @@ import { getPool } from "../lib/db.js";
 import { AssessmentsService } from "./assessmentsService.js";
 import { PgAssessmentsRepository } from "./assessmentsRepository.js";
 
+// Structural validation ONLY — shape, types, non-empty-where-required.
+// No grading, no answer-key lookup, no question_pairs/question_items
+// query happens here; those live entirely in AssessmentsService/
+// AssessmentsRepository, unchanged by this schema (PHASE 12F-BE-HTTP-
+// WIRING §4/§6).
+const matchAnswerPairSchema = z.object({
+  leftId: z.string().uuid(),
+  rightId: z.string().uuid(),
+});
+
 const submitAnswerSchema = z
   .object({
     questionId: z.string().uuid(),
     selectedOptionId: z.string().uuid().optional(),
     answerText: z.string().max(5000).optional(),
+    // `match` — one entry per left item; completeness/duplicate/
+    // membership checks happen server-side in
+    // AssessmentsRepository.scoreMatchAnswer, not here.
+    matchAnswer: z.array(matchAnswerPairSchema).min(1).optional(),
+    // `order` — question_items ids in the learner's chosen order;
+    // same division of labor as matchAnswer above.
+    orderAnswer: z.array(z.string().uuid()).min(1).optional(),
   })
-  .refine((v) => v.selectedOptionId !== undefined || v.answerText !== undefined, {
-    message: "Either 'selectedOptionId' or 'answerText' is required.",
-  });
+  .refine(
+    (v) =>
+      [v.selectedOptionId !== undefined, v.answerText !== undefined, v.matchAnswer !== undefined, v.orderAnswer !== undefined].filter(
+        Boolean,
+      ).length === 1,
+    {
+      message: "Exactly one of 'selectedOptionId', 'answerText', 'matchAnswer', or 'orderAnswer' is required.",
+    },
+  );
 
 function buildService(): AssessmentsService {
   return new AssessmentsService(new PgAssessmentsRepository(getPool()));
@@ -128,13 +151,17 @@ export function assessmentsRoutes(): Router {
         const service = getService();
         const parsed = submitAnswerSchema.safeParse(req.body);
         if (!parsed.success) {
-          throw new ValidationError("A valid 'questionId' and either 'selectedOptionId' or 'answerText' are required.");
+          throw new ValidationError(
+            "A valid 'questionId' and exactly one of 'selectedOptionId', 'answerText', 'matchAnswer', or 'orderAnswer' are required.",
+          );
         }
-        const { questionId, selectedOptionId, answerText } = parsed.data;
+        const { questionId, selectedOptionId, answerText, matchAnswer, orderAnswer } = parsed.data;
         const ack = await service.submitAnswer(req.params.attemptId as string, req.user!.id, {
           questionId,
           ...(selectedOptionId !== undefined ? { selectedOptionId } : {}),
           ...(answerText !== undefined ? { answerText } : {}),
+          ...(matchAnswer !== undefined ? { matchAnswer } : {}),
+          ...(orderAnswer !== undefined ? { orderAnswer } : {}),
         });
         const body: ApiResult<SubmitAnswerAck> = { data: ack };
         res.json(body);
