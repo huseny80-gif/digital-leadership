@@ -115,14 +115,14 @@ describe("SubjectDetailPage", () => {
     expect(screen.getByText("Intro")).toBeInTheDocument();
   });
 
-  it("exposes a View Assignments entry point linking to the subject-scoped assignments route", async () => {
+  it("exposes an Assignments tab linking to the subject-scoped assignments route (Phase 18.2 — SubjectTabs replaces the old 'View Assignments' button)", async () => {
     mockApiGet.mockResolvedValue({ data: { id: "s1", title: "Mathematics", description: "Numbers", orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" } });
     mockApiGetPaginated.mockResolvedValue({ data: [], page: 1, limit: 50, total: 0 });
 
     const element = await SubjectDetailPage({ params: Promise.resolve({ subjectId: "s1" }) });
     render(element);
 
-    expect(screen.getByRole("link", { name: /view assignments/i })).toHaveAttribute("href", "/subjects/s1/assignments");
+    expect(screen.getByRole("link", { name: /assignments/i })).toHaveAttribute("href", "/subjects/s1/assignments");
   });
 
   it("renders NotFoundState for a 404 (nonexistent or not-visible subject)", async () => {
@@ -151,7 +151,11 @@ describe("SubjectAssignmentsPage", () => {
     const element = await SubjectAssignmentsPage({ params: Promise.resolve({ subjectId: "s1" }) });
     render(element);
 
-    expect(screen.getByRole("heading", { name: "Assignments" })).toBeInTheDocument();
+    // Phase 18.2 — the page heading now shows the subject title
+    // (subject-hero pattern, shared across Lectures/Assessments/
+    // Assignments), matching what SubjectDetailPage's own heading test
+    // already asserts; "Assignments" itself is the tab/section label.
+    expect(screen.getByRole("heading", { name: "Mathematics" })).toBeInTheDocument();
     expect(screen.getByText("Essay 1")).toBeInTheDocument();
     expect(screen.getByText("Write about X.")).toBeInTheDocument();
   });

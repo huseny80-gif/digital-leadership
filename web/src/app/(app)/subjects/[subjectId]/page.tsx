@@ -1,10 +1,11 @@
-import Link from "next/link";
 import type { Lecture, Subject } from "@shared/index";
 import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
 import { LectureCard } from "@/components/content/LectureCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { SubjectTabs } from "@/components/content/SubjectTabs";
+import { subjectTabs } from "@/components/content/subjectTabs";
 
 /**
  * Subject detail (API_V1.md `GET /subjects/:subjectId`,
@@ -51,17 +52,20 @@ export default async function SubjectDetailPage({
   return (
     <section>
       <Breadcrumbs items={[{ label: "Subjects", href: "/subjects" }, { label: subject!.title }]} />
-      <h1 className="page-heading">{subject!.title}</h1>
-      {subject!.description ? <p className="page-subheading">{subject!.description}</p> : null}
 
-      <Link href={`/subjects/${subjectId}/assessments`} className="btn btn-secondary" style={{ marginBottom: "var(--space-5)", display: "inline-flex", marginInlineEnd: "var(--space-3)" }}>
-        View Assessments
-      </Link>
-      <Link href={`/subjects/${subjectId}/assignments`} className="btn btn-secondary" style={{ marginBottom: "var(--space-5)", display: "inline-flex" }}>
-        View Assignments
-      </Link>
+      <div className="subject-hero">
+        <h1 className="subject-hero-title">{subject!.title}</h1>
+        {subject!.description ? (
+          <p className="subject-hero-description">{subject!.description}</p>
+        ) : null}
+        <div className="subject-hero-chips">
+          <span className="subject-hero-chip">
+            Lectures <b>{lectures.length}</b>
+          </span>
+        </div>
+      </div>
 
-      <h2 style={{ fontSize: "var(--font-size-lg)", fontWeight: 600, marginBottom: "var(--space-4)" }}>Lectures</h2>
+      <SubjectTabs tabs={subjectTabs(subjectId, { lectures: lectures.length })} />
 
       {lectures.length === 0 ? (
         <EmptyState title="No lectures yet" message="Lectures for this subject will appear here once published." />

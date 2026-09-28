@@ -40,7 +40,9 @@ export default async function DashboardPage() {
       {!errorMessage && subjectsResult ? (
         <>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "var(--space-4)" }}>
-            <h2 style={{ fontSize: "var(--font-size-lg)", fontWeight: 600 }}>Subjects</h2>
+            <h2 className="content-card-title" style={{ fontSize: "var(--font-size-lg)" }}>
+              Subjects
+            </h2>
             <Link href="/subjects" className="app-nav-link">
               View all subjects
             </Link>

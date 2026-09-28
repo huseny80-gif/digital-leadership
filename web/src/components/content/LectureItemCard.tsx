@@ -15,36 +15,36 @@ const ITEM_TYPE_LABEL: Record<LectureItemResponse["itemType"], string> = {
  * text content; `assignment`/`exercise` items show their content as a
  * read-only placeholder — full submission interaction is explicitly
  * deferred to Phase 09B (WEB_APPLICATION_ARCHITECTURE.md "Deferred").
+ *
+ * Phase 18.2 — restyled to the Finquiz-derived `.content-card`/file-chip
+ * pattern (globals.css). Same data/logic per item type, visual only.
  */
 export function LectureItemCard({ item }: { item: LectureItemResponse }) {
   return (
-    <li className="item-row" style={{ flexDirection: "column", alignItems: "stretch" }}>
-      <div className="item-row-main">
-        <p className="item-row-title">
-          {item.title} <span className="badge">{ITEM_TYPE_LABEL[item.itemType]}</span>
+    <li className="content-card" style={{ listStyle: "none" }}>
+      <div className="content-card-head">
+        <p className="content-card-title" style={{ flex: 1, minWidth: 0 }}>
+          {item.title}
         </p>
+        <span className="file-chip-tag">{ITEM_TYPE_LABEL[item.itemType]}</span>
       </div>
 
-      {item.itemType === "pdf" ? <PdfViewer fileId={item.fileId} title={item.title} /> : null}
+      <div className="content-card-body">
+        {item.itemType === "pdf" ? <PdfViewer fileId={item.fileId} title={item.title} /> : null}
 
-      {item.itemType === "summary" && item.bodyText ? (
-        <p className="item-row-meta" style={{ whiteSpace: "pre-wrap" }}>
-          {item.bodyText}
-        </p>
-      ) : null}
+        {item.itemType === "summary" && item.bodyText ? (
+          <p style={{ whiteSpace: "pre-wrap" }}>{item.bodyText}</p>
+        ) : null}
 
-      {(item.itemType === "assignment" || item.itemType === "exercise") ? (
-        <div>
-          {item.bodyText ? (
-            <p className="item-row-meta" style={{ whiteSpace: "pre-wrap" }}>
-              {item.bodyText}
+        {item.itemType === "assignment" || item.itemType === "exercise" ? (
+          <div>
+            {item.bodyText ? <p style={{ whiteSpace: "pre-wrap" }}>{item.bodyText}</p> : null}
+            <p className="content-card-meta">
+              Submitting {item.itemType === "assignment" ? "assignments" : "exercises"} is not available yet.
             </p>
-          ) : null}
-          <p className="item-row-meta">
-            Submitting {item.itemType === "assignment" ? "assignments" : "exercises"} is not available yet.
-          </p>
-        </div>
-      ) : null}
+          </div>
+        ) : null}
+      </div>
     </li>
   );
 }

@@ -4,6 +4,8 @@ import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
 import { AssignmentCard } from "@/components/content/AssignmentCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { SubjectTabs } from "@/components/content/SubjectTabs";
+import { subjectTabs } from "@/components/content/subjectTabs";
 
 /**
  * Assignments list for a subject (`GET /api/v1/subjects/:subjectId/assignments`
@@ -53,8 +55,17 @@ export default async function SubjectAssignmentsPage({
       <Breadcrumbs
         items={[{ label: "Subjects", href: "/subjects" }, { label: subject!.title, href: `/subjects/${subjectId}` }, { label: "Assignments" }]}
       />
-      <h1 className="page-heading">Assignments</h1>
-      <p className="page-subheading">Assignments available for {subject!.title}.</p>
+      <div className="subject-hero">
+        <h1 className="subject-hero-title">{subject!.title}</h1>
+        <p className="subject-hero-description">Assignments available for {subject!.title}.</p>
+        <div className="subject-hero-chips">
+          <span className="subject-hero-chip">
+            Assignments <b>{assignments.length}</b>
+          </span>
+        </div>
+      </div>
+
+      <SubjectTabs tabs={subjectTabs(subjectId, { assignments: assignments.length })} />
 
       {assignments.length === 0 ? (
         <EmptyState title="No assignments yet" message="Assignments for this subject will appear here once published." />

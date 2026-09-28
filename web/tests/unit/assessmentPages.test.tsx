@@ -9,6 +9,7 @@ import { render, screen } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => "/subjects/test-subject/assessments",
 }));
 
 vi.mock("@/lib/api/client", async () => {

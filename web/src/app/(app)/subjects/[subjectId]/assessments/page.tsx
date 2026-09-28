@@ -4,6 +4,8 @@ import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
 import { QuizCard } from "@/components/quiz/QuizCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { SubjectTabs } from "@/components/content/SubjectTabs";
+import { subjectTabs } from "@/components/content/subjectTabs";
 
 /**
  * Assessments list for a subject (`GET /api/v1/subjects/:subjectId/assessments`
@@ -51,8 +53,17 @@ export default async function SubjectAssessmentsPage({
       <Breadcrumbs
         items={[{ label: "Subjects", href: "/subjects" }, { label: subject!.title, href: `/subjects/${subjectId}` }, { label: "Assessments" }]}
       />
-      <h1 className="page-heading">Assessments</h1>
-      <p className="page-subheading">Quizzes available for {subject!.title}.</p>
+      <div className="subject-hero">
+        <h1 className="subject-hero-title">{subject!.title}</h1>
+        <p className="subject-hero-description">Quizzes available for {subject!.title}.</p>
+        <div className="subject-hero-chips">
+          <span className="subject-hero-chip">
+            Assessments <b>{quizzes.length}</b>
+          </span>
+        </div>
+      </div>
+
+      <SubjectTabs tabs={subjectTabs(subjectId, { assessments: quizzes.length })} />
 
       {quizzes.length === 0 ? (
         <EmptyState title="No quizzes yet" message="Quizzes for this subject will appear here once published." />
