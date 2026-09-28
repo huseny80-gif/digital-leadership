@@ -5,7 +5,7 @@ import { EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
 import { LectureCard } from "@/components/content/LectureCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { SubjectTabs } from "@/components/content/SubjectTabs";
-import { subjectTabs } from "@/components/content/subjectTabs";
+import { subjectTabs } from "@/components/content/subjectTabs.config";
 
 /**
  * Subject detail (API_V1.md `GET /subjects/:subjectId`,
@@ -97,3 +97,4 @@ export default async function SubjectDetailPage({
     </section>
   );
 }
+

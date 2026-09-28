@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { SubjectTabDef } from "./subjectTabs";
+import type { SubjectTabDef } from "./subjectTabs.config";
 
-export type { SubjectTabDef } from "./subjectTabs";
-export { subjectTabs } from "./subjectTabs";
+export type { SubjectTabDef } from "./subjectTabs.config";
+export { subjectTabs } from "./subjectTabs.config";
 
 /**
  * Phase 18.2 — section tab bar for a subject's Lectures/Assessments/

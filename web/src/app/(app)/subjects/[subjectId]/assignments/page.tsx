@@ -5,7 +5,7 @@ import { EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
 import { AssignmentCard } from "@/components/content/AssignmentCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { SubjectTabs } from "@/components/content/SubjectTabs";
-import { subjectTabs } from "@/components/content/subjectTabs";
+import { subjectTabs } from "@/components/content/subjectTabs.config";
 
 /**
  * Assignments list for a subject (`GET /api/v1/subjects/:subjectId/assignments`
@@ -97,3 +97,4 @@ export default async function SubjectAssignmentsPage({
     </section>
   );
 }
+

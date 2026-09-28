@@ -5,7 +5,7 @@ import { EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
 import { QuizCard } from "@/components/quiz/QuizCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { SubjectTabs } from "@/components/content/SubjectTabs";
-import { subjectTabs } from "@/components/content/subjectTabs";
+import { subjectTabs } from "@/components/content/subjectTabs.config";
 
 /**
  * Assessments list for a subject (`GET /api/v1/subjects/:subjectId/assessments`
@@ -95,3 +95,4 @@ export default async function SubjectAssessmentsPage({
     </section>
   );
 }
+
