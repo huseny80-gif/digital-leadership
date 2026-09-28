@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import type { Lecture, LectureItem, LectureItemType } from "@shared/index";
+import type { Lecture, LectureItem, LectureItemType, FileMetadata } from "@shared/index";
 import { adminGet, adminPost, adminPatch, adminDelete, AdminApiError } from "@/lib/api/adminBrowserClient";
 import { LoadingState, EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
@@ -12,13 +12,20 @@ const ITEM_TYPES: LectureItemType[] = ["pdf", "summary", "assignment", "exercise
 /**
  * Lecture detail: edit the lecture, and manage its lecture items
  * (PHASE 09C "Lecture Items"). A `pdf` item's `fileId` must reference a
- * real, already-uploaded file — copy its ID from `/admin/files`; this
- * page does not re-implement upload (Phase 8's flow, linked to below).
+ * real, already-uploaded file — this page does not re-implement upload
+ * (Phase 8's flow, linked to below), but it does fetch the existing file
+ * list (`GET /admin/files`, the same endpoint `/admin/files` itself uses)
+ * so the item form offers a real picker instead of requiring the admin to
+ * copy-paste a raw UUID from another page (Phase 21.6 — closing the
+ * "activate the lecture-files cycle" gap with no schema change: the data
+ * and endpoints already existed, only this page's own form didn't use
+ * them fully).
  */
 export default function AdminLectureDetailPage({ params }: { params: Promise<{ lectureId: string }> }) {
   const { lectureId } = use(params);
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const [items, setItems] = useState<LectureItem[] | null>(null);
+  const [files, setFiles] = useState<FileMetadata[] | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +53,14 @@ export default function AdminLectureDetailPage({ params }: { params: Promise<{ l
     } catch (err) {
       if (err instanceof AdminApiError && err.status === 404) setNotFound(true);
       else setError("Unable to load this lecture. Please try again.");
+    }
+    // Best-effort: the file picker degrades to "no files available yet"
+    // rather than blocking the whole page if this fails.
+    try {
+      const f = await adminGet<FileMetadata[]>("files");
+      setFiles(f.filter((file) => file.status === "active"));
+    } catch {
+      setFiles([]);
     }
   }
 
@@ -177,9 +192,31 @@ export default function AdminLectureDetailPage({ params }: { params: Promise<{ l
           ) : (
             <div className="form-field">
               <label className="form-label" htmlFor="item-file-id">
-                File ID (from Admin → Files)
+                File
               </label>
-              <input id="item-file-id" className="form-input" value={itemFileId} onChange={(e) => setItemFileId(e.target.value)} required />
+              {files && files.length > 0 ? (
+                <select
+                  id="item-file-id"
+                  className="form-select"
+                  value={itemFileId}
+                  onChange={(e) => setItemFileId(e.target.value)}
+                  required
+                >
+                  <option value="" disabled>
+                    Select an uploaded PDF…
+                  </option>
+                  {files.map((file) => (
+                    <option key={file.id} value={file.id}>
+                      {file.originalFilename}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="item-row-meta">
+                  No files uploaded yet — upload one on the{" "}
+                  <a href="/admin/files">Files</a> page first.
+                </p>
+              )}
             </div>
           )}
           {itemError ? (
