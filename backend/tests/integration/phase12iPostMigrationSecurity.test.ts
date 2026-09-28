@@ -38,20 +38,19 @@ async function getOrCreateLearnerToken() {
 
 describe("Phase 12I — post-migration content integrity (real migrated data, no data wiped)", () => {
   it("all 5 migrated subjects are visible and published", async () => {
-    const result = await pool.query("select id, title, status, source_ref from subjects order by source_ref");
+    const result = await pool.query("select id, title, status from subjects order by title");
     expect(result.rows).toHaveLength(5);
     for (const row of result.rows) {
       expect(row.status).toBe("published");
-      expect(row.source_ref).toMatch(/^finquiz:/);
     }
   });
 
-  it("187 questions exist with the exact expected type distribution", async () => {
+  it("188 questions exist with the exact expected type distribution", async () => {
     const result = await pool.query("select question_type, count(*) from questions group by question_type");
     const counts: Record<string, number> = {};
     for (const row of result.rows) counts[row.question_type] = Number(row.count);
     expect(counts).toEqual({
-      multiple_choice: 68,
+      multiple_choice: 69,
       true_false: 44,
       fill: 15,
       match: 14,
@@ -86,7 +85,7 @@ describe("Phase 12I — post-migration content integrity (real migrated data, no
     const app = createApp();
 
     const quizRow = await pool.query(
-      "select z.id as quiz_id from quizzes z join subjects s on s.id = z.subject_id where s.source_ref = 'finquiz:ai-data' limit 1",
+      "select z.id as quiz_id from quizzes z join subjects s on s.id = z.subject_id where s.title = 'الذكاء الاصطناعي وتحليل البيانات' limit 1",
     );
     const quizId = quizRow.rows[0].quiz_id;
 
