@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Lecture, LectureItemResponse, Subject } from "@shared/index";
 import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
@@ -17,6 +18,16 @@ import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
  * re-derives and enforces the subject relationship
  * (`FilesRepository`/`ContentRepository`'s visibility joins) regardless
  * of what this URL segment says.
+ *
+ * Phase 21.3 — Lecture Learning Flow Upgrade: adds a "Lecture N of M"
+ * position indicator and Previous/Next navigation, both computed from the
+ * subject's own lecture list (`GET /subjects/:subjectId/lectures`,
+ * already ordered `order_index asc, title asc` server-side — the same
+ * endpoint the subject overview page already uses, no new API). Both are
+ * best-effort: if that list fails to load, or this lecture isn't found in
+ * it (e.g. its subject_id has drifted from the URL segment), the page
+ * still renders — it just omits the position/nav UI rather than fabricate
+ * an ordering that isn't confirmed.
  */
 export default async function LectureDetailPage({
   params,
@@ -28,6 +39,7 @@ export default async function LectureDetailPage({
   let lecture: Lecture | null = null;
   let items: LectureItemResponse[] = [];
   let subjectTitle = "Subject";
+  let siblingLectures: Lecture[] = [];
   let notFound = false;
   let errorMessage: string | null = null;
 
@@ -39,16 +51,23 @@ export default async function LectureDetailPage({
     lecture = lectureRes.data;
     items = itemsRes.data;
 
-    // Best-effort only — the breadcrumb falls back to a generic "Subject"
-    // label if this fails; the lecture/items fetch above is what actually
-    // gates this page's visibility, not this lookup (Phase 21.2 audit:
-    // this previously hardcoded the literal word "Subject" instead of the
-    // real title, unlike every other subject-scoped page).
+    // Best-effort only, in both cases below — neither gates this page's
+    // visibility, which the lecture/items fetch above already handled.
+    // A generic "Subject" breadcrumb label and no position/prev-next UI
+    // are the safe fallbacks, not an error state.
     try {
       const subjectRes = await apiGet<Subject>(`/api/v1/subjects/${subjectId}`);
       subjectTitle = subjectRes.data.title;
     } catch {
       // keep the fallback label
+    }
+    try {
+      const lecturesRes = await apiGetPaginated<Lecture>(
+        `/api/v1/subjects/${subjectId}/lectures?page=1&limit=50`,
+      );
+      siblingLectures = lecturesRes.data;
+    } catch {
+      // keep siblingLectures empty — position/prev-next UI is simply omitted
     }
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
@@ -66,6 +85,12 @@ export default async function LectureDetailPage({
     return <ErrorState message={errorMessage} retryHref={`/subjects/${subjectId}/lectures/${lectureId}`} />;
   }
 
+  const currentIndex = siblingLectures.findIndex((l) => l.id === lectureId);
+  const hasPosition = currentIndex !== -1 && siblingLectures.length > 0;
+  const previousLecture = hasPosition && currentIndex > 0 ? siblingLectures[currentIndex - 1] : null;
+  const nextLecture =
+    hasPosition && currentIndex < siblingLectures.length - 1 ? siblingLectures[currentIndex + 1] : null;
+
   return (
     <section>
       <Breadcrumbs
@@ -75,8 +100,17 @@ export default async function LectureDetailPage({
           { label: lecture!.title },
         ]}
       />
+
       <h1 className="page-heading">{lecture!.title}</h1>
+      <p className="item-row-meta" style={{ marginBottom: "var(--space-2)" }}>
+        {subjectTitle}
+        {hasPosition ? ` · Lecture ${currentIndex + 1} of ${siblingLectures.length}` : null}
+      </p>
       {lecture!.description ? <p className="page-subheading">{lecture!.description}</p> : null}
+
+      <Link href={`/subjects/${subjectId}`} className="btn btn-secondary" style={{ marginBottom: "var(--space-5)", display: "inline-flex" }}>
+        Back to subject
+      </Link>
 
       {items.length === 0 ? (
         <EmptyState title="No content yet" message="Content for this lecture will appear here once published." />
@@ -87,6 +121,33 @@ export default async function LectureDetailPage({
           ))}
         </ul>
       )}
+
+      {previousLecture || nextLecture ? (
+        <nav className="lecture-nav" aria-label="Lecture navigation">
+          {previousLecture ? (
+            <Link
+              href={`/subjects/${subjectId}/lectures/${previousLecture.id}`}
+              className="lecture-nav-link"
+              data-direction="previous"
+            >
+              <span className="lecture-nav-label">← Previous</span>
+              <span className="lecture-nav-title">{previousLecture.title}</span>
+            </Link>
+          ) : (
+            <span />
+          )}
+          {nextLecture ? (
+            <Link
+              href={`/subjects/${subjectId}/lectures/${nextLecture.id}`}
+              className="lecture-nav-link"
+              data-direction="next"
+            >
+              <span className="lecture-nav-label">Next →</span>
+              <span className="lecture-nav-title">{nextLecture.title}</span>
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
     </section>
   );
 }

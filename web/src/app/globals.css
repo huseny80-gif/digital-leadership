@@ -1211,3 +1211,51 @@ a.content-card:hover,
 .progress-bar-fill[data-tone="danger"] {
   background: linear-gradient(90deg, var(--color-danger), #d97a70);
 }
+
+/* ---------- Phase 21.3 — Lecture Learning Flow Upgrade: prev/next
+   lecture navigation row. Mobile-first (stacks full-width), reuses the
+   existing .btn/.btn-secondary tokens — no new colors. ---------- */
+.lecture-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-soft);
+}
+
+@media (min-width: 640px) {
+  .lecture-nav {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.lecture-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  text-align: start;
+  max-width: 100%;
+}
+
+.lecture-nav-link[data-direction="next"] {
+  align-items: flex-end;
+  text-align: end;
+  margin-inline-start: auto;
+}
+
+.lecture-nav-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+.lecture-nav-title {
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
