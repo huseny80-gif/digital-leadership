@@ -5,9 +5,12 @@
   "description": "Shared backend API for the digital education platform (ARCHITECTURE.md §3). Database, authentication, and storage are implemented — see .env.example for what must be configured for them to work.",
   "type": "module",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node --env-file-if-exists=.env dist/server.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
