@@ -1,10 +1,26 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+const getUser = vi.fn();
+vi.mock("@/lib/supabase/serverClient", () => ({
+  createSupabaseServerClient: vi.fn(async () => ({ auth: { getUser } })),
+}));
+
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn((path: string) => {
+    throw new Error(`REDIRECT:${path}`);
+  }),
+}));
+
 import RootPage from "@/app/page";
 
 describe("RootPage", () => {
-  it("renders the structural placeholder heading", () => {
-    render(<RootPage />);
-    expect(screen.getByRole("heading", { name: "Digital Leadership" })).toBeInTheDocument();
+  it("redirects unauthenticated visitors to /login", async () => {
+    getUser.mockResolvedValueOnce({ data: { user: null } });
+    await expect(RootPage()).rejects.toThrow("REDIRECT:/login");
+  });
+
+  it("redirects authenticated visitors to /dashboard", async () => {
+    getUser.mockResolvedValueOnce({ data: { user: { id: "user-1" } } });
+    await expect(RootPage()).rejects.toThrow("REDIRECT:/dashboard");
   });
 });
