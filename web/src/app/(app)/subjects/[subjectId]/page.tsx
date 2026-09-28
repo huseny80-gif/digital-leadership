@@ -1,4 +1,4 @@
-import type { Lecture, Subject } from "@shared/index";
+import type { Assignment, Lecture, Quiz, Subject } from "@shared/index";
 import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
@@ -23,16 +23,22 @@ export default async function SubjectDetailPage({
 
   let subject: Subject | null = null;
   let lectures: Lecture[] = [];
+  let assignments: Assignment[] = [];
+  let quizzes: Quiz[] = [];
   let notFound = false;
   let errorMessage: string | null = null;
 
   try {
-    const [subjectRes, lecturesRes] = await Promise.all([
+    const [subjectRes, lecturesRes, assignmentsRes, quizzesRes] = await Promise.all([
       apiGet<Subject>(`/api/v1/subjects/${subjectId}`),
       apiGetPaginated<Lecture>(`/api/v1/subjects/${subjectId}/lectures?page=1&limit=50`),
+      apiGetPaginated<Assignment>(`/api/v1/subjects/${subjectId}/assignments?page=1&limit=50`),
+      apiGet<Quiz[]>(`/api/v1/subjects/${subjectId}/assessments`),
     ]);
     subject = subjectRes.data;
     lectures = lecturesRes.data;
+    assignments = assignmentsRes.data;
+    quizzes = quizzesRes.data;
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
       notFound = true;
@@ -62,10 +68,22 @@ export default async function SubjectDetailPage({
           <span className="subject-hero-chip">
             Lectures <b>{lectures.length}</b>
           </span>
+          <span className="subject-hero-chip">
+            Assignments <b>{assignments.length}</b>
+          </span>
+          <span className="subject-hero-chip">
+            Assessments <b>{quizzes.length}</b>
+          </span>
         </div>
       </div>
 
-      <SubjectTabs tabs={subjectTabs(subjectId, { lectures: lectures.length })} />
+      <SubjectTabs
+        tabs={subjectTabs(subjectId, {
+          lectures: lectures.length,
+          assignments: assignments.length,
+          assessments: quizzes.length,
+        })}
+      />
 
       {lectures.length === 0 ? (
         <EmptyState title="No lectures yet" message="Lectures for this subject will appear here once published." />

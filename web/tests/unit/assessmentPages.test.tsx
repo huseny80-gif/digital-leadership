@@ -21,15 +21,21 @@ vi.mock("@/lib/api/client", async () => {
   };
 });
 
-import { apiGet, ApiError } from "@/lib/api/client";
+import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import SubjectAssessmentsPage from "@/app/(app)/subjects/[subjectId]/assessments/page";
 import QuizDetailPage from "@/app/(app)/quizzes/[quizId]/page";
 import QuizResultPage from "@/app/(app)/quizzes/[quizId]/result/[attemptId]/page";
 
 const mockApiGet = vi.mocked(apiGet);
+const mockApiGetPaginated = vi.mocked(apiGetPaginated);
 
 beforeEach(() => {
   mockApiGet.mockReset();
+  mockApiGetPaginated.mockReset();
+  // SubjectAssessmentsPage's hero now also fetches lectures/assignments
+  // counts (Phase 21.1) — default both to empty so tests that only care
+  // about quizzes don't have to stub them individually.
+  mockApiGetPaginated.mockResolvedValue({ data: [], page: 1, limit: 50, total: 0 });
 });
 
 describe("SubjectAssessmentsPage", () => {
@@ -125,8 +131,8 @@ describe("QuizResultPage", () => {
     const element = await QuizResultPage({ params: Promise.resolve({ quizId: "quiz-1", attemptId: "attempt-1" }) });
     render(element);
 
-    expect(screen.getByText(/2 \/ 2 correct/i)).toBeInTheDocument();
-    expect(screen.getByText("100%")).toBeInTheDocument();
+    expect(screen.getByText(/2 \/ 2 correct \(100%\)/i)).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "Score" })).toHaveAttribute("aria-valuenow", "100");
     expect(screen.getByText(/status: completed/i)).toBeInTheDocument();
     // No answer key is ever rendered alongside the result.
     expect(document.body.innerHTML).not.toMatch(/is_correct|isCorrect/i);

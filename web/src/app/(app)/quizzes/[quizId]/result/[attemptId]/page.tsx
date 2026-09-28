@@ -3,6 +3,7 @@ import type { QuizAttemptResult } from "@shared/index";
 import { apiGet, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { ErrorState, NotFoundState } from "@/components/ui/States";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 
 /**
  * Result screen (`GET /api/v1/attempts/:attemptId/result` —
@@ -69,17 +70,17 @@ export default async function QuizResultPage({
 
       <div className="state-block" role="status">
         <p className="state-title">Status: Completed</p>
-        <dl style={{ display: "grid", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
-          <div>
-            <dt className="item-row-meta">Score</dt>
-            <dd style={{ fontSize: "var(--font-size-xl)", fontWeight: 700 }}>
-              {r.correctAnswers} / {r.totalQuestions} correct
-            </dd>
-          </div>
-          <div>
-            <dt className="item-row-meta">Percentage</dt>
-            <dd style={{ fontSize: "var(--font-size-lg)", fontWeight: 600 }}>{r.percentage}%</dd>
-          </div>
+
+        <div style={{ marginTop: "var(--space-4)" }}>
+          <ProgressBar
+            label="Score"
+            percentage={r.percentage}
+            valueLabel={`${r.correctAnswers} / ${r.totalQuestions} correct (${r.percentage}%)`}
+            tone={r.percentage >= 70 ? "default" : r.percentage >= 40 ? "warning" : "danger"}
+          />
+        </div>
+
+        <dl style={{ display: "grid", gap: "var(--space-2)", marginTop: "var(--space-4)" }}>
           <div>
             <dt className="item-row-meta">Questions answered</dt>
             <dd>
