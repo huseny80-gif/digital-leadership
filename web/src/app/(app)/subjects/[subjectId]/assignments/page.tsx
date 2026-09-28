@@ -90,7 +90,7 @@ export default async function SubjectAssignmentsPage({
       ) : (
         <div className="item-list">
           {assignments.map((assignment) => (
-            <AssignmentCard key={assignment.id} assignment={assignment} />
+            <AssignmentCard key={assignment.id} subjectId={subjectId} assignment={assignment} />
           ))}
         </div>
       )}
