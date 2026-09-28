@@ -1,4 +1,4 @@
-import type { Lecture, LectureItemResponse } from "@shared/index";
+import type { Lecture, LectureItemResponse, Subject } from "@shared/index";
 import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
@@ -27,6 +27,7 @@ export default async function LectureDetailPage({
 
   let lecture: Lecture | null = null;
   let items: LectureItemResponse[] = [];
+  let subjectTitle = "Subject";
   let notFound = false;
   let errorMessage: string | null = null;
 
@@ -37,6 +38,18 @@ export default async function LectureDetailPage({
     ]);
     lecture = lectureRes.data;
     items = itemsRes.data;
+
+    // Best-effort only — the breadcrumb falls back to a generic "Subject"
+    // label if this fails; the lecture/items fetch above is what actually
+    // gates this page's visibility, not this lookup (Phase 21.2 audit:
+    // this previously hardcoded the literal word "Subject" instead of the
+    // real title, unlike every other subject-scoped page).
+    try {
+      const subjectRes = await apiGet<Subject>(`/api/v1/subjects/${subjectId}`);
+      subjectTitle = subjectRes.data.title;
+    } catch {
+      // keep the fallback label
+    }
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
       notFound = true;
@@ -58,7 +71,7 @@ export default async function LectureDetailPage({
       <Breadcrumbs
         items={[
           { label: "Subjects", href: "/subjects" },
-          { label: "Subject", href: `/subjects/${subjectId}` },
+          { label: subjectTitle, href: `/subjects/${subjectId}` },
           { label: lecture!.title },
         ]}
       />
