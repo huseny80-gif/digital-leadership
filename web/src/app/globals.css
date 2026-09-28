@@ -1,24 +1,39 @@
 /*
- * Design tokens (WEB_APPLICATION_ARCHITECTURE.md "Visual Design").
- * No branding/design system existed in prior phases, so this establishes
- * a minimal, professional higher-education palette rather than scattering
- * hard-coded values through components. Every component below references
- * these custom properties, never a raw hex/px value.
+ * Design tokens (Phase 18.1 — Finquiz Visual Identity Foundation).
+ * Values are ported from huseny80-gif/Finquiz@b737ce3's
+ * assets/css/styles.css design-token block (turquoise/gold palette,
+ * spacing/radius/shadow scale) per the approved Phase 18 UI/UX analysis.
+ * Only the visual tokens were adopted — no Finquiz code, routing, or
+ * backend wiring. Every component below references these custom
+ * properties, never a raw hex/px value.
  */
 :root {
-  --color-bg: #f7f8fa;
+  --turquoise-900: #073c40;
+  --turquoise-800: #0a4f54;
+  --turquoise-700: #0b5f63;
+  --turquoise-600: #0e7480;
+  --turquoise-500: #0e8c93;
+  --turquoise-400: #2fa9ad;
+  --turquoise-300: #63c4c6;
+  --turquoise-100: #dff5f4;
+  --gold: #b8891b;
+  --gold-2: #d4a72c;
+
+  --color-bg: #f4fafa;
   --color-surface: #ffffff;
-  --color-border: #dde1e6;
-  --color-text: #1a2233;
-  --color-text-muted: #5a6472;
-  --color-primary: #1e3a5f;
-  --color-primary-hover: #14283f;
+  --color-border: #d7e4e4;
+  --color-border-soft: #e7f1f1;
+  --color-text: #0f2426;
+  --color-text-muted: #546a6c;
+  --color-primary: var(--turquoise-600);
+  --color-primary-hover: var(--turquoise-800);
   --color-primary-contrast: #ffffff;
-  --color-accent: #2f6fed;
-  --color-danger: #b3261e;
-  --color-danger-bg: #fdecea;
-  --color-success: #1e6b3a;
-  --color-focus-ring: #2f6fed;
+  --color-accent: var(--gold);
+  --color-danger: #b23a2e;
+  --color-danger-bg: #fbeae7;
+  --color-success: #1e7a4c;
+  --color-success-bg: #e7f5ec;
+  --color-focus-ring: var(--turquoise-500);
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -28,8 +43,11 @@
   --space-6: 2rem;
   --space-8: 3rem;
 
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+
+  --shadow: 0 2px 10px rgba(7, 60, 64, 0.08);
+  --shadow-lg: 0 8px 28px rgba(7, 60, 64, 0.16);
 
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
@@ -39,22 +57,28 @@
 
   --content-max-width: 72rem;
   --header-height: 3.5rem;
+  --sidebar-width: 14.75rem;
+  --bottom-nav-height: 3.75rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #12161c;
-    --color-surface: #1a2029;
-    --color-border: #2c333d;
-    --color-text: #e7eaee;
-    --color-text-muted: #9aa4b2;
-    --color-primary: #6f9ad6;
-    --color-primary-hover: #8fb3e6;
-    --color-primary-contrast: #0d1420;
-    --color-accent: #6f9ad6;
+    --color-bg: #0a1718;
+    --color-surface: #0f2224;
+    --color-border: #1e3a3c;
+    --color-border-soft: #173032;
+    --color-text: #e8f3f3;
+    --color-text-muted: #9fbcbd;
+    --color-primary: var(--turquoise-400);
+    --color-primary-hover: var(--turquoise-300);
+    --color-primary-contrast: #073c40;
+    --color-accent: var(--gold-2);
     --color-danger: #e5837c;
-    --color-danger-bg: #3a1f1d;
+    --color-danger-bg: #3a1a16;
     --color-success: #6cc794;
+    --color-success-bg: #123424;
+    --shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
   }
 }
@@ -75,12 +99,21 @@ body {
   flex-direction: column;
   color: var(--color-text);
   background: var(--color-bg);
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-body, "Tajawal"), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
   font-size: var(--font-size-base);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+.app-brand-name,
+.btn {
+  font-family: var(--font-heading, "Cairo"), var(--font-body, "Tajawal"), sans-serif;
 }
 
 * {
@@ -133,7 +166,10 @@ button {
   top: var(--space-2);
 }
 
-/* ---------- Layout shell ---------- */
+/* ---------- Layout shell (Phase 18.1 — header/sidebar/bottom-nav/footer,
+   composition pattern ported from Finquiz's layout.js: one nav data
+   source feeding the header, the desktop sidebar, and the mobile bottom
+   nav — see AppShell.tsx/Sidebar.tsx/BottomNav.tsx) ---------- */
 
 .app-shell {
   display: flex;
@@ -144,12 +180,13 @@ button {
 .app-header {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
 
 .app-header-inner {
+  position: relative;
   max-width: var(--content-max-width);
   margin: 0 auto;
   display: flex;
@@ -161,9 +198,22 @@ button {
 }
 
 .app-brand {
-  font-weight: 700;
-  font-size: var(--font-size-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   white-space: nowrap;
+}
+
+.app-brand-logo {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+}
+
+.app-brand-name {
+  font-weight: 800;
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
 }
 
 .app-nav {
@@ -172,7 +222,7 @@ button {
   gap: var(--space-5);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1000px) {
   .app-nav {
     display: flex;
   }
@@ -180,7 +230,8 @@ button {
 
 .app-nav-link {
   font-size: var(--font-size-sm);
-  font-weight: 500;
+  font-weight: 600;
+  font-family: var(--font-heading, "Cairo"), sans-serif;
   color: var(--color-text-muted);
   padding: var(--space-2) 0;
   border-bottom: 2px solid transparent;
@@ -211,7 +262,7 @@ button {
   color: var(--color-text-muted);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1000px) {
   .app-user-email {
     display: inline;
   }
@@ -229,22 +280,32 @@ button {
   cursor: pointer;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1000px) {
   .mobile-nav-toggle {
     display: none;
   }
 }
 
 .mobile-nav-panel {
+  /* Absolutely positioned against .app-header-inner (found broken during
+   * Phase 18.1 mobile visual verification: without this it renders
+   * inline inside .app-header-actions's flex row, squeezed to content
+   * width next to the toggle button instead of spanning full width below
+   * the header). */
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   border-top: 1px solid var(--color-border);
   background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
   padding: var(--space-3) var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1000px) {
   .mobile-nav-panel {
     display: none !important;
   }
@@ -264,12 +325,206 @@ button {
   background: var(--color-bg);
 }
 
-.app-main {
+/* Desktop sidebar (Sidebar.tsx). Hidden below 1000px, where the header's
+ * hamburger menu and the bottom nav take over — same breakpoint Finquiz
+ * uses for its own sidebar/bottom-nav swap. */
+.app-body {
   flex: 1;
+  display: flex;
   width: 100%;
   max-width: var(--content-max-width);
   margin: 0 auto;
+}
+
+.app-sidebar {
+  display: none;
+}
+
+@media (min-width: 1000px) {
+  .app-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    flex-shrink: 0;
+    width: var(--sidebar-width);
+    padding: var(--space-4) var(--space-3);
+    position: sticky;
+    top: var(--header-height);
+    height: calc(100vh - var(--header-height));
+    overflow-y: auto;
+    border-inline-end: 1px solid var(--color-border);
+  }
+}
+
+.app-sidebar-group-title {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  font-family: var(--font-heading, "Cairo"), sans-serif;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: var(--space-3) var(--space-3) var(--space-1);
+}
+
+.app-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  min-height: 2.5rem;
+}
+
+.app-sidebar-link:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.app-sidebar-link[aria-current="page"] {
+  background: var(--turquoise-100);
+  color: var(--color-primary-hover);
+}
+
+.app-sidebar-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
   padding: var(--space-5) var(--space-4) var(--space-8);
+  padding-bottom: calc(var(--space-8) + var(--bottom-nav-height));
+}
+
+@media (min-width: 1000px) {
+  .app-main {
+    padding-bottom: var(--space-8);
+  }
+}
+
+/* Mobile bottom navigation (BottomNav.tsx). */
+.app-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: space-around;
+  height: var(--bottom-nav-height);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+}
+
+@media (min-width: 1000px) {
+  .app-bottom-nav {
+    display: none;
+  }
+}
+
+.app-bottom-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  flex: 1;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.app-bottom-nav-link[aria-current="page"] {
+  color: var(--color-primary);
+}
+
+.app-bottom-nav-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+/* Footer (Footer.tsx). */
+.app-footer {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  /* Below 1000px the bottom nav is `position: fixed`, so without this the
+   * footer's last content (the copyright bar) renders underneath it when
+   * scrolled to the true bottom of the page — found during Phase 18.1
+   * mobile visual verification. */
+  padding-bottom: var(--bottom-nav-height);
+}
+
+@media (min-width: 1000px) {
+  .app-footer {
+    padding-bottom: 0;
+  }
+}
+
+.app-footer-inner {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 640px) {
+  .app-footer-inner {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.app-footer-brand-name {
+  font-weight: 800;
+  font-family: var(--font-heading, "Cairo"), sans-serif;
+}
+
+.app-footer-tagline {
+  color: var(--color-accent);
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-1);
+}
+
+.app-footer-heading {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  font-family: var(--font-heading, "Cairo"), sans-serif;
+  margin-bottom: var(--space-2);
+}
+
+.app-footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.app-footer-links a:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.app-footer-bottom {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-4);
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 
 /* ---------- Buttons ---------- */

@@ -1,8 +1,12 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
 import { PrimaryNav } from "./PrimaryNav";
 import { MobileNav, type NavItem } from "./MobileNav";
+import { Sidebar } from "./Sidebar";
+import { BottomNav } from "./BottomNav";
+import { Footer } from "./Footer";
 
 /**
  * Application shell, wrapping every authenticated route under
@@ -13,6 +17,14 @@ import { MobileNav, type NavItem } from "./MobileNav";
  * security value on its own; the `/admin` route and every admin API call
  * are independently protected server-side regardless of what this
  * renders (SECURITY_ARCHITECTURE.md §14, AUTHORIZATION.md §5).
+ *
+ * Phase 18.1 — Finquiz Visual Identity Foundation: this shell was
+ * restyled/recomposed (header + sidebar + mobile bottom nav + footer) to
+ * match the approved Phase 18 UI/UX analysis. `items` is the single nav
+ * data source feeding the header's PrimaryNav/MobileNav *and* the new
+ * Sidebar/BottomNav — no Finquiz code, data, or backend wiring was
+ * reused, only its visual/layout pattern (see globals.css's design
+ * tokens and layout-shell rules for the ported values).
  */
 export function AppShell({
   children,
@@ -24,10 +36,10 @@ export function AppShell({
   userEmail: string | null;
 }) {
   const items: NavItem[] = [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/subjects", label: "Subjects" },
-    ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
-    { href: "/profile", label: "Profile" },
+    { href: "/dashboard", label: "Dashboard", icon: "📊" },
+    { href: "/subjects", label: "Subjects", icon: "📘" },
+    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️" }] : []),
+    { href: "/profile", label: "Profile", icon: "👤" },
   ];
 
   return (
@@ -38,7 +50,15 @@ export function AppShell({
       <header className="app-header">
         <div className="app-header-inner">
           <Link href="/dashboard" className="app-brand">
-            Digital Leadership
+            <Image
+              src="/logo.webp"
+              alt=""
+              width={32}
+              height={32}
+              className="app-brand-logo"
+              priority
+            />
+            <span className="app-brand-name">Digital Leadership</span>
           </Link>
           <PrimaryNav items={items} />
           <div className="app-header-actions">
@@ -48,9 +68,14 @@ export function AppShell({
           </div>
         </div>
       </header>
-      <main id="main-content" className="app-main">
-        {children}
-      </main>
+      <div className="app-body">
+        <Sidebar items={items} />
+        <main id="main-content" className="app-main">
+          {children}
+        </main>
+      </div>
+      <Footer items={items} />
+      <BottomNav items={items} />
     </div>
   );
 }

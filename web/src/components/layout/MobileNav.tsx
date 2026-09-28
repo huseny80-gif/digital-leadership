@@ -7,6 +7,10 @@ import { usePathname } from "next/navigation";
 export interface NavItem {
   href: string;
   label: string;
+  /** Emoji glyph shown in the sidebar/bottom-nav (Phase 18.1 — matches
+   * Finquiz's zero-asset icon strategy). Optional: the header's
+   * horizontal nav and this mobile panel render label-only. */
+  icon?: string;
 }
 
 /**
