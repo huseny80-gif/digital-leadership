@@ -1,6 +1,9 @@
 import { createApp } from "./app.js";
 import { getEnv } from "./config/env.js";
 import { logger } from "./lib/logger.js";
+import { initMonitoring } from "./lib/monitoring.js";
+
+initMonitoring();
 
 const env = getEnv();
 const app = createApp();

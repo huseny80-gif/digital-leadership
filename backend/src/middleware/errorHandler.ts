@@ -2,6 +2,7 @@ import type { ErrorRequestHandler } from "express";
 import type { ApiErrorBody } from "@shared/index";
 import { HttpError } from "../lib/httpError.js";
 import { logger } from "../lib/logger.js";
+import { captureException } from "../lib/monitoring.js";
 
 /**
  * Central error-handling middleware (ARCHITECTURE.md §13,
@@ -16,6 +17,9 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   const message = httpError?.message ?? "An unexpected error occurred.";
 
   logger.error({ err, path: req.path, method: req.method, status }, "request_failed");
+  if (status >= 500) {
+    captureException(err, { path: req.path, method: req.method, status });
+  }
 
   const body: ApiErrorBody = { error: { code, message } };
   res.status(status).json(body);
