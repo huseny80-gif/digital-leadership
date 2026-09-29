@@ -19,7 +19,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # jsdom 30 (web's test environment) requires Node ^22.22.2 —
+          # Node 20 fails at test time with "webidl.util.markAsUncloneable
+          # is not a function". Backend has no such constraint but is kept
+          # on the same major for consistency.
+          node-version: "22"
           cache: "npm"
       - name: Install dependencies
         working-directory: .
@@ -59,7 +63,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
       - name: Install dependencies
         working-directory: .
