@@ -84,3 +84,20 @@ export interface Assignment {
 export interface LectureItemResponse extends LectureItem {
   file: FileMetadata | null;
 }
+
+/** One learner's completion state for one lecture (PHASE 4 "Lecture
+ * Progress"). `completedAt` is null whenever `completed` is false. */
+export interface LectureProgress {
+  lectureId: string;
+  completed: boolean;
+  completedAt: string | null;
+}
+
+/** Aggregate completion for a subject's lectures, for a single learner —
+ * used to render a progress indicator without exposing per-lecture rows
+ * the caller didn't ask for. */
+export interface SubjectProgress {
+  subjectId: string;
+  totalLectures: number;
+  completedLectures: number;
+}

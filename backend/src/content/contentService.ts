@@ -1,4 +1,4 @@
-import type { Assignment, Lecture, LectureItemResponse, Subject } from "@shared/index";
+import type { Assignment, Lecture, LectureItemResponse, LectureProgress, Subject, SubjectProgress } from "@shared/index";
 import type { ContentRepository } from "./contentRepository.js";
 import type { PaginationParams } from "../lib/validation.js";
 import { notFound } from "../lib/httpError.js";
@@ -63,5 +63,28 @@ export class ContentService {
     // subject's existence can't be inferred from an empty-vs-404 response.
     await this.getSubjectOrThrow(subjectId, isAdmin);
     return this.repository.listAssignmentsForSubject(subjectId, isAdmin, pagination);
+  }
+
+  /** Confirms the lecture is visible to this user (same 404-vs-visibility
+   * rule as every other lecture-scoped read) before returning their own
+   * completion state for it — never another user's. */
+  async getLectureProgressOrThrow(userId: string, lectureId: string, isAdmin: boolean): Promise<LectureProgress> {
+    await this.getLectureOrThrow(lectureId, isAdmin);
+    return this.repository.getLectureProgress(userId, lectureId);
+  }
+
+  async setLectureProgressOrThrow(
+    userId: string,
+    lectureId: string,
+    completed: boolean,
+    isAdmin: boolean,
+  ): Promise<LectureProgress> {
+    await this.getLectureOrThrow(lectureId, isAdmin);
+    return this.repository.setLectureProgress(userId, lectureId, completed);
+  }
+
+  async getSubjectProgressOrThrow(userId: string, subjectId: string, isAdmin: boolean): Promise<SubjectProgress> {
+    await this.getSubjectOrThrow(subjectId, isAdmin);
+    return this.repository.getSubjectProgress(userId, subjectId);
   }
 }

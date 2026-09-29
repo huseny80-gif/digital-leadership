@@ -1,9 +1,10 @@
 import Link from "next/link";
-import type { Lecture, LectureItemResponse, Subject } from "@shared/index";
+import type { Lecture, LectureItemResponse, LectureProgress, Subject } from "@shared/index";
 import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
 import { LectureItemCard } from "@/components/content/LectureItemCard";
+import { LectureCompleteToggle } from "@/components/content/LectureCompleteToggle";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 /**
@@ -40,6 +41,7 @@ export default async function LectureDetailPage({
   let items: LectureItemResponse[] = [];
   let subjectTitle = "Subject";
   let siblingLectures: Lecture[] = [];
+  let progress: LectureProgress | null = null;
   let notFound = false;
   let errorMessage: string | null = null;
 
@@ -51,10 +53,10 @@ export default async function LectureDetailPage({
     lecture = lectureRes.data;
     items = itemsRes.data;
 
-    // Best-effort only, in both cases below — neither gates this page's
-    // visibility, which the lecture/items fetch above already handled.
-    // A generic "Subject" breadcrumb label and no position/prev-next UI
-    // are the safe fallbacks, not an error state.
+    // Best-effort only, in every case below — none of these gate this
+    // page's visibility, which the lecture/items fetch above already
+    // handled. Safe fallbacks (a generic breadcrumb label, no prev/next
+    // nav, no completion toggle) are used instead of an error state.
     try {
       const subjectRes = await apiGet<Subject>(`/api/v1/subjects/${subjectId}`);
       subjectTitle = subjectRes.data.title;
@@ -68,6 +70,12 @@ export default async function LectureDetailPage({
       siblingLectures = lecturesRes.data;
     } catch {
       // keep siblingLectures empty — position/prev-next UI is simply omitted
+    }
+    try {
+      const progressRes = await apiGet<LectureProgress>(`/api/v1/lectures/${lectureId}/progress`);
+      progress = progressRes.data;
+    } catch {
+      // keep progress null — the completion toggle is simply omitted
     }
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
@@ -107,6 +115,8 @@ export default async function LectureDetailPage({
         {hasPosition ? ` · Lecture ${currentIndex + 1} of ${siblingLectures.length}` : null}
       </p>
       {lecture!.description ? <p className="page-subheading">{lecture!.description}</p> : null}
+
+      {progress ? <LectureCompleteToggle lectureId={lectureId} initialCompleted={progress.completed} /> : null}
 
       <Link href={`/subjects/${subjectId}`} className="btn btn-secondary" style={{ marginBottom: "var(--space-5)", display: "inline-flex" }}>
         Back to subject

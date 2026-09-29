@@ -24,7 +24,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 async function resetDatabase() {
   await pool.query(
     `truncate audit_logs, quiz_attempt_answers, quiz_attempts, quiz_questions, question_options,
-     questions, question_banks, lecture_items, lectures, subjects, files, user_identities, users
+     questions, question_banks, lecture_progress, lecture_items, lectures, subjects, files, user_identities, users
      restart identity cascade`,
   );
 }
@@ -361,5 +361,127 @@ describe("Quiz answer-key boundary (PHASE 07 §18)", () => {
       .get(`/api/v1/quizzes/${questionId}`)
       .set("Authorization", `Bearer ${userToken}`);
     expect(quizRes.status).toBe(404);
+  });
+});
+
+describe("Lecture Progress (PHASE4_ENHANCEMENT_PLAN.md §1.1)", () => {
+  it("a fresh lecture has no progress recorded (completed: false, completedAt: null)", async () => {
+    const { publishedLectureId, userToken } = await seedBasicScenario();
+    const app = createApp();
+    const res = await request(app)
+      .get(`/api/v1/lectures/${publishedLectureId}/progress`)
+      .set("Authorization", `Bearer ${userToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ lectureId: publishedLectureId, completed: false, completedAt: null });
+  });
+
+  it("marking a lecture complete persists and is idempotent", async () => {
+    const { publishedLectureId, userToken } = await seedBasicScenario();
+    const app = createApp();
+
+    const first = await request(app)
+      .post(`/api/v1/lectures/${publishedLectureId}/progress`)
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ completed: true });
+    expect(first.status).toBe(200);
+    expect(first.body.data.completed).toBe(true);
+    expect(typeof first.body.data.completedAt).toBe("string");
+
+    const second = await request(app)
+      .get(`/api/v1/lectures/${publishedLectureId}/progress`)
+      .set("Authorization", `Bearer ${userToken}`);
+    expect(second.body.data.completed).toBe(true);
+  });
+
+  it("un-marking a lecture clears completedAt", async () => {
+    const { publishedLectureId, userToken } = await seedBasicScenario();
+    const app = createApp();
+
+    await request(app)
+      .post(`/api/v1/lectures/${publishedLectureId}/progress`)
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ completed: true });
+    const res = await request(app)
+      .post(`/api/v1/lectures/${publishedLectureId}/progress`)
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ completed: false });
+
+    expect(res.body.data).toEqual({ lectureId: publishedLectureId, completed: false, completedAt: null });
+  });
+
+  it("progress is per-user — one user's completion is invisible to another", async () => {
+    const { publishedLectureId, userToken } = await seedBasicScenario();
+    const otherToken = await signFakeSupabaseToken({ sub: "other-sub", email: "other@example.com" });
+    const app = createApp();
+
+    await request(app)
+      .post(`/api/v1/lectures/${publishedLectureId}/progress`)
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ completed: true });
+
+    const otherRes = await request(app)
+      .get(`/api/v1/lectures/${publishedLectureId}/progress`)
+      .set("Authorization", `Bearer ${otherToken}`);
+    expect(otherRes.body.data.completed).toBe(false);
+  });
+
+  it("progress on an unpublished lecture is rejected for a normal user (404, same as any other unpublished-lecture read)", async () => {
+    const { draftLectureId, userToken } = await seedBasicScenario();
+    const app = createApp();
+    const res = await request(app)
+      .get(`/api/v1/lectures/${draftLectureId}/progress`)
+      .set("Authorization", `Bearer ${userToken}`);
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects a non-boolean 'completed' value", async () => {
+    const { publishedLectureId, userToken } = await seedBasicScenario();
+    const app = createApp();
+    const res = await request(app)
+      .post(`/api/v1/lectures/${publishedLectureId}/progress`)
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ completed: "yes" });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects an unauthenticated request", async () => {
+    const { publishedLectureId } = await seedBasicScenario();
+    const app = createApp();
+    const res = await request(app).get(`/api/v1/lectures/${publishedLectureId}/progress`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe("Subject Progress (PHASE4_ENHANCEMENT_PLAN.md §1.2)", () => {
+  it("aggregates completed vs. total published lectures for the subject", async () => {
+    const { publishedSubjectId, publishedLectureId, userToken } = await seedBasicScenario();
+    const app = createApp();
+
+    // seedBasicScenario publishes exactly one lecture (`publishedLectureId`)
+    // under `publishedSubjectId` — `draftLectureId` is a draft and must not
+    // count toward totalLectures for a normal user.
+    const before = await request(app)
+      .get(`/api/v1/subjects/${publishedSubjectId}/progress`)
+      .set("Authorization", `Bearer ${userToken}`);
+    expect(before.body.data).toEqual({ subjectId: publishedSubjectId, totalLectures: 1, completedLectures: 0 });
+
+    await request(app)
+      .post(`/api/v1/lectures/${publishedLectureId}/progress`)
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ completed: true });
+
+    const after = await request(app)
+      .get(`/api/v1/subjects/${publishedSubjectId}/progress`)
+      .set("Authorization", `Bearer ${userToken}`);
+    expect(after.body.data).toEqual({ subjectId: publishedSubjectId, totalLectures: 1, completedLectures: 1 });
+  });
+
+  it("rejects a request for an unpublished subject from a normal user", async () => {
+    const { draftSubjectId, userToken } = await seedBasicScenario();
+    const app = createApp();
+    const res = await request(app)
+      .get(`/api/v1/subjects/${draftSubjectId}/progress`)
+      .set("Authorization", `Bearer ${userToken}`);
+    expect(res.status).toBe(404);
   });
 });

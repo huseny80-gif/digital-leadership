@@ -4,13 +4,17 @@ The migrations in `supabase/migrations/` must **not** be applied in plain
 filename order on a fresh database. The correct order is:
 
 ```
-1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 14 → 12 → 13
+1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 14 → 12 → 13 → 15
 ```
 
 That is: every migration through `00000000000011_rls.sql` in its normal
 numeric order, then `00000000000014_complete_assessment_schema.sql`, then
 `00000000000012_quiz_attempt_answer_match_order.sql`, then
-`00000000000013_rubric_and_assignments.sql`.
+`00000000000013_rubric_and_assignments.sql`, then
+`00000000000015_lecture_progress.sql` (its filename order already matches
+its safe apply position — it only depends on `users` and `lectures`,
+both created in migration 3/5, so it has no dependency on the 12/13/14
+reordering above and simply runs last).
 
 ## Why
 

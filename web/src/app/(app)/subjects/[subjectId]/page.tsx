@@ -1,4 +1,4 @@
-import type { Assignment, Lecture, Quiz, Subject } from "@shared/index";
+import type { Assignment, Lecture, Quiz, Subject, SubjectProgress } from "@shared/index";
 import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
@@ -6,6 +6,7 @@ import { LectureCard } from "@/components/content/LectureCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { SubjectTabs } from "@/components/content/SubjectTabs";
 import { subjectTabs } from "@/components/content/subjectTabs.config";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 
 /**
  * Subject detail (API_V1.md `GET /subjects/:subjectId`,
@@ -25,6 +26,7 @@ export default async function SubjectDetailPage({
   let lectures: Lecture[] = [];
   let assignments: Assignment[] = [];
   let quizzes: Quiz[] = [];
+  let progress: SubjectProgress | null = null;
   let notFound = false;
   let errorMessage: string | null = null;
 
@@ -39,6 +41,15 @@ export default async function SubjectDetailPage({
     lectures = lecturesRes.data;
     assignments = assignmentsRes.data;
     quizzes = quizzesRes.data;
+
+    // Best-effort — never gates this page's visibility, already handled
+    // above. If it fails, the progress bar is simply omitted.
+    try {
+      const progressRes = await apiGet<SubjectProgress>(`/api/v1/subjects/${subjectId}/progress`);
+      progress = progressRes.data;
+    } catch {
+      // keep progress null
+    }
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
       notFound = true;
@@ -75,6 +86,13 @@ export default async function SubjectDetailPage({
             Assessments <b>{quizzes.length}</b>
           </span>
         </div>
+        {progress && progress.totalLectures > 0 ? (
+          <ProgressBar
+            label="Your progress"
+            percentage={(progress.completedLectures / progress.totalLectures) * 100}
+            valueLabel={`${progress.completedLectures} of ${progress.totalLectures} lectures complete`}
+          />
+        ) : null}
       </div>
 
       <SubjectTabs

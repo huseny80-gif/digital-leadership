@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import type { Assignment, FileMetadata, Lecture, LectureItemResponse, Subject } from "@shared/index";
+import type { Assignment, FileMetadata, Lecture, LectureItemResponse, LectureProgress, Subject, SubjectProgress } from "@shared/index";
 import type { PaginationParams } from "../lib/validation.js";
 
 /**
@@ -34,6 +34,9 @@ export interface ContentRepository {
     isAdmin: boolean,
     pagination: PaginationParams,
   ): Promise<{ items: Assignment[]; total: number }>;
+  getLectureProgress(userId: string, lectureId: string): Promise<LectureProgress>;
+  setLectureProgress(userId: string, lectureId: string, completed: boolean): Promise<LectureProgress>;
+  getSubjectProgress(userId: string, subjectId: string): Promise<SubjectProgress>;
 }
 
 interface SubjectRow {
@@ -145,6 +148,20 @@ function toLectureItem(row: LectureItemRow): LectureItemResponse {
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
     file,
+  };
+}
+
+interface LectureProgressRow {
+  lecture_id: string;
+  completed: boolean;
+  completed_at: Date | null;
+}
+
+function toLectureProgress(lectureId: string, row: LectureProgressRow | undefined): LectureProgress {
+  return {
+    lectureId,
+    completed: row?.completed ?? false,
+    completedAt: row?.completed_at ? row.completed_at.toISOString() : null,
   };
 }
 
@@ -265,5 +282,45 @@ export class PgContentRepository implements ContentRepository {
       [subjectId],
     );
     return { items: rows.rows.map(toAssignment), total: Number(countResult.rows[0]?.count ?? 0) };
+  }
+
+  async getLectureProgress(userId: string, lectureId: string): Promise<LectureProgress> {
+    const result = await this.pool.query<LectureProgressRow>(
+      `select lecture_id, completed, completed_at
+       from lecture_progress
+       where user_id = $1 and lecture_id = $2`,
+      [userId, lectureId],
+    );
+    return toLectureProgress(lectureId, result.rows[0]);
+  }
+
+  async setLectureProgress(userId: string, lectureId: string, completed: boolean): Promise<LectureProgress> {
+    const result = await this.pool.query<LectureProgressRow>(
+      `insert into lecture_progress (user_id, lecture_id, completed, completed_at)
+       values ($1, $2, $3, case when $3 then now() else null end)
+       on conflict (user_id, lecture_id)
+       do update set completed = excluded.completed, completed_at = excluded.completed_at
+       returning lecture_id, completed, completed_at`,
+      [userId, lectureId, completed],
+    );
+    return toLectureProgress(lectureId, result.rows[0]);
+  }
+
+  async getSubjectProgress(userId: string, subjectId: string): Promise<SubjectProgress> {
+    const result = await this.pool.query<{ total: string; completed: string }>(
+      `select
+         count(l.id) as total,
+         count(lp.lecture_id) filter (where lp.completed) as completed
+       from lectures l
+       left join lecture_progress lp on lp.lecture_id = l.id and lp.user_id = $1
+       where l.subject_id = $2 and l.deleted_at is null and l.status = 'published'`,
+      [userId, subjectId],
+    );
+    const row = result.rows[0];
+    return {
+      subjectId,
+      totalLectures: Number(row?.total ?? 0),
+      completedLectures: Number(row?.completed ?? 0),
+    };
   }
 }

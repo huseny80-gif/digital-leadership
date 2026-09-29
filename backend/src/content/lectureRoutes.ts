@@ -1,10 +1,13 @@
 import { Router } from "express";
-import type { LectureItemResponse, PaginatedResult } from "@shared/index";
+import { z } from "zod";
+import type { LectureItemResponse, LectureProgress, PaginatedResult } from "@shared/index";
 import { requireAuthenticated } from "../middleware/authInstance.js";
 import { ContentService } from "./contentService.js";
 import { PgContentRepository } from "./contentRepository.js";
 import { getPool } from "../lib/db.js";
-import { parsePagination, requireUuidParam } from "../lib/validation.js";
+import { parsePagination, requireUuidParam, ValidationError } from "../lib/validation.js";
+
+const setProgressSchema = z.object({ completed: z.boolean() });
 
 /**
  * Route/controller layer for Lectures (API_V1.md). Mirrors
@@ -49,6 +52,49 @@ export function lectureRoutes(): Router {
       next(err);
     }
   });
+
+  router.get(
+    "/:lectureId/progress",
+    requireAuthenticated,
+    requireUuidParam("lectureId"),
+    async (req, res, next) => {
+      try {
+        const service = getService();
+        const isAdmin = req.user!.role === "admin";
+        const progress = await service.getLectureProgressOrThrow(req.user!.id, req.params.lectureId as string, isAdmin);
+        const body: { data: LectureProgress } = { data: progress };
+        res.json(body);
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  router.post(
+    "/:lectureId/progress",
+    requireAuthenticated,
+    requireUuidParam("lectureId"),
+    async (req, res, next) => {
+      try {
+        const parsed = setProgressSchema.safeParse(req.body);
+        if (!parsed.success) {
+          throw new ValidationError("A boolean 'completed' field is required.");
+        }
+        const service = getService();
+        const isAdmin = req.user!.role === "admin";
+        const progress = await service.setLectureProgressOrThrow(
+          req.user!.id,
+          req.params.lectureId as string,
+          parsed.data.completed,
+          isAdmin,
+        );
+        const body: { data: LectureProgress } = { data: progress };
+        res.json(body);
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
 
   return router;
 }
