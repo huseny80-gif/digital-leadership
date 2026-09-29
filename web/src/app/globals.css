@@ -1,0 +1,1261 @@
+/*
+ * Design tokens (Phase 18.1 — Finquiz Visual Identity Foundation).
+ * Values are ported from huseny80-gif/Finquiz@b737ce3's
+ * assets/css/styles.css design-token block (turquoise/gold palette,
+ * spacing/radius/shadow scale) per the approved Phase 18 UI/UX analysis.
+ * Only the visual tokens were adopted — no Finquiz code, routing, or
+ * backend wiring. Every component below references these custom
+ * properties, never a raw hex/px value.
+ */
+:root {
+  --turquoise-900: #073c40;
+  --turquoise-800: #0a4f54;
+  --turquoise-700: #0b5f63;
+  --turquoise-600: #0e7480;
+  --turquoise-500: #0e8c93;
+  --turquoise-400: #2fa9ad;
+  --turquoise-300: #63c4c6;
+  --turquoise-100: #dff5f4;
+  --gold: #b8891b;
+  --gold-2: #d4a72c;
+
+  --color-bg: #f4fafa;
+  --color-surface: #ffffff;
+  --color-border: #d7e4e4;
+  --color-border-soft: #e7f1f1;
+  --color-text: #0f2426;
+  --color-text-muted: #546a6c;
+  --color-primary: var(--turquoise-600);
+  --color-primary-hover: var(--turquoise-800);
+  --color-primary-contrast: #ffffff;
+  --color-accent: var(--gold);
+  --color-danger: #b23a2e;
+  --color-danger-bg: #fbeae7;
+  --color-success: #1e7a4c;
+  --color-success-bg: #e7f5ec;
+  --color-focus-ring: var(--turquoise-500);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+
+  --shadow: 0 2px 10px rgba(7, 60, 64, 0.08);
+  --shadow-lg: 0 8px 28px rgba(7, 60, 64, 0.16);
+
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+
+  --content-max-width: 72rem;
+  --header-height: 3.5rem;
+  --sidebar-width: 14.75rem;
+  --bottom-nav-height: 3.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0a1718;
+    --color-surface: #0f2224;
+    --color-border: #1e3a3c;
+    --color-border-soft: #173032;
+    --color-text: #e8f3f3;
+    --color-text-muted: #9fbcbd;
+    --color-primary: var(--turquoise-400);
+    --color-primary-hover: var(--turquoise-300);
+    --color-primary-contrast: #073c40;
+    --color-accent: var(--gold-2);
+    --color-danger: #e5837c;
+    --color-danger-bg: #3a1a16;
+    --color-success: #6cc794;
+    --color-success-bg: #123424;
+    --shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+}
+
+html {
+  height: 100%;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: var(--font-body, "Tajawal"), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+.app-brand-name,
+.btn {
+  font-family: var(--font-heading, "Cairo"), var(--font-body, "Tajawal"), sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img,
+svg {
+  max-width: 100%;
+  display: block;
+}
+
+/* Visible focus state everywhere, never suppressed — accessibility
+ * requirement (WEB_APPLICATION_ARCHITECTURE.md "Accessibility"). */
+:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* Skip link: keyboard/screen-reader users can bypass repeated nav. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+}
+
+.skip-link:focus {
+  left: var(--space-2);
+  top: var(--space-2);
+}
+
+/* ---------- Layout shell (Phase 18.1 — header/sidebar/bottom-nav/footer,
+   composition pattern ported from Finquiz's layout.js: one nav data
+   source feeding the header, the desktop sidebar, and the mobile bottom
+   nav — see AppShell.tsx/Sidebar.tsx/BottomNav.tsx) ---------- */
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-header-inner {
+  position: relative;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 0 var(--space-4);
+  height: var(--header-height);
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.app-brand-logo {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+}
+
+.app-brand-name {
+  font-weight: 800;
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
+}
+
+.app-nav {
+  display: none;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+@media (min-width: 1000px) {
+  .app-nav {
+    display: flex;
+  }
+}
+
+.app-nav-link {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  font-family: var(--font-heading, "Cairo"), sans-serif;
+  color: var(--color-text-muted);
+  padding: var(--space-2) 0;
+  border-bottom: 2px solid transparent;
+}
+
+.app-nav-link:hover {
+  color: var(--color-text);
+}
+
+.app-nav-link[aria-current="page"] {
+  color: var(--color-text);
+  font-weight: 700;
+  border-bottom-color: var(--color-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.35rem;
+}
+
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.app-user-email {
+  display: none;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 1000px) {
+  .app-user-email {
+    display: inline;
+  }
+}
+
+.mobile-nav-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+@media (min-width: 1000px) {
+  .mobile-nav-toggle {
+    display: none;
+  }
+}
+
+.mobile-nav-panel {
+  /* Absolutely positioned against .app-header-inner (found broken during
+   * Phase 18.1 mobile visual verification: without this it renders
+   * inline inside .app-header-actions's flex row, squeezed to content
+   * width next to the toggle button instead of spanning full width below
+   * the header). */
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+@media (min-width: 1000px) {
+  .mobile-nav-panel {
+    display: none !important;
+  }
+}
+
+.mobile-nav-link {
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.mobile-nav-link:hover,
+.mobile-nav-link[aria-current="page"] {
+  background: var(--color-bg);
+}
+
+/* Desktop sidebar (Sidebar.tsx). Hidden below 1000px, where the header's
+ * hamburger menu and the bottom nav take over — same breakpoint Finquiz
+ * uses for its own sidebar/bottom-nav swap. */
+.app-body {
+  flex: 1;
+  display: flex;
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+.app-sidebar {
+  display: none;
+}
+
+@media (min-width: 1000px) {
+  .app-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    flex-shrink: 0;
+    width: var(--sidebar-width);
+    padding: var(--space-4) var(--space-3);
+    position: sticky;
+    top: var(--header-height);
+    height: calc(100vh - var(--header-height));
+    overflow-y: auto;
+    border-inline-end: 1px solid var(--color-border);
+  }
+}
+
+.app-sidebar-group-title {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  font-family: var(--font-heading, "Cairo"), sans-serif;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: var(--space-3) var(--space-3) var(--space-1);
+}
+
+.app-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  min-height: 2.5rem;
+}
+
+.app-sidebar-link:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.app-sidebar-link[aria-current="page"] {
+  background: var(--turquoise-100);
+  color: var(--color-primary-hover);
+}
+
+.app-sidebar-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: var(--space-5) var(--space-4) var(--space-8);
+  padding-bottom: calc(var(--space-8) + var(--bottom-nav-height));
+}
+
+@media (min-width: 1000px) {
+  .app-main {
+    padding-bottom: var(--space-8);
+  }
+}
+
+/* Mobile bottom navigation (BottomNav.tsx). */
+.app-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: space-around;
+  height: var(--bottom-nav-height);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+}
+
+@media (min-width: 1000px) {
+  .app-bottom-nav {
+    display: none;
+  }
+}
+
+.app-bottom-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  flex: 1;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.app-bottom-nav-link[aria-current="page"] {
+  color: var(--color-primary);
+}
+
+.app-bottom-nav-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+/* Footer (Footer.tsx). */
+.app-footer {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  /* Below 1000px the bottom nav is `position: fixed`, so without this the
+   * footer's last content (the copyright bar) renders underneath it when
+   * scrolled to the true bottom of the page — found during Phase 18.1
+   * mobile visual verification. */
+  padding-bottom: var(--bottom-nav-height);
+}
+
+@media (min-width: 1000px) {
+  .app-footer {
+    padding-bottom: 0;
+  }
+}
+
+.app-footer-inner {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 640px) {
+  .app-footer-inner {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.app-footer-brand-name {
+  font-weight: 800;
+  font-family: var(--font-heading, "Cairo"), sans-serif;
+}
+
+.app-footer-tagline {
+  color: var(--color-accent);
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-1);
+}
+
+.app-footer-heading {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  font-family: var(--font-heading, "Cairo"), sans-serif;
+  margin-bottom: var(--space-2);
+}
+
+.app-footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.app-footer-links a:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.app-footer-bottom {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-4);
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 2.5rem;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.btn-secondary:hover {
+  background: var(--color-bg);
+}
+
+/* ---------- Breadcrumbs ---------- */
+
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.breadcrumbs a:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.breadcrumbs [aria-current="page"] {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* ---------- Page heading ---------- */
+
+.page-heading {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+
+.page-subheading {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-6);
+}
+
+/* ---------- Cards / grids ---------- */
+
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.card-link {
+  display: block;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.card-link:hover {
+  border-color: var(--color-primary);
+}
+
+.card-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+}
+
+.card-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.item-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.item-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.item-row-main {
+  min-width: 0;
+}
+
+.item-row-title {
+  font-weight: 600;
+}
+
+.item-row-meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--font-size-sm);
+  padding: 0.125rem var(--space-2);
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+/* ---------- UI states ---------- */
+
+.state-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.state-block[data-variant="error"] {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.state-title {
+  font-weight: 600;
+  font-size: var(--font-size-lg);
+}
+
+.state-message {
+  color: var(--color-text-muted);
+}
+
+.state-block[data-variant="error"] .state-message {
+  color: inherit;
+}
+
+.spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- PDF viewer ---------- */
+
+.pdf-viewer {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.pdf-viewer iframe {
+  width: 100%;
+  height: 75vh;
+  min-height: 20rem;
+  border: 0;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .pdf-viewer iframe {
+    height: 60vh;
+  }
+}
+
+/* ---------- Admin console ---------- */
+
+.admin-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+@media (min-width: 900px) {
+  .admin-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.admin-sidebar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+@media (min-width: 900px) {
+  .admin-sidebar {
+    width: 14rem;
+    position: sticky;
+    top: calc(var(--header-height) + var(--space-4));
+  }
+}
+
+.admin-sidebar-link {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.admin-sidebar-link:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.admin-sidebar-link[aria-current="page"] {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+.admin-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 32rem;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.admin-table th {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 32rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.form-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  min-height: 2.5rem;
+}
+
+/* input[type="file"] renders its own native control (a browse button +
+ * filename text) that this text-input padding/min-height was never
+ * designed for — applying them the same way as a text input clips/hides
+ * that native control in Chromium-based browsers, making the file picker
+ * appear to vanish even though the element itself is present and valid.
+ * Reset the outer box to plain, unpadded flow and style the actual
+ * button via the standard ::file-selector-button pseudo-element instead,
+ * reusing the same tokens .btn already uses elsewhere on this page for
+ * visual consistency. */
+.form-input[type="file"] {
+  padding: 0;
+  border: none;
+  background: transparent;
+  min-height: auto;
+}
+
+.form-input[type="file"]::file-selector-button {
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  margin-inline-end: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.form-input[type="file"]::file-selector-button:hover {
+  background: var(--color-primary-hover);
+}
+
+.form-textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.form-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.confirm-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  z-index: 50;
+}
+
+.confirm-dialog {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  max-width: 26rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ---------- Phase 18.2 — Finquiz Learning Experience patterns
+   (subject hero, section tabs, content cards, file chips). Values/
+   structure ported from Finquiz's styles.css "بطاقات المحتوى" /
+   "ترويسة المادة وتبويباتها" blocks; all data below is Digital
+   Leadership's own (subjects/lectures/assignments API), nothing from
+   Finquiz's content or backend. ---------- */
+
+.subject-hero {
+  background: linear-gradient(135deg, var(--turquoise-700), var(--turquoise-900));
+  color: #efebdd;
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+  border-inline-start: 6px solid var(--gold);
+}
+
+.subject-hero-title {
+  font-size: clamp(1.2rem, 2.6vw, 1.7rem);
+  font-weight: 900;
+  font-family: var(--font-heading, "Cairo"), sans-serif;
+  margin-bottom: var(--space-2);
+}
+
+.subject-hero-description {
+  color: #c7d3d5;
+  font-size: var(--font-size-sm);
+  max-width: 52rem;
+}
+
+.subject-hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.subject-hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(212, 167, 44, 0.4);
+  color: #efebdd;
+  border-radius: 999px;
+  padding: 0.2rem 0.75rem;
+  font-size: var(--font-size-sm);
+}
+
+.subject-hero-chip b {
+  color: var(--gold-2);
+}
+
+/* Section tab bar (SubjectTabs.tsx). Horizontally scrollable on narrow
+ * viewports rather than wrapping, matching Finquiz's `.sectionbar`. */
+.section-tabs {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+  margin-bottom: var(--space-5);
+  -webkit-overflow-scrolling: touch;
+}
+
+.section-tab {
+  flex: 0 0 auto;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  font-family: var(--font-heading, "Cairo"), sans-serif;
+  white-space: nowrap;
+  transition: 0.18s;
+}
+
+.section-tab:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
+}
+
+.section-tab[aria-current="page"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.section-tab-count {
+  display: inline-block;
+  margin-inline-start: var(--space-2);
+  background: var(--color-bg);
+  color: var(--color-primary);
+  border-radius: 999px;
+  padding: 0 var(--space-2);
+  font-size: 0.74rem;
+}
+
+.section-tab[aria-current="page"] .section-tab-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--gold-2);
+}
+
+/* Content cards (SubjectCard/LectureCard/AssignmentCard/QuizCard). */
+.content-card {
+  display: block;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  box-shadow: var(--shadow);
+}
+
+.content-card-head {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.content-card-num {
+  flex: 0 0 auto;
+  background: var(--color-primary);
+  color: var(--gold-2);
+  border-radius: var(--radius-sm);
+  min-width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-family: var(--font-heading, "Cairo"), sans-serif;
+  padding: 0 var(--space-2);
+}
+
+.content-card-title {
+  font-size: 1.03rem;
+  font-weight: 800;
+  font-family: var(--font-heading, "Cairo"), sans-serif;
+  color: var(--color-text);
+  line-height: 1.55;
+}
+
+.content-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-1);
+}
+
+.content-card-body {
+  margin-top: var(--space-3);
+  color: var(--color-text);
+  font-size: 0.94rem;
+}
+
+.content-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--color-border-soft);
+}
+
+a.content-card:hover,
+.content-card:has(a:hover) {
+  border-color: var(--color-primary);
+}
+
+/* File chips (LectureItemCard's file/material rendering). */
+.file-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.file-chip-tag {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  border-radius: 4px;
+  padding: 0.06rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+/* ---------- Phase 21.1 — Student Experience Upgrade: progress
+   indicator (used for a graded quiz attempt's real, server-computed
+   percentage — ProgressBar.tsx). Colors/spacing reference only the
+   existing design tokens, so light/dark mode is inherited automatically
+   via the :root / prefers-color-scheme blocks above; no new colors are
+   introduced. ---------- */
+.progress-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.progress-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.progress-bar-value {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.progress-bar-track {
+  position: relative;
+  width: 100%;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--color-border-soft);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  transition: width 0.3s ease;
+}
+
+.progress-bar-fill[data-tone="warning"] {
+  background: linear-gradient(90deg, var(--gold), var(--gold-2));
+}
+
+.progress-bar-fill[data-tone="danger"] {
+  background: linear-gradient(90deg, var(--color-danger), #d97a70);
+}
+
+/* ---------- Phase 21.3 — Lecture Learning Flow Upgrade: prev/next
+   lecture navigation row. Mobile-first (stacks full-width), reuses the
+   existing .btn/.btn-secondary tokens — no new colors. ---------- */
+.lecture-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-soft);
+}
+
+@media (min-width: 640px) {
+  .lecture-nav {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.lecture-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  text-align: start;
+  max-width: 100%;
+}
+
+.lecture-nav-link[data-direction="next"] {
+  align-items: flex-end;
+  text-align: end;
+  margin-inline-start: auto;
+}
+
+.lecture-nav-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+.lecture-nav-title {
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,0 +1,11 @@
+# Repo-wide OS/editor noise. Each project (web/, backend/, mobile/, shared/)
+# has its own .gitignore for its own build artifacts and dependencies.
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+
+# Root npm workspace install (backend/web/shared each still gitignore their
+# own node_modules; this covers the root-level one npm workspaces creates).
+/node_modules/
