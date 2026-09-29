@@ -90,4 +90,87 @@ describe("auth callback redirectTo (open-redirect protection)", () => {
 
     consoleError.mockRestore();
   });
+
+  describe("safe diagnostic query params on the /login redirect", () => {
+    it("adds an allowlisted error_name/error_code and has_verifier=false when no verifier cookie is sent", async () => {
+      exchangeCodeForSession.mockResolvedValue({ error: { name: "AuthApiError", message: "invalid_grant", code: "bad_code_verifier" } });
+
+      const location = await callbackLocation();
+      expect(location.searchParams.get("error")).toBe("exchange_failed");
+      expect(location.searchParams.get("error_name")).toBe("AuthApiError");
+      expect(location.searchParams.get("error_code")).toBe("bad_code_verifier");
+      expect(location.searchParams.get("has_verifier")).toBe("false");
+    });
+
+    it("falls back to unknown_error_name/unknown_error_code for values outside the allowlist, never forwarding them verbatim", async () => {
+      exchangeCodeForSession.mockResolvedValue({
+        error: { name: "SomeFutureSupabaseError", message: "server said: user email is jane@example.com", code: "some_new_code" },
+      });
+
+      const location = await callbackLocation();
+      expect(location.searchParams.get("error_name")).toBe("unknown_error_name");
+      expect(location.searchParams.get("error_code")).toBe("unknown_error_code");
+      // The raw message must never leak into the redirect URL at all.
+      expect(location.search).not.toContain("jane");
+      expect(location.search).not.toContain("SomeFutureSupabaseError");
+      expect(location.search).not.toContain("some_new_code");
+    });
+
+    it("reports has_verifier=true when a PKCE verifier cookie is present", async () => {
+      exchangeCodeForSession.mockResolvedValue({ error: { name: "AuthPKCEGrantCodeExchangeError", message: "invalid request: both auth code and code verifier should be non-empty" } });
+
+      const url = new URL("/auth/callback", ORIGIN);
+      url.searchParams.set("code", "valid-code");
+      const request = new NextRequest(url);
+      request.cookies.set("sb-project-auth-token-code-verifier", "some-verifier-value");
+
+      const res = await GET(request);
+      const location = new URL(res.headers.get("location")!);
+      expect(location.searchParams.get("has_verifier")).toBe("true");
+      // The cookie's own value must never appear in the redirect.
+      expect(location.search).not.toContain("some-verifier-value");
+    });
+
+    it("never includes the authorization code, tokens, or cookie values in the redirect URL", async () => {
+      exchangeCodeForSession.mockResolvedValue({ error: { name: "AuthApiError", message: "invalid_grant: access_token=secret-token-value", code: "bad_oauth_state" } });
+
+      const url = new URL("/auth/callback", ORIGIN);
+      url.searchParams.set("code", "super-secret-auth-code");
+      const request = new NextRequest(url);
+      request.cookies.set("sb-project-auth-token-code-verifier", "super-secret-verifier");
+
+      const res = await GET(request);
+      const location = new URL(res.headers.get("location")!);
+      const fullUrl = location.toString();
+
+      expect(fullUrl).not.toContain("super-secret-auth-code");
+      expect(fullUrl).not.toContain("super-secret-verifier");
+      expect(fullUrl).not.toContain("secret-token-value");
+      expect(fullUrl).not.toContain("access_token");
+      // Only the small, fixed diagnostic keys are present.
+      expect([...location.searchParams.keys()].sort()).toEqual(["error", "error_code", "error_name", "has_verifier"]);
+    });
+
+    it("adds diagnostics for missing_code too", async () => {
+      const url = new URL("/auth/callback", ORIGIN);
+      const res = await GET(new NextRequest(url));
+      const location = new URL(res.headers.get("location")!);
+
+      expect(location.searchParams.get("error")).toBe("missing_code");
+      expect(location.searchParams.get("has_verifier")).toBe("false");
+      expect(location.searchParams.has("error_name")).toBe(true);
+      expect(location.searchParams.has("error_code")).toBe(true);
+    });
+
+    it("does not add diagnostic params for an upstream OAuth error (no exchange was attempted)", async () => {
+      const url = new URL("/auth/callback", ORIGIN);
+      url.searchParams.set("error", "access_denied");
+      const res = await GET(new NextRequest(url));
+      const location = new URL(res.headers.get("location")!);
+
+      expect(location.searchParams.get("error")).toBe("access_denied");
+      expect(location.searchParams.has("error_name")).toBe(false);
+      expect(location.searchParams.has("has_verifier")).toBe(false);
+    });
+  });
 });
