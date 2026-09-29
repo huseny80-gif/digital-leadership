@@ -1,9 +1,10 @@
 import Link from "next/link";
-import type { PaginatedResult, Subject, UserProfile } from "@shared/index";
+import type { LearnerAnalytics, PaginatedResult, Subject, UserProfile } from "@shared/index";
 import { apiGet, apiGetPaginated } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 import { SubjectCard } from "@/components/content/SubjectCard";
+import { LearnerAnalyticsSection } from "@/components/analytics/LearnerAnalyticsSection";
 
 export const metadata = { title: "Dashboard | Digital Leadership" };
 
@@ -28,6 +29,21 @@ export default async function DashboardPage() {
     errorMessage = toSafeErrorMessage(err, "your dashboard").message;
   }
 
+  // Analytics is fetched independently — a failure here shouldn't take
+  // down the rest of the dashboard (subjects list still renders). Skipped
+  // entirely if the main fetch above already failed, so a single outage
+  // shows one error state, not two redundant ones.
+  let analytics: LearnerAnalytics | null = null;
+  let analyticsErrorMessage: string | null = null;
+  if (!errorMessage) {
+    try {
+      const analyticsRes = await apiGet<LearnerAnalytics>("/api/v1/analytics/me");
+      analytics = analyticsRes.data;
+    } catch (err) {
+      analyticsErrorMessage = toSafeErrorMessage(err, "your learning analytics").message;
+    }
+  }
+
   return (
     <section>
       <h1 className="page-heading">
@@ -36,6 +52,12 @@ export default async function DashboardPage() {
       <p className="page-subheading">Continue your learning or browse all subjects.</p>
 
       {errorMessage ? <ErrorState message={errorMessage} retryHref="/dashboard" /> : null}
+
+      {analytics ? (
+        <LearnerAnalyticsSection analytics={analytics} />
+      ) : analyticsErrorMessage ? (
+        <ErrorState message={analyticsErrorMessage} retryHref="/dashboard" />
+      ) : null}
 
       {!errorMessage && subjectsResult ? (
         <>
