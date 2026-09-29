@@ -5,5 +5,8 @@
     "shared",
     "backend",
     "web"
-  ]
+  ],
+  "scripts": {
+    "build:web": "npm run build --workspace=shared && npm run build --workspace=web"
+  }
 }
