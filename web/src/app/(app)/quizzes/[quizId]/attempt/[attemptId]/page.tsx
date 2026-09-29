@@ -1,4 +1,4 @@
-import type { Quiz, QuestionForAttempt, AttemptAnswer } from "@shared/index";
+import type { Quiz, QuestionForAttempt, AttemptAnswer, QuizAttempt } from "@shared/index";
 import { apiGet, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { ErrorState, NotFoundState } from "@/components/ui/States";
@@ -35,18 +35,22 @@ export default async function QuizAttemptPage({
   let quiz: Quiz | null = null;
   let questions: QuestionForAttempt[] = [];
   let existingAnswers: AttemptAnswer[] = [];
+  let attempt: QuizAttempt | null = null;
   let notFound = false;
   let errorMessage: string | null = null;
 
   try {
-    const [quizRes, questionsRes, answersRes] = await Promise.all([
+    console.error("[attempt-page] loading answers", attemptId); // TEMP DIAGNOSTIC — remove after debugging
+    const [quizRes, questionsRes, answersRes, attemptRes] = await Promise.all([
       apiGet<Quiz>(`/api/v1/quizzes/${quizId}`),
       apiGet<QuestionForAttempt[]>(`/api/v1/quizzes/${quizId}/questions`),
       apiGet<AttemptAnswer[]>(`/api/v1/attempts/${attemptId}/answers`),
+      apiGet<QuizAttempt>(`/api/v1/attempts/${attemptId}`),
     ]);
     quiz = quizRes.data;
     questions = questionsRes.data;
     existingAnswers = answersRes.data;
+    attempt = attemptRes.data;
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
       notFound = true;
@@ -63,5 +67,13 @@ export default async function QuizAttemptPage({
     return <ErrorState message={errorMessage} retryHref={`/quizzes/${quizId}/attempt/${attemptId}`} />;
   }
 
-  return <QuizAttemptRunner quiz={quiz!} questions={questions} attemptId={attemptId} initialAnswers={existingAnswers} />;
+  return (
+    <QuizAttemptRunner
+      quiz={quiz!}
+      questions={questions}
+      attemptId={attemptId}
+      initialAnswers={existingAnswers}
+      startedAt={attempt!.startedAt}
+    />
+  );
 }

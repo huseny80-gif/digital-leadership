@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import type { Quiz, QuestionForAttempt, AttemptAnswer } from "@shared/index";
 
 const pushMock = vi.fn();
@@ -257,6 +257,60 @@ describe("QuizAttemptRunner", () => {
           }),
         ),
       );
+    });
+  });
+
+  describe("quiz timer", () => {
+    const timedQuiz: Quiz = { ...quiz, timeLimitSeconds: 120 };
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("does not show a timer when the quiz has no time limit", () => {
+      render(<QuizAttemptRunner quiz={quiz} questions={questions} attemptId="attempt-1" startedAt={new Date().toISOString()} />);
+      expect(screen.queryByRole("timer")).not.toBeInTheDocument();
+    });
+
+    it("shows a countdown computed from startedAt + timeLimitSeconds, and ticks down", () => {
+      vi.useFakeTimers();
+      const startedAt = new Date(Date.now() - 30_000).toISOString(); // 30s already elapsed
+      render(<QuizAttemptRunner quiz={timedQuiz} questions={questions} attemptId="attempt-1" startedAt={startedAt} />);
+
+      expect(screen.getByRole("timer")).toHaveTextContent("1:30");
+
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+      expect(screen.getByRole("timer")).toHaveTextContent("1:25");
+    });
+
+    it("auto-submits when the countdown reaches zero, preserving already-saved answers", async () => {
+      vi.useFakeTimers();
+      const fetchMock = vi.fn().mockImplementation((url: string) => {
+        if (url === "/api/attempts/attempt-1/submit") {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              data: { attemptId: "attempt-1", quizId: "quiz-1", status: "graded", totalQuestions: 2, answeredQuestions: 1, correctAnswers: 1, score: 1, percentage: 50, submittedAt: new Date().toISOString() },
+            }),
+          });
+        }
+        return Promise.resolve({ ok: true, json: async () => ({ data: { questionId: "q1", recorded: true } }) });
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const startedAt = new Date(Date.now() - 119_000).toISOString(); // 1 second left
+      render(<QuizAttemptRunner quiz={timedQuiz} questions={questions} attemptId="attempt-1" startedAt={startedAt} />);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(fetchMock).toHaveBeenCalledWith("/api/attempts/attempt-1/submit", expect.objectContaining({ method: "POST" }));
+      expect(pushMock).toHaveBeenCalledWith("/quizzes/quiz-1/result/attempt-1");
+
+      vi.unstubAllGlobals();
     });
   });
 

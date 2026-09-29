@@ -216,6 +216,47 @@ describe("Quiz attempts", () => {
   });
 });
 
+describe("GET /attempts/:attemptId (PHASE 4 quiz timer)", () => {
+  it("returns the owning user's attempt, including startedAt", async () => {
+    const { publishedQuizId, userToken } = await seedQuizScenario();
+    const app = createApp();
+    const started = await request(app)
+      .post(`/api/v1/quizzes/${publishedQuizId}/attempts`)
+      .set("Authorization", `Bearer ${userToken}`);
+    const attemptId = started.body.data.id;
+
+    const res = await request(app).get(`/api/v1/attempts/${attemptId}`).set("Authorization", `Bearer ${userToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.id).toBe(attemptId);
+    expect(res.body.data.quizId).toBe(publishedQuizId);
+    expect(typeof res.body.data.startedAt).toBe("string");
+  });
+
+  it("rejects access to another user's attempt (404, not 403)", async () => {
+    const { publishedQuizId, userToken, otherUserToken } = await seedQuizScenario();
+    const app = createApp();
+    const started = await request(app)
+      .post(`/api/v1/quizzes/${publishedQuizId}/attempts`)
+      .set("Authorization", `Bearer ${userToken}`);
+    const attemptId = started.body.data.id;
+
+    const res = await request(app).get(`/api/v1/attempts/${attemptId}`).set("Authorization", `Bearer ${otherUserToken}`);
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects an unauthenticated request", async () => {
+    const { publishedQuizId, userToken } = await seedQuizScenario();
+    const app = createApp();
+    const started = await request(app)
+      .post(`/api/v1/quizzes/${publishedQuizId}/attempts`)
+      .set("Authorization", `Bearer ${userToken}`);
+    const attemptId = started.body.data.id;
+
+    const res = await request(app).get(`/api/v1/attempts/${attemptId}`);
+    expect(res.status).toBe(401);
+  });
+});
+
 describe("Answer submission", () => {
   async function startAttempt(app: ReturnType<typeof createApp>, quizId: string, token: string) {
     const res = await request(app).post(`/api/v1/quizzes/${quizId}/attempts`).set("Authorization", `Bearer ${token}`);

@@ -127,6 +127,22 @@ export function assessmentsRoutes(): Router {
   );
 
   router.get(
+    "/attempts/:attemptId",
+    requireAuthenticated,
+    requireUuidParam("attemptId"),
+    async (req, res, next) => {
+      try {
+        const service = getService();
+        const attempt = await service.getAttemptOrThrow(req.params.attemptId as string, req.user!.id);
+        const body: ApiResult<QuizAttempt> = { data: attempt };
+        res.json(body);
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  router.get(
     "/attempts/:attemptId/answers",
     requireAuthenticated,
     requireUuidParam("attemptId"),

@@ -93,6 +93,17 @@ export class AssessmentsService {
     return this.repository.listAnswersForAttempt(attemptId);
   }
 
+  /** Lets the owning learner re-fetch their own attempt's `startedAt` —
+   * needed client-side to compute a quiz's remaining time on refresh
+   * (PHASE 4 "Quiz Timer"). Same ownership rule as every other
+   * attempt-scoped read: identical 404 whether the attempt doesn't exist
+   * or belongs to someone else. */
+  async getAttemptOrThrow(attemptId: string, userId: string): Promise<QuizAttempt> {
+    const attempt = await this.repository.getAttemptById(attemptId);
+    if (!attempt || attempt.userId !== userId) throw notFound("Quiz attempt");
+    return attempt;
+  }
+
   /**
    * Answer submission (PHASE 09B "Answer Submission"). Validates, in
    * order: the attempt exists and belongs to the caller, the attempt is

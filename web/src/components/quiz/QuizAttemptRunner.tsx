@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ApiErrorBody, Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer, MatchAnswerPair } from "@shared/index";
 
 type AnswerState = { selectedOptionId?: string; answerText?: string; matchAnswer?: MatchAnswerPair[]; orderAnswer?: string[] };
+
+function formatRemainingTime(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
 
 function toInitialAnswers(initialAnswers: AttemptAnswer[]): Record<string, AnswerState> {
   const initial: Record<string, AnswerState> = {};
@@ -45,19 +51,47 @@ export function QuizAttemptRunner({
   questions,
   attemptId,
   initialAnswers,
+  startedAt,
 }: {
   quiz: Quiz;
   questions: QuestionForAttempt[];
   attemptId: string;
   initialAnswers?: AttemptAnswer[];
+  /** The attempt's `startedAt` timestamp (ISO string), used only to
+   * compute a countdown for `quiz.timeLimitSeconds` — never itself sent
+   * back to the server; the server independently enforces (or not) any
+   * time limit, this is purely a learner-facing convenience. */
+  startedAt?: string;
 }) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, AnswerState>>(() => toInitialAnswers(initialAnswers ?? []));
   const [savingQuestionId, setSavingQuestionId] = useState<string | null>(null);
+  const [savedQuestionId, setSavedQuestionId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const deadline =
+    quiz.timeLimitSeconds && startedAt ? new Date(startedAt).getTime() + quiz.timeLimitSeconds * 1000 : null;
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(
+    deadline !== null ? Math.max(0, Math.round((deadline - Date.now()) / 1000)) : null,
+  );
+
+  useEffect(() => {
+    if (deadline === null) return;
+    const tick = () => setRemainingSeconds(Math.max(0, Math.round((deadline - Date.now()) / 1000)));
+    tick();
+    const intervalId = setInterval(tick, 1000);
+    return () => clearInterval(intervalId);
+  }, [deadline]);
+
+  useEffect(() => {
+    if (remainingSeconds === 0 && !submitting) {
+      void handleSubmit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleSubmit is a hoisted function declaration recreated each render but stable in behavior; including it would re-fire this effect on every render
+  }, [remainingSeconds, submitting]);
 
   if (questions.length === 0) {
     return (
@@ -73,6 +107,7 @@ export function QuizAttemptRunner({
 
   async function saveAnswer(questionId: string, answer: AnswerState) {
     setSavingQuestionId(questionId);
+    setSavedQuestionId(null);
     setSaveError(null);
     try {
       const res = await fetch(`/api/attempts/${attemptId}/answers`, {
@@ -94,7 +129,9 @@ export function QuizAttemptRunner({
       }
       if (!parsed.data?.recorded) {
         setSaveError("Unable to save your answer. Please try again.");
+        return;
       }
+      setSavedQuestionId(questionId);
     } catch {
       setSaveError("Unable to save your answer. Please try again.");
     } finally {
@@ -176,8 +213,54 @@ export function QuizAttemptRunner({
       <h1 className="page-heading">{quiz.title}</h1>
       {quiz.description ? <p className="page-subheading">{quiz.description}</p> : null}
 
-      <div role="status" aria-live="polite" className="item-row-meta" style={{ marginBottom: "var(--space-4)" }}>
+      {remainingSeconds !== null ? (
+        <div
+          role="timer"
+          aria-live={remainingSeconds <= 60 ? "assertive" : "off"}
+          className="item-row-meta"
+          style={{
+            marginBottom: "var(--space-3)",
+            fontWeight: remainingSeconds <= 60 ? 700 : 400,
+            color: remainingSeconds <= 60 ? "var(--color-danger)" : undefined,
+          }}
+        >
+          Time remaining: {formatRemainingTime(remainingSeconds)}
+        </div>
+      ) : null}
+
+      <div role="status" aria-live="polite" className="item-row-meta" style={{ marginBottom: "var(--space-3)" }}>
         Question {currentIndex + 1} of {questions.length} — {answeredCount} of {questions.length} answered
+      </div>
+
+      <div
+        role="navigation"
+        aria-label="Jump to question"
+        style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}
+      >
+        {questions.map((q, index) => {
+          const isAnswered = answers[q.id] !== undefined;
+          const isCurrent = index === currentIndex;
+          return (
+            <button
+              key={q.id}
+              type="button"
+              className="btn btn-secondary"
+              aria-current={isCurrent ? "step" : undefined}
+              aria-label={`Question ${index + 1}${isAnswered ? " (answered)" : " (not answered)"}`}
+              onClick={() => setCurrentIndex(index)}
+              style={{
+                minWidth: "2.5rem",
+                padding: "var(--space-2)",
+                fontWeight: isCurrent ? 700 : 400,
+                borderColor: isCurrent ? "var(--color-primary)" : undefined,
+                background: isAnswered ? "var(--color-surface-alt, var(--color-surface))" : undefined,
+              }}
+            >
+              {index + 1}
+              {isAnswered ? " ✓" : ""}
+            </button>
+          );
+        })}
       </div>
 
       <fieldset style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "var(--space-5)" }}>
@@ -302,7 +385,7 @@ export function QuizAttemptRunner({
         )}
 
         <p role="status" aria-live="polite" className="item-row-meta" style={{ marginTop: "var(--space-3)" }}>
-          {savingQuestionId === question.id ? "Saving…" : ""}
+          {savingQuestionId === question.id ? "Saving…" : savedQuestionId === question.id ? "Saved ✓" : ""}
         </p>
         {saveError ? (
           <p role="alert" className="item-row-meta" style={{ color: "var(--color-danger)" }}>
