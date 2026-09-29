@@ -23,6 +23,19 @@ export function createApp(): Express {
   const app = express();
   const env = getEnv();
 
+  // Railway (and platforms like it) terminate TLS and proxy every request
+  // through exactly one reverse-proxy hop before it reaches this process,
+  // setting `X-Forwarded-For` itself. Express must be told to trust that
+  // one hop so `req.ip` (which `express-rate-limit` keys its per-client
+  // buckets on) reflects the real client IP instead of the proxy's —
+  // without this, express-rate-limit refuses to start
+  // (ERR_ERL_UNEXPECTED_X_FORWARDED_FOR) since trusting an unset "trust
+  // proxy" would let any client spoof `X-Forwarded-For` to dodge rate
+  // limiting. `1` trusts exactly the nearest hop (Railway's own proxy) —
+  // deliberately not `true`, which would trust every hop in an
+  // attacker-supplied header chain.
+  app.set("trust proxy", 1);
+
   // CORS (API_SECURITY.md "CORS"): explicit allow-list from environment,
   // never a wildcard, for an API that serves authenticated requests
   // (PHASE 07 §22). Origins with credentials must be enumerated, not `*`.
