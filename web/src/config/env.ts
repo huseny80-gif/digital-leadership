@@ -10,11 +10,25 @@
  * read here, and does not exist as a `NEXT_PUBLIC_*` variable anywhere in
  * this codebase.
  */
+/**
+ * Server-side callers (every current caller of `lib/api/client.ts` — all
+ * Server Components and Route Handlers) should prefer `API_BASE_URL`, a
+ * plain server-only env var read at request time, over
+ * `NEXT_PUBLIC_API_BASE_URL`. The `NEXT_PUBLIC_*` value is inlined into the
+ * JS bundle at *build* time, so a value corrected in Vercel's dashboard
+ * after a build has already run has no effect on that build until a fresh
+ * one happens — `API_BASE_URL` has no such staleness since server code
+ * reads `process.env` live on every request. `NEXT_PUBLIC_API_BASE_URL`
+ * remains the fallback (and the only option for a future Client Component
+ * caller, which cannot read a non-`NEXT_PUBLIC_*` variable at all) so
+ * nothing breaks for an environment that only sets the public variable.
+ * Neither value is a secret — this is a public API endpoint's own address.
+ */
 export function getApiBaseUrl(): string {
-  const value = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const value = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
   if (!value) {
     throw new Error(
-      "NEXT_PUBLIC_API_BASE_URL is not set. Copy .env.example to .env.local and fill it in — see ENVIRONMENT.md.",
+      "API_BASE_URL (or NEXT_PUBLIC_API_BASE_URL) is not set. Copy .env.example to .env.local and fill it in — see ENVIRONMENT.md.",
     );
   }
   return value;
