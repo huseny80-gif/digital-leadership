@@ -179,6 +179,36 @@ export class AdminAssessmentsService {
     await writeAuditLog(this.pool, { actorUserId, action: "quiz.question_added", entityType: "quiz", entityId: quizId, metadata: { questionId } });
   }
 
+  /** Duplicates a quiz's own fields and its question links (order preserved,
+   * per-question point overrides intentionally not copied — a clone starts
+   * as an unpublished draft the admin can then adjust). PHASE4_ENHANCEMENT_PLAN.md
+   * §2.4. */
+  async cloneQuiz(quizId: string, actorUserId: string): Promise<Quiz> {
+    const original = await this.getQuizOrThrow(quizId);
+    const links = await this.listQuizQuestionsOrThrow(quizId);
+    const clone = await this.createQuiz(
+      {
+        subjectId: original.subjectId,
+        lectureId: original.lectureId,
+        title: `${original.title} (Copy)`,
+        description: original.description,
+        timeLimitSeconds: original.timeLimitSeconds,
+      },
+      actorUserId,
+    );
+    for (const link of links) {
+      await this.addQuestionToQuiz(clone.id, link.questionId, link.orderIndex, actorUserId);
+    }
+    await writeAuditLog(this.pool, {
+      actorUserId,
+      action: "quiz.cloned",
+      entityType: "quiz",
+      entityId: clone.id,
+      metadata: { sourceQuizId: quizId },
+    });
+    return clone;
+  }
+
   async removeQuestionFromQuiz(quizId: string, questionId: string, actorUserId: string): Promise<void> {
     const removed = await this.repository.removeQuestionFromQuiz(quizId, questionId);
     if (!removed) throw notFound("Quiz question");

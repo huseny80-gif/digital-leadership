@@ -23,6 +23,7 @@ export default function AdminSubjectDetailPage({ params }: { params: Promise<{ s
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  const [lectureFilter, setLectureFilter] = useState("");
   const [lectureFormOpen, setLectureFormOpen] = useState(false);
   const [lectureTitle, setLectureTitle] = useState("");
   const [lectureError, setLectureError] = useState<string | null>(null);
@@ -91,6 +92,22 @@ export default function AdminSubjectDetailPage({ params }: { params: Promise<{ s
     await load();
   }
 
+  async function moveLecture(index: number, direction: -1 | 1) {
+    if (!lectures) return;
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= lectures.length) return;
+    const current = lectures[index]!;
+    const target = lectures[targetIndex]!;
+    // Swap order_index between the two adjacent lectures — the list is
+    // already sorted by order_index server-side, so this is a plain
+    // adjacent swap, no re-numbering of the whole list required.
+    await Promise.all([
+      adminPatch(`lectures/${current.id}`, { orderIndex: target.orderIndex }),
+      adminPatch(`lectures/${target.id}`, { orderIndex: current.orderIndex }),
+    ]);
+    await load();
+  }
+
   if (notFound) return <NotFoundState message="This subject doesn't exist." />;
   if (error) return <ErrorState message={error} retryHref={`/admin/subjects/${subjectId}`} />;
   if (!subject || !lectures) return <LoadingState label="Loading subject…" />;
@@ -156,40 +173,80 @@ export default function AdminSubjectDetailPage({ params }: { params: Promise<{ s
       {lectures.length === 0 ? (
         <EmptyState title="No lectures yet" message="Create one above." />
       ) : (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lectures.map((lecture) => (
-                <tr key={lecture.id}>
-                  <td>
-                    <Link href={`/admin/lectures/${lecture.id}`}>{lecture.title}</Link>
-                  </td>
-                  <td>
-                    <span className="badge">{lecture.status}</span>
-                  </td>
-                  <td style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
-                    <button type="button" className="btn btn-secondary" onClick={() => togglePublish(lecture)}>
-                      {lecture.status === "published" ? "Unpublish" : "Publish"}
-                    </button>
-                    <ConfirmButton
-                      label="Delete"
-                      confirmTitle="Delete this lecture?"
-                      confirmMessage={`"${lecture.title}" will be archived and hidden from learners.`}
-                      onConfirm={() => handleDeleteLecture(lecture.id)}
-                    />
-                  </td>
+        <>
+          <div className="form-field" style={{ maxWidth: "20rem", marginBottom: "var(--space-3)" }}>
+            <label className="form-label" htmlFor="lecture-filter">
+              Filter by title
+            </label>
+            <input
+              id="lecture-filter"
+              className="form-input"
+              value={lectureFilter}
+              onChange={(e) => setLectureFilter(e.target.value)}
+              placeholder="Search lectures…"
+            />
+          </div>
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Status</th>
+                  <th>Order</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {lectures
+                  .filter((lecture) => lecture.title.toLowerCase().includes(lectureFilter.toLowerCase()))
+                  .map((lecture) => {
+                    const index = lectures.indexOf(lecture);
+                    return (
+                      <tr key={lecture.id}>
+                        <td>
+                          <Link href={`/admin/lectures/${lecture.id}`}>{lecture.title}</Link>
+                        </td>
+                        <td>
+                          <span className="badge">{lecture.status}</span>
+                        </td>
+                        <td style={{ display: "flex", gap: "var(--space-1)" }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => moveLecture(index, -1)}
+                            disabled={index === 0}
+                            aria-label={`Move ${lecture.title} up`}
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => moveLecture(index, 1)}
+                            disabled={index === lectures.length - 1}
+                            aria-label={`Move ${lecture.title} down`}
+                          >
+                            ↓
+                          </button>
+                        </td>
+                        <td style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                          <button type="button" className="btn btn-secondary" onClick={() => togglePublish(lecture)}>
+                            {lecture.status === "published" ? "Unpublish" : "Publish"}
+                          </button>
+                          <ConfirmButton
+                            label="Delete"
+                            confirmTitle="Delete this lecture?"
+                            confirmMessage={`"${lecture.title}" will be archived and hidden from learners.`}
+                            onConfirm={() => handleDeleteLecture(lecture.id)}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </section>
   );

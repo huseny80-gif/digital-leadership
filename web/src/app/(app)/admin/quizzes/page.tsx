@@ -16,6 +16,8 @@ export default function AdminQuizzesPage() {
   const [subjectId, setSubjectId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [filter, setFilter] = useState("");
+  const [cloningId, setCloningId] = useState<string | null>(null);
 
   async function load() {
     setError(null);
@@ -61,6 +63,16 @@ export default function AdminQuizzesPage() {
     await load();
   }
 
+  async function handleClone(id: string) {
+    setCloningId(id);
+    try {
+      await adminPost(`quizzes/${id}/clone`);
+      await load();
+    } finally {
+      setCloningId(null);
+    }
+  }
+
   return (
     <section>
       <div className="admin-toolbar">
@@ -104,40 +116,64 @@ export default function AdminQuizzesPage() {
       {!error && quizzes && quizzes.length === 0 ? <EmptyState title="No quizzes yet" message="Create one above." /> : null}
 
       {!error && quizzes && quizzes.length > 0 ? (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quizzes.map((quiz) => (
-                <tr key={quiz.id}>
-                  <td>
-                    <Link href={`/admin/quizzes/${quiz.id}`}>{quiz.title}</Link>
-                  </td>
-                  <td>
-                    <span className="badge">{quiz.status}</span>
-                  </td>
-                  <td style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
-                    <button type="button" className="btn btn-secondary" onClick={() => togglePublish(quiz)}>
-                      {quiz.status === "published" ? "Unpublish" : "Publish"}
-                    </button>
-                    <ConfirmButton
-                      label="Delete"
-                      confirmTitle="Delete this quiz?"
-                      confirmMessage={`"${quiz.title}" will be archived. Existing attempt history is preserved.`}
-                      onConfirm={() => handleDelete(quiz.id)}
-                    />
-                  </td>
+        <>
+          <div className="form-field" style={{ maxWidth: "20rem", marginBottom: "var(--space-3)" }}>
+            <label className="form-label" htmlFor="quiz-filter">
+              Filter by title
+            </label>
+            <input
+              id="quiz-filter"
+              className="form-input"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Search quizzes…"
+            />
+          </div>
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {quizzes
+                  .filter((quiz) => quiz.title.toLowerCase().includes(filter.toLowerCase()))
+                  .map((quiz) => (
+                    <tr key={quiz.id}>
+                      <td>
+                        <Link href={`/admin/quizzes/${quiz.id}`}>{quiz.title}</Link>
+                      </td>
+                      <td>
+                        <span className="badge">{quiz.status}</span>
+                      </td>
+                      <td style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                        <button type="button" className="btn btn-secondary" onClick={() => togglePublish(quiz)}>
+                          {quiz.status === "published" ? "Unpublish" : "Publish"}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => handleClone(quiz.id)}
+                          disabled={cloningId === quiz.id}
+                        >
+                          {cloningId === quiz.id ? "Cloning…" : "Clone"}
+                        </button>
+                        <ConfirmButton
+                          label="Delete"
+                          confirmTitle="Delete this quiz?"
+                          confirmMessage={`"${quiz.title}" will be archived. Existing attempt history is preserved.`}
+                          onConfirm={() => handleDelete(quiz.id)}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : null}
     </section>
   );

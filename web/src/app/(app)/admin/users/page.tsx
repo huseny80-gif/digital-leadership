@@ -19,6 +19,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Record<string, string>>({});
+  const [filter, setFilter] = useState("");
 
   async function load() {
     setError(null);
@@ -72,7 +73,20 @@ export default function AdminUsersPage() {
       {!error && users && users.length === 0 ? <EmptyState title="No users yet" message="Users appear here once they first sign in." /> : null}
 
       {!error && users && users.length > 0 ? (
-        <div className="admin-table-wrap">
+        <>
+          <div className="form-field" style={{ maxWidth: "20rem", marginBottom: "var(--space-3)" }}>
+            <label className="form-label" htmlFor="user-filter">
+              Filter by email
+            </label>
+            <input
+              id="user-filter"
+              className="form-input"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Search users…"
+            />
+          </div>
+          <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
               <tr>
@@ -83,7 +97,9 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
+              {users
+                .filter((user) => user.email.toLowerCase().includes(filter.toLowerCase()))
+                .map((user) => (
                 <tr key={user.id}>
                   <td>{user.email}</td>
                   <td>
@@ -133,7 +149,8 @@ export default function AdminUsersPage() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       ) : null}
     </section>
   );

@@ -585,6 +585,15 @@ export function adminRoutes(): Router {
     }
   });
 
+  router.post("/quizzes/:quizId/clone", requireUuidParam("quizId"), async (req, res, next) => {
+    try {
+      const clone = await assessmentsService.cloneQuiz(req.params.quizId as string, req.user!.id);
+      res.status(201).json({ data: clone } as ApiResult<Quiz>);
+    } catch (err) {
+      next(err);
+    }
+  });
+
   router.delete("/quizzes/:quizId", requireUuidParam("quizId"), async (req, res, next) => {
     try {
       await assessmentsService.deleteQuiz(req.params.quizId as string, req.user!.id);

@@ -20,6 +20,7 @@ export default function AdminSubjectsPage() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [filter, setFilter] = useState("");
 
   async function load() {
     setError(null);
@@ -109,7 +110,20 @@ export default function AdminSubjectsPage() {
       {!error && subjects && subjects.length === 0 ? <EmptyState title="No subjects yet" message="Create your first subject above." /> : null}
 
       {!error && subjects && subjects.length > 0 ? (
-        <div className="admin-table-wrap">
+        <>
+          <div className="form-field" style={{ maxWidth: "20rem", marginBottom: "var(--space-3)" }}>
+            <label className="form-label" htmlFor="subject-filter">
+              Filter by title
+            </label>
+            <input
+              id="subject-filter"
+              className="form-input"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Search subjects…"
+            />
+          </div>
+          <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
               <tr>
@@ -119,7 +133,9 @@ export default function AdminSubjectsPage() {
               </tr>
             </thead>
             <tbody>
-              {subjects.map((subject) => (
+              {subjects
+                .filter((subject) => subject.title.toLowerCase().includes(filter.toLowerCase()))
+                .map((subject) => (
                 <tr key={subject.id}>
                   <td>
                     <Link href={`/admin/subjects/${subject.id}`}>{subject.title}</Link>
@@ -142,7 +158,8 @@ export default function AdminSubjectsPage() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       ) : null}
     </section>
   );
