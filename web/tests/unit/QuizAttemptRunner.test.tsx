@@ -196,4 +196,106 @@ describe("QuizAttemptRunner", () => {
     expect(screen.getByLabelText("4")).not.toBeChecked();
     expect(screen.getByText(/0 of 2 answered/i)).toBeInTheDocument();
   });
+
+  describe("match questions", () => {
+    const matchQuestion: QuestionForAttempt = {
+      id: "q-match",
+      questionType: "match",
+      prompt: "Match the country to its capital.",
+      points: 2,
+      options: null,
+      matchItems: {
+        left: [
+          { id: "left-1", text: "France" },
+          { id: "left-2", text: "Japan" },
+        ],
+        right: [
+          { id: "right-1", text: "Tokyo" },
+          { id: "right-2", text: "Paris" },
+        ],
+      },
+      orderItems: null,
+    };
+
+    it("renders one select per left item, listing every right item as an option", () => {
+      render(<QuizAttemptRunner quiz={quiz} questions={[matchQuestion]} attemptId="attempt-1" />);
+      expect(screen.getByText("France")).toBeInTheDocument();
+      expect(screen.getByText("Japan")).toBeInTheDocument();
+      const selects = screen.getAllByRole("combobox");
+      expect(selects).toHaveLength(2);
+      expect(document.body.innerHTML).not.toMatch(/is_correct|isCorrect/i);
+    });
+
+    it("choosing a match saves matchAnswer through the same-origin proxy", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: { questionId: "q-match", recorded: true } }) });
+      vi.stubGlobal("fetch", fetchMock);
+
+      render(<QuizAttemptRunner quiz={quiz} questions={[matchQuestion]} attemptId="attempt-1" />);
+      fireEvent.change(screen.getByLabelText("Match for France"), { target: { value: "right-2" } });
+
+      await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/attempts/attempt-1/answers",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ questionId: "q-match", matchAnswer: [{ leftId: "left-1", rightId: "right-2" }] }),
+        }),
+      );
+
+      fireEvent.change(screen.getByLabelText("Match for Japan"), { target: { value: "right-1" } });
+      await waitFor(() =>
+        expect(fetchMock).toHaveBeenLastCalledWith(
+          "/api/attempts/attempt-1/answers",
+          expect.objectContaining({
+            body: JSON.stringify({
+              questionId: "q-match",
+              matchAnswer: [
+                { leftId: "left-1", rightId: "right-2" },
+                { leftId: "left-2", rightId: "right-1" },
+              ],
+            }),
+          }),
+        ),
+      );
+    });
+  });
+
+  describe("order questions", () => {
+    const orderQuestion: QuestionForAttempt = {
+      id: "q-order",
+      questionType: "order",
+      prompt: "Put the steps in order.",
+      points: 2,
+      options: null,
+      matchItems: null,
+      orderItems: [
+        { id: "item-1", text: "First step" },
+        { id: "item-2", text: "Second step" },
+      ],
+    };
+
+    it("renders items in their given order with move buttons", () => {
+      render(<QuizAttemptRunner quiz={quiz} questions={[orderQuestion]} attemptId="attempt-1" />);
+      const items = screen.getAllByText(/^(First|Second) step$/);
+      expect(items.map((el) => el.textContent)).toEqual(["First step", "Second step"]);
+      expect(document.body.innerHTML).not.toMatch(/is_correct|isCorrect/i);
+    });
+
+    it("moving an item down saves orderAnswer in the new order", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: { questionId: "q-order", recorded: true } }) });
+      vi.stubGlobal("fetch", fetchMock);
+
+      render(<QuizAttemptRunner quiz={quiz} questions={[orderQuestion]} attemptId="attempt-1" />);
+      fireEvent.click(screen.getByLabelText("Move First step down"));
+
+      await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/attempts/attempt-1/answers",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ questionId: "q-order", orderAnswer: ["item-2", "item-1"] }),
+        }),
+      );
+    });
+  });
 });

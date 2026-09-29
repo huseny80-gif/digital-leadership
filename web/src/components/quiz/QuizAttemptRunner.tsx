@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { ApiErrorBody, Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer } from "@shared/index";
+import type { ApiErrorBody, Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer, MatchAnswerPair } from "@shared/index";
 
-type AnswerState = { selectedOptionId?: string; answerText?: string };
+type AnswerState = { selectedOptionId?: string; answerText?: string; matchAnswer?: MatchAnswerPair[]; orderAnswer?: string[] };
 
 function toInitialAnswers(initialAnswers: AttemptAnswer[]): Record<string, AnswerState> {
   const initial: Record<string, AnswerState> = {};
@@ -12,6 +12,8 @@ function toInitialAnswers(initialAnswers: AttemptAnswer[]): Record<string, Answe
     initial[answer.questionId] = {
       ...(answer.selectedOptionId !== null ? { selectedOptionId: answer.selectedOptionId } : {}),
       ...(answer.answerText !== null ? { answerText: answer.answerText } : {}),
+      ...(answer.matchAnswer !== null ? { matchAnswer: answer.matchAnswer } : {}),
+      ...(answer.orderAnswer !== null ? { orderAnswer: answer.orderAnswer } : {}),
     };
   }
   return initial;
@@ -117,6 +119,26 @@ export function QuizAttemptRunner({
     }
   }
 
+  function selectMatchPair(leftId: string, rightId: string) {
+    const existing = answers[question.id]?.matchAnswer ?? [];
+    const nextPairs = [...existing.filter((pair) => pair.leftId !== leftId), { leftId, rightId }];
+    const answer: AnswerState = { matchAnswer: nextPairs };
+    setAnswers((prev) => ({ ...prev, [question.id]: answer }));
+    void saveAnswer(question.id, answer);
+  }
+
+  function moveOrderItem(itemId: string, direction: -1 | 1) {
+    const current = answers[question.id]?.orderAnswer ?? question.orderItems?.map((item) => item.id) ?? [];
+    const index = current.indexOf(itemId);
+    const targetIndex = index + direction;
+    if (index === -1 || targetIndex < 0 || targetIndex >= current.length) return;
+    const reordered = [...current];
+    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex]!, reordered[index]!];
+    const answer: AnswerState = { orderAnswer: reordered };
+    setAnswers((prev) => ({ ...prev, [question.id]: answer }));
+    void saveAnswer(question.id, answer);
+  }
+
   async function handleSubmit() {
     setSubmitting(true);
     setSubmitError(null);
@@ -182,6 +204,77 @@ export function QuizAttemptRunner({
                 <span>{option.optionText}</span>
               </label>
             ))}
+          </div>
+        ) : question.matchItems ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", marginTop: "var(--space-3)" }}>
+            {question.matchItems.left.map((leftItem) => {
+              const selectedRightId = currentAnswer?.matchAnswer?.find((pair) => pair.leftId === leftItem.id)?.rightId ?? "";
+              return (
+                <div key={leftItem.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                  <span style={{ flex: 1 }}>{leftItem.text}</span>
+                  <select
+                    aria-label={`Match for ${leftItem.text}`}
+                    value={selectedRightId}
+                    onChange={(e) => selectMatchPair(leftItem.id, e.target.value)}
+                    style={{
+                      padding: "var(--space-2)",
+                      borderRadius: "var(--radius-sm)",
+                      border: "1px solid var(--color-border)",
+                      background: "var(--color-surface)",
+                      color: "var(--color-text)",
+                    }}
+                  >
+                    <option value="" disabled>
+                      Select a match…
+                    </option>
+                    {question.matchItems!.right.map((rightItem) => (
+                      <option key={rightItem.id} value={rightItem.id}>
+                        {rightItem.text}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })}
+          </div>
+        ) : question.orderItems ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
+            {(currentAnswer?.orderAnswer ?? question.orderItems.map((item) => item.id)).map((itemId, index, list) => {
+              const item = question.orderItems!.find((it) => it.id === itemId)!;
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--space-3)",
+                    padding: "var(--space-2) var(--space-3)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "var(--radius-sm)",
+                  }}
+                >
+                  <span style={{ flex: 1 }}>{item.text}</span>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => moveOrderItem(item.id, -1)}
+                    disabled={index === 0}
+                    aria-label={`Move ${item.text} up`}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => moveOrderItem(item.id, 1)}
+                    disabled={index === list.length - 1}
+                    aria-label={`Move ${item.text} down`}
+                  >
+                    ↓
+                  </button>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div style={{ marginTop: "var(--space-3)" }}>
