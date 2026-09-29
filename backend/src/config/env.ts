@@ -57,16 +57,40 @@ const envSchema = z.object({
   // session identity) and must remain valid even if the JWT secret rotates.
   // Server-only; irrelevant once a live Supabase project provides real
   // Storage signed URLs.
-  LOCAL_STORAGE_SIGNING_SECRET: z.string().default("local-dev-storage-signing-secret-not-for-production"),
+  //
+  // Intentionally NOT `.default(...)` here (production hardening): a
+  // well-known, hardcoded fallback would make every locally-signed URL
+  // forgeable if this ever ran in production without real Supabase Storage
+  // configured. `getEnv()` below applies the dev-only fallback itself,
+  // strictly gated on NODE_ENV !== "production" — see that function.
+  LOCAL_STORAGE_SIGNING_SECRET: z.string().optional(),
 });
 
-export type Env = z.infer<typeof envSchema>;
+/** The same placeholder previously used as a schema-level default — now
+ * applied only outside production (see `getEnv()`), never silently in
+ * production. */
+const DEV_ONLY_LOCAL_STORAGE_SIGNING_SECRET = "local-dev-storage-signing-secret-not-for-production";
+
+/** `LOCAL_STORAGE_SIGNING_SECRET` is always a real string by the time
+ * `getEnv()` returns — either the caller's own value, or (development/test
+ * only) the dev placeholder applied below. No caller sees `undefined`. */
+export type Env = Omit<z.infer<typeof envSchema>, "LOCAL_STORAGE_SIGNING_SECRET"> & {
+  LOCAL_STORAGE_SIGNING_SECRET: string;
+};
 
 let cachedEnv: Env | null = null;
 
 /** Parses and validates `process.env` once, caching the result. Throws with
  * a clear message (never leaking secret values) if a required variable is
- * missing or malformed. */
+ * missing or malformed.
+ *
+ * Production hardening: `LOCAL_STORAGE_SIGNING_SECRET` has no schema-level
+ * default anymore — in `NODE_ENV=production` it must be set explicitly, or
+ * this throws before the server can start (fail closed, not fail with a
+ * well-known, hardcoded, forgeable secret). Outside production, the same
+ * dev-only placeholder as before is applied automatically so `npm run dev`/
+ * `npm test` keep working with zero setup — development usability is
+ * unchanged. */
 export function getEnv(): Env {
   if (cachedEnv) return cachedEnv;
   const parsed = envSchema.safeParse(process.env);
@@ -75,6 +99,17 @@ export function getEnv(): Env {
       `Invalid environment configuration: ${parsed.error.issues.map((i) => i.path.join(".")).join(", ")}. See ENVIRONMENT.md.`,
     );
   }
-  cachedEnv = parsed.data;
+
+  let signingSecret = parsed.data.LOCAL_STORAGE_SIGNING_SECRET;
+  if (!signingSecret) {
+    if (parsed.data.NODE_ENV === "production") {
+      throw new Error(
+        "LOCAL_STORAGE_SIGNING_SECRET must be set explicitly in production — no development fallback is used outside development/test. See ENVIRONMENT.md.",
+      );
+    }
+    signingSecret = DEV_ONLY_LOCAL_STORAGE_SIGNING_SECRET;
+  }
+
+  cachedEnv = { ...parsed.data, LOCAL_STORAGE_SIGNING_SECRET: signingSecret };
   return cachedEnv;
 }
