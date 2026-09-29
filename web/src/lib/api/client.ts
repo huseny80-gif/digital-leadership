@@ -18,19 +18,65 @@ export class ApiError extends Error {
   }
 }
 
+/** Server-console-only diagnostics for this module's two failure points
+ * that would otherwise surface only as the generic "Unable to load..."
+ * message a caller shows the user (`lib/api/errorMessage.ts`) — with no
+ * server-side trace of which of the two actually failed or why. Never
+ * logs the access token, cookies, or the request/response body — only
+ * the resolved API host, a `hasToken` boolean, the path, and the
+ * failing error's name/message (never its stack, which could otherwise
+ * echo request internals into logs). */
+function logRequestFailure(
+  stage: "resolve_config" | "get_access_token" | "fetch",
+  method: string,
+  path: string,
+  hasToken: boolean | "unknown",
+  err: unknown,
+): void {
+  let apiHost = "unresolved";
+  try {
+    apiHost = new URL(getApiBaseUrl()).host;
+  } catch {
+    apiHost = "invalid_or_unset";
+  }
+  const error = err instanceof Error ? { name: err.name, message: err.message } : { name: "unknown", message: String(err) };
+  console.error("api_client_request_failed", { stage, method, path, apiHost, hasToken, error });
+}
+
 async function requestJson(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, jsonBody?: unknown): Promise<unknown> {
-  const token = await getCurrentAccessToken();
+  let token: string | null;
+  try {
+    token = await getCurrentAccessToken();
+  } catch (err) {
+    logRequestFailure("get_access_token", method, path, "unknown", err);
+    throw err;
+  }
+
   const headers: HeadersInit = token ? { authorization: `Bearer ${token}` } : {};
   if (jsonBody !== undefined) {
     headers["content-type"] = "application/json";
   }
 
-  const res = await fetch(`${getApiBaseUrl()}${path}`, {
-    method,
-    headers,
-    cache: "no-store",
-    ...(jsonBody !== undefined ? { body: JSON.stringify(jsonBody) } : {}),
-  });
+  let apiBaseUrl: string;
+  try {
+    apiBaseUrl = getApiBaseUrl();
+  } catch (err) {
+    logRequestFailure("resolve_config", method, path, Boolean(token), err);
+    throw err;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${apiBaseUrl}${path}`, {
+      method,
+      headers,
+      cache: "no-store",
+      ...(jsonBody !== undefined ? { body: JSON.stringify(jsonBody) } : {}),
+    });
+  } catch (err) {
+    logRequestFailure("fetch", method, path, Boolean(token), err);
+    throw err;
+  }
 
   if (res.status === 204) {
     if (!res.ok) throw new ApiError({ error: { code: "error", message: "Request failed." } }, res.status);
