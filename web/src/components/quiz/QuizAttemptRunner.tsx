@@ -293,13 +293,15 @@ export function QuizAttemptRunner({
             {question.matchItems.left.map((leftItem) => {
               const selectedRightId = currentAnswer?.matchAnswer?.find((pair) => pair.leftId === leftItem.id)?.rightId ?? "";
               return (
-                <div key={leftItem.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                  <span style={{ flex: 1 }}>{leftItem.text}</span>
+                <div key={leftItem.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "var(--space-3)" }}>
+                  <span style={{ flex: "1 1 8rem" }}>{leftItem.text}</span>
                   <select
                     aria-label={`Match for ${leftItem.text}`}
                     value={selectedRightId}
                     onChange={(e) => selectMatchPair(leftItem.id, e.target.value)}
                     style={{
+                      flex: "1 1 12rem",
+                      minHeight: "2.75rem",
                       padding: "var(--space-2)",
                       borderRadius: "var(--radius-sm)",
                       border: "1px solid var(--color-border)",
@@ -329,6 +331,7 @@ export function QuizAttemptRunner({
                   key={item.id}
                   style={{
                     display: "flex",
+                    flexWrap: "wrap",
                     alignItems: "center",
                     gap: "var(--space-3)",
                     padding: "var(--space-2) var(--space-3)",
@@ -336,25 +339,29 @@ export function QuizAttemptRunner({
                     borderRadius: "var(--radius-sm)",
                   }}
                 >
-                  <span style={{ flex: 1 }}>{item.text}</span>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => moveOrderItem(item.id, -1)}
-                    disabled={index === 0}
-                    aria-label={`Move ${item.text} up`}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => moveOrderItem(item.id, 1)}
-                    disabled={index === list.length - 1}
-                    aria-label={`Move ${item.text} down`}
-                  >
-                    ↓
-                  </button>
+                  <span style={{ flex: "1 1 8rem" }}>{item.text}</span>
+                  <div style={{ display: "flex", gap: "var(--space-2)", flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => moveOrderItem(item.id, -1)}
+                      disabled={index === 0}
+                      aria-label={`Move ${item.text} up`}
+                      style={{ minWidth: "2.75rem", minHeight: "2.75rem" }}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => moveOrderItem(item.id, 1)}
+                      disabled={index === list.length - 1}
+                      aria-label={`Move ${item.text} down`}
+                      style={{ minWidth: "2.75rem", minHeight: "2.75rem" }}
+                    >
+                      ↓
+                    </button>
+                  </div>
                 </div>
               );
             })}
