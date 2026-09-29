@@ -5,3 +5,7 @@ Thumbs.db
 *.log
 .idea/
 .vscode/
+
+# Root npm workspace install (backend/web/shared each still gitignore their
+# own node_modules; this covers the root-level one npm workspaces creates).
+/node_modules/

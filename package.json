@@ -1,0 +1,9 @@
+{
+  "name": "digital-leadership",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "backend",
+    "web"
+  ]
+}
