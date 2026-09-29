@@ -53,3 +53,24 @@ export function getSupabaseAnonKey(): string {
   }
   return value;
 }
+
+/**
+ * The single canonical origin the OAuth/PKCE flow must start and end on.
+ * Supabase's PKCE `code_verifier` is stored as a cookie scoped to the
+ * origin `signInWithOAuth` was called from; if the flow is started from a
+ * different host (e.g. a Vercel per-deployment preview URL) than the one
+ * the callback completes on (e.g. the stable branch-alias domain),
+ * that cookie never reaches the callback and `exchangeCodeForSession`
+ * fails. Reading this from a fixed env var (not `window.location.origin`)
+ * keeps OAuth host-stable regardless of which URL a user opens the app
+ * from. Not a secret — this is the app's own public URL.
+ */
+export function getSiteUrl(): string {
+  const value = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!value) {
+    throw new Error(
+      "NEXT_PUBLIC_SITE_URL is not set. Copy .env.example to .env.local and fill it in — see GOOGLE_OAUTH_SETUP.md.",
+    );
+  }
+  return value;
+}

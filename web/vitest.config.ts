@@ -14,5 +14,8 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./tests/unit/setup.ts"],
     include: ["tests/unit/**/*.test.{ts,tsx}"],
+    env: {
+      NEXT_PUBLIC_SITE_URL: "http://localhost:3000",
+    },
   },
 });

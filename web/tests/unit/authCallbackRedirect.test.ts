@@ -65,4 +65,29 @@ describe("auth callback redirectTo (open-redirect protection)", () => {
     expect(location.origin).toBe(ORIGIN);
     expect(location.pathname).toBe("/login");
   });
+
+  it("logs a failed code exchange server-side with no secrets, tokens, or the code", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    exchangeCodeForSession.mockResolvedValue({ error: { name: "AuthApiError", message: "invalid_grant" } });
+
+    const location = await callbackLocation();
+    expect(location.searchParams.get("error")).toBe("exchange_failed");
+
+    expect(consoleError).toHaveBeenCalledTimes(1);
+    const [label, details] = consoleError.mock.calls[0];
+    expect(label).toBe("auth_callback_exchange_failed");
+    expect(details).toMatchObject({
+      error: { name: "AuthApiError", message: "invalid_grant" },
+      hasCode: true,
+    });
+    expect(details).toHaveProperty("hostname");
+    expect(details).toHaveProperty("hasVerifierCookie");
+
+    const serialized = JSON.stringify(details);
+    expect(serialized).not.toContain("valid-code");
+    expect(serialized.toLowerCase()).not.toContain("token");
+    expect(serialized.toLowerCase()).not.toContain("cookie=");
+
+    consoleError.mockRestore();
+  });
 });
