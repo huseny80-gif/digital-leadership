@@ -33,6 +33,9 @@ import { AdminUsersRepository } from "./adminUsersRepository.js";
 import { AdminUsersService } from "./adminUsersService.js";
 import { AdminAuditRepository } from "./adminAuditRepository.js";
 import { AdminOverviewRepository } from "./adminOverviewRepository.js";
+import { AdminAnalyticsRepository } from "./adminAnalyticsRepository.js";
+import { AdminAnalyticsService } from "./adminAnalyticsService.js";
+import { buildCsv } from "../lib/csv.js";
 
 const publicationStatusSchema = z.enum(["draft", "published"]);
 
@@ -142,6 +145,15 @@ const quizQuestionAddSchema = z.object({
   orderIndex: z.number().int().min(0).optional().default(0),
 });
 
+// `from`/`to` are validated as parseable dates in AdminAnalyticsService
+// (not here) — accepting either a plain date or a full ISO datetime.
+const studentAnalyticsQuerySchema = z.object({
+  subjectId: z.string().uuid().optional(),
+  studentId: z.string().uuid().optional(),
+  from: z.string().min(1).optional(),
+  to: z.string().min(1).optional(),
+});
+
 const roleAssignSchema = z.object({ role: z.enum(["admin", "user"]) });
 const statusAssignSchema = z.object({ status: z.enum(["active", "suspended"]) });
 
@@ -183,6 +195,7 @@ export function adminRoutes(): Router {
   let usersService!: AdminUsersService;
   let auditRepository!: AdminAuditRepository;
   let overviewRepository!: AdminOverviewRepository;
+  let analyticsService!: AdminAnalyticsService;
   let filesRepository!: FilesRepository;
   let learnerAssessmentsService!: AssessmentsService;
   let assignmentsRepository!: AdminAssignmentsRepository;
@@ -198,6 +211,7 @@ export function adminRoutes(): Router {
       usersService = new AdminUsersService(pool, new AdminUsersRepository(pool));
       auditRepository = new AdminAuditRepository(pool);
       overviewRepository = new AdminOverviewRepository(pool);
+      analyticsService = new AdminAnalyticsService(new AdminAnalyticsRepository(pool));
       filesRepository = new FilesRepository(pool);
       // Reuses the learner-facing AssessmentsService for its
       // `reviewOpenAnswer` method (PHASE 12F-BE §7) rather than
@@ -777,6 +791,79 @@ export function adminRoutes(): Router {
       const { items, total } = await auditRepository.listRecent({ limit: pagination.limit, offset: pagination.offset });
       const body: PaginatedResult<AuditLogEntry> = { data: items, page: pagination.page, limit: pagination.limit, total };
       res.json(body);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ---------- Learning Analytics (Phase 5.2) ----------
+  router.get("/analytics/overview", async (_req, res, next) => {
+    try {
+      const overview = await analyticsService.getPlatformOverview();
+      res.json({ data: overview });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/analytics/performance", async (_req, res, next) => {
+    try {
+      const performance = await analyticsService.getPerformance();
+      res.json({ data: performance });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/analytics/subjects", async (_req, res, next) => {
+    try {
+      const rows = await analyticsService.getSubjectAnalytics();
+      res.json({ data: rows });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/analytics/students", async (req, res, next) => {
+    try {
+      const parsedQuery = studentAnalyticsQuerySchema.safeParse(req.query);
+      if (!parsedQuery.success) {
+        throw new ValidationError("Invalid analytics filters: 'subjectId'/'studentId' must be UUIDs, 'from'/'to' must be dates.");
+      }
+      const filters = analyticsService.parseFilters(parsedQuery.data);
+      const pagination = parsePagination(req.query);
+      const { items, total } = await analyticsService.getStudentAnalytics(filters, pagination);
+      const body: PaginatedResult<(typeof items)[number]> = { data: items, page: pagination.page, limit: pagination.limit, total };
+      res.json(body);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/analytics/students/export", async (req, res, next) => {
+    try {
+      const parsedQuery = studentAnalyticsQuerySchema.safeParse(req.query);
+      if (!parsedQuery.success) {
+        throw new ValidationError("Invalid analytics filters: 'subjectId'/'studentId' must be UUIDs, 'from'/'to' must be dates.");
+      }
+      const filters = analyticsService.parseFilters(parsedQuery.data);
+      const rows = await analyticsService.getStudentAnalyticsForExport(filters);
+      const csv = buildCsv(
+        [
+          { header: "student", value: (r) => r.displayName },
+          { header: "email", value: (r) => r.email },
+          { header: "progress_percentage", value: (r) => r.progressPercentage },
+          { header: "completed_lectures", value: (r) => r.completedLectures },
+          { header: "total_lectures", value: (r) => r.totalLectures },
+          { header: "quiz_attempts", value: (r) => r.quizAttempts },
+          { header: "average_score_percentage", value: (r) => r.averageScorePercentage },
+          { header: "last_activity", value: (r) => r.lastActivityAt },
+        ],
+        rows,
+      );
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="learning-analytics-students.csv"`);
+      res.send(csv);
     } catch (err) {
       next(err);
     }

@@ -34,7 +34,19 @@ beforeEach(() => {
 
 describe("DashboardPage", () => {
   it("2. renders for an authenticated user using real API data", async () => {
-    mockApiGet.mockResolvedValue({ data: { id: "u1", email: "a@example.com", displayName: "Ada", avatarUrl: null, role: "user", status: "active", createdAt: "" } });
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === "/api/v1/analytics/me") {
+        return Promise.resolve({
+          data: {
+            overallProgress: { totalLectures: 0, completedLectures: 0, progressPercentage: 0 },
+            quizPerformance: { attemptsStarted: 0, attemptsCompleted: 0, averageScorePercentage: null, bestScorePercentage: null, lastScorePercentage: null },
+            subjects: [],
+            recentActivity: { lastQuizAttempt: null, lastLectureCompletion: null },
+          },
+        });
+      }
+      return Promise.resolve({ data: { id: "u1", email: "a@example.com", displayName: "Ada", avatarUrl: null, role: "user", status: "active", createdAt: "" } });
+    });
     mockApiGetPaginated.mockResolvedValue({ data: [{ id: "s1", title: "Mathematics", description: null, orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" }], page: 1, limit: 6, total: 1 });
 
     const element = await DashboardPage();

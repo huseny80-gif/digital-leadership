@@ -5,6 +5,7 @@ import { contentRoutes } from "../content/contentRoutes.js";
 import { lectureRoutes } from "../content/lectureRoutes.js";
 import { filesRoutes } from "../files/filesRoutes.js";
 import { assessmentsRoutes } from "../assessments/assessmentsRoutes.js";
+import { analyticsRoutes } from "../analytics/analyticsRoutes.js";
 import { adminRoutes } from "../admin/adminRoutes.js";
 import { requireAuthenticated } from "../middleware/authInstance.js";
 
@@ -23,6 +24,7 @@ export function apiV1Router(): Router {
   router.use("/lectures", lectureRoutes());
   router.use("/files", filesRoutes());
   router.use("/", assessmentsRoutes());
+  router.use("/analytics", analyticsRoutes());
   router.use("/admin", adminRoutes());
 
   return router;

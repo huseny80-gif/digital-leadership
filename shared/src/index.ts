@@ -4,4 +4,5 @@ export * from "./types/content.js";
 export * from "./types/file.js";
 export * from "./types/quiz.js";
 export * from "./types/admin.js";
+export * from "./types/analytics.js";
 export * from "./contracts/api.js";
