@@ -67,12 +67,28 @@ export interface QuestionForAttempt {
 export interface QuizAttempt {
   id: string;
   quizId: string;
-  userId: string;
+  /** Exactly one of `userId`/`guestSessionId` is ever non-null — mirrors
+   * `quiz_attempts`'s `quiz_attempts_owner_xor` check constraint (Phase 6
+   * migration 16). A registered learner's attempt has `guestSessionId:
+   * null`; a guest's attempt has `userId: null`. */
+  userId: string | null;
+  guestSessionId: string | null;
   status: QuizAttemptStatus;
   startedAt: string;
   submittedAt: string | null;
   score: number | null;
 }
+
+/** Who an assessment action is being performed as — resolved server-side
+ * only, from either the verified bearer-token session (`req.user`) or the
+ * verified guest session cookie (`req.guestSession`), never from a
+ * client-supplied id. `AssessmentsService`/`AssessmentsRepository` accept
+ * this in place of a bare `userId` string wherever an attempt's ownership
+ * is created or checked (Phase 6). A guest principal additionally carries
+ * the one `subjectId` its training grant scopes it to, so the service can
+ * refuse to start an attempt on a quiz outside that scope without a
+ * second round trip. */
+export type AssessmentPrincipal = { kind: "user"; userId: string } | { kind: "guest"; guestSessionId: string; subjectId: string };
 
 /** One submitted pairing for a `match` question: `leftId`/`rightId` are
  * both `question_pairs.id` values (see `MatchItemForAttempt`). */

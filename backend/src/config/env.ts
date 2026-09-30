@@ -42,6 +42,13 @@ const envSchema = z.object({
   // run dev` works out of the box without requiring this to be set.
   CORS_ALLOWED_ORIGINS: z.string().default("http://localhost:3000"),
 
+  // Phase 6 — base URL of the web app, used only to build the
+  // human-shareable join link/QR content returned once from
+  // `POST /admin/training-access` (`joinUrl` = `${WEB_BASE_URL}/join/:token`).
+  // Defaults to the same local dev web origin as CORS_ALLOWED_ORIGINS's
+  // own default, for the same zero-setup-in-development reason.
+  WEB_BASE_URL: z.string().default("http://localhost:3000"),
+
   // Phase 8 (File Storage & Secure PDF Access) — see STORAGE_ARCHITECTURE.md.
   // Storage provider is chosen automatically: if SUPABASE_URL and
   // SUPABASE_SERVICE_ROLE_KEY are both set, the real Supabase Storage
@@ -64,18 +71,36 @@ const envSchema = z.object({
   // configured. `getEnv()` below applies the dev-only fallback itself,
   // strictly gated on NODE_ENV !== "production" — see that function.
   LOCAL_STORAGE_SIGNING_SECRET: z.string().optional(),
+
+  // Phase 6 (Open Training Access) — signs the guest training-session
+  // cookie (backend/src/trainingAccess/guestSessionCookie.ts). Deliberately
+  // a separate secret from LOCAL_STORAGE_SIGNING_SECRET/SUPABASE_JWT_SECRET
+  // (different trust domain: guest session identity, not storage access or
+  // Supabase-issued identity) and, like LOCAL_STORAGE_SIGNING_SECRET, has no
+  // schema-level default so a misconfigured production deployment fails
+  // closed rather than falling back to a well-known secret.
+  GUEST_SESSION_SIGNING_SECRET: z.string().optional(),
+
+  // Phase 6 — default lifetime of a guest training session (task
+  // requirement #7, "resumption ... within whatever expiry policy you
+  // design"). 12 hours: long enough to resume the same training day
+  // without a rejoin, short enough that an unrevoked link doesn't grant
+  // indefinite standing access.
+  GUEST_SESSION_TTL_HOURS: z.coerce.number().int().positive().default(12),
 });
 
 /** The same placeholder previously used as a schema-level default — now
  * applied only outside production (see `getEnv()`), never silently in
  * production. */
 const DEV_ONLY_LOCAL_STORAGE_SIGNING_SECRET = "local-dev-storage-signing-secret-not-for-production";
+const DEV_ONLY_GUEST_SESSION_SIGNING_SECRET = "local-dev-guest-session-signing-secret-not-for-production";
 
 /** `LOCAL_STORAGE_SIGNING_SECRET` is always a real string by the time
  * `getEnv()` returns — either the caller's own value, or (development/test
  * only) the dev placeholder applied below. No caller sees `undefined`. */
-export type Env = Omit<z.infer<typeof envSchema>, "LOCAL_STORAGE_SIGNING_SECRET"> & {
+export type Env = Omit<z.infer<typeof envSchema>, "LOCAL_STORAGE_SIGNING_SECRET" | "GUEST_SESSION_SIGNING_SECRET"> & {
   LOCAL_STORAGE_SIGNING_SECRET: string;
+  GUEST_SESSION_SIGNING_SECRET: string;
 };
 
 let cachedEnv: Env | null = null;
@@ -110,6 +135,20 @@ export function getEnv(): Env {
     signingSecret = DEV_ONLY_LOCAL_STORAGE_SIGNING_SECRET;
   }
 
-  cachedEnv = { ...parsed.data, LOCAL_STORAGE_SIGNING_SECRET: signingSecret };
+  let guestSessionSecret = parsed.data.GUEST_SESSION_SIGNING_SECRET;
+  if (!guestSessionSecret) {
+    if (parsed.data.NODE_ENV === "production") {
+      throw new Error(
+        "GUEST_SESSION_SIGNING_SECRET must be set explicitly in production — no development fallback is used outside development/test. See ENVIRONMENT.md.",
+      );
+    }
+    guestSessionSecret = DEV_ONLY_GUEST_SESSION_SIGNING_SECRET;
+  }
+
+  cachedEnv = {
+    ...parsed.data,
+    LOCAL_STORAGE_SIGNING_SECRET: signingSecret,
+    GUEST_SESSION_SIGNING_SECRET: guestSessionSecret,
+  };
   return cachedEnv;
 }

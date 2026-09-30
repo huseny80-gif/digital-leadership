@@ -272,17 +272,17 @@ describe("match questions (service-level)", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, userId, false);
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: userId }, false);
 
     // Both pairs correct -> full credit.
-    await service.submitAnswer(attempt.id, userId, {
+    await service.submitAnswer(attempt.id, { kind: "user", userId: userId }, {
       questionId,
       matchAnswer: [
         { leftId: pairIds[0]!, rightId: pairIds[0]! },
         { leftId: pairIds[1]!, rightId: pairIds[1]! },
       ],
     });
-    const result = await service.submitAttempt(attempt.id, userId);
+    const result = await service.submitAttempt(attempt.id, { kind: "user", userId: userId });
     expect(result.score).toBe(2);
     expect(result.correctAnswers).toBe(1);
   });
@@ -304,15 +304,15 @@ describe("match questions (service-level)", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, wrongUserId, false);
-    await service.submitAnswer(attempt.id, wrongUserId, {
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: wrongUserId }, false);
+    await service.submitAnswer(attempt.id, { kind: "user", userId: wrongUserId }, {
       questionId,
       matchAnswer: [
         { leftId: pairIds[0]!, rightId: pairIds[1]! }, // wrong
         { leftId: pairIds[1]!, rightId: pairIds[1]! }, // right
       ],
     });
-    const result = await service.submitAttempt(attempt.id, wrongUserId);
+    const result = await service.submitAttempt(attempt.id, { kind: "user", userId: wrongUserId });
     expect(result.score).toBe(0);
     expect(result.correctAnswers).toBe(0);
   });
@@ -332,9 +332,9 @@ describe("match questions (service-level)", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, userId, false);
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: userId }, false);
     await expect(
-      service.submitAnswer(attempt.id, userId, {
+      service.submitAnswer(attempt.id, { kind: "user", userId: userId }, {
         questionId,
         matchAnswer: [
           { leftId: pairIds[0]!, rightId: pairIds[0]! },
@@ -359,9 +359,9 @@ describe("match questions (service-level)", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, userId, false);
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: userId }, false);
     await expect(
-      service.submitAnswer(attempt.id, userId, { questionId, matchAnswer: [{ leftId: pairIds[0]!, rightId: pairIds[0]! }] }),
+      service.submitAnswer(attempt.id, { kind: "user", userId: userId }, { questionId, matchAnswer: [{ leftId: pairIds[0]!, rightId: pairIds[0]! }] }),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -382,9 +382,9 @@ describe("match questions (service-level)", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, userId, false);
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: userId }, false);
     await expect(
-      service.submitAnswer(attempt.id, userId, {
+      service.submitAnswer(attempt.id, { kind: "user", userId: userId }, {
         questionId,
         matchAnswer: [{ leftId: pairIds[0]!, rightId: otherPairIds[0]! }],
       }),
@@ -406,8 +406,8 @@ describe("match questions (service-level)", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, userId, false);
-    await service.submitAnswer(attempt.id, userId, {
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: userId }, false);
+    await service.submitAnswer(attempt.id, { kind: "user", userId: userId }, {
       questionId,
       matchAnswer: [
         { leftId: pairIds[0]!, rightId: pairIds[0]! },
@@ -415,7 +415,7 @@ describe("match questions (service-level)", () => {
       ],
     });
     // Re-submit while still in_progress -- must replace, not accumulate.
-    await service.submitAnswer(attempt.id, userId, {
+    await service.submitAnswer(attempt.id, { kind: "user", userId: userId }, {
       questionId,
       matchAnswer: [
         { leftId: pairIds[0]!, rightId: pairIds[1]! },
@@ -423,7 +423,7 @@ describe("match questions (service-level)", () => {
       ],
     });
 
-    const answers = await service.getAnswersOrThrow(attempt.id, userId);
+    const answers = await service.getAnswersOrThrow(attempt.id, { kind: "user", userId: userId });
     expect(answers[0]!.matchAnswer).toHaveLength(2);
   });
 });
@@ -453,9 +453,9 @@ describe("order questions (service-level)", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, userId, false);
-    await service.submitAnswer(attempt.id, userId, { questionId, orderAnswer: itemIds });
-    const result = await service.submitAttempt(attempt.id, userId);
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: userId }, false);
+    await service.submitAnswer(attempt.id, { kind: "user", userId: userId }, { questionId, orderAnswer: itemIds });
+    const result = await service.submitAttempt(attempt.id, { kind: "user", userId: userId });
     expect(result.score).toBe(1);
     expect(result.correctAnswers).toBe(1);
   });
@@ -469,10 +469,10 @@ describe("order questions (service-level)", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, otherUserId, false);
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: otherUserId }, false);
     const swapped = [itemIds[1]!, itemIds[0]!, itemIds[2]!];
-    await service.submitAnswer(attempt.id, otherUserId, { questionId, orderAnswer: swapped });
-    const result = await service.submitAttempt(attempt.id, otherUserId);
+    await service.submitAnswer(attempt.id, { kind: "user", userId: otherUserId }, { questionId, orderAnswer: swapped });
+    const result = await service.submitAttempt(attempt.id, { kind: "user", userId: otherUserId });
     expect(result.score).toBe(0);
   });
 
@@ -484,9 +484,9 @@ describe("order questions (service-level)", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, userId, false);
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: userId }, false);
     await expect(
-      service.submitAnswer(attempt.id, userId, { questionId, orderAnswer: [itemIds[0]!, itemIds[0]!, itemIds[2]!] }),
+      service.submitAnswer(attempt.id, { kind: "user", userId: userId }, { questionId, orderAnswer: [itemIds[0]!, itemIds[0]!, itemIds[2]!] }),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -498,9 +498,9 @@ describe("order questions (service-level)", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, userId, false);
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: userId }, false);
     await expect(
-      service.submitAnswer(attempt.id, userId, { questionId, orderAnswer: [itemIds[0]!, itemIds[1]!] }),
+      service.submitAnswer(attempt.id, { kind: "user", userId: userId }, { questionId, orderAnswer: [itemIds[0]!, itemIds[1]!] }),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -513,9 +513,9 @@ describe("order questions (service-level)", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, userId, false);
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: userId }, false);
     await expect(
-      service.submitAnswer(attempt.id, userId, { questionId, orderAnswer: [otherItemIds[0]!, otherItemIds[1]!] }),
+      service.submitAnswer(attempt.id, { kind: "user", userId: userId }, { questionId, orderAnswer: [otherItemIds[0]!, otherItemIds[1]!] }),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -527,11 +527,11 @@ describe("order questions (service-level)", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, userId, false);
-    await service.submitAnswer(attempt.id, userId, { questionId, orderAnswer: itemIds });
-    await service.submitAnswer(attempt.id, userId, { questionId, orderAnswer: [...itemIds].reverse() });
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: userId }, false);
+    await service.submitAnswer(attempt.id, { kind: "user", userId: userId }, { questionId, orderAnswer: itemIds });
+    await service.submitAnswer(attempt.id, { kind: "user", userId: userId }, { questionId, orderAnswer: [...itemIds].reverse() });
 
-    const answers = await service.getAnswersOrThrow(attempt.id, userId);
+    const answers = await service.getAnswersOrThrow(attempt.id, { kind: "user", userId: userId });
     expect(answers[0]!.orderAnswer).toHaveLength(3);
   });
 });
@@ -545,8 +545,8 @@ describe("cross-type answer submission validation", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, userId, false);
-    await expect(service.submitAnswer(attempt.id, userId, { questionId, answerText: "wrong field" })).rejects.toThrow(ValidationError);
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: userId }, false);
+    await expect(service.submitAnswer(attempt.id, { kind: "user", userId: userId }, { questionId, answerText: "wrong field" })).rejects.toThrow(ValidationError);
   });
 
   it("rejects an order question submitted with matchAnswer", async () => {
@@ -557,9 +557,9 @@ describe("cross-type answer submission validation", () => {
     await addQuestionToQuiz(pool, { quizId, questionId });
 
     const service = buildService();
-    const attempt = await service.startAttempt(quizId, userId, false);
+    const attempt = await service.startAttempt(quizId, { kind: "user", userId: userId }, false);
     await expect(
-      service.submitAnswer(attempt.id, userId, { questionId, matchAnswer: [{ leftId: "x", rightId: "y" }] }),
+      service.submitAnswer(attempt.id, { kind: "user", userId: userId }, { questionId, matchAnswer: [{ leftId: "x", rightId: "y" }] }),
     ).rejects.toThrow(ValidationError);
   });
 });

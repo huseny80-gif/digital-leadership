@@ -1,7 +1,27 @@
-import type { Quiz, QuestionForAttempt, QuizAttempt, QuizAttemptResult, SubmitAnswerAck, SubmitAnswerInput, AttemptAnswer } from "@shared/index";
+import type {
+  Quiz,
+  QuestionForAttempt,
+  QuizAttempt,
+  QuizAttemptResult,
+  SubmitAnswerAck,
+  SubmitAnswerInput,
+  AttemptAnswer,
+  AssessmentPrincipal,
+} from "@shared/index";
 import type { AssessmentsRepository } from "./assessmentsRepository.js";
 import { conflict, forbidden, notFound } from "../lib/httpError.js";
 import { ValidationError } from "../lib/validation.js";
+
+/** True when `attempt` belongs to `principal` — the one check every
+ * ownership-gated method below re-derives from, so "a user principal"
+ * and "a guest principal" are compared the same careful way everywhere
+ * (never `attempt.userId === principal.userId` inlined ad hoc, which
+ * would silently pass for two guest attempts that both happen to have
+ * `userId: null` if this were done wrong). */
+function attemptBelongsTo(attempt: QuizAttempt, principal: AssessmentPrincipal): boolean {
+  if (principal.kind === "user") return attempt.userId === principal.userId;
+  return attempt.guestSessionId === principal.guestSessionId;
+}
 
 /** Which single submission field a `SubmitAnswerInput` actually carries —
  * computed once so `submitAnswer` can both validate "exactly one" and
@@ -56,19 +76,32 @@ export class AssessmentsService {
    * refresh or a double-click on "Start Quiz" from silently orphaning the
    * learner's first attempt (PHASE 09B "Quiz Attempts").
    */
-  async startAttempt(quizId: string, userId: string, isAdmin: boolean): Promise<QuizAttempt> {
-    await this.getQuizOrThrow(quizId, isAdmin);
-    const existing = await this.repository.findInProgressAttempt(quizId, userId);
+  async startAttempt(quizId: string, principal: AssessmentPrincipal, isAdmin: boolean): Promise<QuizAttempt> {
+    const quiz = await this.getQuizOrThrow(quizId, isAdmin);
+    // Guest scope check (Phase 6): a guest may only ever start an attempt
+    // on a quiz belonging to the ONE subject their training grant scopes
+    // them to — re-derived here from `principal.subjectId` (itself only
+    // ever set server-side from the guest's own verified session, never
+    // from a client-supplied field), never trusted from `quizId` alone.
+    // A registered user (`principal.kind === "user"`) is unaffected —
+    // their access is still governed entirely by `getQuizOrThrow`'s
+    // existing published/visibility check above, exactly as before.
+    if (principal.kind === "guest" && quiz.subjectId !== principal.subjectId) {
+      throw notFound("Quiz");
+    }
+    const existing = await this.repository.findInProgressAttempt(quizId, principal);
     if (existing) return existing;
-    return this.repository.createAttempt(quizId, userId);
+    return this.repository.createAttempt(quizId, principal);
   }
 
-  private async getOwnedActiveAttemptOrThrow(attemptId: string, userId: string): Promise<QuizAttempt> {
+  private async getOwnedActiveAttemptOrThrow(attemptId: string, principal: AssessmentPrincipal): Promise<QuizAttempt> {
     const attempt = await this.repository.getAttemptById(attemptId);
     // Identical 404 whether the attempt doesn't exist or belongs to
-    // someone else — never confirms another user's attempt exists
-    // (SECURITY_ARCHITECTURE.md §13's 404-vs-403 principle, applied here).
-    if (!attempt || attempt.userId !== userId) throw notFound("Quiz attempt");
+    // someone else — never confirms another user's (or another guest's)
+    // attempt exists (SECURITY_ARCHITECTURE.md §13's 404-vs-403
+    // principle, applied here; unchanged for the registered-user path,
+    // now also covering the guest path via `attemptBelongsTo`).
+    if (!attempt || !attemptBelongsTo(attempt, principal)) throw notFound("Quiz attempt");
     if (attempt.status !== "in_progress") {
       throw conflict("This quiz attempt has already been submitted.");
     }
@@ -87,9 +120,9 @@ export class AssessmentsService {
    * and keeps this method simple; only the answer-key data itself
    * (`isCorrect`) is ever gated, and the repository doesn't select it.
    */
-  async getAnswersOrThrow(attemptId: string, userId: string): Promise<AttemptAnswer[]> {
+  async getAnswersOrThrow(attemptId: string, principal: AssessmentPrincipal): Promise<AttemptAnswer[]> {
     const attempt = await this.repository.getAttemptById(attemptId);
-    if (!attempt || attempt.userId !== userId) throw notFound("Quiz attempt");
+    if (!attempt || !attemptBelongsTo(attempt, principal)) throw notFound("Quiz attempt");
     return this.repository.listAnswersForAttempt(attemptId);
   }
 
@@ -98,9 +131,9 @@ export class AssessmentsService {
    * (PHASE 4 "Quiz Timer"). Same ownership rule as every other
    * attempt-scoped read: identical 404 whether the attempt doesn't exist
    * or belongs to someone else. */
-  async getAttemptOrThrow(attemptId: string, userId: string): Promise<QuizAttempt> {
+  async getAttemptOrThrow(attemptId: string, principal: AssessmentPrincipal): Promise<QuizAttempt> {
     const attempt = await this.repository.getAttemptById(attemptId);
-    if (!attempt || attempt.userId !== userId) throw notFound("Quiz attempt");
+    if (!attempt || !attemptBelongsTo(attempt, principal)) throw notFound("Quiz attempt");
     return attempt;
   }
 
@@ -112,8 +145,8 @@ export class AssessmentsService {
    * to that question. Correctness is computed here, server-side, from
    * data the client never receives — never accepted from the request body.
    */
-  async submitAnswer(attemptId: string, userId: string, input: SubmitAnswerInput): Promise<SubmitAnswerAck> {
-    const attempt = await this.getOwnedActiveAttemptOrThrow(attemptId, userId);
+  async submitAnswer(attemptId: string, principal: AssessmentPrincipal, input: SubmitAnswerInput): Promise<SubmitAnswerAck> {
+    const attempt = await this.getOwnedActiveAttemptOrThrow(attemptId, principal);
 
     const belongsToQuiz = await this.repository.isQuestionInQuiz(attempt.quizId, input.questionId);
     if (!belongsToQuiz) {
@@ -226,8 +259,8 @@ export class AssessmentsService {
    * re-evaluates correctness against client input, only sums prior,
    * server-derived results.
    */
-  async submitAttempt(attemptId: string, userId: string): Promise<QuizAttemptResult> {
-    const attempt = await this.getOwnedActiveAttemptOrThrow(attemptId, userId);
+  async submitAttempt(attemptId: string, principal: AssessmentPrincipal): Promise<QuizAttemptResult> {
+    const attempt = await this.getOwnedActiveAttemptOrThrow(attemptId, principal);
     const totalQuestions = await this.repository.countQuestionsForQuiz(attempt.quizId);
     const grading = await this.repository.gradeAttempt(attemptId);
 
@@ -280,10 +313,10 @@ export class AssessmentsService {
    * attempt has actually been submitted/graded (an in_progress attempt
    * has no result yet, by design, not merely by omission).
    */
-  async getResultOrThrow(attemptId: string, userId: string, isAdmin: boolean): Promise<QuizAttemptResult> {
+  async getResultOrThrow(attemptId: string, principal: AssessmentPrincipal, isAdmin: boolean): Promise<QuizAttemptResult> {
     const attempt = await this.repository.getAttemptById(attemptId);
     if (!attempt) throw notFound("Quiz attempt");
-    if (attempt.userId !== userId && !isAdmin) {
+    if (!attemptBelongsTo(attempt, principal) && !isAdmin) {
       // A real attempt belonging to someone else: still 404, not 403 —
       // consistent with every other ownership check in this service.
       throw notFound("Quiz attempt");
