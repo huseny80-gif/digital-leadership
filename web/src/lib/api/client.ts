@@ -18,16 +18,16 @@ export class ApiError extends Error {
   }
 }
 
-/** Server-console-only diagnostics for this module's two failure points
- * that would otherwise surface only as the generic "Unable to load..."
+/** Server-console-only diagnostics for this module's failure points that
+ * would otherwise surface only as the generic "Unable to load..."
  * message a caller shows the user (`lib/api/errorMessage.ts`) — with no
- * server-side trace of which of the two actually failed or why. Never
- * logs the access token, cookies, or the request/response body — only
- * the resolved API host, a `hasToken` boolean, the path, and the
- * failing error's name/message (never its stack, which could otherwise
- * echo request internals into logs). */
+ * server-side trace of which one actually failed or why. Never logs the
+ * access token, cookies, or the request/response body — only the
+ * resolved API host, a `hasToken` boolean, the path, and the failing
+ * error's name/message (never its stack, which could otherwise echo
+ * request internals into logs). */
 function logRequestFailure(
-  stage: "resolve_config" | "get_access_token" | "fetch",
+  stage: "resolve_config" | "get_access_token" | "fetch" | "parse_response",
   method: string,
   path: string,
   hasToken: boolean | "unknown",
@@ -83,7 +83,21 @@ async function requestJson(method: "GET" | "POST" | "PATCH" | "DELETE", path: st
     return { data: null };
   }
 
-  const body = await res.json();
+  // Unlike the three stages above, a non-JSON response body (a platform
+  // error page, a truncated or reset response, a timed-out backend) used
+  // to throw here completely unprotected — a raw, unlogged SyntaxError
+  // that the caller (`route.ts`) could only report as its own generic
+  // "unable to complete this action" 500, indistinguishable from every
+  // other unexpected failure and impossible to diagnose from the client
+  // side. Wrapping it surfaces which stage actually failed, same as the
+  // other three.
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch (err) {
+    logRequestFailure("parse_response", method, path, Boolean(token), err);
+    throw err;
+  }
   if (!res.ok) {
     throw new ApiError(body as ApiErrorBody, res.status);
   }
