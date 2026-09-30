@@ -37,6 +37,11 @@ export default function TrainingAccessPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [justCreated, setJustCreated] = useState<TrainingAccessGrantCreated | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  // Captured once via a lazy initializer (not re-evaluated on every
+  // render) so the expiry check below never calls the impure `Date.now()`
+  // during render itself (react-hooks/purity) — a grant's expired/active
+  // status only needs to be "as of this page load", not live-ticking.
+  const [now] = useState(() => Date.now());
 
   async function load() {
     setError(null);
@@ -204,7 +209,7 @@ export default function TrainingAccessPage() {
             </thead>
             <tbody>
               {grants.map((g) => {
-                const expired = new Date(g.expiresAt).getTime() <= Date.now();
+                const expired = new Date(g.expiresAt).getTime() <= now;
                 const statusLabel = g.revoked ? "Revoked" : expired ? "Expired" : "Active";
                 return (
                   <tr key={g.id}>

@@ -46,8 +46,11 @@ describe("About page (/about)", () => {
     render(<AboutPage />);
     for (const channel of comingSoonChannels) {
       const el = screen.getByText(`${channel} — قريباً`);
+      // No real href/anchor at all — never a fabricated link, disabled
+      // via plain text (no `aria-disabled` on the containing `<li>`:
+      // that attribute isn't supported by the implicit `listitem` role,
+      // per jsx-a11y/role-supports-aria-props).
       expect(el.closest("a")).toBeNull();
-      expect(el).toHaveAttribute("aria-disabled", "true");
     }
   });
 

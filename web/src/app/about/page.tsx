@@ -67,7 +67,7 @@ export default function AboutPage() {
             </a>
           </li>
           {comingSoonChannels.map((channel) => (
-            <li key={channel} aria-disabled="true" style={{ color: "var(--color-text-muted)" }}>
+            <li key={channel} style={{ color: "var(--color-text-muted)" }}>
               {channel} — قريباً
             </li>
           ))}
