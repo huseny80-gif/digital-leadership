@@ -22,18 +22,24 @@ import { getCurrentAccessToken } from "@/lib/auth/session";
  * backend itself would refuse.
  */
 async function forward(method: "GET" | "POST" | "PATCH" | "DELETE", request: Request, path: string[]) {
-  const token = await getCurrentAccessToken();
-  if (!token) {
-    return NextResponse.json(
-      { error: { code: "unauthenticated", message: "Your session has expired. Please sign in again." } },
-      { status: 401 },
-    );
-  }
-
   const search = new URL(request.url).search;
   const backendPath = `/api/v1/admin/${path.join("/")}${search}`;
 
+  // `getCurrentAccessToken()` reads the Supabase session cookie and can
+  // throw (not just return null) — e.g. if Supabase client construction
+  // fails. It used to run before this try/catch, so a throw here
+  // escaped as Next.js's raw unhandled-exception 500 instead of the
+  // same JSON error envelope every other failure in this function
+  // returns. Moved inside so every failure path is uniformly handled.
   try {
+    const token = await getCurrentAccessToken();
+    if (!token) {
+      return NextResponse.json(
+        { error: { code: "unauthenticated", message: "Your session has expired. Please sign in again." } },
+        { status: 401 },
+      );
+    }
+
     if (method === "GET") {
       const result = await apiGet(backendPath);
       return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
