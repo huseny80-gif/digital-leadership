@@ -45,9 +45,13 @@ const envSchema = z.object({
   // Phase 6 — base URL of the web app, used only to build the
   // human-shareable join link/QR content returned once from
   // `POST /admin/training-access` (`joinUrl` = `${WEB_BASE_URL}/join/:token`).
-  // Defaults to the same local dev web origin as CORS_ALLOWED_ORIGINS's
-  // own default, for the same zero-setup-in-development reason.
-  WEB_BASE_URL: z.string().default("http://localhost:3000"),
+  // Intentionally NOT `.default(...)` here (production hardening, same
+  // reasoning as LOCAL_STORAGE_SIGNING_SECRET/GUEST_SESSION_SIGNING_SECRET
+  // below): a hardcoded `http://localhost:3000` fallback would silently
+  // put an unusable local address into every QR code/join link generated
+  // in production. `getEnv()` applies the dev-only fallback itself,
+  // strictly gated on NODE_ENV !== "production" — see that function.
+  WEB_BASE_URL: z.string().optional(),
 
   // Phase 8 (File Storage & Secure PDF Access) — see STORAGE_ARCHITECTURE.md.
   // Storage provider is chosen automatically: if SUPABASE_URL and
@@ -95,13 +99,26 @@ const envSchema = z.object({
 const DEV_ONLY_LOCAL_STORAGE_SIGNING_SECRET = "local-dev-storage-signing-secret-not-for-production";
 const DEV_ONLY_GUEST_SESSION_SIGNING_SECRET = "local-dev-guest-session-signing-secret-not-for-production";
 
-/** `LOCAL_STORAGE_SIGNING_SECRET` is always a real string by the time
- * `getEnv()` returns — either the caller's own value, or (development/test
- * only) the dev placeholder applied below. No caller sees `undefined`. */
-export type Env = Omit<z.infer<typeof envSchema>, "LOCAL_STORAGE_SIGNING_SECRET" | "GUEST_SESSION_SIGNING_SECRET"> & {
+const DEV_ONLY_WEB_BASE_URL = "http://localhost:3000";
+
+/** `LOCAL_STORAGE_SIGNING_SECRET`/`GUEST_SESSION_SIGNING_SECRET`/`WEB_BASE_URL`
+ * are always a real string by the time `getEnv()` returns — either the
+ * caller's own value, or (development/test only) the dev placeholder
+ * applied below. No caller sees `undefined`. */
+export type Env = Omit<
+  z.infer<typeof envSchema>,
+  "LOCAL_STORAGE_SIGNING_SECRET" | "GUEST_SESSION_SIGNING_SECRET" | "WEB_BASE_URL"
+> & {
   LOCAL_STORAGE_SIGNING_SECRET: string;
   GUEST_SESSION_SIGNING_SECRET: string;
+  WEB_BASE_URL: string;
 };
+
+/** Matches a `localhost`/`127.0.0.1`/`[::1]` origin regardless of scheme
+ * or port — the one class of value `WEB_BASE_URL` must never resolve to
+ * in production, since it is embedded verbatim into every guest-facing
+ * QR code and join link this server issues. */
+const LOCALHOST_ORIGIN_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?(\/|$)/i;
 
 let cachedEnv: Env | null = null;
 
@@ -145,10 +162,25 @@ export function getEnv(): Env {
     guestSessionSecret = DEV_ONLY_GUEST_SESSION_SIGNING_SECRET;
   }
 
+  let webBaseUrl = parsed.data.WEB_BASE_URL;
+  if (!webBaseUrl) {
+    if (parsed.data.NODE_ENV === "production") {
+      throw new Error(
+        "WEB_BASE_URL must be set explicitly in production to the public web app's own origin (e.g. https://web-husen4.vercel.app) — no localhost fallback is used outside development/test, since this value is embedded in every QR code and join link issued. See ENVIRONMENT.md.",
+      );
+    }
+    webBaseUrl = DEV_ONLY_WEB_BASE_URL;
+  } else if (parsed.data.NODE_ENV === "production" && LOCALHOST_ORIGIN_PATTERN.test(webBaseUrl)) {
+    throw new Error(
+      "WEB_BASE_URL is set to a localhost/loopback address in production — this would embed an unusable local URL into every QR code and join link. Set it to the public web app's own origin (e.g. https://web-husen4.vercel.app). See ENVIRONMENT.md.",
+    );
+  }
+
   cachedEnv = {
     ...parsed.data,
     LOCAL_STORAGE_SIGNING_SECRET: signingSecret,
     GUEST_SESSION_SIGNING_SECRET: guestSessionSecret,
+    WEB_BASE_URL: webBaseUrl,
   };
   return cachedEnv;
 }

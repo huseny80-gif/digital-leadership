@@ -160,6 +160,17 @@ describe("TrainingAccessService", () => {
     expect(fetched).not.toHaveProperty("token");
   });
 
+  it("with the real production WEB_BASE_URL, the generated QR/join URL starts with the production web app's own origin, never localhost", async () => {
+    const productionService = new TrainingAccessService(
+      repo as unknown as TrainingAccessRepository,
+      "https://web-husen4.vercel.app",
+    );
+    const created = await createGrantWithToken(productionService);
+    expect(created.joinUrl.startsWith("https://web-husen4.vercel.app/")).toBe(true);
+    expect(created.joinUrl).not.toMatch(/localhost/);
+    expect(created.joinUrl).not.toMatch(/127\.0\.0\.1/);
+  });
+
   it("valid access token → join succeeds (test case #1)", async () => {
     const created = await createGrantWithToken(service);
     const { session } = await service.joinWithToken(created.token, "Ahmad Ali Hassan");
