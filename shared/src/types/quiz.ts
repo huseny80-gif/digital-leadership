@@ -88,7 +88,7 @@ export interface QuizAttempt {
  * the one `subjectId` its training grant scopes it to, so the service can
  * refuse to start an attempt on a quiz outside that scope without a
  * second round trip. */
-export type AssessmentPrincipal = { kind: "user"; userId: string } | { kind: "guest"; guestSessionId: string; subjectId: string };
+export type AssessmentPrincipal = { kind: "user"; userId: string } | { kind: "guest"; guestSessionId: string };
 
 /** One submitted pairing for a `match` question: `leftId`/`rightId` are
  * both `question_pairs.id` values (see `MatchItemForAttempt`). */
