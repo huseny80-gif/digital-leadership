@@ -58,17 +58,17 @@ export function AppShell({
   const homeHref = "/dashboard";
 
   const items: NavItem[] = [
-    { href: "/dashboard", label: "Dashboard", icon: "📊" },
-    { href: "/subjects", label: "Subjects", icon: "📘" },
-    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️" }] : []),
+    { href: "/dashboard", label: "الرئيسية", icon: "⌂" },
+    { href: "/subjects", label: "المواد الدراسية", icon: "▣" },
+    ...(isAdmin ? [{ href: "/admin", label: "الإدارة", icon: "⚙" }] : []),
     // A guest has no permanent-user account, so no Profile page to link
     // to (task constraint).
-    ...(isGuest ? [] : [{ href: "/profile", label: "Profile", icon: "👤" }]),
+    ...(isGuest ? [] : [{ href: "/profile", label: "الملف الشخصي", icon: "◉" }]),
     { href: "/about", label: "من نحن", icon: "ℹ️" },
   ];
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" dir="rtl">
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
@@ -83,7 +83,7 @@ export function AppShell({
               className="app-brand-logo"
               priority
             />
-            <span className="app-brand-name">Digital Leadership</span>
+            <span className="app-brand-copy"><b>القيادة الرقمية</b><small>DIGITAL LEADERSHIP</small></span>
           </Link>
           <PrimaryNav items={items} />
           <div className="app-header-actions">

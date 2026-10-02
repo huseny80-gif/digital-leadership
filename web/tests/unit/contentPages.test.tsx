@@ -52,7 +52,7 @@ describe("DashboardPage", () => {
     const element = await DashboardPage();
     render(element);
 
-    expect(screen.getByText(/welcome, ada/i)).toBeInTheDocument();
+    expect(screen.getByText(/مرحباً، ada/i)).toBeInTheDocument();
     expect(screen.getByText("Mathematics")).toBeInTheDocument();
   });
 
@@ -67,7 +67,7 @@ describe("DashboardPage", () => {
     expect(screen.queryByText(/ECONNREFUSED/)).not.toBeInTheDocument();
   });
 
-  it("ONE learner platform: a Guest Training Session sees this same dashboard (falls back to /api/v1/guest/me when /me 401s), with its one granted subject and no analytics section", async () => {
+  it("ONE learner platform: a Guest Training Session sees this same dashboard (falls back to /api/v1/guest/me when /me 401s), with published learner subjects and no analytics section", async () => {
     mockApiGetPaginated.mockResolvedValue({
       data: [{ id: "s1", title: "Leadership 101", description: null, orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" }],
       page: 1,
@@ -96,7 +96,7 @@ describe("DashboardPage", () => {
     const element = await DashboardPage();
     render(element);
 
-    expect(screen.getByText(/welcome, ahmad ali/i)).toBeInTheDocument();
+    expect(screen.getByText(/مرحباً، ahmad ali/i)).toBeInTheDocument();
     expect(screen.getByText("Leadership 101")).toBeInTheDocument();
     // No personal-analytics-section error either — it's simply omitted
     // for a guest (no guest-session equivalent exists), never fabricated.
