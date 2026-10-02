@@ -133,6 +133,33 @@ export class FilesService {
     };
   }
 
+  /** Guest-scoped secure access flow — same shape as
+   * `getSignedUrlForFile`, but the visibility check is
+   * `isFileVisibleToGuestSubject` (the file's published lecture item
+   * must belong to exactly the guest's own granted subject), never the
+   * broader `isFileVisibleToNonAdmin`. A file outside the guest's
+   * subject is indistinguishable from a nonexistent one (404), matching
+   * every other guest-scoped boundary in this codebase. The storage key
+   * itself is never returned to the caller — only the short-lived
+   * signed URL, identical to the registered-user flow. */
+  async getSignedUrlForGuestFile(fileId: string, guestSubjectId: string): Promise<SignedFileUrl> {
+    const file = await this.repository.getFileById(fileId);
+    if (!file || file.status === "archived") {
+      throw notFound("File");
+    }
+
+    const visible = await this.repository.isFileVisibleToGuestSubject(fileId, guestSubjectId);
+    if (!visible) {
+      throw notFound("File");
+    }
+
+    const url = await this.storage.getSignedUrl(file.storageKey, this.signedUrlExpirySeconds);
+    return {
+      url,
+      expiresAt: new Date(Date.now() + this.signedUrlExpirySeconds * 1000).toISOString(),
+    };
+  }
+
   /**
    * Replacement (PHASE 08 §16): creates a new file row + new storage
    * object (never overwrites the old object key — `objectPath.ts` always

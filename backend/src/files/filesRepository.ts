@@ -107,6 +107,29 @@ export class FilesRepository {
     return result.rowCount! > 0;
   }
 
+  /** Guest-scoped visibility: the SAME published-content chain as
+   * `isFileVisibleToNonAdmin`, with the one additional constraint a
+   * guest requires — the file's lecture item must belong to the exact
+   * subject the guest's training access grant scopes them to. A file
+   * attached to a published lecture item in any OTHER subject returns
+   * false here even though `isFileVisibleToNonAdmin` would say true for
+   * a real registered user. */
+  async isFileVisibleToGuestSubject(fileId: string, subjectId: string): Promise<boolean> {
+    const result = await this.pool.query(
+      `select 1
+       from lecture_items li
+       join lectures l on l.id = li.lecture_id
+       join subjects s on s.id = l.subject_id
+       where li.file_id = $1
+         and s.id = $2
+         and li.deleted_at is null and l.deleted_at is null and s.deleted_at is null
+         and li.status = 'published' and l.status = 'published' and s.status = 'published'
+       limit 1`,
+      [fileId, subjectId],
+    );
+    return result.rowCount! > 0;
+  }
+
   async countLectureItemReferences(fileId: string): Promise<number> {
     const result = await this.pool.query<{ count: string }>(
       "select count(*) from lecture_items where file_id = $1 and deleted_at is null",

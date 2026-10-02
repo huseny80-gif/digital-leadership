@@ -6,8 +6,21 @@ import type { NavItem } from "./MobileNav";
  * renderFooter (brand column + link columns + bottom bar) but built as a
  * plain server component against this app's own nav items — no Finquiz
  * code or data reused.
+ *
+ * `accountLinks` defaults to the registered-user "Profile" link so
+ * `AppShell`'s existing callers see no change; `GuestShell` passes an
+ * empty array, since a guest session has no profile/account page of its
+ * own (task constraint: never expose a permanent-user-only feature to a
+ * guest) — the whole "Account" column is omitted rather than rendered
+ * empty when there is nothing to put in it.
  */
-export function Footer({ items }: { items: NavItem[] }) {
+export function Footer({
+  items,
+  accountLinks = [{ href: "/profile", label: "Profile" }],
+}: {
+  items: NavItem[];
+  accountLinks?: NavItem[];
+}) {
   const year = new Date().getFullYear();
 
   return (
@@ -27,12 +40,18 @@ export function Footer({ items }: { items: NavItem[] }) {
             ))}
           </div>
         </div>
-        <div>
-          <h3 className="app-footer-heading">Account</h3>
-          <div className="app-footer-links">
-            <Link href="/profile">Profile</Link>
+        {accountLinks.length > 0 && (
+          <div>
+            <h3 className="app-footer-heading">Account</h3>
+            <div className="app-footer-links">
+              {accountLinks.map((link) => (
+                <Link key={link.href} href={link.href}>
+                  {link.label}
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       <div className="app-footer-bottom">
         <span>© {year} Digital Leadership</span>

@@ -90,6 +90,16 @@ describe("guest content/progress proxy (/api/guest/[...path])", () => {
     expect(res.status).toBe(401);
   });
 
+  it("GET forwards a guest file-access request to the backend's guest-scoped files route", async () => {
+    const fetchMock = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify({ data: { url: "https://storage.test/x?token=1", expiresAt: "2030-01-01T00:00:00.000Z" } }), { status: 200 }));
+    const req = new Request("http://test/api/guest/files/f1", { headers: { cookie: "training_guest_session=abc.def" } });
+    const res = await guestGet(req, ctxPath(["files", "f1"]));
+    expect(fetchMock).toHaveBeenCalledWith("http://backend.test/api/v1/guest/files/f1", expect.anything());
+    expect(res.status).toBe(200);
+  });
+
   it("PUT forwards a JSON body for lecture progress", async () => {
     const fetchMock = vi
       .spyOn(global, "fetch")

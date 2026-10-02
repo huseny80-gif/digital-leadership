@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import type { LectureItemResponse, LectureProgress } from "@shared/index";
+import { PdfViewer } from "@/components/pdf/PdfViewer";
 
 const ITEM_TYPE_LABEL: Record<LectureItemResponse["itemType"], string> = {
   pdf: "PDF",
@@ -23,12 +24,13 @@ const ITEM_TYPE_LABEL: Record<LectureItemResponse["itemType"], string> = {
  * grant subject 404s there, which this page treats as "not found",
  * identically to every other scope-mismatch in this codebase.
  *
- * `pdf` items deliberately do NOT attempt `PdfViewer` here: that
- * component calls `/api/files/:fileId`, a bearer-token-only proxy no
- * guest session can authenticate against. Rather than fail with a
- * confusing 401 or silently hide the item, a pdf item is shown with an
- * honest "not available in a guest session" notice — guest access to
- * signed PDF URLs is a real, separate feature this change does not add.
+ * `pdf` items render the same `PdfViewer` the registered-user lecture
+ * page uses, pointed at `apiBasePath="/api/guest/files"` instead of the
+ * default `/api/files` — that proxy forwards the signed guest-session
+ * cookie to the backend's `GET /guest/files/:fileId`
+ * (`trainingAccessRoutes.ts`), which re-derives the file's subject from
+ * its lecture item and 404s unless it matches the guest's own
+ * `subjectId` exactly (task requirement #5). No bearer token involved.
  */
 export default function GuestLectureDetailPage({ params }: { params: Promise<{ lectureId: string }> }) {
   const { lectureId } = use(params);
@@ -128,9 +130,9 @@ export default function GuestLectureDetailPage({ params }: { params: Promise<{ l
                   </div>
 
                   {item.itemType === "pdf" && (
-                    <p style={{ color: "var(--color-text-muted)", margin: "var(--space-2) 0 0" }}>
-                      PDF viewing is not available in a guest session.
-                    </p>
+                    <div style={{ margin: "var(--space-2) 0 0" }}>
+                      <PdfViewer fileId={item.fileId} title={item.title} apiBasePath="/api/guest/files" />
+                    </div>
                   )}
 
                   {item.itemType !== "pdf" && item.bodyText && (

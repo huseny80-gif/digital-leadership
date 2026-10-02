@@ -4,15 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Quiz } from "@shared/index";
 import { QuizCard } from "@/components/quiz/QuizCard";
-
-interface GuestSession {
-  id: string;
-  displayName: string;
-  subjectId: string;
-  subjectTitle: string;
-  status: string;
-  expiresAt: string;
-}
+import { useGuestSession } from "@/components/layout/GuestSessionContext";
 
 interface Lecture {
   id: string;
@@ -23,36 +15,27 @@ interface Lecture {
 /**
  * Guest landing page after `/join/:token` (task requirement #7: session
  * resumption — reopening this page with the same guest cookie resumes
- * the same session with no new join flow, since `/api/guest/me` simply
- * re-resolves the existing cookie).
+ * the same session with no new join flow). Session identity/validity is
+ * now resolved once by `training/layout.tsx`'s gate — this page only
+ * reads it from `GuestSessionContext` and loads its own content.
  *
  * Every lecture links to `/training/lectures/[lectureId]` and every quiz
  * (via `GET /api/guest/subjects/:subjectId/assessments`, the guest
  * mirror of the authenticated subject-assessments list) links to
- * `/training/quizzes/[quizId]` — previously this page rendered lectures
- * as inert `<li>` text with no navigation anywhere, and had no way to
- * discover quizzes at all.
+ * `/training/quizzes/[quizId]`.
  */
 export default function GuestTrainingPage() {
-  const [session, setSession] = useState<GuestSession | null | undefined>(undefined);
+  const session = useGuestSession();
   const [lectures, setLectures] = useState<Lecture[] | null>(null);
   const [quizzes, setQuizzes] = useState<Quiz[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!session) return;
     (async () => {
-      const meRes = await fetch("/api/guest/me", { cache: "no-store" });
-      if (!meRes.ok) {
-        setSession(null);
-        return;
-      }
-      const meBody = await meRes.json();
-      const s = meBody.data as GuestSession;
-      setSession(s);
-
       const [lecturesRes, quizzesRes] = await Promise.all([
-        fetch(`/api/guest/subjects/${s.subjectId}/lectures`, { cache: "no-store" }),
-        fetch(`/api/guest/subjects/${s.subjectId}/assessments`, { cache: "no-store" }),
+        fetch(`/api/guest/subjects/${session.subjectId}/lectures`, { cache: "no-store" }),
+        fetch(`/api/guest/subjects/${session.subjectId}/assessments`, { cache: "no-store" }),
       ]);
       if (lecturesRes.ok) {
         const lecturesBody = await lecturesRes.json();
@@ -65,18 +48,10 @@ export default function GuestTrainingPage() {
         setQuizzes(quizzesBody.data as Quiz[]);
       }
     })();
-  }, []);
+  }, [session]);
 
-  if (session === undefined) {
+  if (!session) {
     return <p style={{ padding: "var(--space-6)" }}>Loading…</p>;
-  }
-
-  if (session === null) {
-    return (
-      <div style={{ padding: "var(--space-6)" }}>
-        <p>Your training session has expired or could not be found. Please use your training link again.</p>
-      </div>
-    );
   }
 
   return (

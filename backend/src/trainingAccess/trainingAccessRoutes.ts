@@ -8,6 +8,7 @@ import type {
   TrainingAccessGrantCreated,
   TrainingAccessJoinInfo,
   GuestTraineeAnalyticsRow,
+  SignedFileUrl,
 } from "@shared/index";
 import { getPool } from "../lib/db.js";
 import { getEnv } from "../config/env.js";
@@ -22,6 +23,9 @@ import { joinRateLimiter } from "./guestRateLimit.js";
 import { PgContentRepository } from "../content/contentRepository.js";
 import { ContentService } from "../content/contentService.js";
 import { guestAssessmentsRoutes } from "./guestAssessmentsRoutes.js";
+import { FilesRepository } from "../files/filesRepository.js";
+import { FilesService } from "../files/filesService.js";
+import { getStorageProvider } from "../files/storageProviderFactory.js";
 
 const createGrantSchema = z.object({
   subjectId: z.string().uuid(),
@@ -48,6 +52,16 @@ export function trainingAccessRoutes(): Router {
 
   const getService = () => new TrainingAccessService(new TrainingAccessRepository(getPool()), getEnv().WEB_BASE_URL);
   const getContentService = () => new ContentService(new PgContentRepository(getPool()));
+  const getFilesService = () => {
+    const env = getEnv();
+    return new FilesService(
+      getPool(),
+      new FilesRepository(getPool()),
+      getStorageProvider(),
+      env.MAX_PDF_SIZE_BYTES,
+      env.SIGNED_URL_EXPIRY_SECONDS,
+    );
+  };
   const { resolveGuestSession, requireGuestSession } = createGuestSessionMiddleware(getService);
 
   // ---------- Admin ----------
@@ -226,6 +240,28 @@ export function trainingAccessRoutes(): Router {
       }
     },
   );
+
+  // Guest-safe PDF/file access (task requirement #5). Reuses the exact
+  // same `FilesService`/`StorageProvider`/signed-URL mechanism as the
+  // registered-user flow (`filesRoutes.ts`'s `GET /files/:fileId`) — no
+  // parallel storage path, no public bucket. The only difference is the
+  // visibility check: `getSignedUrlForGuestFile` requires the file's
+  // lecture item to belong to exactly `req.guestSession.subjectId`,
+  // never the broader "any published subject" a registered user gets.
+  // A fileId outside the guest's own subject 404s, identical to every
+  // other scope-mismatch in this file — never exposes the storage key.
+  router.get("/guest/files/:fileId", requireGuestSession, requireUuidParam("fileId"), async (req, res, next) => {
+    try {
+      const signed = await getFilesService().getSignedUrlForGuestFile(
+        req.params.fileId as string,
+        req.guestSession!.subjectId,
+      );
+      const body: { data: SignedFileUrl } = { data: signed };
+      res.json(body);
+    } catch (err) {
+      next(err);
+    }
+  });
 
   const progressSchema = z.object({ completed: z.boolean() });
 
