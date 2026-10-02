@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
+import type { GuestTrainingSession } from "@shared/index";
 import Image from "next/image";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
+import { GuestLogoutButton } from "./GuestLogoutButton";
 import { PrimaryNav } from "./PrimaryNav";
 import { MobileNav, type NavItem } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
@@ -9,14 +11,26 @@ import { BottomNav } from "./BottomNav";
 import { Footer } from "./Footer";
 
 /**
- * Application shell, wrapping every authenticated route under
- * `src/app/(app)`. Route access itself is enforced by `proxy.ts`
- * (the hard authentication wall, renamed from `middleware.ts` in Phase 6
- * for this Next.js version's convention) — showing/hiding the "Admin"
- * link here based on `isAdmin` is a UX convenience only and has no
- * security value on its own; the `/admin` route and every admin API call
- * are independently protected server-side regardless of what this
- * renders (SECURITY_ARCHITECTURE.md §14, AUTHORIZATION.md §5).
+ * Application shell — THE ONE learner platform shell, wrapping every
+ * route under `src/app/(app)` for all three principals: registered user,
+ * Admin (a registered user whose role happens to be admin), and Guest
+ * Training Session. Route access itself is enforced by `proxy.ts` (the
+ * hard authentication wall) — showing/hiding the "Admin" link here based
+ * on `isAdmin` is a UX convenience only and has no security value on its
+ * own; the `/admin` route and every admin API call are independently
+ * protected server-side regardless of what this renders
+ * (SECURITY_ARCHITECTURE.md §14, AUTHORIZATION.md §5).
+ *
+ * `guestSession` being present is what distinguishes the third
+ * principal: a Guest Training Session is never admin (`isAdmin` is
+ * always `false` for it) and gets a deliberately narrower nav than a
+ * registered user — no "Profile" link, since there is no permanent-user
+ * account behind it (task constraint: never convert Guest into a
+ * permanent User to reuse this UI) — and a guest-specific logout action
+ * that clears the signed guest-session cookie instead of signing out of
+ * Supabase. Every other page, component, and data-fetching path in this
+ * shell's `children` is completely unaware of which principal is
+ * rendering it; the distinction lives only here and in the API layer.
  *
  * Phase 18.1 — Finquiz Visual Identity Foundation: this shell was
  * restyled/recomposed (header + sidebar + mobile bottom nav + footer) to
@@ -30,22 +44,23 @@ export function AppShell({
   children,
   isAdmin,
   userEmail,
+  guestSession,
 }: {
   children: ReactNode;
   isAdmin: boolean;
   userEmail: string | null;
+  guestSession?: GuestTrainingSession;
 }) {
+  const isGuest = Boolean(guestSession);
+  const homeHref = isGuest ? "/subjects" : "/dashboard";
+
   const items: NavItem[] = [
-    { href: "/dashboard", label: "Dashboard", icon: "📊" },
-    { href: "/subjects", label: "Subjects", icon: "📘" },
+    ...(isGuest ? [] : [{ href: "/dashboard", label: "Dashboard", icon: "📊" }]),
+    { href: "/subjects", label: isGuest ? "المادة الممنوحة" : "Subjects", icon: "📘" },
     ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️" }] : []),
-    { href: "/profile", label: "Profile", icon: "👤" },
-    // Single nav data source (see this component's own header comment) —
-    // adding it here is the only change needed to make it reachable from
-    // the header, sidebar, mobile nav, and footer at once. The page
-    // itself, its content, and its image have existed and built
-    // successfully since this branch's first Phase 6 commit; nothing in
-    // the app ever linked to it.
+    // A guest has no permanent-user account, so no Profile page to link
+    // to (task constraint).
+    ...(isGuest ? [] : [{ href: "/profile", label: "Profile", icon: "👤" }]),
     { href: "/about", label: "من نحن", icon: "ℹ️" },
   ];
 
@@ -56,7 +71,7 @@ export function AppShell({
       </a>
       <header className="app-header">
         <div className="app-header-inner">
-          <Link href="/dashboard" className="app-brand">
+          <Link href={homeHref} className="app-brand">
             <Image
               src="/logo.webp"
               alt=""
@@ -69,8 +84,14 @@ export function AppShell({
           </Link>
           <PrimaryNav items={items} />
           <div className="app-header-actions">
-            {userEmail ? <span className="app-user-email">{userEmail}</span> : null}
-            <LogoutButton />
+            {isGuest ? (
+              <span className="app-user-email">
+                {guestSession!.displayName} · {guestSession!.subjectTitle}
+              </span>
+            ) : userEmail ? (
+              <span className="app-user-email">{userEmail}</span>
+            ) : null}
+            {isGuest ? <GuestLogoutButton /> : <LogoutButton />}
             <MobileNav items={items} />
           </div>
         </div>
@@ -81,7 +102,7 @@ export function AppShell({
           {children}
         </main>
       </div>
-      <Footer items={items} />
+      <Footer items={items} accountLinks={isGuest ? [] : undefined} />
       <BottomNav items={items} />
     </div>
   );

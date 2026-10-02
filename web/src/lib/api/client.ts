@@ -1,6 +1,7 @@
 import type { ApiErrorBody, ApiResult, PaginatedResult } from "@shared/index";
 import { getApiBaseUrl } from "@/config/env";
 import { getCurrentAccessToken } from "@/lib/auth/session";
+import { readGuestSessionCookieValue, GUEST_SESSION_COOKIE } from "@/lib/api/guestCookie";
 
 /**
  * Typed API client (server-side use — Server Components/Route Handlers).
@@ -11,6 +12,17 @@ import { getCurrentAccessToken } from "@/lib/auth/session";
  * independently verifies (backend/src/middleware/auth.ts) — this client
  * never asserts identity or role itself, it only forwards the token the
  * backend will check on its own.
+ *
+ * ONE learner platform, multiple principals: when there is no Supabase
+ * session (no bearer token), this forwards the browser's own
+ * `training_guest_session` cookie instead, exactly as the guest-only BFF
+ * proxy (`api/guest/[...path]/route.ts`) already did — the backend's
+ * global `resolveGuestSession` middleware verifies it independently on
+ * every call. This single change is what lets every existing learner
+ * Server Component (subjects list/detail, lecture detail, progress)
+ * work for a guest with zero changes to the component itself: the same
+ * `apiGet`/`apiPost` call now carries whichever credential the current
+ * request actually has.
  */
 export class ApiError extends Error {
   constructor(public readonly body: ApiErrorBody, public readonly status: number) {
@@ -53,6 +65,12 @@ async function requestJson(method: "GET" | "POST" | "PATCH" | "DELETE", path: st
   }
 
   const headers: HeadersInit = token ? { authorization: `Bearer ${token}` } : {};
+  if (!token) {
+    const guestCookie = await readGuestSessionCookieValue();
+    if (guestCookie) {
+      headers.cookie = `${GUEST_SESSION_COOKIE}=${guestCookie}`;
+    }
+  }
   if (jsonBody !== undefined) {
     headers["content-type"] = "application/json";
   }

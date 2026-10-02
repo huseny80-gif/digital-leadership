@@ -7,12 +7,11 @@ import type { NavItem } from "./MobileNav";
  * plain server component against this app's own nav items — no Finquiz
  * code or data reused.
  *
- * `accountLinks` defaults to the registered-user "Profile" link so
- * `AppShell`'s existing callers see no change; `GuestShell` passes an
- * empty array, since a guest session has no profile/account page of its
- * own (task constraint: never expose a permanent-user-only feature to a
- * guest) — the whole "Account" column is omitted rather than rendered
- * empty when there is nothing to put in it.
+ * `accountLinks` defaults to the registered-user "Profile" link; `AppShell`
+ * passes an empty array for a guest principal, since a guest session has
+ * no profile/account page of its own (task constraint: never expose a
+ * permanent-user-only feature to a guest) — the whole "Account" column is
+ * omitted rather than rendered empty when there is nothing to put in it.
  */
 export function Footer({
   items,

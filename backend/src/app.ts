@@ -3,6 +3,7 @@ import cors from "cors";
 import { apiV1Router } from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { authenticate } from "./middleware/authInstance.js";
+import { resolveGuestSession } from "./middleware/guestSessionInstance.js";
 import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimit.js";
 import { getEnv } from "./config/env.js";
 
@@ -49,6 +50,14 @@ export function createApp(): Express {
 
   app.use(express.json());
   app.use(authenticate);
+  // Mirrors `authenticate` exactly: only ever *attaches* `req.guestSession`
+  // when a valid signed guest-session cookie is present, never rejects by
+  // itself. Running globally (not just under `/guest/*`) is what makes
+  // the ONE learner platform possible — `requireLearnerPrincipal` and the
+  // route handlers under `/subjects`, `/lectures`, `/quizzes`, `/attempts`,
+  // `/files` can now see a guest's identity too, without a separate
+  // guest-only route tree.
+  app.use(resolveGuestSession);
 
   app.get("/health", (_req, res) => {
     res.json({ status: "ok" });

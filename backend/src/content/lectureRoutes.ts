@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import type { LectureItemResponse, LectureProgress, PaginatedResult } from "@shared/index";
-import { requireAuthenticated } from "../middleware/authInstance.js";
+import { requireLearnerPrincipal } from "../middleware/learnerPrincipal.js";
+import { notFound } from "../lib/httpError.js";
 import { ContentService } from "./contentService.js";
 import { PgContentRepository } from "./contentRepository.js";
 import { getPool } from "../lib/db.js";
@@ -11,8 +12,13 @@ const setProgressSchema = z.object({ completed: z.boolean() });
 
 /**
  * Route/controller layer for Lectures (API_V1.md). Mirrors
- * `contentRoutes.ts`'s structure and visibility guarantees exactly — see
- * that file's doc comment.
+ * `contentRoutes.ts`'s structure, visibility guarantees, and guest
+ * subject-scoping exactly — see that file's doc comment. A guest reaches
+ * a lecture here by its `lectureId` alone (no `subjectId` in this URL),
+ * so every handler below first resolves the lecture and compares its OWN
+ * `subjectId` against `req.guestSession.subjectId` before doing anything
+ * else — a lecture belonging to a different subject 404s exactly like a
+ * nonexistent one, never leaking which case it was.
  */
 export function lectureRoutes(): Router {
   const router = Router();
@@ -20,22 +26,27 @@ export function lectureRoutes(): Router {
   // at router-construction time (server startup).
   const getService = () => new ContentService(new PgContentRepository(getPool()));
 
-  router.get("/:lectureId", requireAuthenticated, requireUuidParam("lectureId"), async (req, res, next) => {
+  router.get("/:lectureId", requireLearnerPrincipal, requireUuidParam("lectureId"), async (req, res, next) => {
     try {
       const service = getService();
-      const isAdmin = req.user!.role === "admin";
+      const isAdmin = req.user ? req.user.role === "admin" : false;
       const lecture = await service.getLectureOrThrow(req.params.lectureId as string, isAdmin);
+      if (!req.user && req.guestSession && lecture.subjectId !== req.guestSession.subjectId) throw notFound("Lecture");
       res.json({ data: lecture });
     } catch (err) {
       next(err);
     }
   });
 
-  router.get("/:lectureId/items", requireAuthenticated, requireUuidParam("lectureId"), async (req, res, next) => {
+  router.get("/:lectureId/items", requireLearnerPrincipal, requireUuidParam("lectureId"), async (req, res, next) => {
     try {
       const service = getService();
+      const isAdmin = req.user ? req.user.role === "admin" : false;
+      if (!req.user && req.guestSession) {
+        const lecture = await service.getLectureOrThrow(req.params.lectureId as string, false);
+        if (lecture.subjectId !== req.guestSession.subjectId) throw notFound("Lecture");
+      }
       const pagination = parsePagination(req.query);
-      const isAdmin = req.user!.role === "admin";
       const { items, total } = await service.listItemsForLectureOrThrow(
         req.params.lectureId as string,
         isAdmin,
@@ -55,11 +66,22 @@ export function lectureRoutes(): Router {
 
   router.get(
     "/:lectureId/progress",
-    requireAuthenticated,
+    requireLearnerPrincipal,
     requireUuidParam("lectureId"),
     async (req, res, next) => {
       try {
         const service = getService();
+        if (!req.user && req.guestSession) {
+          const lecture = await service.getLectureOrThrow(req.params.lectureId as string, false);
+          if (lecture.subjectId !== req.guestSession.subjectId) throw notFound("Lecture");
+          const progress = await service.getLectureProgressForGuestOrThrow(
+            req.guestSession.id,
+            req.params.lectureId as string,
+          );
+          const body: { data: LectureProgress } = { data: progress };
+          res.json(body);
+          return;
+        }
         const isAdmin = req.user!.role === "admin";
         const progress = await service.getLectureProgressOrThrow(req.user!.id, req.params.lectureId as string, isAdmin);
         const body: { data: LectureProgress } = { data: progress };
@@ -72,7 +94,7 @@ export function lectureRoutes(): Router {
 
   router.post(
     "/:lectureId/progress",
-    requireAuthenticated,
+    requireLearnerPrincipal,
     requireUuidParam("lectureId"),
     async (req, res, next) => {
       try {
@@ -81,6 +103,18 @@ export function lectureRoutes(): Router {
           throw new ValidationError("A boolean 'completed' field is required.");
         }
         const service = getService();
+        if (!req.user && req.guestSession) {
+          const lecture = await service.getLectureOrThrow(req.params.lectureId as string, false);
+          if (lecture.subjectId !== req.guestSession.subjectId) throw notFound("Lecture");
+          const progress = await service.setLectureProgressForGuestOrThrow(
+            req.guestSession.id,
+            req.params.lectureId as string,
+            parsed.data.completed,
+          );
+          const body: { data: LectureProgress } = { data: progress };
+          res.json(body);
+          return;
+        }
         const isAdmin = req.user!.role === "admin";
         const progress = await service.setLectureProgressOrThrow(
           req.user!.id,

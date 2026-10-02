@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isProtectedPath, isPublicPath } from "@/lib/authGuard";
+import { isProtectedPath, isPublicPath, isGuestReachablePath } from "@/lib/authGuard";
 
 /**
  * PHASE 06 §5/§13.2/§13.12: verifies the route-classification logic that
@@ -40,5 +40,27 @@ describe("isPublicPath", () => {
   it("does not treat protected paths as public", () => {
     expect(isPublicPath("/dashboard")).toBe(false);
     expect(isPublicPath("/admin")).toBe(false);
+  });
+});
+
+/**
+ * ONE learner platform, multiple principals (task requirement): a Guest
+ * Training Session may reach the learner-facing surface without a
+ * Supabase session, but never `/admin`, `/profile`, or `/dashboard` —
+ * the first two because a guest never gets admin access or has a
+ * permanent-user account, the third because a guest's effective "home"
+ * is their one granted subject (`/subjects/:subjectId`), not the
+ * registered-user dashboard.
+ */
+describe("isGuestReachablePath", () => {
+  it.each(["/subjects", "/subjects/abc-123", "/subjects/abc-123/lectures/def-456", "/quizzes", "/quizzes/abc-123/attempt/def-456"])(
+    "a guest may reach %s",
+    (path) => {
+      expect(isGuestReachablePath(path)).toBe(true);
+    },
+  );
+
+  it.each(["/admin", "/admin/users", "/profile", "/dashboard"])("a guest may NEVER reach %s", (path) => {
+    expect(isGuestReachablePath(path)).toBe(false);
   });
 });

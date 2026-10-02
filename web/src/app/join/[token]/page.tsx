@@ -79,7 +79,13 @@ export default function JoinPage({ params }: { params: Promise<{ token: string }
         setFormError(body?.error?.message ?? "Unable to join this training. Please check your name and try again.");
         return;
       }
-      router.push("/training");
+      // Enter the SAME learner platform a registered user gets, landing
+      // directly on the granted subject — never a separate guest-only
+      // mini-app (task requirement). `subjectId` comes straight from the
+      // just-created Guest Training Session the backend returned, not
+      // from anything client-supplied.
+      const subjectId = body?.data?.subjectId as string | undefined;
+      router.push(subjectId ? `/subjects/${subjectId}` : "/subjects");
     } catch {
       setFormError("Unable to join this training. Please try again.");
     } finally {

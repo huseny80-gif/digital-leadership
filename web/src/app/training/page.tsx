@@ -1,108 +1,65 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import type { Quiz } from "@shared/index";
-import { QuizCard } from "@/components/quiz/QuizCard";
-import { useGuestSession } from "@/components/layout/GuestSessionContext";
-
-interface Lecture {
-  id: string;
-  title: string;
-  description: string | null;
-}
+import { useRouter } from "next/navigation";
 
 /**
- * Guest landing page after `/join/:token` (task requirement #7: session
- * resumption — reopening this page with the same guest cookie resumes
- * the same session with no new join flow). Session identity/validity is
- * now resolved once by `training/layout.tsx`'s gate — this page only
- * reads it from `GuestSessionContext` and loads its own content.
+ * Retired as a destination (task requirement: "do not implement this by
+ * creating another simplified /training mini-application" — the earlier
+ * Guest/Trainee shell that lived here is gone). Kept only as a thin
+ * redirector for anyone with an old `/training` link already bookmarked
+ * or cached: a guest now enters the SAME learner platform registered
+ * users use, landing directly on their granted subject
+ * (`/subjects/:subjectId`) straight from the join flow
+ * (`app/join/[token]/page.tsx`), never through this page.
  *
- * Every lecture links to `/training/lectures/[lectureId]` and every quiz
- * (via `GET /api/guest/subjects/:subjectId/assessments`, the guest
- * mirror of the authenticated subject-assessments list) links to
- * `/training/quizzes/[quizId]`.
+ * Resolves the current guest session via the generic `/api/guest/[...path]`
+ * BFF proxy (still present and harmless even though nothing else in the
+ * web app calls it anymore) purely to know which subject to redirect to;
+ * an invalid/missing session redirects to the join-link entry point
+ * instead of rendering anything guest-specific here.
  */
-export default function GuestTrainingPage() {
-  const session = useGuestSession();
-  const [lectures, setLectures] = useState<Lecture[] | null>(null);
-  const [quizzes, setQuizzes] = useState<Quiz[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+export default function TrainingRedirectPage() {
+  const router = useRouter();
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!session) return;
+    let cancelled = false;
     (async () => {
-      const [lecturesRes, quizzesRes] = await Promise.all([
-        fetch(`/api/guest/subjects/${session.subjectId}/lectures`, { cache: "no-store" }),
-        fetch(`/api/guest/subjects/${session.subjectId}/assessments`, { cache: "no-store" }),
-      ]);
-      if (lecturesRes.ok) {
-        const lecturesBody = await lecturesRes.json();
-        setLectures(lecturesBody.data as Lecture[]);
-      } else {
-        setError("Unable to load lectures.");
-      }
-      if (quizzesRes.ok) {
-        const quizzesBody = await quizzesRes.json();
-        setQuizzes(quizzesBody.data as Quiz[]);
+      try {
+        const res = await fetch("/api/guest/me", { cache: "no-store" });
+        if (!res.ok) {
+          if (!cancelled) setFailed(true);
+          return;
+        }
+        const body = await res.json();
+        const subjectId = body?.data?.subjectId as string | undefined;
+        if (cancelled) return;
+        if (subjectId) {
+          router.replace(`/subjects/${subjectId}`);
+        } else {
+          setFailed(true);
+        }
+      } catch {
+        if (!cancelled) setFailed(true);
       }
     })();
-  }, [session]);
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
-  if (!session) {
-    return <p style={{ padding: "var(--space-6)" }}>Loading…</p>;
+  if (failed) {
+    return (
+      <div style={{ padding: "var(--space-6)", textAlign: "center" }}>
+        <p>Your training session has expired or could not be found. Please use your training link or QR code again.</p>
+      </div>
+    );
   }
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto", padding: "var(--space-6)" }}>
-      <p style={{ color: "var(--color-text-muted)" }}>مرحباً، {session.displayName}</p>
-      <h1 style={{ fontSize: "var(--font-size-xl)" }}>{session.subjectTitle}</h1>
-
-      {error && <p role="alert" style={{ color: "var(--color-danger)" }}>{error}</p>}
-
-      {lectures && (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {lectures.map((lecture) => (
-            <li key={lecture.id} style={{ marginBottom: "var(--space-3)" }}>
-              <Link
-                href={`/training/lectures/${lecture.id}`}
-                style={{
-                  display: "block",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "var(--radius-sm)",
-                  padding: "var(--space-4)",
-                  color: "inherit",
-                  textDecoration: "none",
-                }}
-              >
-                <span style={{ fontWeight: 600 }}>{lecture.title}</span>
-                {lecture.description && (
-                  <p style={{ color: "var(--color-text-muted)", margin: "var(--space-2) 0 0" }}>{lecture.description}</p>
-                )}
-              </Link>
-            </li>
-          ))}
-          {lectures.length === 0 && <li style={{ color: "var(--color-text-muted)" }}>No lectures published yet.</li>}
-        </ul>
-      )}
-
-      {quizzes && quizzes.length > 0 && (
-        <>
-          <h2 style={{ fontSize: "var(--font-size-lg)", marginTop: "var(--space-6)" }}>الاختبارات</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            {quizzes.map((quiz) => (
-              <QuizCard key={quiz.id} quiz={quiz} routeBasePath="/training/quizzes" />
-            ))}
-          </div>
-        </>
-      )}
-
-      <p style={{ marginTop: "var(--space-6)" }}>
-        <Link href="/about" style={{ color: "var(--color-text-muted)", fontSize: "var(--font-size-sm)" }}>
-          من نحن
-        </Link>
-      </p>
+    <div style={{ padding: "var(--space-6)", textAlign: "center" }}>
+      <p style={{ color: "var(--color-text-muted)" }}>Loading…</p>
     </div>
   );
 }
