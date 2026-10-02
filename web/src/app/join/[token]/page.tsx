@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface JoinInfo {
-  subjectTitle: string;
-  subjectDescription: string | null;
+  title: string;
+  description: string | null;
 }
 
 /**
@@ -130,9 +130,9 @@ export default function JoinPage({ params }: { params: Promise<{ token: string }
 
         {info && (
           <>
-            <h1 style={{ fontSize: "var(--font-size-xl)", margin: "0 0 var(--space-2)", color: "var(--color-text)" }}>{info.subjectTitle}</h1>
-            {info.subjectDescription && (
-              <p style={{ color: "var(--color-text-muted)", marginBottom: "var(--space-5)" }}>{info.subjectDescription}</p>
+            <h1 style={{ fontSize: "var(--font-size-xl)", margin: "0 0 var(--space-2)", color: "var(--color-text)" }}>{info.title}</h1>
+            {info.description && (
+              <p style={{ color: "var(--color-text-muted)", marginBottom: "var(--space-5)" }}>{info.description}</p>
             )}
 
             <form onSubmit={handleSubmit}>

@@ -12,8 +12,6 @@ function fakeSession(overrides: Partial<GuestTrainingSession> = {}): GuestTraini
   return {
     id: "session-1",
     displayName: "Guest",
-    subjectId: "subject-1",
-    subjectTitle: "Subject",
     status: "active",
     createdAt: new Date().toISOString(),
     lastSeenAt: new Date().toISOString(),

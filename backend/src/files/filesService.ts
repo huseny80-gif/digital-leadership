@@ -142,13 +142,15 @@ export class FilesService {
    * every other guest-scoped boundary in this codebase. The storage key
    * itself is never returned to the caller — only the short-lived
    * signed URL, identical to the registered-user flow. */
-  async getSignedUrlForGuestFile(fileId: string, guestSubjectId: string): Promise<SignedFileUrl> {
+  async getSignedUrlForGuestFile(fileId: string): Promise<SignedFileUrl> {
     const file = await this.repository.getFileById(fileId);
     if (!file || file.status === "archived") {
       throw notFound("File");
     }
 
-    const visible = await this.repository.isFileVisibleToGuestSubject(fileId, guestSubjectId);
+    // Guests are temporary learners, so their file visibility is the same
+    // published-content visibility as a normal non-admin learner.
+    const visible = await this.repository.isFileVisibleToNonAdmin(fileId);
     if (!visible) {
       throw notFound("File");
     }

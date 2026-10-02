@@ -31,7 +31,6 @@ class FakeTrainingAccessRepository implements Pick<
   private sessionSeq = 0;
 
   async createGrant(params: {
-    subjectId: string;
     tokenHash: string;
     label: string | null;
     description: string | null;
@@ -42,8 +41,6 @@ class FakeTrainingAccessRepository implements Pick<
     const id = `grant-${++this.grantSeq}`;
     const row: GrantRow = {
       id,
-      subject_id: params.subjectId,
-      subject_title: "Test Subject",
       label: params.label,
       description: params.description,
       max_sessions: params.maxSessions,
@@ -81,12 +78,9 @@ class FakeTrainingAccessRepository implements Pick<
 
   async createGuestSession(params: { grantId: string; displayName: string; expiresAt: Date }): Promise<GuestSessionRow> {
     const id = `session-${++this.sessionSeq}`;
-    const grant = this.grants.get(params.grantId)!;
     const row: GuestSessionRow = {
       id,
       grant_id: params.grantId,
-      subject_id: grant.subject_id,
-      subject_title: grant.subject_title,
       display_name: params.displayName,
       status: "active",
       created_at: new Date().toISOString(),
@@ -94,6 +88,7 @@ class FakeTrainingAccessRepository implements Pick<
       expires_at: params.expiresAt.toISOString(),
     };
     this.sessions.set(id, row);
+    const grant = this.grants.get(params.grantId)!;
     grant.session_count = String(Number(grant.session_count) + 1);
     return row;
   }
@@ -126,7 +121,6 @@ async function createGrantWithToken(
   overrides: Partial<Parameters<InstanceType<typeof TrainingAccessService>["createGrant"]>[0]> = {},
 ) {
   const created = await service.createGrant({
-    subjectId: "11111111-1111-1111-1111-111111111111",
     label: "Cohort A",
     description: "desc",
     maxSessions: null,
@@ -175,7 +169,6 @@ describe("TrainingAccessService", () => {
     const created = await createGrantWithToken(service);
     const { session } = await service.joinWithToken(created.token, "Ahmad Ali Hassan");
     expect(session.displayName).toBe("Ahmad Ali Hassan");
-    expect(session.subjectId).toBe(created.subjectId);
   });
 
   it("invalid token → rejected (test case #2)", async () => {
@@ -212,10 +205,10 @@ describe("TrainingAccessService", () => {
     expect(session.displayName).toBe("سارة أحمد المطيري");
   });
 
-  it("guest session creation produces a session scoped to the grant's subject (test case #8)", async () => {
+  it("guest session creation produces a platform-wide temporary learner session (test case #8)", async () => {
     const created = await createGrantWithToken(service);
     const { session, ttlMs } = await service.joinWithToken(created.token, "Ahmad Ali Hassan");
-    expect(session.subjectId).toBe(created.subjectId);
+    expect(session).not.toHaveProperty("subjectId");
     expect(ttlMs).toBeGreaterThan(0);
   });
 

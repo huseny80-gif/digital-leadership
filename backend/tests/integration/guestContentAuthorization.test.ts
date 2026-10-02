@@ -112,13 +112,13 @@ describe("guest content authorization (real database)", () => {
     expect(res.body.data.title).toBe("Granted Subject");
   });
 
-  it("a joined guest CANNOT open a different (non-granted) subject by id", async () => {
+  it("a joined guest can open any published subject by id", async () => {
     const { subjectB, cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
     const app = createApp();
 
     const res = await request(app).get(`/api/v1/guest/subjects/${subjectB}`).set("Cookie", cookie);
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
   });
 
   it("a joined guest can save their own lecture progress", async () => {
@@ -135,7 +135,7 @@ describe("guest content authorization (real database)", () => {
     expect(res.body.data.completedAt).toBeTruthy();
   });
 
-  it("a joined guest CANNOT save progress against a lecture in a different (non-granted) subject", async () => {
+  it("a joined guest can save progress against a lecture in another published subject", async () => {
     const { lectureB, cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
     const app = createApp();
 
@@ -144,7 +144,7 @@ describe("guest content authorization (real database)", () => {
       .set("Cookie", cookie)
       .send({ completed: true });
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
   });
 
   it("a joined guest can load their granted subject's lecture list", async () => {
@@ -183,31 +183,31 @@ describe("guest content authorization (real database)", () => {
     expect(res.body.data[0].id).toBe(quizA);
   });
 
-  it("a joined guest CANNOT load a different subject's lecture list by supplying a different subjectId", async () => {
+  it("a joined guest can load another published subject's lecture list", async () => {
     const { subjectB, cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
     const app = createApp();
 
     const res = await request(app).get(`/api/v1/guest/subjects/${subjectB}/lectures`).set("Cookie", cookie);
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
   });
 
-  it("a joined guest CANNOT open a lecture belonging to a different (non-granted) subject", async () => {
+  it("a joined guest can open a lecture belonging to another published subject", async () => {
     const { lectureB, cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
     const app = createApp();
 
     const res = await request(app).get(`/api/v1/guest/lectures/${lectureB}/items`).set("Cookie", cookie);
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
   });
 
-  it("a joined guest CANNOT list quizzes for a different (non-granted) subject", async () => {
+  it("a joined guest can list quizzes for another published subject", async () => {
     const { subjectB, cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
     const app = createApp();
 
     const res = await request(app).get(`/api/v1/guest/subjects/${subjectB}/assessments`).set("Cookie", cookie);
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
   });
 
   it("registered users and admins are completely unaffected by these guest routes (no shared state, no role change)", async () => {
@@ -234,13 +234,13 @@ describe("guest content authorization (real database)", () => {
     expect(res.body.data).not.toHaveProperty("storageKey");
   });
 
-  it("a joined guest CANNOT get a signed URL for a PDF belonging to a different (non-granted) subject", async () => {
+  it("a joined guest can get a signed URL for a PDF belonging to another published subject", async () => {
     const { fileB, cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
     const app = createApp();
 
     const res = await request(app).get(`/api/v1/guest/files/${fileB}`).set("Cookie", cookie);
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
   });
 
   it("guest file access requires a valid guest session (no cookie → 401)", async () => {

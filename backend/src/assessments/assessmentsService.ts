@@ -78,17 +78,6 @@ export class AssessmentsService {
    */
   async startAttempt(quizId: string, principal: AssessmentPrincipal, isAdmin: boolean): Promise<QuizAttempt> {
     const quiz = await this.getQuizOrThrow(quizId, isAdmin);
-    // Guest scope check (Phase 6): a guest may only ever start an attempt
-    // on a quiz belonging to the ONE subject their training grant scopes
-    // them to — re-derived here from `principal.subjectId` (itself only
-    // ever set server-side from the guest's own verified session, never
-    // from a client-supplied field), never trusted from `quizId` alone.
-    // A registered user (`principal.kind === "user"`) is unaffected —
-    // their access is still governed entirely by `getQuizOrThrow`'s
-    // existing published/visibility check above, exactly as before.
-    if (principal.kind === "guest" && quiz.subjectId !== principal.subjectId) {
-      throw notFound("Quiz");
-    }
     const existing = await this.repository.findInProgressAttempt(quizId, principal);
     if (existing) return existing;
     return this.repository.createAttempt(quizId, principal);

@@ -89,7 +89,7 @@ export function AppShell({
           <div className="app-header-actions">
             {isGuest ? (
               <span className="app-user-email">
-                {guestSession!.displayName} · {guestSession!.subjectTitle}
+                {guestSession!.displayName} · Guest Learner
               </span>
             ) : userEmail ? (
               <span className="app-user-email">{userEmail}</span>

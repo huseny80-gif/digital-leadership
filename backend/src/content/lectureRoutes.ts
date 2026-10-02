@@ -2,7 +2,6 @@ import { Router } from "express";
 import { z } from "zod";
 import type { LectureItemResponse, LectureProgress, PaginatedResult } from "@shared/index";
 import { requireLearnerPrincipal } from "../middleware/learnerPrincipal.js";
-import { notFound } from "../lib/httpError.js";
 import { ContentService } from "./contentService.js";
 import { PgContentRepository } from "./contentRepository.js";
 import { getPool } from "../lib/db.js";
@@ -31,7 +30,6 @@ export function lectureRoutes(): Router {
       const service = getService();
       const isAdmin = req.user ? req.user.role === "admin" : false;
       const lecture = await service.getLectureOrThrow(req.params.lectureId as string, isAdmin);
-      if (!req.user && req.guestSession && lecture.subjectId !== req.guestSession.subjectId) throw notFound("Lecture");
       res.json({ data: lecture });
     } catch (err) {
       next(err);
@@ -42,10 +40,6 @@ export function lectureRoutes(): Router {
     try {
       const service = getService();
       const isAdmin = req.user ? req.user.role === "admin" : false;
-      if (!req.user && req.guestSession) {
-        const lecture = await service.getLectureOrThrow(req.params.lectureId as string, false);
-        if (lecture.subjectId !== req.guestSession.subjectId) throw notFound("Lecture");
-      }
       const pagination = parsePagination(req.query);
       const { items, total } = await service.listItemsForLectureOrThrow(
         req.params.lectureId as string,
@@ -72,8 +66,6 @@ export function lectureRoutes(): Router {
       try {
         const service = getService();
         if (!req.user && req.guestSession) {
-          const lecture = await service.getLectureOrThrow(req.params.lectureId as string, false);
-          if (lecture.subjectId !== req.guestSession.subjectId) throw notFound("Lecture");
           const progress = await service.getLectureProgressForGuestOrThrow(
             req.guestSession.id,
             req.params.lectureId as string,
@@ -104,8 +96,6 @@ export function lectureRoutes(): Router {
         }
         const service = getService();
         if (!req.user && req.guestSession) {
-          const lecture = await service.getLectureOrThrow(req.params.lectureId as string, false);
-          if (lecture.subjectId !== req.guestSession.subjectId) throw notFound("Lecture");
           const progress = await service.setLectureProgressForGuestOrThrow(
             req.guestSession.id,
             req.params.lectureId as string,

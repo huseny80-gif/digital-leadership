@@ -3,7 +3,6 @@ import { z } from "zod";
 import type { ApiResult, Quiz, QuestionForAttempt, QuizAttempt, QuizAttemptResult, SubmitAnswerAck, AttemptAnswer } from "@shared/index";
 import { getPool } from "../lib/db.js";
 import { requireUuidParam, ValidationError } from "../lib/validation.js";
-import { notFound } from "../lib/httpError.js";
 import { AssessmentsService } from "../assessments/assessmentsService.js";
 import { PgAssessmentsRepository } from "../assessments/assessmentsRepository.js";
 import type { createGuestSessionMiddleware } from "./guestSessionMiddleware.js";
@@ -59,7 +58,7 @@ export function guestAssessmentsRoutes(
 
   function principalOf(req: Parameters<typeof requireGuestSession>[0]) {
     const session = req.guestSession!;
-    return { kind: "guest" as const, guestSessionId: session.id, subjectId: session.subjectId };
+    return { kind: "guest" as const, guestSessionId: session.id };
   }
 
   // Guest-scoped mirror of `assessmentsRoutes.ts`'s
@@ -75,7 +74,6 @@ export function guestAssessmentsRoutes(
     requireUuidParam("subjectId"),
     async (req, res, next) => {
       try {
-        if (req.params.subjectId !== req.guestSession!.subjectId) throw notFound("Subject");
         const service = getService();
         const quizzes = await service.listQuizzesForSubject(req.params.subjectId as string, false);
         const body: ApiResult<Quiz[]> = { data: quizzes };
@@ -90,12 +88,6 @@ export function guestAssessmentsRoutes(
     try {
       const service = getService();
       const quiz = await service.getQuizOrThrow(req.params.quizId as string, false);
-      // A guest may only ever look at a quiz within their own grant's
-      // subject — identical 404 (never a 403) whether the quiz doesn't
-      // exist, isn't published, or simply belongs to a different subject,
-      // matching every other "does not distinguish existence" boundary
-      // in this codebase.
-      if (quiz.subjectId !== req.guestSession!.subjectId) throw notFound("Quiz");
       const body: ApiResult<Quiz> = { data: quiz };
       res.json(body);
     } catch (err) {
@@ -110,8 +102,6 @@ export function guestAssessmentsRoutes(
     async (req, res, next) => {
       try {
         const service = getService();
-        const quiz = await service.getQuizOrThrow(req.params.quizId as string, false);
-        if (quiz.subjectId !== req.guestSession!.subjectId) throw notFound("Quiz");
         const questions = await service.getQuestionsOrThrow(req.params.quizId as string, false);
         const body: ApiResult<QuestionForAttempt[]> = { data: questions };
         res.json(body);

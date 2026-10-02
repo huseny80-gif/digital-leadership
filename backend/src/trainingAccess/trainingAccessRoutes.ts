@@ -28,7 +28,6 @@ import { FilesService } from "../files/filesService.js";
 import { getStorageProvider } from "../files/storageProviderFactory.js";
 
 const createGrantSchema = z.object({
-  subjectId: z.string().uuid(),
   label: z.string().max(200).nullable().optional(),
   description: z.string().max(2000).nullable().optional(),
   maxSessions: z.number().int().positive().nullable().optional(),
@@ -72,7 +71,6 @@ export function trainingAccessRoutes(): Router {
     try {
       const input = createGrantSchema.parse(req.body);
       const grant = await getService().createGrant({
-        subjectId: input.subjectId,
         label: input.label ?? null,
         description: input.description ?? null,
         maxSessions: input.maxSessions ?? null,
@@ -186,7 +184,6 @@ export function trainingAccessRoutes(): Router {
   // server-side — never trusts the client-supplied id alone.
   router.get("/guest/subjects/:subjectId", requireGuestSession, requireUuidParam("subjectId"), async (req, res, next) => {
     try {
-      if (req.params.subjectId !== req.guestSession!.subjectId) throw notFound("Subject");
       const subject = await getContentService().getSubjectOrThrow(req.params.subjectId as string, false);
       res.json({ data: subject });
     } catch (err) {
@@ -200,7 +197,6 @@ export function trainingAccessRoutes(): Router {
     requireUuidParam("subjectId"),
     async (req, res, next) => {
       try {
-        if (req.params.subjectId !== req.guestSession!.subjectId) throw notFound("Subject");
         const pagination = parsePagination(req.query);
         const { items, total } = await getContentService().listLecturesForSubjectOrThrow(
           req.params.subjectId as string,
@@ -221,7 +217,6 @@ export function trainingAccessRoutes(): Router {
     async (req, res, next) => {
       try {
         const lecture = await getContentService().getLectureOrThrow(req.params.lectureId as string, false);
-        if (lecture.subjectId !== req.guestSession!.subjectId) throw notFound("Lecture");
         const pagination = parsePagination(req.query);
         const { items, total } = await getContentService().listItemsForLectureOrThrow(
           req.params.lectureId as string,
@@ -252,10 +247,7 @@ export function trainingAccessRoutes(): Router {
   // other scope-mismatch in this file — never exposes the storage key.
   router.get("/guest/files/:fileId", requireGuestSession, requireUuidParam("fileId"), async (req, res, next) => {
     try {
-      const signed = await getFilesService().getSignedUrlForGuestFile(
-        req.params.fileId as string,
-        req.guestSession!.subjectId,
-      );
+      const signed = await getFilesService().getSignedUrlForGuestFile(req.params.fileId as string);
       const body: { data: SignedFileUrl } = { data: signed };
       res.json(body);
     } catch (err) {
@@ -278,7 +270,6 @@ export function trainingAccessRoutes(): Router {
     async (req, res, next) => {
       try {
         const lecture = await getContentService().getLectureOrThrow(req.params.lectureId as string, false);
-        if (lecture.subjectId !== req.guestSession!.subjectId) throw notFound("Lecture");
         const input = progressSchema.parse(req.body);
         const pool = getPool();
         const result = await pool.query<{ completed: boolean; completed_at: string | null }>(

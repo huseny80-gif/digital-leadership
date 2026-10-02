@@ -147,11 +147,11 @@ describe("ONE learner platform — Guest Training Session reaches the SAME route
     const { subjectA, lectureA, fileA, quizA, questionId, guestCookie } = await seedScenario();
     const app = createApp();
 
-    // Learner platform opens — "subjects" is exactly the granted subject.
+    // Learner platform opens — a guest sees every published subject.
     const subjectsRes = await request(app).get("/api/v1/subjects").set("Cookie", guestCookie);
     expect(subjectsRes.status).toBe(200);
-    expect(subjectsRes.body.data).toHaveLength(1);
-    expect(subjectsRes.body.data[0].id).toBe(subjectA);
+    expect(subjectsRes.body.data).toHaveLength(2);
+    expect(subjectsRes.body.data.map((s: { id: string }) => s.id)).toContain(subjectA);
 
     // Granted subject opens.
     const subjectRes = await request(app).get(`/api/v1/subjects/${subjectA}`).set("Cookie", guestCookie);
@@ -212,24 +212,24 @@ describe("ONE learner platform — Guest Training Session reaches the SAME route
     expect(resultRes.body.data.correctAnswers).toBe(1);
   });
 
-  it("security: guest cannot reach a different subject, its lecture, or its file via the unified routes", async () => {
+  it("guest can browse a second published subject, its lecture, file, and assessments via the unified routes", async () => {
     const { subjectB, lectureB, fileB, guestCookie } = await seedScenario();
     const app = createApp();
 
-    expect((await request(app).get(`/api/v1/subjects/${subjectB}`).set("Cookie", guestCookie)).status).toBe(404);
-    expect((await request(app).get(`/api/v1/subjects/${subjectB}/lectures`).set("Cookie", guestCookie)).status).toBe(404);
-    expect((await request(app).get(`/api/v1/lectures/${lectureB}`).set("Cookie", guestCookie)).status).toBe(404);
-    expect((await request(app).get(`/api/v1/lectures/${lectureB}/items`).set("Cookie", guestCookie)).status).toBe(404);
-    expect((await request(app).get(`/api/v1/files/${fileB}`).set("Cookie", guestCookie)).status).toBe(404);
-    expect((await request(app).get(`/api/v1/subjects/${subjectB}/assessments`).set("Cookie", guestCookie)).status).toBe(404);
+    expect((await request(app).get(`/api/v1/subjects/${subjectB}`).set("Cookie", guestCookie)).status).toBe(200);
+    expect((await request(app).get(`/api/v1/subjects/${subjectB}/lectures`).set("Cookie", guestCookie)).status).toBe(200);
+    expect((await request(app).get(`/api/v1/lectures/${lectureB}`).set("Cookie", guestCookie)).status).toBe(200);
+    expect((await request(app).get(`/api/v1/lectures/${lectureB}/items`).set("Cookie", guestCookie)).status).toBe(200);
+    expect((await request(app).get(`/api/v1/files/${fileB}`).set("Cookie", guestCookie)).status).toBe(200);
+    expect((await request(app).get(`/api/v1/subjects/${subjectB}/assessments`).set("Cookie", guestCookie)).status).toBe(200);
   });
 
-  it("security: guest cannot start an attempt on, or read, a quiz outside their granted subject via the unified routes", async () => {
+  it("guest can read and start a published quiz in any subject", async () => {
     const { quizB, guestCookie } = await seedScenario();
     const app = createApp();
 
-    expect((await request(app).get(`/api/v1/quizzes/${quizB}`).set("Cookie", guestCookie)).status).toBe(404);
-    expect((await request(app).post(`/api/v1/quizzes/${quizB}/attempts`).set("Cookie", guestCookie)).status).toBe(404);
+    expect((await request(app).get(`/api/v1/quizzes/${quizB}`).set("Cookie", guestCookie)).status).toBe(200);
+    expect((await request(app).post(`/api/v1/quizzes/${quizB}/attempts`).set("Cookie", guestCookie)).status).toBe(201);
   });
 
   it("security: guest cannot reach any admin route via the unified app (no admin UI capability leaks through)", async () => {

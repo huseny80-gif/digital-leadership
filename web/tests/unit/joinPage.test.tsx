@@ -30,23 +30,23 @@ describe("Join page (/join/[token])", () => {
 
   it("renders the subject title/description and a required name field on a valid token", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ data: { subjectTitle: "Leadership 101", subjectDescription: "An intro course." } }), { status: 200 }),
+      new Response(JSON.stringify({ data: { title: "Digital Leadership", description: "General learner access." } }), { status: 200 }),
     );
     render(<JoinPage params={paramsOf("goodtoken")} />);
     await waitFor(() => {
-      expect(screen.getByText("Leadership 101")).toBeInTheDocument();
+      expect(screen.getByText("Digital Leadership")).toBeInTheDocument();
     });
-    expect(screen.getByText("An intro course.")).toBeInTheDocument();
+    expect(screen.getByText("General learner access.")).toBeInTheDocument();
     const input = screen.getByLabelText("الاسم الثلاثي") as HTMLInputElement;
     expect(input).toBeRequired();
   });
 
   it("disables submit until a non-empty name is entered", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ data: { subjectTitle: "Leadership 101", subjectDescription: null } }), { status: 200 }),
+      new Response(JSON.stringify({ data: { title: "Digital Leadership", description: null } }), { status: 200 }),
     );
     render(<JoinPage params={paramsOf("goodtoken")} />);
-    await waitFor(() => screen.getByText("Leadership 101"));
+    await waitFor(() => screen.getByText("Digital Leadership"));
     const button = screen.getByRole("button", { name: /join training/i });
     expect(button).toBeDisabled();
     fireEvent.change(screen.getByLabelText("الاسم الثلاثي"), { target: { value: "أحمد محمد العلي" } });
@@ -57,16 +57,16 @@ describe("Join page (/join/[token])", () => {
     const fetchMock = vi
       .spyOn(global, "fetch")
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ data: { subjectTitle: "Leadership 101", subjectDescription: null } }), { status: 200 }),
+        new Response(JSON.stringify({ data: { title: "Digital Leadership", description: null } }), { status: 200 }),
       )
       .mockResolvedValueOnce(
         new Response(
-          JSON.stringify({ data: { id: "session-1", displayName: "<b>Ahmad</b>", subjectId: "subject-1" } }),
+          JSON.stringify({ data: { id: "session-1", displayName: "<b>Ahmad</b>" } }),
           { status: 201 },
         ),
       );
     render(<JoinPage params={paramsOf("goodtoken")} />);
-    await waitFor(() => screen.getByText("Leadership 101"));
+    await waitFor(() => screen.getByText("Digital Leadership"));
     fireEvent.change(screen.getByLabelText("الاسم الثلاثي"), { target: { value: "<b>Ahmad</b>" } });
     fireEvent.click(screen.getByRole("button", { name: /join training/i }));
     // Lands on the SAME learner dashboard a registered user gets — never
@@ -85,7 +85,7 @@ describe("Join page (/join/[token])", () => {
   it("shows the backend's validation error and does not navigate on rejection", async () => {
     vi.spyOn(global, "fetch")
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ data: { subjectTitle: "Leadership 101", subjectDescription: null } }), { status: 200 }),
+        new Response(JSON.stringify({ data: { title: "Digital Leadership", description: null } }), { status: 200 }),
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ error: { code: "validation_error", message: "Name contains characters that are not allowed." } }), {
@@ -93,7 +93,7 @@ describe("Join page (/join/[token])", () => {
         }),
       );
     render(<JoinPage params={paramsOf("goodtoken")} />);
-    await waitFor(() => screen.getByText("Leadership 101"));
+    await waitFor(() => screen.getByText("Digital Leadership"));
     fireEvent.change(screen.getByLabelText("الاسم الثلاثي"), { target: { value: "bad<script>" } });
     fireEvent.click(screen.getByRole("button", { name: /join training/i }));
     await waitFor(() => {

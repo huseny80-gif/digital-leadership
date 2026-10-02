@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { TrainingAccessGrant, TrainingAccessGrantCreated, Subject, GuestTraineeAnalyticsRow } from "@shared/index";
+import type { TrainingAccessGrant, TrainingAccessGrantCreated, GuestTraineeAnalyticsRow } from "@shared/index";
 import { adminGet, adminPost, AdminApiError } from "@/lib/api/adminBrowserClient";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/States";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
@@ -26,11 +26,9 @@ import { TrainingAccessQrCode } from "@/components/admin/TrainingAccessQrCode";
  */
 export default function TrainingAccessPage() {
   const [grants, setGrants] = useState<TrainingAccessGrant[] | null>(null);
-  const [subjects, setSubjects] = useState<Subject[] | null>(null);
   const [guestAnalytics, setGuestAnalytics] = useState<GuestTraineeAnalyticsRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [subjectId, setSubjectId] = useState("");
   const [label, setLabel] = useState("");
   const [expiresInHours, setExpiresInHours] = useState(24 * 7);
   const [submitting, setSubmitting] = useState(false);
@@ -46,13 +44,11 @@ export default function TrainingAccessPage() {
   async function load() {
     setError(null);
     try {
-      const [grantsData, subjectsData, guestAnalyticsData] = await Promise.all([
+      const [grantsData, guestAnalyticsData] = await Promise.all([
         adminGet<TrainingAccessGrant[]>("training-access"),
-        adminGet<Subject[]>("subjects"),
         adminGet<GuestTraineeAnalyticsRow[]>("training-access/guests"),
       ]);
       setGrants(grantsData);
-      setSubjects(subjectsData);
       setGuestAnalytics(guestAnalyticsData);
     } catch {
       setError("Unable to load training access grants. Please try again.");
@@ -70,7 +66,6 @@ export default function TrainingAccessPage() {
     setFormError(null);
     try {
       const created = await adminPost<TrainingAccessGrantCreated>("training-access", {
-        subjectId,
         label: label || null,
         description: null,
         maxSessions: null,
@@ -132,28 +127,13 @@ export default function TrainingAccessPage() {
           </div>
           {copyStatus && <p role="status">{copyStatus}</p>}
           <div style={{ marginTop: "var(--space-4)" }}>
-            <TrainingAccessQrCode joinUrl={justCreated.joinUrl} label={justCreated.label ?? justCreated.subjectTitle} />
+            <TrainingAccessQrCode joinUrl={justCreated.joinUrl} label={justCreated.label ?? "Digital Leadership"} />
           </div>
         </div>
       ) : null}
 
       {formOpen ? (
         <form className="admin-form" onSubmit={handleCreate} style={{ marginBottom: "var(--space-6)" }}>
-          <div className="form-field">
-            <label className="form-label" htmlFor="grant-subject">
-              Subject
-            </label>
-            <select id="grant-subject" className="form-input" value={subjectId} onChange={(e) => setSubjectId(e.target.value)} required>
-              <option value="" disabled>
-                Select a subject…
-              </option>
-              {(subjects ?? []).map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title}
-                </option>
-              ))}
-            </select>
-          </div>
           <div className="form-field">
             <label className="form-label" htmlFor="grant-label">
               Label (optional)
@@ -180,7 +160,7 @@ export default function TrainingAccessPage() {
             </p>
           ) : null}
           <div className="form-actions">
-            <button type="submit" className="btn" disabled={submitting || !subjectId}>
+            <button type="submit" className="btn" disabled={submitting}>
               {submitting ? "Creating…" : "Create Access Link"}
             </button>
           </div>
@@ -198,7 +178,6 @@ export default function TrainingAccessPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Subject</th>
                 <th>Label</th>
                 <th>Sessions</th>
                 <th>Status</th>
@@ -213,7 +192,6 @@ export default function TrainingAccessPage() {
                 const statusLabel = g.revoked ? "Revoked" : expired ? "Expired" : "Active";
                 return (
                   <tr key={g.id}>
-                    <td>{g.subjectTitle}</td>
                     <td>{g.label ?? "—"}</td>
                     <td>
                       {g.sessionCount}
@@ -252,7 +230,6 @@ export default function TrainingAccessPage() {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Subject</th>
                 <th>Joined</th>
                 <th>Last active</th>
                 <th>Status</th>
@@ -266,7 +243,6 @@ export default function TrainingAccessPage() {
               {guestAnalytics.map((r) => (
                 <tr key={r.guestSessionId}>
                   <td>{r.displayName}</td>
-                  <td>{r.subjectTitle}</td>
                   <td>{new Date(r.joinedAt).toLocaleString()}</td>
                   <td>{new Date(r.lastSeenAt).toLocaleString()}</td>
                   <td>{r.status}</td>
