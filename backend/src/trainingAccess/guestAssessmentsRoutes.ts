@@ -3,7 +3,6 @@ import { z } from "zod";
 import type { ApiResult, Quiz, QuestionForAttempt, QuizAttempt, QuizAttemptResult, SubmitAnswerAck, AttemptAnswer } from "@shared/index";
 import { getPool } from "../lib/db.js";
 import { requireUuidParam, ValidationError } from "../lib/validation.js";
-import { notFound } from "../lib/httpError.js";
 import { AssessmentsService } from "../assessments/assessmentsService.js";
 import { PgAssessmentsRepository } from "../assessments/assessmentsRepository.js";
 import type { createGuestSessionMiddleware } from "./guestSessionMiddleware.js";
