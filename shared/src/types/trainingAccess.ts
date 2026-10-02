@@ -12,8 +12,6 @@
 
 export interface TrainingAccessGrant {
   id: string;
-  subjectId: string;
-  subjectTitle: string;
   label: string | null;
   description: string | null;
   maxSessions: number | null;
@@ -33,15 +31,13 @@ export interface TrainingAccessGrantCreated extends TrainingAccessGrant {
 }
 
 export interface TrainingAccessJoinInfo {
-  subjectTitle: string;
-  subjectDescription: string | null;
+  title: string;
+  description: string | null;
 }
 
 export interface GuestTrainingSession {
   id: string;
   displayName: string;
-  subjectId: string;
-  subjectTitle: string;
   status: "active" | "expired" | "revoked";
   createdAt: string;
   lastSeenAt: string;
@@ -61,8 +57,6 @@ export interface GuestTraineeAnalyticsRow {
   guestSessionId: string;
   displayName: string;
   grantId: string;
-  subjectId: string;
-  subjectTitle: string;
   /** "active"/"expired" from the session row itself, plus "revoked" if
    * the owning grant has since been revoked (independent of the
    * session's own `status` column — a grant can be revoked after a
