@@ -1374,3 +1374,18 @@ a.content-card:hover,
 .fq-content-heading>span{font-size:.78rem;padding:.3rem .65rem;border-radius:999px;background:rgba(7,93,89,.08);color:#075d59;font-weight:800}
 .fq-content-icon{display:grid;place-items:center;width:2.2rem;height:2.2rem;border-radius:.65rem;background:linear-gradient(145deg,#075d59,#0a7770);box-shadow:0 6px 14px rgba(4,70,67,.15)}
 @media(max-width:520px){.fq-section-label{align-items:start;flex-direction:column;gap:.15rem}.fq-content-heading{align-items:flex-end}}
+
+/* Finquiz interactive quiz workspace */
+.fq-quiz-shell{max-width:980px;margin-inline:auto}
+.fq-quiz-header{position:relative;overflow:hidden;margin-bottom:1rem;padding:1.25rem 1.4rem;border-radius:1.1rem;background:linear-gradient(135deg,#063f3e,#08766e);box-shadow:0 14px 34px rgba(3,55,54,.14);color:#fff}
+.fq-quiz-header>span{display:inline-flex;margin-bottom:.35rem;padding:.25rem .6rem;border:1px solid rgba(243,207,112,.38);border-radius:999px;background:rgba(243,207,112,.12);color:#f3cf70;font-size:.76rem;font-weight:800}
+.fq-quiz-header .page-heading{margin:0;color:#fff}
+.fq-quiz-header .page-subheading{margin:.35rem 0 0;color:rgba(255,255,255,.82)}
+.fq-question-card{background:var(--color-surface);box-shadow:0 12px 32px rgba(4,70,67,.08)}
+.fq-question-card legend{max-width:92%;color:var(--color-text);line-height:1.8}
+.fq-answer-option{min-height:3.5rem;padding:.75rem 1rem;border:1px solid var(--color-border);border-radius:.8rem;background:var(--color-surface);transition:border-color .16s ease,transform .16s ease,box-shadow .16s ease}
+.fq-answer-option:has(input:checked){border-color:#0a7770;background:rgba(8,118,110,.06);box-shadow:0 0 0 2px rgba(8,118,110,.08)}
+.fq-answer-option input{accent-color:#08766e}
+.fq-question-jump[aria-current="step"]{box-shadow:0 0 0 2px rgba(212,170,65,.22)}
+@media(hover:hover){.fq-answer-option:hover{transform:translateY(-1px);border-color:rgba(8,118,110,.45)}}
+@media(max-width:600px){.fq-quiz-header{padding:1rem;border-radius:.9rem}.fq-question-card{padding:1rem!important}.fq-answer-option{padding:.65rem .75rem}.fq-quiz-shell [role="navigation"]{gap:.4rem!important}}
