@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import AboutPage from "@/app/about/page";
+import AboutPage from "@/app/(app)/about/page";
 import { aboutProfile, contactInfo, comingSoonChannels } from "@/config/about";
 
 describe("About page (/about)", () => {
@@ -62,7 +62,7 @@ describe("About page (/about)", () => {
   it("never uses dangerouslySetInnerHTML anywhere in the page source", async () => {
     const fs = await import("node:fs");
     const path = await import("node:path");
-    const source = fs.readFileSync(path.resolve(__dirname, "../../src/app/about/page.tsx"), "utf-8");
+    const source = fs.readFileSync(path.resolve(__dirname, "../../src/app/(app)/about/page.tsx"), "utf-8");
     expect(source).not.toContain("dangerouslySetInnerHTML");
   });
 });
