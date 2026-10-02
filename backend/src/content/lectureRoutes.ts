@@ -2,7 +2,6 @@ import { Router } from "express";
 import { z } from "zod";
 import type { LectureItemResponse, LectureProgress, PaginatedResult } from "@shared/index";
 import { requireLearnerPrincipal } from "../middleware/learnerPrincipal.js";
-import { notFound } from "../lib/httpError.js";
 import { ContentService } from "./contentService.js";
 import { PgContentRepository } from "./contentRepository.js";
 import { getPool } from "../lib/db.js";
