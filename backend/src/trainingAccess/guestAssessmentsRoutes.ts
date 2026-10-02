@@ -62,6 +62,30 @@ export function guestAssessmentsRoutes(
     return { kind: "guest" as const, guestSessionId: session.id, subjectId: session.subjectId };
   }
 
+  // Guest-scoped mirror of `assessmentsRoutes.ts`'s
+  // `GET /subjects/:subjectId/assessments` — the one gap that left a
+  // joined guest with no way to discover which quizzes exist for their
+  // own granted subject (every other guest quiz route requires already
+  // knowing a quizId). Same 404-on-scope-mismatch pattern as every other
+  // guest route in this file: a subjectId outside the guest's own grant
+  // is indistinguishable from a nonexistent one.
+  router.get(
+    "/guest/subjects/:subjectId/assessments",
+    requireGuestSession,
+    requireUuidParam("subjectId"),
+    async (req, res, next) => {
+      try {
+        if (req.params.subjectId !== req.guestSession!.subjectId) throw notFound("Subject");
+        const service = getService();
+        const quizzes = await service.listQuizzesForSubject(req.params.subjectId as string, false);
+        const body: ApiResult<Quiz[]> = { data: quizzes };
+        res.json(body);
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
   router.get("/guest/quizzes/:quizId", requireGuestSession, requireUuidParam("quizId"), async (req, res, next) => {
     try {
       const service = getService();

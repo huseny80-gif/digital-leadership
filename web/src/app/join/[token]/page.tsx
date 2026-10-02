@@ -182,6 +182,12 @@ export default function JoinPage({ params }: { params: Promise<{ token: string }
             </form>
           </>
         )}
+
+        <p style={{ textAlign: "center", marginTop: "var(--space-5)" }}>
+          <a href="/about" style={{ color: "var(--color-text-muted)", fontSize: "var(--font-size-sm)" }}>
+            من نحن
+          </a>
+        </p>
       </div>
     </div>
   );

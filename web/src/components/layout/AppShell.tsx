@@ -40,6 +40,13 @@ export function AppShell({
     { href: "/subjects", label: "Subjects", icon: "📘" },
     ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️" }] : []),
     { href: "/profile", label: "Profile", icon: "👤" },
+    // Single nav data source (see this component's own header comment) —
+    // adding it here is the only change needed to make it reachable from
+    // the header, sidebar, mobile nav, and footer at once. The page
+    // itself, its content, and its image have existed and built
+    // successfully since this branch's first Phase 6 commit; nothing in
+    // the app ever linked to it.
+    { href: "/about", label: "من نحن", icon: "ℹ️" },
   ];
 
   return (

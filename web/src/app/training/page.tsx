@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import type { Quiz } from "@shared/index";
+import { QuizCard } from "@/components/quiz/QuizCard";
 
 interface GuestSession {
   id: string;
@@ -18,21 +21,22 @@ interface Lecture {
 }
 
 /**
- * Minimal guest landing page after `/join/:token` (task requirement #7:
- * session resumption — reopening this page with the same guest cookie
- * resumes the same session with no new join flow, since `/api/guest/me`
- * simply re-resolves the existing cookie).
+ * Guest landing page after `/join/:token` (task requirement #7: session
+ * resumption — reopening this page with the same guest cookie resumes
+ * the same session with no new join flow, since `/api/guest/me` simply
+ * re-resolves the existing cookie).
  *
- * Scope note: this is intentionally a thin, functional guest view (own
- * session identity + the granted subject's lecture list), not a full
- * redesign of the learner experience — see the Phase 6 report's
- * "deviations" section for what a fuller guest learner UI would still
- * need (lecture item detail, quiz-taking) beyond what this phase's time
- * budget covered.
+ * Every lecture links to `/training/lectures/[lectureId]` and every quiz
+ * (via `GET /api/guest/subjects/:subjectId/assessments`, the guest
+ * mirror of the authenticated subject-assessments list) links to
+ * `/training/quizzes/[quizId]` — previously this page rendered lectures
+ * as inert `<li>` text with no navigation anywhere, and had no way to
+ * discover quizzes at all.
  */
 export default function GuestTrainingPage() {
   const [session, setSession] = useState<GuestSession | null | undefined>(undefined);
   const [lectures, setLectures] = useState<Lecture[] | null>(null);
+  const [quizzes, setQuizzes] = useState<Quiz[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,12 +49,20 @@ export default function GuestTrainingPage() {
       const meBody = await meRes.json();
       const s = meBody.data as GuestSession;
       setSession(s);
-      const lecturesRes = await fetch(`/api/guest/subjects/${s.subjectId}/lectures`, { cache: "no-store" });
+
+      const [lecturesRes, quizzesRes] = await Promise.all([
+        fetch(`/api/guest/subjects/${s.subjectId}/lectures`, { cache: "no-store" }),
+        fetch(`/api/guest/subjects/${s.subjectId}/assessments`, { cache: "no-store" }),
+      ]);
       if (lecturesRes.ok) {
         const lecturesBody = await lecturesRes.json();
         setLectures(lecturesBody.data as Lecture[]);
       } else {
         setError("Unable to load lectures.");
+      }
+      if (quizzesRes.ok) {
+        const quizzesBody = await quizzesRes.json();
+        setQuizzes(quizzesBody.data as Quiz[]);
       }
     })();
   }, []);
@@ -77,24 +89,45 @@ export default function GuestTrainingPage() {
       {lectures && (
         <ul style={{ listStyle: "none", padding: 0 }}>
           {lectures.map((lecture) => (
-            <li
-              key={lecture.id}
-              style={{
-                border: "1px solid var(--color-border)",
-                borderRadius: "var(--radius-sm)",
-                padding: "var(--space-4)",
-                marginBottom: "var(--space-3)",
-              }}
-            >
-              <span style={{ fontWeight: 600 }}>{lecture.title}</span>
-              {lecture.description && (
-                <p style={{ color: "var(--color-text-muted)", margin: "var(--space-2) 0 0" }}>{lecture.description}</p>
-              )}
+            <li key={lecture.id} style={{ marginBottom: "var(--space-3)" }}>
+              <Link
+                href={`/training/lectures/${lecture.id}`}
+                style={{
+                  display: "block",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "var(--space-4)",
+                  color: "inherit",
+                  textDecoration: "none",
+                }}
+              >
+                <span style={{ fontWeight: 600 }}>{lecture.title}</span>
+                {lecture.description && (
+                  <p style={{ color: "var(--color-text-muted)", margin: "var(--space-2) 0 0" }}>{lecture.description}</p>
+                )}
+              </Link>
             </li>
           ))}
           {lectures.length === 0 && <li style={{ color: "var(--color-text-muted)" }}>No lectures published yet.</li>}
         </ul>
       )}
+
+      {quizzes && quizzes.length > 0 && (
+        <>
+          <h2 style={{ fontSize: "var(--font-size-lg)", marginTop: "var(--space-6)" }}>الاختبارات</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            {quizzes.map((quiz) => (
+              <QuizCard key={quiz.id} quiz={quiz} routeBasePath="/training/quizzes" />
+            ))}
+          </div>
+        </>
+      )}
+
+      <p style={{ marginTop: "var(--space-6)" }}>
+        <Link href="/about" style={{ color: "var(--color-text-muted)", fontSize: "var(--font-size-sm)" }}>
+          من نحن
+        </Link>
+      </p>
     </div>
   );
 }
