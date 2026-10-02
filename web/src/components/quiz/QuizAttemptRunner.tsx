@@ -79,7 +79,7 @@ export function QuizAttemptRunner({
   const [answers, setAnswers] = useState<Record<string, AnswerState>>(() => toInitialAnswers(initialAnswers ?? []));
   const [savingQuestionId, setSavingQuestionId] = useState<string | null>(null);
   const [savedQuestionId, setSavedQuestionId] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);\n  const [studyFeedback, setStudyFeedback] = useState<Record<string, SubmitAnswerAck>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -142,7 +142,7 @@ export function QuizAttemptRunner({
         setSaveError("Unable to save your answer. Please try again.");
         return;
       }
-      setSavedQuestionId(questionId);
+      setSavedQuestionId(questionId);\n      setStudyFeedback((prev) => ({ ...prev, [questionId]: parsed.data! }));
     } catch {
       setSaveError("Unable to save your answer. Please try again.");
     } finally {
