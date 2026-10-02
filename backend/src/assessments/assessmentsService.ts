@@ -137,6 +137,17 @@ export class AssessmentsService {
    * to that question. Correctness is computed here, server-side, from
    * data the client never receives — never accepted from the request body.
    */
+  private async studyAck(questionId: string, isCorrect: boolean | null): Promise<SubmitAnswerAck> {
+    const correctAnswerSummary = await this.repository.getStudyAnswerSummary(questionId);
+    const feedback =
+      isCorrect === true
+        ? "إجابة صحيحة. راجع الملخص لتثبيت المعلومة."
+        : isCorrect === false
+          ? "راجع الإجابة الصحيحة والملخص، ثم أعد المحاولة لتثبيت المعلومة."
+          : "قارن إجابتك بملخص الإجابة ومعاييرها للمراجعة الذاتية.";
+    return { questionId, recorded: true, isCorrect, correctAnswerSummary, feedback };
+  }
+
   async submitAnswer(attemptId: string, principal: AssessmentPrincipal, input: SubmitAnswerInput): Promise<SubmitAnswerAck> {
     const attempt = await this.getOwnedActiveAttemptOrThrow(attemptId, principal);
 
@@ -171,7 +182,7 @@ export class AssessmentsService {
         isCorrect: grading.isCorrect,
         pointsAwarded: grading.pointsAwarded,
       });
-      return { questionId: input.questionId, recorded: true };
+      return this.studyAck(input.questionId, grading.isCorrect);
     }
 
     if (input.orderAnswer !== undefined) {
@@ -186,7 +197,7 @@ export class AssessmentsService {
         isCorrect: grading.isCorrect,
         pointsAwarded: grading.pointsAwarded,
       });
-      return { questionId: input.questionId, recorded: true };
+      return this.studyAck(input.questionId, grading.isCorrect);
     }
 
     let isCorrect: boolean | null = null;
@@ -230,7 +241,7 @@ export class AssessmentsService {
       pointsAwarded,
     });
 
-    return { questionId: input.questionId, recorded: true };
+    return this.studyAck(input.questionId, grading.isCorrect);
   }
 
   /**
