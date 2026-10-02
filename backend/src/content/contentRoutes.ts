@@ -40,22 +40,10 @@ export function contentRoutes(): Router {
       const service = getService();
       const pagination = parsePagination(req.query);
 
-      // A guest's "subjects" list is, by definition, exactly the one
-      // subject their grant scopes them to — never every published
-      // subject in the platform (task requirement: guest browsing must
-      // never reveal unrelated programs). `req.user` always takes
-      // priority: a registered user whose browser also happens to carry
-      // a stale `training_guest_session` cookie (e.g. they joined as a
-      // guest before signing in) must see the real listing, never be
-      // narrowed to an old guest grant.
-      if (!req.user && req.guestSession) {
-        const subject = await service.getSubjectOrThrow(req.guestSession.subjectId, false);
-        const body: PaginatedResult<Subject> = { data: [subject], page: 1, limit: pagination.limit, total: 1 };
-        res.json(body);
-        return;
-      }
-
-      const isAdmin = req.user!.role === "admin";
+      // A valid guest session is a temporary learner with platform-wide
+      // access to every published subject. Admin-only/draft visibility is
+      // still reserved for a registered admin principal.
+      const isAdmin = req.user ? req.user.role === "admin" : false;
       const { items, total } = await service.listSubjects(isAdmin, pagination);
       const body: PaginatedResult<Subject> = { data: items, page: pagination.page, limit: pagination.limit, total };
       res.json(body);
@@ -67,7 +55,6 @@ export function contentRoutes(): Router {
   router.get("/subjects/:subjectId", requireLearnerPrincipal, requireUuidParam("subjectId"), async (req, res, next) => {
     try {
       const service = getService();
-      if (!req.user && req.guestSession && req.params.subjectId !== req.guestSession.subjectId) throw notFound("Subject");
       const isAdmin = req.user ? req.user.role === "admin" : false;
       const subject = await service.getSubjectOrThrow(req.params.subjectId as string, isAdmin);
       res.json({ data: subject });
@@ -83,7 +70,6 @@ export function contentRoutes(): Router {
     async (req, res, next) => {
       try {
         const service = getService();
-        if (!req.user && req.guestSession && req.params.subjectId !== req.guestSession.subjectId) throw notFound("Subject");
         const pagination = parsePagination(req.query);
         const isAdmin = req.user ? req.user.role === "admin" : false;
         const { items, total } = await service.listLecturesForSubjectOrThrow(
@@ -106,7 +92,6 @@ export function contentRoutes(): Router {
     async (req, res, next) => {
       try {
         const service = getService();
-        if (!req.user && req.guestSession && req.params.subjectId !== req.guestSession.subjectId) throw notFound("Subject");
         const pagination = parsePagination(req.query);
         const isAdmin = req.user ? req.user.role === "admin" : false;
         const { items, total } = await service.listAssignmentsForSubjectOrThrow(
@@ -130,7 +115,6 @@ export function contentRoutes(): Router {
       try {
         const service = getService();
         if (!req.user && req.guestSession) {
-          if (req.params.subjectId !== req.guestSession.subjectId) throw notFound("Subject");
           const progress = await service.getSubjectProgressForGuestOrThrow(
             req.guestSession.id,
             req.params.subjectId as string,
