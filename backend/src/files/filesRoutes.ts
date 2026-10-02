@@ -86,7 +86,7 @@ export function filesRoutes(): Router {
     try {
       const service = buildService();
       if (!req.user && req.guestSession) {
-        const signedUrl = await service.getSignedUrlForGuestFile(req.params.fileId as string, req.guestSession.subjectId);
+        const signedUrl = await service.getSignedUrlForGuestFile(req.params.fileId as string);
         const body: ApiResult<SignedFileUrl> = { data: signedUrl };
         res.json(body);
         return;
