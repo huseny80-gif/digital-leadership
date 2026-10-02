@@ -19,11 +19,10 @@ import { parsePagination, requireUuidParam } from "../lib/validation.js";
  * (PROJECT_REQUIREMENTS.md §4). For a registered user, behavior is
  * byte-for-byte unchanged from before this file started accepting guests
  * — every `req.user!.role === "admin"` branch below is exactly what it
- * was. A guest is additionally scoped to exactly the one subject their
- * Training Access Grant covers: any `subjectId`/`lectureId` outside that
- * scope 404s, identical to the IDOR-safe "not visible" pattern used
- * everywhere else in this codebase — a guest can never enumerate or read
- * a different subject by editing the URL.
+ * was. A guest is a platform-wide temporary learner (task requirement:
+ * Guest/Trainee = Temporary General Learner, never scoped to one
+ * subject) — the SAME published-content visibility any registered
+ * learner gets, nothing narrower.
  */
 export function contentRoutes(): Router {
   const router = Router();

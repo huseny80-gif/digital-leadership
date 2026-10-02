@@ -77,7 +77,10 @@ export class AssessmentsService {
    * learner's first attempt (PHASE 09B "Quiz Attempts").
    */
   async startAttempt(quizId: string, principal: AssessmentPrincipal, isAdmin: boolean): Promise<QuizAttempt> {
-    const quiz = await this.getQuizOrThrow(quizId, isAdmin);
+    // Visibility check only — any learner (registered or guest) may
+    // start an attempt on any quiz they can see; there is no further
+    // subject-scoping now that guest access is platform-wide.
+    await this.getQuizOrThrow(quizId, isAdmin);
     const existing = await this.repository.findInProgressAttempt(quizId, principal);
     if (existing) return existing;
     return this.repository.createAttempt(quizId, principal);

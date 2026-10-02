@@ -11,13 +11,11 @@ const setProgressSchema = z.object({ completed: z.boolean() });
 
 /**
  * Route/controller layer for Lectures (API_V1.md). Mirrors
- * `contentRoutes.ts`'s structure, visibility guarantees, and guest
- * subject-scoping exactly — see that file's doc comment. A guest reaches
- * a lecture here by its `lectureId` alone (no `subjectId` in this URL),
- * so every handler below first resolves the lecture and compares its OWN
- * `subjectId` against `req.guestSession.subjectId` before doing anything
- * else — a lecture belonging to a different subject 404s exactly like a
- * nonexistent one, never leaking which case it was.
+ * `contentRoutes.ts`'s structure and visibility guarantees — see that
+ * file's doc comment. A valid guest session is a platform-wide
+ * temporary learner, so a lecture is visible to a guest under exactly
+ * the same published-content rule as any other learner; there is no
+ * subject-scoping to additionally check.
  */
 export function lectureRoutes(): Router {
   const router = Router();
