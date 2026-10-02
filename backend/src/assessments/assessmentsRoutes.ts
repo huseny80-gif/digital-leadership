@@ -1,8 +1,19 @@
 import { Router } from "express";
 import { z } from "zod";
-import type { ApiResult, Quiz, QuestionForAttempt, QuizAttempt, QuizAttemptResult, SubmitAnswerAck, AttemptAnswer } from "@shared/index";
-import { requireAuthenticated } from "../middleware/authInstance.js";
+import type {
+  ApiResult,
+  AssessmentPrincipal,
+  Quiz,
+  QuestionForAttempt,
+  QuizAttempt,
+  QuizAttemptResult,
+  SubmitAnswerAck,
+  AttemptAnswer,
+} from "@shared/index";
+import type { Request } from "express";
+import { requireLearnerPrincipal } from "../middleware/learnerPrincipal.js";
 import { requireUuidParam, ValidationError } from "../lib/validation.js";
+import { notFound } from "../lib/httpError.js";
 import { getPool } from "../lib/db.js";
 import { AssessmentsService } from "./assessmentsService.js";
 import { PgAssessmentsRepository } from "./assessmentsRepository.js";
@@ -44,17 +55,40 @@ function buildService(): AssessmentsService {
   return new AssessmentsService(new PgAssessmentsRepository(getPool()));
 }
 
+/** Normalizes `req.user`/`req.guestSession` (set by the global
+ * `authenticate`/`resolveGuestSession` middleware) into the
+ * `AssessmentPrincipal` `AssessmentsService` already expects — the same
+ * discriminated shape the service has used since guest quiz-taking was
+ * first added, now constructed here instead of in a separate
+ * `guestAssessmentsRoutes.ts`. `requireLearnerPrincipal` guarantees at
+ * least one of the two is set before any handler below runs; `req.user`
+ * always wins when BOTH are set (a registered user whose browser also
+ * carries a stale `training_guest_session` cookie from before they
+ * signed in must act as themselves, never be silently narrowed to an
+ * old guest grant). */
+function principalOf(req: Request): AssessmentPrincipal {
+  if (req.user) {
+    return { kind: "user", userId: req.user.id };
+  }
+  return { kind: "guest", guestSessionId: req.guestSession!.id, subjectId: req.guestSession!.subjectId };
+}
+
 /**
  * Learner-facing assessment routes (ASSESSMENT_API.md, PHASE 09B). Every
- * route requires authentication (Phase 6's unmodified middleware); no new
- * authentication or session mechanism is introduced here. Route handlers
- * are thin HTTP <-> `AssessmentsService` translation only — no SQL, no
- * business logic, no authorization decision lives in this file
- * (ARCHITECTURE.md §3, matching `contentRoutes.ts`/`filesRoutes.ts`).
+ * route requires a learner identity — a registered user OR a valid Guest
+ * Training Session (`requireLearnerPrincipal`) — never a separate
+ * guest-only route tree. Route handlers are thin HTTP <-> `AssessmentsService`
+ * translation only — no SQL, no business logic, no authorization decision
+ * lives in this file (ARCHITECTURE.md §3, matching
+ * `contentRoutes.ts`/`filesRoutes.ts`).
  *
- * Ownership/ID resolution always comes from `req.user!.id`, set by the
- * verified-token middleware — never from a client-supplied field in the
- * body or query string (PHASE 09B "Authorization").
+ * Ownership/ID resolution always comes from `principalOf(req)` — never
+ * from a client-supplied field in the body or query string (PHASE 09B
+ * "Authorization"). `AssessmentsService.startAttempt` independently
+ * re-checks a guest principal's `subjectId` against the quiz's own
+ * subject before creating an attempt, so a guest cannot start an attempt
+ * on a quiz outside their grant by any combination of client-supplied
+ * ids — see that method's own comment.
  */
 export function assessmentsRoutes(): Router {
   const router = Router();
@@ -65,12 +99,13 @@ export function assessmentsRoutes(): Router {
 
   router.get(
     "/subjects/:subjectId/assessments",
-    requireAuthenticated,
+    requireLearnerPrincipal,
     requireUuidParam("subjectId"),
     async (req, res, next) => {
       try {
+        if (!req.user && req.guestSession && req.params.subjectId !== req.guestSession.subjectId) throw notFound("Subject");
         const service = getService();
-        const isAdmin = req.user!.role === "admin";
+        const isAdmin = req.user ? req.user.role === "admin" : false;
         const quizzes = await service.listQuizzesForSubject(req.params.subjectId as string, isAdmin);
         const body: ApiResult<Quiz[]> = { data: quizzes };
         res.json(body);
@@ -80,11 +115,15 @@ export function assessmentsRoutes(): Router {
     },
   );
 
-  router.get("/quizzes/:quizId", requireAuthenticated, requireUuidParam("quizId"), async (req, res, next) => {
+  router.get("/quizzes/:quizId", requireLearnerPrincipal, requireUuidParam("quizId"), async (req, res, next) => {
     try {
       const service = getService();
-      const isAdmin = req.user!.role === "admin";
+      const isAdmin = req.user ? req.user.role === "admin" : false;
       const quiz = await service.getQuizOrThrow(req.params.quizId as string, isAdmin);
+      // A guest may only ever look at a quiz within their own grant's
+      // subject — identical 404 (never a 403) whether the quiz doesn't
+      // exist, isn't published, or belongs to a different subject.
+      if (!req.user && req.guestSession && quiz.subjectId !== req.guestSession.subjectId) throw notFound("Quiz");
       const body: ApiResult<Quiz> = { data: quiz };
       res.json(body);
     } catch (err) {
@@ -94,12 +133,16 @@ export function assessmentsRoutes(): Router {
 
   router.get(
     "/quizzes/:quizId/questions",
-    requireAuthenticated,
+    requireLearnerPrincipal,
     requireUuidParam("quizId"),
     async (req, res, next) => {
       try {
         const service = getService();
-        const isAdmin = req.user!.role === "admin";
+        const isAdmin = req.user ? req.user.role === "admin" : false;
+        if (!req.user && req.guestSession) {
+          const quiz = await service.getQuizOrThrow(req.params.quizId as string, false);
+          if (quiz.subjectId !== req.guestSession.subjectId) throw notFound("Quiz");
+        }
         const questions = await service.getQuestionsOrThrow(req.params.quizId as string, isAdmin);
         const body: ApiResult<QuestionForAttempt[]> = { data: questions };
         res.json(body);
@@ -111,13 +154,13 @@ export function assessmentsRoutes(): Router {
 
   router.post(
     "/quizzes/:quizId/attempts",
-    requireAuthenticated,
+    requireLearnerPrincipal,
     requireUuidParam("quizId"),
     async (req, res, next) => {
       try {
         const service = getService();
-        const isAdmin = req.user!.role === "admin";
-        const attempt = await service.startAttempt(req.params.quizId as string, { kind: "user", userId: req.user!.id }, isAdmin);
+        const isAdmin = req.user ? req.user.role === "admin" : false;
+        const attempt = await service.startAttempt(req.params.quizId as string, principalOf(req), isAdmin);
         const body: ApiResult<QuizAttempt> = { data: attempt };
         res.status(201).json(body);
       } catch (err) {
@@ -128,12 +171,12 @@ export function assessmentsRoutes(): Router {
 
   router.get(
     "/attempts/:attemptId",
-    requireAuthenticated,
+    requireLearnerPrincipal,
     requireUuidParam("attemptId"),
     async (req, res, next) => {
       try {
         const service = getService();
-        const attempt = await service.getAttemptOrThrow(req.params.attemptId as string, { kind: "user", userId: req.user!.id });
+        const attempt = await service.getAttemptOrThrow(req.params.attemptId as string, principalOf(req));
         const body: ApiResult<QuizAttempt> = { data: attempt };
         res.json(body);
       } catch (err) {
@@ -144,12 +187,12 @@ export function assessmentsRoutes(): Router {
 
   router.get(
     "/attempts/:attemptId/answers",
-    requireAuthenticated,
+    requireLearnerPrincipal,
     requireUuidParam("attemptId"),
     async (req, res, next) => {
       try {
         const service = getService();
-        const answers = await service.getAnswersOrThrow(req.params.attemptId as string, { kind: "user", userId: req.user!.id });
+        const answers = await service.getAnswersOrThrow(req.params.attemptId as string, principalOf(req));
         const body: ApiResult<AttemptAnswer[]> = { data: answers };
         res.json(body);
       } catch (err) {
@@ -160,7 +203,7 @@ export function assessmentsRoutes(): Router {
 
   router.post(
     "/attempts/:attemptId/answers",
-    requireAuthenticated,
+    requireLearnerPrincipal,
     requireUuidParam("attemptId"),
     async (req, res, next) => {
       try {
@@ -172,7 +215,7 @@ export function assessmentsRoutes(): Router {
           );
         }
         const { questionId, selectedOptionId, answerText, matchAnswer, orderAnswer } = parsed.data;
-        const ack = await service.submitAnswer(req.params.attemptId as string, { kind: "user", userId: req.user!.id }, {
+        const ack = await service.submitAnswer(req.params.attemptId as string, principalOf(req), {
           questionId,
           ...(selectedOptionId !== undefined ? { selectedOptionId } : {}),
           ...(answerText !== undefined ? { answerText } : {}),
@@ -189,12 +232,12 @@ export function assessmentsRoutes(): Router {
 
   router.post(
     "/attempts/:attemptId/submit",
-    requireAuthenticated,
+    requireLearnerPrincipal,
     requireUuidParam("attemptId"),
     async (req, res, next) => {
       try {
         const service = getService();
-        const result = await service.submitAttempt(req.params.attemptId as string, { kind: "user", userId: req.user!.id });
+        const result = await service.submitAttempt(req.params.attemptId as string, principalOf(req));
         const body: ApiResult<QuizAttemptResult> = { data: result };
         res.json(body);
       } catch (err) {
@@ -205,13 +248,16 @@ export function assessmentsRoutes(): Router {
 
   router.get(
     "/attempts/:attemptId/result",
-    requireAuthenticated,
+    requireLearnerPrincipal,
     requireUuidParam("attemptId"),
     async (req, res, next) => {
       try {
         const service = getService();
-        const isAdmin = req.user!.role === "admin";
-        const result = await service.getResultOrThrow(req.params.attemptId as string, { kind: "user", userId: req.user!.id }, isAdmin);
+        // A guest is never an admin bypass — `isAdmin` is always false for
+        // a guest principal, so `getResultOrThrow` falls back entirely to
+        // `attemptBelongsTo`.
+        const isAdmin = req.user ? req.user.role === "admin" : false;
+        const result = await service.getResultOrThrow(req.params.attemptId as string, principalOf(req), isAdmin);
         const body: ApiResult<QuizAttemptResult> = { data: result };
         res.json(body);
       } catch (err) {

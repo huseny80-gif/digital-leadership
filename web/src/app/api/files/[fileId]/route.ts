@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { SignedFileUrl } from "@shared/index";
 import { apiGet, apiDelete, ApiError } from "@/lib/api/client";
 import { getCurrentAccessToken } from "@/lib/auth/session";
+import { readGuestSessionCookieValue } from "@/lib/api/guestCookie";
 
 /**
  * Server-side proxy to the backend's secure file endpoint
@@ -17,12 +18,21 @@ import { getCurrentAccessToken } from "@/lib/auth/session";
  * is never logged (PDF_VIEWER.md "Signed URL Handling"), never written to
  * a cookie/session/database, and this route itself sets `Cache-Control:
  * no-store` so nothing caches it either.
+ *
+ * ONE learner platform, multiple principals: a Guest Training Session
+ * (no Supabase token, but a `training_guest_session` cookie) is accepted
+ * here too — `apiGet` forwards that cookie instead of a bearer token
+ * (`lib/api/client.ts`), and the backend's `GET /files/:fileId`
+ * independently re-derives and enforces the guest's own subject scope
+ * (`FilesService.getSignedUrlForGuestFile`) regardless of what this route
+ * decides.
  */
 export async function GET(_request: Request, context: { params: Promise<{ fileId: string }> }) {
   const { fileId } = await context.params;
 
   const token = await getCurrentAccessToken();
-  if (!token) {
+  const hasGuestCookie = token ? false : Boolean(await readGuestSessionCookieValue());
+  if (!token && !hasGuestCookie) {
     return NextResponse.json(
       { error: { code: "unauthenticated", message: "Your session has expired. Please sign in again." } },
       { status: 401 },

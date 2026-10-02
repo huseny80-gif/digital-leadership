@@ -2,7 +2,8 @@ import { Router } from "express";
 import multer from "multer";
 import { z } from "zod";
 import type { ApiResult, FileMetadata, SignedFileUrl } from "@shared/index";
-import { requireAuthenticated, requireAdmin } from "../middleware/authInstance.js";
+import { requireAdmin } from "../middleware/authInstance.js";
+import { requireLearnerPrincipal } from "../middleware/learnerPrincipal.js";
 import { fileOperationRateLimiter } from "../middleware/rateLimit.js";
 import { requireUuidParam, ValidationError } from "../lib/validation.js";
 import { getPool } from "../lib/db.js";
@@ -74,9 +75,22 @@ export function filesRoutes(): Router {
     }
   });
 
-  router.get("/:fileId", requireAuthenticated, requireUuidParam("fileId"), fileOperationRateLimiter, async (req, res, next) => {
+  // Accepts EITHER a registered-user session or a valid Guest Training
+  // Session (`requireLearnerPrincipal` — ONE learner platform, multiple
+  // principals). A guest's visibility check is strictly narrower than a
+  // registered user's: `getSignedUrlForGuestFile` requires the file's
+  // lecture item to belong to exactly the guest's own granted subject,
+  // never the broader "any published subject" a registered user gets —
+  // see that method's own comment in `filesService.ts`.
+  router.get("/:fileId", requireLearnerPrincipal, requireUuidParam("fileId"), fileOperationRateLimiter, async (req, res, next) => {
     try {
       const service = buildService();
+      if (!req.user && req.guestSession) {
+        const signedUrl = await service.getSignedUrlForGuestFile(req.params.fileId as string, req.guestSession.subjectId);
+        const body: ApiResult<SignedFileUrl> = { data: signedUrl };
+        res.json(body);
+        return;
+      }
       const isAdmin = req.user!.role === "admin";
       const signedUrl = await service.getSignedUrlForFile(req.params.fileId as string, { id: req.user!.id, isAdmin });
       const body: ApiResult<SignedFileUrl> = { data: signedUrl };

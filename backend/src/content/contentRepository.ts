@@ -37,6 +37,14 @@ export interface ContentRepository {
   getLectureProgress(userId: string, lectureId: string): Promise<LectureProgress>;
   setLectureProgress(userId: string, lectureId: string, completed: boolean): Promise<LectureProgress>;
   getSubjectProgress(userId: string, subjectId: string): Promise<SubjectProgress>;
+  /** Guest-principal mirrors of the three methods above, keyed by
+   * `guest_session_id` instead of `user_id` — the same `lecture_progress`
+   * table, the two columns mutually exclusive by the
+   * `lecture_progress_owner_xor` check constraint (migration 16), so a
+   * guest's row can never collide with or overwrite a registered user's. */
+  getLectureProgressForGuest(guestSessionId: string, lectureId: string): Promise<LectureProgress>;
+  setLectureProgressForGuest(guestSessionId: string, lectureId: string, completed: boolean): Promise<LectureProgress>;
+  getSubjectProgressForGuest(guestSessionId: string, subjectId: string): Promise<SubjectProgress>;
 }
 
 interface SubjectRow {
@@ -315,6 +323,46 @@ export class PgContentRepository implements ContentRepository {
        left join lecture_progress lp on lp.lecture_id = l.id and lp.user_id = $1
        where l.subject_id = $2 and l.deleted_at is null and l.status = 'published'`,
       [userId, subjectId],
+    );
+    const row = result.rows[0];
+    return {
+      subjectId,
+      totalLectures: Number(row?.total ?? 0),
+      completedLectures: Number(row?.completed ?? 0),
+    };
+  }
+
+  async getLectureProgressForGuest(guestSessionId: string, lectureId: string): Promise<LectureProgress> {
+    const result = await this.pool.query<LectureProgressRow>(
+      `select lecture_id, completed, completed_at
+       from lecture_progress
+       where guest_session_id = $1 and lecture_id = $2`,
+      [guestSessionId, lectureId],
+    );
+    return toLectureProgress(lectureId, result.rows[0]);
+  }
+
+  async setLectureProgressForGuest(guestSessionId: string, lectureId: string, completed: boolean): Promise<LectureProgress> {
+    const result = await this.pool.query<LectureProgressRow>(
+      `insert into lecture_progress (guest_session_id, lecture_id, completed, completed_at)
+       values ($1, $2, $3, case when $3 then now() else null end)
+       on conflict (guest_session_id, lecture_id)
+       do update set completed = excluded.completed, completed_at = excluded.completed_at
+       returning lecture_id, completed, completed_at`,
+      [guestSessionId, lectureId, completed],
+    );
+    return toLectureProgress(lectureId, result.rows[0]);
+  }
+
+  async getSubjectProgressForGuest(guestSessionId: string, subjectId: string): Promise<SubjectProgress> {
+    const result = await this.pool.query<{ total: string; completed: string }>(
+      `select
+         count(l.id) as total,
+         count(lp.lecture_id) filter (where lp.completed) as completed
+       from lectures l
+       left join lecture_progress lp on lp.lecture_id = l.id and lp.guest_session_id = $1
+       where l.subject_id = $2 and l.deleted_at is null and l.status = 'published'`,
+      [guestSessionId, subjectId],
     );
     const row = result.rows[0];
     return {

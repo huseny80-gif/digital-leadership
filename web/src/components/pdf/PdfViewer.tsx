@@ -16,14 +16,28 @@ type ViewerState =
  * `useState`, never `localStorage`/`sessionStorage`/a global store, and
  * never logs it. See PDF_VIEWER.md "Signed URL Handling" for the full
  * list of things this component deliberately never does with the URL.
+ *
+ * `apiBasePath` defaults to the bearer-token registered-user proxy
+ * (`/api/files`); the guest training platform passes `/api/guest/files`
+ * instead, which forwards the browser's signed guest-session cookie to
+ * the backend's own guest-scoped `GET /guest/files/:fileId` route — same
+ * component, same signed-URL handling, different authorization boundary.
  */
-export function PdfViewer({ fileId, title }: { fileId: string | null; title: string }) {
+export function PdfViewer({
+  fileId,
+  title,
+  apiBasePath = "/api/files",
+}: {
+  fileId: string | null;
+  title: string;
+  apiBasePath?: string;
+}) {
   const [state, setState] = useState<ViewerState>({ status: "idle" });
 
   async function loadSignedUrl() {
     setState({ status: "loading" });
     try {
-      const res = await fetch(`/api/files/${fileId}`, { cache: "no-store" });
+      const res = await fetch(`${apiBasePath}/${fileId}`, { cache: "no-store" });
       const body = await res.json();
       if (!res.ok) {
         const message =

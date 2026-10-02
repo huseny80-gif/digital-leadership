@@ -79,7 +79,12 @@ export default function JoinPage({ params }: { params: Promise<{ token: string }
         setFormError(body?.error?.message ?? "Unable to join this training. Please check your name and try again.");
         return;
       }
-      router.push("/training");
+      // Enter the SAME learner platform a registered user gets — the
+      // normal dashboard, never a separate guest-only mini-app (task
+      // requirement). From here the trainee browses to their granted
+      // subject themselves using the platform's own navigation, exactly
+      // like a registered learner would.
+      router.push("/dashboard");
     } catch {
       setFormError("Unable to join this training. Please try again.");
     } finally {

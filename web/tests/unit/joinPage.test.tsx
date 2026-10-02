@@ -53,20 +53,27 @@ describe("Join page (/join/[token])", () => {
     expect(button).not.toBeDisabled();
   });
 
-  it("submits the trimmed name and navigates to /training on success — never renders the name as HTML", async () => {
+  it("submits the trimmed name and navigates into the real learner platform's dashboard on success — never renders the name as HTML", async () => {
     const fetchMock = vi
       .spyOn(global, "fetch")
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ data: { subjectTitle: "Leadership 101", subjectDescription: null } }), { status: 200 }),
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ data: { id: "session-1", displayName: "<b>Ahmad</b>" } }), { status: 201 }),
+        new Response(
+          JSON.stringify({ data: { id: "session-1", displayName: "<b>Ahmad</b>", subjectId: "subject-1" } }),
+          { status: 201 },
+        ),
       );
     render(<JoinPage params={paramsOf("goodtoken")} />);
     await waitFor(() => screen.getByText("Leadership 101"));
     fireEvent.change(screen.getByLabelText("الاسم الثلاثي"), { target: { value: "<b>Ahmad</b>" } });
     fireEvent.click(screen.getByRole("button", { name: /join training/i }));
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/training"));
+    // Lands on the SAME learner dashboard a registered user gets — never
+    // a separate `/training` mini-app page (task requirement). From
+    // there the trainee browses to their granted subject using the
+    // platform's own navigation.
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/dashboard"));
     const [, init] = fetchMock.mock.calls[1]!;
     expect(JSON.parse((init as RequestInit).body as string)).toEqual({ name: "<b>Ahmad</b>" });
     // The page itself never dangerously renders anything — asserted structurally

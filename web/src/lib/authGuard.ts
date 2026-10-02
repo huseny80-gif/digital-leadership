@@ -31,3 +31,22 @@ export function isProtectedPath(pathname: string): boolean {
   const protectedRoots = ["/dashboard", "/subjects", "/admin", "/profile", "/quizzes"];
   return protectedRoots.some((root) => pathname === root || pathname.startsWith(`${root}/`));
 }
+
+/**
+ * The ONE learner platform now serves two principals: a registered
+ * Supabase-authenticated user, and a Guest Training Session (a signed
+ * cookie, verified server-side by the backend on every API call — see
+ * `backend/src/trainingAccess/guestSessionCookie.ts`). This lists exactly
+ * which protected roots a guest may ever reach without a Supabase
+ * session: the full learner-facing surface — `/dashboard`, `/subjects/*`,
+ * `/quizzes/*` — a guest is a TEMPORARY LEARNER, not a read-only or
+ * single-page visitor (task requirement). `/admin` and `/profile` are
+ * deliberately excluded: `/admin` is never reachable by a guest at all
+ * (no admin capability, task constraint), and `/profile` assumes a
+ * permanent-user account a guest never has. Both still hard-redirect to
+ * `/login` for a guest exactly as they do for a fully anonymous visitor.
+ */
+export function isGuestReachablePath(pathname: string): boolean {
+  const guestRoots = ["/dashboard", "/subjects", "/quizzes"];
+  return guestRoots.some((root) => pathname === root || pathname.startsWith(`${root}/`));
+}

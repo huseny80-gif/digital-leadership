@@ -66,6 +66,42 @@ describe("DashboardPage", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.queryByText(/ECONNREFUSED/)).not.toBeInTheDocument();
   });
+
+  it("ONE learner platform: a Guest Training Session sees this same dashboard (falls back to /api/v1/guest/me when /me 401s), with its one granted subject and no analytics section", async () => {
+    mockApiGetPaginated.mockResolvedValue({
+      data: [{ id: "s1", title: "Leadership 101", description: null, orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" }],
+      page: 1,
+      limit: 6,
+      total: 1,
+    });
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === "/api/v1/me") {
+        return Promise.reject(new ApiError({ error: { code: "unauthenticated", message: "unauthenticated" } }, 401));
+      }
+      if (path === "/api/v1/guest/me") {
+        return Promise.resolve({
+          data: {
+            id: "session-1",
+            displayName: "Ahmad Ali",
+            subjectId: "s1",
+            subjectTitle: "Leadership 101",
+            status: "active",
+            expiresAt: "2030-01-01T00:00:00.000Z",
+          },
+        });
+      }
+      throw new Error(`unexpected path: ${path}`);
+    });
+
+    const element = await DashboardPage();
+    render(element);
+
+    expect(screen.getByText(/welcome, ahmad ali/i)).toBeInTheDocument();
+    expect(screen.getByText("Leadership 101")).toBeInTheDocument();
+    // No personal-analytics-section error either — it's simply omitted
+    // for a guest (no guest-session equivalent exists), never fabricated.
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
 });
 
 describe("SubjectsPage", () => {

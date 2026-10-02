@@ -3,7 +3,7 @@ import request from "supertest";
 import { Pool } from "pg";
 import { createApp } from "../../src/app.js";
 import { signGuestSessionCookieValue } from "../../src/trainingAccess/guestSessionCookie.js";
-import { createUser, createSubject, createLecture, createLectureItem, createQuiz } from "../helpers/seedFixtures.js";
+import { createUser, createSubject, createLecture, createLectureItem, createQuiz, createFile } from "../helpers/seedFixtures.js";
 
 /**
  * Real-database regression coverage for the guest content/authorization
@@ -59,6 +59,26 @@ async function seedTwoSubjectsWithAGuestGrantedToOne() {
     bodyText: "Granted-subject content.",
   });
 
+  const fileA = await createFile(pool, { storageKey: `subjects/${subjectA}/lectures/${lectureA}/filea.pdf`, uploadedBy: adminId });
+  await createLectureItem(pool, {
+    lectureId: lectureA,
+    itemType: "pdf",
+    title: "Slides A1",
+    status: "published",
+    createdBy: adminId,
+    fileId: fileA,
+  });
+
+  const fileB = await createFile(pool, { storageKey: `subjects/${subjectB}/lectures/${lectureB}/fileb.pdf`, uploadedBy: adminId });
+  await createLectureItem(pool, {
+    lectureId: lectureB,
+    itemType: "pdf",
+    title: "Slides B1",
+    status: "published",
+    createdBy: adminId,
+    fileId: fileB,
+  });
+
   const quizA = await createQuiz(pool, { subjectId: subjectA, title: "Quiz A", status: "published", createdBy: adminId });
   await createQuiz(pool, { subjectId: subjectB, title: "Quiz B", status: "published", createdBy: adminId });
 
@@ -77,10 +97,56 @@ async function seedTwoSubjectsWithAGuestGrantedToOne() {
   const guestSessionId = sessionResult.rows[0]!.id;
   const cookie = `training_guest_session=${signGuestSessionCookieValue(guestSessionId)}`;
 
-  return { subjectA, subjectB, lectureA, lectureB, quizA, cookie };
+  return { subjectA, subjectB, lectureA, lectureB, quizA, fileA, fileB, cookie };
 }
 
 describe("guest content authorization (real database)", () => {
+  it("a joined guest can open their granted subject", async () => {
+    const { subjectA, cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
+    const app = createApp();
+
+    const res = await request(app).get(`/api/v1/guest/subjects/${subjectA}`).set("Cookie", cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.id).toBe(subjectA);
+    expect(res.body.data.title).toBe("Granted Subject");
+  });
+
+  it("a joined guest CANNOT open a different (non-granted) subject by id", async () => {
+    const { subjectB, cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
+    const app = createApp();
+
+    const res = await request(app).get(`/api/v1/guest/subjects/${subjectB}`).set("Cookie", cookie);
+
+    expect(res.status).toBe(404);
+  });
+
+  it("a joined guest can save their own lecture progress", async () => {
+    const { lectureA, cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
+    const app = createApp();
+
+    const res = await request(app)
+      .put(`/api/v1/guest/lectures/${lectureA}/progress`)
+      .set("Cookie", cookie)
+      .send({ completed: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.completed).toBe(true);
+    expect(res.body.data.completedAt).toBeTruthy();
+  });
+
+  it("a joined guest CANNOT save progress against a lecture in a different (non-granted) subject", async () => {
+    const { lectureB, cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
+    const app = createApp();
+
+    const res = await request(app)
+      .put(`/api/v1/guest/lectures/${lectureB}/progress`)
+      .set("Cookie", cookie)
+      .send({ completed: true });
+
+    expect(res.status).toBe(404);
+  });
+
   it("a joined guest can load their granted subject's lecture list", async () => {
     const { subjectA, cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
     const app = createApp();
@@ -99,8 +165,11 @@ describe("guest content authorization (real database)", () => {
     const res = await request(app).get(`/api/v1/guest/lectures/${lectureA}/items`).set("Cookie", cookie);
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(1);
-    expect(res.body.data[0].bodyText).toBe("Granted-subject content.");
+    // lectureA now has two published items (the summary and the PDF slide
+    // seeded for the guest file-access tests below) — find the summary
+    // item specifically rather than assuming it is the only one.
+    const summaryItem = res.body.data.find((item: { itemType: string }) => item.itemType === "summary");
+    expect(summaryItem?.bodyText).toBe("Granted-subject content.");
   });
 
   it("a joined guest can list quizzes for their granted subject (the new route this round added)", async () => {
@@ -151,5 +220,46 @@ describe("guest content authorization (real database)", () => {
     const res = await request(app).get(`/api/v1/guest/subjects/${subjectA}/lectures`);
 
     expect(res.status).toBe(401);
+  });
+
+  it("a joined guest can get a signed URL for a PDF attached to their granted subject", async () => {
+    const { fileA, cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
+    const app = createApp();
+
+    const res = await request(app).get(`/api/v1/guest/files/${fileA}`).set("Cookie", cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.url).toBeTruthy();
+    expect(res.body.data.expiresAt).toBeTruthy();
+    expect(res.body.data).not.toHaveProperty("storageKey");
+  });
+
+  it("a joined guest CANNOT get a signed URL for a PDF belonging to a different (non-granted) subject", async () => {
+    const { fileB, cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
+    const app = createApp();
+
+    const res = await request(app).get(`/api/v1/guest/files/${fileB}`).set("Cookie", cookie);
+
+    expect(res.status).toBe(404);
+  });
+
+  it("guest file access requires a valid guest session (no cookie → 401)", async () => {
+    const { fileA } = await seedTwoSubjectsWithAGuestGrantedToOne();
+    const app = createApp();
+
+    const res = await request(app).get(`/api/v1/guest/files/${fileA}`);
+
+    expect(res.status).toBe(401);
+  });
+
+  it("a forged/nonexistent guest file ID → 404, not distinguishable from an unauthorized one", async () => {
+    const { cookie } = await seedTwoSubjectsWithAGuestGrantedToOne();
+    const app = createApp();
+
+    const res = await request(app)
+      .get("/api/v1/guest/files/bb4640c5-d082-4c38-b9bf-fc31d3e67481")
+      .set("Cookie", cookie);
+
+    expect(res.status).toBe(404);
   });
 });

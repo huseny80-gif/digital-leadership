@@ -87,4 +87,29 @@ export class ContentService {
     await this.getSubjectOrThrow(subjectId, isAdmin);
     return this.repository.getSubjectProgress(userId, subjectId);
   }
+
+  /** Guest-principal mirrors of the three progress methods above. The
+   * caller (route layer) has already confirmed `lectureId`/`subjectId`
+   * belongs to the guest's own granted subject before calling these —
+   * these still re-confirm visibility via `getLectureOrThrow`/
+   * `getSubjectOrThrow` (isAdmin always false for a guest) so a guest can
+   * never read/write progress for unpublished content either. */
+  async getLectureProgressForGuestOrThrow(guestSessionId: string, lectureId: string): Promise<LectureProgress> {
+    await this.getLectureOrThrow(lectureId, false);
+    return this.repository.getLectureProgressForGuest(guestSessionId, lectureId);
+  }
+
+  async setLectureProgressForGuestOrThrow(
+    guestSessionId: string,
+    lectureId: string,
+    completed: boolean,
+  ): Promise<LectureProgress> {
+    await this.getLectureOrThrow(lectureId, false);
+    return this.repository.setLectureProgressForGuest(guestSessionId, lectureId, completed);
+  }
+
+  async getSubjectProgressForGuestOrThrow(guestSessionId: string, subjectId: string): Promise<SubjectProgress> {
+    await this.getSubjectOrThrow(subjectId, false);
+    return this.repository.getSubjectProgressForGuest(guestSessionId, subjectId);
+  }
 }

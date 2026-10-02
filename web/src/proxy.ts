@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseMiddlewareClient } from "@/lib/supabase/middlewareClient";
-import { isProtectedPath } from "@/lib/authGuard";
+import { isProtectedPath, isGuestReachablePath } from "@/lib/authGuard";
+
+const GUEST_SESSION_COOKIE = "training_guest_session";
 
 /**
  * The hard authentication wall (PHASE 06 §5). Runs on every request
@@ -32,13 +34,33 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirectTo", pathname);
-    return NextResponse.redirect(loginUrl);
+  if (user) {
+    return response;
   }
 
-  return response;
+  // ONE learner platform, multiple principals (task requirement): a
+  // Guest Training Session may reach the learner-facing surface
+  // (`/dashboard`, `/subjects/*`, `/quizzes/*`) without a Supabase
+  // session. This middleware only checks the cookie's PRESENCE — it
+  // cannot verify its HMAC signature here, since the signing secret is
+  // backend-only by design (defense-in-depth: a bug in this presence
+  // check can make the UI briefly wrong, but never grants access to
+  // protected data, exactly like the existing comment above explains for
+  // the Supabase case). The backend independently re-verifies the
+  // signature and the session's validity on every API call the page
+  // makes; an invalid/expired/forged cookie still gets a real 401 there,
+  // which the page renders as a session-expired state — never a redirect
+  // to `/login` (a guest has no account there). `/admin` and `/profile`
+  // are never in `isGuestReachablePath`'s list, so a guest cookie never
+  // lets either through.
+  const hasGuestCookie = Boolean(request.cookies.get(GUEST_SESSION_COOKIE)?.value);
+  if (hasGuestCookie && isGuestReachablePath(pathname)) {
+    return response;
+  }
+
+  const loginUrl = new URL("/login", request.url);
+  loginUrl.searchParams.set("redirectTo", pathname);
+  return NextResponse.redirect(loginUrl);
 }
 
 export const config = {

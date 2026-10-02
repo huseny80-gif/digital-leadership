@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiPost, ApiError } from "@/lib/api/client";
 import { getCurrentAccessToken } from "@/lib/auth/session";
+import { readGuestSessionCookieValue } from "@/lib/api/guestCookie";
 
 /**
  * Shared body for the assessment Route Handlers that proxy a POST to the
@@ -13,11 +14,15 @@ import { getCurrentAccessToken } from "@/lib/auth/session";
  * exactly as every other server-side API call already does. The backend
  * re-verifies authorization independently regardless — this proxy adds no
  * authorization decision of its own, only a 401 short-circuit as
- * defense-in-depth when there is no session at all.
+ * defense-in-depth when there is neither a Supabase session NOR a Guest
+ * Training Session cookie present at all (ONE learner platform, multiple
+ * principals — `apiPost`/`apiGet` forward whichever credential the
+ * current request has, see `lib/api/client.ts`).
  */
 export async function proxyPost<T>(backendPath: string, jsonBody: unknown, safeErrorMessage: string) {
   const token = await getCurrentAccessToken();
-  if (!token) {
+  const hasGuestCookie = token ? false : Boolean(await readGuestSessionCookieValue());
+  if (!token && !hasGuestCookie) {
     return NextResponse.json(
       { error: { code: "unauthenticated", message: "Your session has expired. Please sign in again." } },
       { status: 401 },
