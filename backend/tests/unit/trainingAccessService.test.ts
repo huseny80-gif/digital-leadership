@@ -78,7 +78,6 @@ class FakeTrainingAccessRepository implements Pick<
 
   async createGuestSession(params: { grantId: string; displayName: string; expiresAt: Date }): Promise<GuestSessionRow> {
     const id = `session-${++this.sessionSeq}`;
-    const grant = this.grants.get(params.grantId)!;
     const row: GuestSessionRow = {
       id,
       grant_id: params.grantId,
