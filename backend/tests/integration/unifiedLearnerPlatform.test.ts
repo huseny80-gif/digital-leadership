@@ -175,7 +175,7 @@ describe("ONE learner platform — Guest Training Session reaches the SAME route
 
     // Progress saves.
     const progressRes = await request(app)
-      .put(`/api/v1/lectures/${lectureA}/progress`)
+      .post(`/api/v1/lectures/${lectureA}/progress`)
       .set("Cookie", guestCookie)
       .send({ completed: true });
     expect(progressRes.status).toBe(200);
