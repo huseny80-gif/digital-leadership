@@ -95,7 +95,7 @@ export default async function SubjectDetailPage({
         ) : null}
       </div>
 
-      <SubjectTabs
+      <div className="fq-section-label"><span>مساحة المادة</span><strong>تصفح المحتوى التعليمي</strong></div>\n\n      <SubjectTabs
         tabs={subjectTabs(subjectId, {
           lectures: lectures.length,
           assignments: assignments.length,
@@ -103,7 +103,7 @@ export default async function SubjectDetailPage({
         })}
       />
 
-      {lectures.length === 0 ? (
+      <div className="fq-content-heading"><div><span className="fq-content-icon">📖</span><div><small>المحتوى المنشور</small><h2>المحاضرات</h2></div></div><span>{lectures.length} محاضرة</span></div>\n\n      {lectures.length === 0 ? (
         <EmptyState title="لا توجد محاضرات بعد" message="ستظهر محاضرات هذه المادة هنا فور نشرها." />
       ) : (
         <div className="item-list">
