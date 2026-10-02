@@ -39,16 +39,13 @@ const submitAnswerSchema = z
  * `requireGuestSession` (never `requireAuthenticated`), and calls the
  * exact SAME `AssessmentsService`/`AssessmentsRepository` the registered-
  * user routes in `assessments/assessmentsRoutes.ts` call — no parallel
- * grading/answer-key system. Every call passes an
- * `{ kind: "guest", guestSessionId, subjectId }` principal built ONLY
- * from `req.guestSession` (itself only ever populated by verifying the
- * signed session cookie against the database — see
- * `guestSessionMiddleware.ts`), never from any client-supplied id in the
- * URL or body. `AssessmentsService.startAttempt` independently re-checks
- * the requested quiz's `subjectId` against `principal.subjectId` before
- * creating an attempt (see that method's own comment) — a guest cannot
- * start an attempt on a quiz outside their grant's subject by any
- * combination of client-supplied ids.
+ * grading/answer-key system. Every call passes a `{ kind: "guest",
+ * guestSessionId }` principal built ONLY from `req.guestSession` (itself
+ * only ever populated by verifying the signed session cookie against
+ * the database — see `guestSessionMiddleware.ts`), never from any
+ * client-supplied id in the URL or body. A valid guest session is a
+ * platform-wide temporary learner: it may start an attempt on any quiz
+ * it can see, the same as any other learner, with no subject scoping.
  */
 export function guestAssessmentsRoutes(
   requireGuestSession: ReturnType<typeof createGuestSessionMiddleware>["requireGuestSession"],
@@ -63,11 +60,11 @@ export function guestAssessmentsRoutes(
 
   // Guest-scoped mirror of `assessmentsRoutes.ts`'s
   // `GET /subjects/:subjectId/assessments` — the one gap that left a
-  // joined guest with no way to discover which quizzes exist for their
-  // own granted subject (every other guest quiz route requires already
-  // knowing a quizId). Same 404-on-scope-mismatch pattern as every other
-  // guest route in this file: a subjectId outside the guest's own grant
-  // is indistinguishable from a nonexistent one.
+  // joined guest with no way to discover which quizzes exist for a
+  // subject (every other guest quiz route requires already knowing a
+  // quizId). A valid guest session may list quizzes for ANY published
+  // subject, same as any other learner; a subjectId that doesn't exist
+  // or isn't published 404s, same as everywhere else in this codebase.
   router.get(
     "/guest/subjects/:subjectId/assessments",
     requireGuestSession,

@@ -88,12 +88,12 @@ export class ContentService {
     return this.repository.getSubjectProgress(userId, subjectId);
   }
 
-  /** Guest-principal mirrors of the three progress methods above. The
-   * caller (route layer) has already confirmed `lectureId`/`subjectId`
-   * belongs to the guest's own granted subject before calling these —
-   * these still re-confirm visibility via `getLectureOrThrow`/
-   * `getSubjectOrThrow` (isAdmin always false for a guest) so a guest can
-   * never read/write progress for unpublished content either. */
+  /** Guest-principal mirrors of the three progress methods above. A
+   * valid guest session is a platform-wide temporary learner, not
+   * scoped to any one subject — these still confirm visibility via
+   * `getLectureOrThrow`/`getSubjectOrThrow` (isAdmin always false for a
+   * guest) so a guest can never read/write progress for unpublished
+   * content. */
   async getLectureProgressForGuestOrThrow(guestSessionId: string, lectureId: string): Promise<LectureProgress> {
     await this.getLectureOrThrow(lectureId, false);
     return this.repository.getLectureProgressForGuest(guestSessionId, lectureId);

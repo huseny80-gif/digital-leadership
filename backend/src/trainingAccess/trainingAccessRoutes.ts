@@ -176,12 +176,10 @@ export function trainingAccessRoutes(): Router {
     res.status(204).send();
   });
 
-  // A guest may only ever read the ONE subject their grant scopes them
-  // to (task requirement #5: "must not ... access a different training
-  // by tampering with an id"). Every guest content route below re-checks
-  // `req.params.subjectId === req.guestSession.subjectId` (or, for
-  // lecture/item routes, resolves the lecture and checks its subjectId)
-  // server-side — never trusts the client-supplied id alone.
+  // A valid guest session is a platform-wide temporary learner (not
+  // scoped to any one subject): every guest content route below applies
+  // the same published-content visibility check any other learner
+  // gets, nothing narrower.
   router.get("/guest/subjects/:subjectId", requireGuestSession, requireUuidParam("subjectId"), async (req, res, next) => {
     try {
       const subject = await getContentService().getSubjectOrThrow(req.params.subjectId as string, false);
@@ -216,7 +214,9 @@ export function trainingAccessRoutes(): Router {
     requireUuidParam("lectureId"),
     async (req, res, next) => {
       try {
-        const lecture = await getContentService().getLectureOrThrow(req.params.lectureId as string, false);
+        // Visibility check only (platform-wide guest access, no subject
+        // scoping): 404s if the lecture doesn't exist or isn't published.
+        await getContentService().getLectureOrThrow(req.params.lectureId as string, false);
         const pagination = parsePagination(req.query);
         const { items, total } = await getContentService().listItemsForLectureOrThrow(
           req.params.lectureId as string,
@@ -236,15 +236,13 @@ export function trainingAccessRoutes(): Router {
     },
   );
 
-  // Guest-safe PDF/file access (task requirement #5). Reuses the exact
-  // same `FilesService`/`StorageProvider`/signed-URL mechanism as the
+  // Guest-safe PDF/file access. Reuses the exact same
+  // `FilesService`/`StorageProvider`/signed-URL mechanism as the
   // registered-user flow (`filesRoutes.ts`'s `GET /files/:fileId`) — no
-  // parallel storage path, no public bucket. The only difference is the
-  // visibility check: `getSignedUrlForGuestFile` requires the file's
-  // lecture item to belong to exactly `req.guestSession.subjectId`,
-  // never the broader "any published subject" a registered user gets.
-  // A fileId outside the guest's own subject 404s, identical to every
-  // other scope-mismatch in this file — never exposes the storage key.
+  // parallel storage path, no public bucket. `getSignedUrlForGuestFile`
+  // checks the same published-content visibility any learner gets
+  // (platform-wide guest access, no subject scoping) — never exposes
+  // the storage key.
   router.get("/guest/files/:fileId", requireGuestSession, requireUuidParam("fileId"), async (req, res, next) => {
     try {
       const signed = await getFilesService().getSignedUrlForGuestFile(req.params.fileId as string);
@@ -269,7 +267,9 @@ export function trainingAccessRoutes(): Router {
     requireUuidParam("lectureId"),
     async (req, res, next) => {
       try {
-        const lecture = await getContentService().getLectureOrThrow(req.params.lectureId as string, false);
+        // Visibility check only (platform-wide guest access, no subject
+        // scoping): 404s if the lecture doesn't exist or isn't published.
+        await getContentService().getLectureOrThrow(req.params.lectureId as string, false);
         const input = progressSchema.parse(req.body);
         const pool = getPool();
         const result = await pool.query<{ completed: boolean; completed_at: string | null }>(

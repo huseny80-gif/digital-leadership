@@ -77,11 +77,10 @@ export function filesRoutes(): Router {
 
   // Accepts EITHER a registered-user session or a valid Guest Training
   // Session (`requireLearnerPrincipal` — ONE learner platform, multiple
-  // principals). A guest's visibility check is strictly narrower than a
-  // registered user's: `getSignedUrlForGuestFile` requires the file's
-  // lecture item to belong to exactly the guest's own granted subject,
-  // never the broader "any published subject" a registered user gets —
-  // see that method's own comment in `filesService.ts`.
+  // principals). A guest is a platform-wide temporary learner:
+  // `getSignedUrlForGuestFile` uses the same published-content
+  // visibility check any non-admin learner gets, never a subject-scoped
+  // one — see that method's own comment in `filesService.ts`.
   router.get("/:fileId", requireLearnerPrincipal, requireUuidParam("fileId"), fileOperationRateLimiter, async (req, res, next) => {
     try {
       const service = buildService();

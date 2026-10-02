@@ -15,10 +15,10 @@ interface JoinInfo {
  * this is the platform's SECOND unauthenticated entry point after
  * `/login` (PROJECT_REQUIREMENTS.md §4's "no protected content leaks to
  * an unauthenticated visitor" still holds: this page itself reveals only
- * a program name/description the admin explicitly put in the grant, and
- * submitting it only ever creates a new, narrowly-scoped guest session —
- * it never grants access to anything beyond the one subject the token
- * scopes it to).
+ * a label/description the admin explicitly put on the access link, and
+ * submitting it only ever creates a new Guest Training Session — a
+ * platform-wide temporary learner, never an account and never any
+ * admin capability).
  *
  * The trainee's name is rendered here as plain React text at every step
  * (confirmation heading) — never `dangerouslySetInnerHTML`, so even if

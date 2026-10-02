@@ -133,13 +133,11 @@ export class FilesService {
     };
   }
 
-  /** Guest-scoped secure access flow — same shape as
-   * `getSignedUrlForFile`, but the visibility check is
-   * `isFileVisibleToGuestSubject` (the file's published lecture item
-   * must belong to exactly the guest's own granted subject), never the
-   * broader `isFileVisibleToNonAdmin`. A file outside the guest's
-   * subject is indistinguishable from a nonexistent one (404), matching
-   * every other guest-scoped boundary in this codebase. The storage key
+  /** Guest secure access flow — same shape and the same
+   * `isFileVisibleToNonAdmin` visibility check as `getSignedUrlForFile`'s
+   * non-admin path (platform-wide guest access, no subject scoping). A
+   * file not attached to any published, visible content is
+   * indistinguishable from a nonexistent one (404). The storage key
    * itself is never returned to the caller — only the short-lived
    * signed URL, identical to the registered-user flow. */
   async getSignedUrlForGuestFile(fileId: string): Promise<SignedFileUrl> {
