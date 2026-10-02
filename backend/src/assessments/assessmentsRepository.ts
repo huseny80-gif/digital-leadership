@@ -37,7 +37,7 @@ export interface AssessmentsRepository {
   listQuestionsForAttempt(quizId: string): Promise<QuestionForAttempt[]>;
   isOptionValidForQuestion(questionId: string, optionId: string): Promise<boolean>;
   isQuestionInQuiz(quizId: string, questionId: string): Promise<boolean>;
-  getQuestionType(questionId: string): Promise<QuestionType | null>;\n  getStudyAnswerSummary(questionId: string): Promise<string | null>;
+  getQuestionType(questionId: string): Promise<QuestionType | null>;\n  getStudyAnswerSummary(questionId: string): Promise<string | null>;\n  getQuestionExplanation(questionId: string): Promise<string | null>;
   scoreOption(questionId: string, optionId: string): Promise<{ isCorrect: boolean; pointsAwarded: number }>;
   scoreFillAnswer(questionId: string, answerText: string): Promise<{ isCorrect: boolean; pointsAwarded: number }>;
   /** Validates every submitted pair belongs to the question and the
@@ -319,6 +319,14 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       matchItems: matchItemsByQuestion.get(row.id) ?? null,
       orderItems: orderItemsByQuestion.get(row.id) ?? null,
     }));
+  }
+
+  async getQuestionExplanation(questionId: string): Promise<string | null> {
+    const result = await this.pool.query<{ explanation: string | null }>(
+      `select explanation from questions where id = $1 and deleted_at is null`,
+      [questionId],
+    );
+    return result.rows[0]?.explanation ?? null;
   }
 
   async getStudyAnswerSummary(questionId: string): Promise<string | null> {
