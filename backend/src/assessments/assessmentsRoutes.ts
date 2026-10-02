@@ -13,7 +13,6 @@ import type {
 import type { Request } from "express";
 import { requireLearnerPrincipal } from "../middleware/learnerPrincipal.js";
 import { requireUuidParam, ValidationError } from "../lib/validation.js";
-import { notFound } from "../lib/httpError.js";
 import { getPool } from "../lib/db.js";
 import { AssessmentsService } from "./assessmentsService.js";
 import { PgAssessmentsRepository } from "./assessmentsRepository.js";
