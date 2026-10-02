@@ -156,8 +156,8 @@ class FakeAssessmentsRepository implements AssessmentsRepository {
   async recordOpenAnswerReview(): Promise<void> {}
 }
 
-function guestPrincipal(guestSessionId: string, subjectId = SUBJECT_A): AssessmentPrincipal {
-  return { kind: "guest", guestSessionId, subjectId };
+function guestPrincipal(guestSessionId: string): AssessmentPrincipal {
+  return { kind: "guest", guestSessionId };
 }
 
 describe("Guest quiz flow (via the shared AssessmentsService)", () => {
@@ -181,10 +181,10 @@ describe("Guest quiz flow (via the shared AssessmentsService)", () => {
     expect(quiz.id).toBe(QUIZ_IN_SCOPE);
   });
 
-  it("guest is rejected (404) for a quiz outside their grant's subject scope, even though the quiz itself exists and is published", async () => {
-    await expect(service.startAttempt(QUIZ_OUT_OF_SCOPE, guestPrincipal("guest-1", SUBJECT_A), false)).rejects.toMatchObject({
-      status: 404,
-    });
+  it("guest can start a published quiz in another subject because access is platform-wide", async () => {
+    const attempt = await service.startAttempt(QUIZ_OUT_OF_SCOPE, guestPrincipal("guest-1"), false);
+    expect(attempt.quizId).toBe(QUIZ_OUT_OF_SCOPE);
+    expect(attempt.guestSessionId).toBe("guest-1");
   });
 
   it("registered-user startAttempt is unaffected by the guest scope check (no subjectId on a user principal)", async () => {
