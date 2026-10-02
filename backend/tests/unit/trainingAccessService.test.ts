@@ -88,6 +88,7 @@ class FakeTrainingAccessRepository implements Pick<
       expires_at: params.expiresAt.toISOString(),
     };
     this.sessions.set(id, row);
+    const grant = this.grants.get(params.grantId)!;
     grant.session_count = String(Number(grant.session_count) + 1);
     return row;
   }
