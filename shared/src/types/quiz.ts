@@ -116,6 +116,12 @@ export interface SubmitAnswerInput {
 export interface SubmitAnswerAck {
   questionId: string;
   recorded: boolean;
+  /** Training-mode feedback returned only after the learner answers. */
+  isCorrect: boolean | null;
+  /** Authoritative answer/rubric summary sourced from the migrated Finquiz data. */
+  correctAnswerSummary: string | null;
+  /** Concise learning feedback; never exposes an answer before submission. */
+  feedback: string;
 }
 
 /** One previously-recorded answer for an attempt, as returned to the
