@@ -70,7 +70,7 @@ function principalOf(req: Request): AssessmentPrincipal {
   if (req.user) {
     return { kind: "user", userId: req.user.id };
   }
-  return { kind: "guest", guestSessionId: req.guestSession!.id, subjectId: req.guestSession!.subjectId };
+  return { kind: "guest", guestSessionId: req.guestSession!.id };
 }
 
 /**
@@ -103,7 +103,6 @@ export function assessmentsRoutes(): Router {
     requireUuidParam("subjectId"),
     async (req, res, next) => {
       try {
-        if (!req.user && req.guestSession && req.params.subjectId !== req.guestSession.subjectId) throw notFound("Subject");
         const service = getService();
         const isAdmin = req.user ? req.user.role === "admin" : false;
         const quizzes = await service.listQuizzesForSubject(req.params.subjectId as string, isAdmin);
@@ -120,10 +119,6 @@ export function assessmentsRoutes(): Router {
       const service = getService();
       const isAdmin = req.user ? req.user.role === "admin" : false;
       const quiz = await service.getQuizOrThrow(req.params.quizId as string, isAdmin);
-      // A guest may only ever look at a quiz within their own grant's
-      // subject — identical 404 (never a 403) whether the quiz doesn't
-      // exist, isn't published, or belongs to a different subject.
-      if (!req.user && req.guestSession && quiz.subjectId !== req.guestSession.subjectId) throw notFound("Quiz");
       const body: ApiResult<Quiz> = { data: quiz };
       res.json(body);
     } catch (err) {
@@ -139,10 +134,6 @@ export function assessmentsRoutes(): Router {
       try {
         const service = getService();
         const isAdmin = req.user ? req.user.role === "admin" : false;
-        if (!req.user && req.guestSession) {
-          const quiz = await service.getQuizOrThrow(req.params.quizId as string, false);
-          if (quiz.subjectId !== req.guestSession.subjectId) throw notFound("Quiz");
-        }
         const questions = await service.getQuestionsOrThrow(req.params.quizId as string, isAdmin);
         const body: ApiResult<QuestionForAttempt[]> = { data: questions };
         res.json(body);
