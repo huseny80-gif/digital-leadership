@@ -7,6 +7,7 @@ import type {
   QuestionType,
   AttemptAnswer,
   MatchAnswerPair,
+  AssessmentPrincipal,
 } from "@shared/index";
 import { fillAnswerMatches } from "./fillNormalization.js";
 import { ValidationError } from "../lib/validation.js";
@@ -53,8 +54,8 @@ export interface AssessmentsRepository {
     questionId: string,
     orderedItemIds: string[],
   ): Promise<{ isCorrect: boolean; pointsAwarded: number }>;
-  findInProgressAttempt(quizId: string, userId: string): Promise<QuizAttempt | null>;
-  createAttempt(quizId: string, userId: string): Promise<QuizAttempt>;
+  findInProgressAttempt(quizId: string, principal: AssessmentPrincipal): Promise<QuizAttempt | null>;
+  createAttempt(quizId: string, principal: AssessmentPrincipal): Promise<QuizAttempt>;
   getAttemptById(attemptId: string): Promise<QuizAttempt | null>;
   listAnswersForAttempt(attemptId: string): Promise<AttemptAnswer[]>;
   upsertAnswer(input: {
@@ -133,7 +134,8 @@ function toQuiz(row: QuizRow): Quiz {
 interface AttemptRow {
   id: string;
   quiz_id: string;
-  user_id: string;
+  user_id: string | null;
+  guest_session_id: string | null;
   status: QuizAttemptStatus;
   started_at: Date;
   submitted_at: Date | null;
@@ -145,12 +147,15 @@ function toAttempt(row: AttemptRow): QuizAttempt {
     id: row.id,
     quizId: row.quiz_id,
     userId: row.user_id,
+    guestSessionId: row.guest_session_id,
     status: row.status,
     startedAt: row.started_at.toISOString(),
     submittedAt: row.submitted_at ? row.submitted_at.toISOString() : null,
     score: row.score !== null ? Number(row.score) : null,
   };
 }
+
+const ATTEMPT_COLUMNS = "id, quiz_id, user_id, guest_session_id, status, started_at, submitted_at, score";
 
 /** Fisher-Yates shuffle, does not mutate the input array. Used only to
  * randomize the display order of match/order delivery items — never used
@@ -454,31 +459,35 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
     return { isCorrect, pointsAwarded: isCorrect ? points : 0 };
   }
 
-  async findInProgressAttempt(quizId: string, userId: string): Promise<QuizAttempt | null> {
+  async findInProgressAttempt(quizId: string, principal: AssessmentPrincipal): Promise<QuizAttempt | null> {
+    const ownerColumn = principal.kind === "user" ? "user_id" : "guest_session_id";
+    const ownerId = principal.kind === "user" ? principal.userId : principal.guestSessionId;
     const result = await this.pool.query<AttemptRow>(
-      `select id, quiz_id, user_id, status, started_at, submitted_at, score
+      `select ${ATTEMPT_COLUMNS}
        from quiz_attempts
-       where quiz_id = $1 and user_id = $2 and status = 'in_progress'
+       where quiz_id = $1 and ${ownerColumn} = $2 and status = 'in_progress'
        order by started_at desc
        limit 1`,
-      [quizId, userId],
+      [quizId, ownerId],
     );
     return result.rows[0] ? toAttempt(result.rows[0]) : null;
   }
 
-  async createAttempt(quizId: string, userId: string): Promise<QuizAttempt> {
+  async createAttempt(quizId: string, principal: AssessmentPrincipal): Promise<QuizAttempt> {
+    const userId = principal.kind === "user" ? principal.userId : null;
+    const guestSessionId = principal.kind === "guest" ? principal.guestSessionId : null;
     const result = await this.pool.query<AttemptRow>(
-      `insert into quiz_attempts (quiz_id, user_id, status)
-       values ($1, $2, 'in_progress')
-       returning id, quiz_id, user_id, status, started_at, submitted_at, score`,
-      [quizId, userId],
+      `insert into quiz_attempts (quiz_id, user_id, guest_session_id, status)
+       values ($1, $2, $3, 'in_progress')
+       returning ${ATTEMPT_COLUMNS}`,
+      [quizId, userId, guestSessionId],
     );
     return toAttempt(result.rows[0]!);
   }
 
   async getAttemptById(attemptId: string): Promise<QuizAttempt | null> {
     const result = await this.pool.query<AttemptRow>(
-      `select id, quiz_id, user_id, status, started_at, submitted_at, score
+      `select ${ATTEMPT_COLUMNS}
        from quiz_attempts
        where id = $1`,
       [attemptId],
@@ -732,7 +741,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       `update quiz_attempts
        set status = 'graded', submitted_at = now(), score = $2
        where id = $1
-       returning id, quiz_id, user_id, status, started_at, submitted_at, score`,
+       returning ${ATTEMPT_COLUMNS}`,
       [attemptId, score],
     );
     return toAttempt(result.rows[0]!);
@@ -797,7 +806,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       `update quiz_attempts
        set status = 'submitted', submitted_at = now(), score = $2
        where id = $1
-       returning id, quiz_id, user_id, status, started_at, submitted_at, score`,
+       returning ${ATTEMPT_COLUMNS}`,
       [attemptId, score],
     );
     return toAttempt(result.rows[0]!);
@@ -811,7 +820,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       `update quiz_attempts
        set status = 'graded', score = $2
        where id = $1 and status = 'submitted'
-       returning id, quiz_id, user_id, status, started_at, submitted_at, score`,
+       returning ${ATTEMPT_COLUMNS}`,
       [attemptId, score],
     );
     if (!result.rows[0]) throw new ValidationError("This attempt is not awaiting manual review.");

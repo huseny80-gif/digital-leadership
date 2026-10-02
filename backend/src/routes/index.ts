@@ -7,6 +7,7 @@ import { filesRoutes } from "../files/filesRoutes.js";
 import { assessmentsRoutes } from "../assessments/assessmentsRoutes.js";
 import { analyticsRoutes } from "../analytics/analyticsRoutes.js";
 import { adminRoutes } from "../admin/adminRoutes.js";
+import { trainingAccessRoutes } from "../trainingAccess/trainingAccessRoutes.js";
 import { requireAuthenticated } from "../middleware/authInstance.js";
 
 /**
@@ -26,6 +27,10 @@ export function apiV1Router(): Router {
   router.use("/", assessmentsRoutes());
   router.use("/analytics", analyticsRoutes());
   router.use("/admin", adminRoutes());
+  // Mounts /admin/training-access (admin), /training-access/join/:token
+  // (public), and /guest/* (guest-session-gated) — see
+  // trainingAccessRoutes.ts's own header comment.
+  router.use("/", trainingAccessRoutes());
 
   return router;
 }

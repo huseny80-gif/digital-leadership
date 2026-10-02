@@ -52,6 +52,8 @@ export function QuizAttemptRunner({
   attemptId,
   initialAnswers,
   startedAt,
+  apiBasePath = "/api",
+  routeBasePath = "/quizzes",
 }: {
   quiz: Quiz;
   questions: QuestionForAttempt[];
@@ -62,6 +64,15 @@ export function QuizAttemptRunner({
    * back to the server; the server independently enforces (or not) any
    * time limit, this is purely a learner-facing convenience. */
   startedAt?: string;
+  /** Same-origin proxy prefix — `/api` (default, unchanged) for an
+   * authenticated learner, `/api/guest` for a joined guest. See
+   * `StartQuizButton`'s own comment for why this is safe: the backend's
+   * `requireGuestSession` on the mirrored guest routes is the actual
+   * authorization boundary, not this prop. */
+  apiBasePath?: string;
+  /** Page-route prefix for post-submit navigation — `/quizzes` (default,
+   * unchanged) for a learner, `/training/quizzes` for a guest. */
+  routeBasePath?: string;
 }) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -110,7 +121,7 @@ export function QuizAttemptRunner({
     setSavedQuestionId(null);
     setSaveError(null);
     try {
-      const res = await fetch(`/api/attempts/${attemptId}/answers`, {
+      const res = await fetch(`${apiBasePath}/attempts/${attemptId}/answers`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ questionId, ...answer }),
@@ -121,7 +132,7 @@ export function QuizAttemptRunner({
         if (res.status === 409) {
           // Already submitted (e.g. from another tab) — the result exists;
           // go there rather than continuing to answer a finished attempt.
-          router.push(`/quizzes/${quiz.id}/result/${attemptId}`);
+          router.push(`${routeBasePath}/${quiz.id}/result/${attemptId}`);
           return;
         }
         setSaveError("Unable to save your answer. Please try again.");
@@ -180,7 +191,7 @@ export function QuizAttemptRunner({
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await fetch(`/api/attempts/${attemptId}/submit`, { method: "POST" });
+      const res = await fetch(`${apiBasePath}/attempts/${attemptId}/submit`, { method: "POST" });
       // The response body is intentionally not read here — a successful
       // submit only ever navigates to the result page, which re-fetches
       // the server-computed result itself rather than trusting a value
@@ -192,14 +203,14 @@ export function QuizAttemptRunner({
           // Already submitted — show the existing result rather than
           // erroring, so a double-click/retry never creates a second
           // submission or a confusing failure.
-          router.push(`/quizzes/${quiz.id}/result/${attemptId}`);
+          router.push(`${routeBasePath}/${quiz.id}/result/${attemptId}`);
           return;
         }
         setSubmitError("Unable to submit your quiz. Please try again.");
         setSubmitting(false);
         return;
       }
-      router.push(`/quizzes/${quiz.id}/result/${attemptId}`);
+      router.push(`${routeBasePath}/${quiz.id}/result/${attemptId}`);
     } catch {
       setSubmitError("Unable to submit your quiz. Please try again.");
       setSubmitting(false);

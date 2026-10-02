@@ -87,12 +87,22 @@ export async function createLectureItem(
     createdBy: string;
     fileId?: string;
     orderIndex?: number;
+    bodyText?: string;
   },
 ) {
   const result = await pool.query<{ id: string }>(
-    `insert into lecture_items (lecture_id, item_type, title, status, created_by, file_id, order_index)
-     values ($1, $2, $3, $4, $5, $6, $7) returning id`,
-    [opts.lectureId, opts.itemType, opts.title, opts.status, opts.createdBy, opts.fileId ?? null, opts.orderIndex ?? 0],
+    `insert into lecture_items (lecture_id, item_type, title, status, created_by, file_id, order_index, body_text)
+     values ($1, $2, $3, $4, $5, $6, $7, $8) returning id`,
+    [
+      opts.lectureId,
+      opts.itemType,
+      opts.title,
+      opts.status,
+      opts.createdBy,
+      opts.fileId ?? null,
+      opts.orderIndex ?? 0,
+      opts.bodyText ?? null,
+    ],
   );
   return result.rows[0]!.id;
 }

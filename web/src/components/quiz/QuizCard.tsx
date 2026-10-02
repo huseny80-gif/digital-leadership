@@ -3,9 +3,17 @@ import type { Quiz } from "@shared/index";
 
 /** Phase 18.2 — restyled to the Finquiz-derived `.content-card` pattern
  * (globals.css). Same data/link, visual only. */
-export function QuizCard({ quiz }: { quiz: Quiz }) {
+export function QuizCard({
+  quiz,
+  routeBasePath = "/quizzes",
+}: {
+  quiz: Quiz;
+  /** Page-route prefix — `/quizzes` (default, unchanged) for a learner,
+   * `/training/quizzes` for a joined guest. */
+  routeBasePath?: string;
+}) {
   return (
-    <Link href={`/quizzes/${quiz.id}`} className="content-card">
+    <Link href={`${routeBasePath}/${quiz.id}`} className="content-card">
       <div className="content-card-head">
         <span className="content-card-num" aria-hidden="true">
           ❓

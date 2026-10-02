@@ -54,3 +54,15 @@ described above.
 If a future phase is explicitly authorized to renumber 12/13/14 into
 strict dependency order (so filename order and apply order match again),
 this file should be deleted as part of that change.
+
+## Phase 6 addition
+
+`00000000000016_training_access.sql` runs last, after `15`. Its filename
+order already matches its safe apply position: it depends only on
+`subjects` (migration 5), `users` (migration 3), `quiz_attempts`
+(migration 8) and `lecture_progress` (migration 15), all of which exist
+by the time migration 16 runs. Full corrected order:
+
+```
+1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 14 → 12 → 13 → 15 → 16
+```

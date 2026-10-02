@@ -117,7 +117,7 @@ export function assessmentsRoutes(): Router {
       try {
         const service = getService();
         const isAdmin = req.user!.role === "admin";
-        const attempt = await service.startAttempt(req.params.quizId as string, req.user!.id, isAdmin);
+        const attempt = await service.startAttempt(req.params.quizId as string, { kind: "user", userId: req.user!.id }, isAdmin);
         const body: ApiResult<QuizAttempt> = { data: attempt };
         res.status(201).json(body);
       } catch (err) {
@@ -133,7 +133,7 @@ export function assessmentsRoutes(): Router {
     async (req, res, next) => {
       try {
         const service = getService();
-        const attempt = await service.getAttemptOrThrow(req.params.attemptId as string, req.user!.id);
+        const attempt = await service.getAttemptOrThrow(req.params.attemptId as string, { kind: "user", userId: req.user!.id });
         const body: ApiResult<QuizAttempt> = { data: attempt };
         res.json(body);
       } catch (err) {
@@ -149,7 +149,7 @@ export function assessmentsRoutes(): Router {
     async (req, res, next) => {
       try {
         const service = getService();
-        const answers = await service.getAnswersOrThrow(req.params.attemptId as string, req.user!.id);
+        const answers = await service.getAnswersOrThrow(req.params.attemptId as string, { kind: "user", userId: req.user!.id });
         const body: ApiResult<AttemptAnswer[]> = { data: answers };
         res.json(body);
       } catch (err) {
@@ -172,7 +172,7 @@ export function assessmentsRoutes(): Router {
           );
         }
         const { questionId, selectedOptionId, answerText, matchAnswer, orderAnswer } = parsed.data;
-        const ack = await service.submitAnswer(req.params.attemptId as string, req.user!.id, {
+        const ack = await service.submitAnswer(req.params.attemptId as string, { kind: "user", userId: req.user!.id }, {
           questionId,
           ...(selectedOptionId !== undefined ? { selectedOptionId } : {}),
           ...(answerText !== undefined ? { answerText } : {}),
@@ -194,7 +194,7 @@ export function assessmentsRoutes(): Router {
     async (req, res, next) => {
       try {
         const service = getService();
-        const result = await service.submitAttempt(req.params.attemptId as string, req.user!.id);
+        const result = await service.submitAttempt(req.params.attemptId as string, { kind: "user", userId: req.user!.id });
         const body: ApiResult<QuizAttemptResult> = { data: result };
         res.json(body);
       } catch (err) {
@@ -211,7 +211,7 @@ export function assessmentsRoutes(): Router {
       try {
         const service = getService();
         const isAdmin = req.user!.role === "admin";
-        const result = await service.getResultOrThrow(req.params.attemptId as string, req.user!.id, isAdmin);
+        const result = await service.getResultOrThrow(req.params.attemptId as string, { kind: "user", userId: req.user!.id }, isAdmin);
         const body: ApiResult<QuizAttemptResult> = { data: result };
         res.json(body);
       } catch (err) {

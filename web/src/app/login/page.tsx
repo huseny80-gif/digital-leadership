@@ -99,6 +99,10 @@ function LoginPageInner() {
       <button type="button" onClick={handleContinueWithGoogle} disabled={status === "redirecting"}>
         {status === "redirecting" ? "Redirecting to Google…" : "Continue with Google"}
       </button>
+
+      <p>
+        <a href="/about">من نحن</a>
+      </p>
     </main>
   );
 }
