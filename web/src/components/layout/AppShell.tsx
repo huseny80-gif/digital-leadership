@@ -23,14 +23,17 @@ import { Footer } from "./Footer";
  *
  * `guestSession` being present is what distinguishes the third
  * principal: a Guest Training Session is never admin (`isAdmin` is
- * always `false` for it) and gets a deliberately narrower nav than a
- * registered user — no "Profile" link, since there is no permanent-user
- * account behind it (task constraint: never convert Guest into a
- * permanent User to reuse this UI) — and a guest-specific logout action
- * that clears the signed guest-session cookie instead of signing out of
- * Supabase. Every other page, component, and data-fetching path in this
- * shell's `children` is completely unaware of which principal is
- * rendering it; the distinction lives only here and in the API layer.
+ * always `false` for it) and is a TEMPORARY LEARNER, not a read-only or
+ * single-page visitor — it gets the full Dashboard/Subjects/quiz nav a
+ * registered learner gets, minus only "Profile" (no permanent-user
+ * account behind it — task constraint: never convert Guest into a
+ * permanent User to reuse this UI) and "Admin" (never shown regardless
+ * of principal unless `isAdmin`, which a guest never is). A guest gets a
+ * guest-specific logout action that clears the signed guest-session
+ * cookie instead of signing out of Supabase. Every other page,
+ * component, and data-fetching path in this shell's `children` is
+ * completely unaware of which principal is rendering it; the distinction
+ * lives only here and in the API layer.
  *
  * Phase 18.1 — Finquiz Visual Identity Foundation: this shell was
  * restyled/recomposed (header + sidebar + mobile bottom nav + footer) to
@@ -52,11 +55,11 @@ export function AppShell({
   guestSession?: GuestTrainingSession;
 }) {
   const isGuest = Boolean(guestSession);
-  const homeHref = isGuest ? "/subjects" : "/dashboard";
+  const homeHref = "/dashboard";
 
   const items: NavItem[] = [
-    ...(isGuest ? [] : [{ href: "/dashboard", label: "Dashboard", icon: "📊" }]),
-    { href: "/subjects", label: isGuest ? "المادة الممنوحة" : "Subjects", icon: "📘" },
+    { href: "/dashboard", label: "Dashboard", icon: "📊" },
+    { href: "/subjects", label: "Subjects", icon: "📘" },
     ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️" }] : []),
     // A guest has no permanent-user account, so no Profile page to link
     // to (task constraint).

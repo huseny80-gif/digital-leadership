@@ -45,22 +45,24 @@ describe("isPublicPath", () => {
 
 /**
  * ONE learner platform, multiple principals (task requirement): a Guest
- * Training Session may reach the learner-facing surface without a
- * Supabase session, but never `/admin`, `/profile`, or `/dashboard` —
- * the first two because a guest never gets admin access or has a
- * permanent-user account, the third because a guest's effective "home"
- * is their one granted subject (`/subjects/:subjectId`), not the
- * registered-user dashboard.
+ * Training Session is a TEMPORARY LEARNER and reaches the full
+ * learner-facing surface without a Supabase session — `/dashboard`
+ * included — but never `/admin` or `/profile`, since a guest never gets
+ * admin access and has no permanent-user account for a profile page.
  */
 describe("isGuestReachablePath", () => {
-  it.each(["/subjects", "/subjects/abc-123", "/subjects/abc-123/lectures/def-456", "/quizzes", "/quizzes/abc-123/attempt/def-456"])(
-    "a guest may reach %s",
-    (path) => {
-      expect(isGuestReachablePath(path)).toBe(true);
-    },
-  );
+  it.each([
+    "/dashboard",
+    "/subjects",
+    "/subjects/abc-123",
+    "/subjects/abc-123/lectures/def-456",
+    "/quizzes",
+    "/quizzes/abc-123/attempt/def-456",
+  ])("a guest may reach %s", (path) => {
+    expect(isGuestReachablePath(path)).toBe(true);
+  });
 
-  it.each(["/admin", "/admin/users", "/profile", "/dashboard"])("a guest may NEVER reach %s", (path) => {
+  it.each(["/admin", "/admin/users", "/profile"])("a guest may NEVER reach %s", (path) => {
     expect(isGuestReachablePath(path)).toBe(false);
   });
 });

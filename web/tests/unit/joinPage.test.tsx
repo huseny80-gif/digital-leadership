@@ -53,7 +53,7 @@ describe("Join page (/join/[token])", () => {
     expect(button).not.toBeDisabled();
   });
 
-  it("submits the trimmed name and navigates directly into the real learner platform (the granted subject) on success — never renders the name as HTML", async () => {
+  it("submits the trimmed name and navigates into the real learner platform's dashboard on success — never renders the name as HTML", async () => {
     const fetchMock = vi
       .spyOn(global, "fetch")
       .mockResolvedValueOnce(
@@ -69,10 +69,11 @@ describe("Join page (/join/[token])", () => {
     await waitFor(() => screen.getByText("Leadership 101"));
     fireEvent.change(screen.getByLabelText("الاسم الثلاثي"), { target: { value: "<b>Ahmad</b>" } });
     fireEvent.click(screen.getByRole("button", { name: /join training/i }));
-    // Lands directly on the granted subject inside the SAME learner
-    // platform a registered user gets — never a separate `/training`
-    // mini-app page (task requirement).
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/subjects/subject-1"));
+    // Lands on the SAME learner dashboard a registered user gets — never
+    // a separate `/training` mini-app page (task requirement). From
+    // there the trainee browses to their granted subject using the
+    // platform's own navigation.
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/dashboard"));
     const [, init] = fetchMock.mock.calls[1]!;
     expect(JSON.parse((init as RequestInit).body as string)).toEqual({ name: "<b>Ahmad</b>" });
     // The page itself never dangerously renders anything — asserted structurally
