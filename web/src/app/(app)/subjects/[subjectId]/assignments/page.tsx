@@ -59,25 +59,25 @@ export default async function SubjectAssignmentsPage({
   return (
     <section>
       <Breadcrumbs
-        items={[{ label: "Subjects", href: "/subjects" }, { label: subject!.title, href: `/subjects/${subjectId}` }, { label: "Assignments" }]}
+        items={[{ label: "المواد الدراسية", href: "/subjects" }, { label: subject!.title, href: `/subjects/${subjectId}` }, { label: "التكليفات" }]}
       />
       <div className="subject-hero">
         <h1 className="subject-hero-title">{subject!.title}</h1>
-        <p className="subject-hero-description">Assignments available for {subject!.title}.</p>
+        <p className="subject-hero-description">التكليفات والأنشطة التعليمية المتاحة ضمن مادة {subject!.title}.</p>
         <div className="subject-hero-chips">
           <span className="subject-hero-chip">
-            Lectures <b>{lectures.length}</b>
+            المحاضرات <b>{lectures.length}</b>
           </span>
           <span className="subject-hero-chip">
-            Assignments <b>{assignments.length}</b>
+            التكليفات <b>{assignments.length}</b>
           </span>
           <span className="subject-hero-chip">
-            Assessments <b>{quizzes.length}</b>
+            الاختبارات <b>{quizzes.length}</b>
           </span>
         </div>
       </div>
 
-      <SubjectTabs
+      <div className="fq-section-label"><span>مساحة المادة</span><strong>تصفح المحتوى التعليمي</strong></div>\n\n      <SubjectTabs
         tabs={subjectTabs(subjectId, {
           lectures: lectures.length,
           assignments: assignments.length,
@@ -85,8 +85,8 @@ export default async function SubjectAssignmentsPage({
         })}
       />
 
-      {assignments.length === 0 ? (
-        <EmptyState title="No assignments yet" message="Assignments for this subject will appear here once published." />
+      <div className="fq-content-heading"><div><span className="fq-content-icon">📋</span><div><small>أنشطة المادة</small><h2>التكليفات</h2></div></div><span>{assignments.length} تكليف</span></div>\n\n      {assignments.length === 0 ? (
+        <EmptyState title="لا توجد تكليفات بعد" message="ستظهر تكليفات هذه المادة هنا فور نشرها." />
       ) : (
         <div className="item-list">
           {assignments.map((assignment) => (
