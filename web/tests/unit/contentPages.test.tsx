@@ -170,7 +170,7 @@ describe("SubjectDetailPage", () => {
     const element = await SubjectDetailPage({ params: Promise.resolve({ subjectId: "s1" }) });
     render(element);
 
-    expect(screen.getByRole("link", { name: /assignments/i })).toHaveAttribute("href", "/subjects/s1/assignments");
+    expect(screen.getByRole("link", { name: /التكليفات/i })).toHaveAttribute("href", "/subjects/s1/assignments");
   });
 
   it("renders NotFoundState for a 404 (nonexistent or not-visible subject)", async () => {

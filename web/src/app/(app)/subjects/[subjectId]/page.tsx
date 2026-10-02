@@ -68,7 +68,7 @@ export default async function SubjectDetailPage({
 
   return (
     <section>
-      <Breadcrumbs items={[{ label: "Subjects", href: "/subjects" }, { label: subject!.title }]} />
+      <Breadcrumbs items={[{ label: "المواد الدراسية", href: "/subjects" }, { label: subject!.title }]} />
 
       <div className="subject-hero">
         <h1 className="subject-hero-title">{subject!.title}</h1>
@@ -77,25 +77,25 @@ export default async function SubjectDetailPage({
         ) : null}
         <div className="subject-hero-chips">
           <span className="subject-hero-chip">
-            Lectures <b>{lectures.length}</b>
+            المحاضرات <b>{lectures.length}</b>
           </span>
           <span className="subject-hero-chip">
-            Assignments <b>{assignments.length}</b>
+            التكليفات <b>{assignments.length}</b>
           </span>
           <span className="subject-hero-chip">
-            Assessments <b>{quizzes.length}</b>
+            الاختبارات <b>{quizzes.length}</b>
           </span>
         </div>
         {progress && progress.totalLectures > 0 ? (
           <ProgressBar
-            label="Your progress"
+            label="تقدمك في المادة"
             percentage={(progress.completedLectures / progress.totalLectures) * 100}
-            valueLabel={`${progress.completedLectures} of ${progress.totalLectures} lectures complete`}
+            valueLabel={`${progress.completedLectures} من ${progress.totalLectures} محاضرة مكتملة`}
           />
         ) : null}
       </div>
 
-      <SubjectTabs
+      <div className="fq-section-label"><span>مساحة المادة</span><strong>تصفح المحتوى التعليمي</strong></div>\n\n      <SubjectTabs
         tabs={subjectTabs(subjectId, {
           lectures: lectures.length,
           assignments: assignments.length,
@@ -103,8 +103,8 @@ export default async function SubjectDetailPage({
         })}
       />
 
-      {lectures.length === 0 ? (
-        <EmptyState title="No lectures yet" message="Lectures for this subject will appear here once published." />
+      <div className="fq-content-heading"><div><span className="fq-content-icon">📖</span><div><small>المحتوى المنشور</small><h2>المحاضرات</h2></div></div><span>{lectures.length} محاضرة</span></div>\n\n      {lectures.length === 0 ? (
+        <EmptyState title="لا توجد محاضرات بعد" message="ستظهر محاضرات هذه المادة هنا فور نشرها." />
       ) : (
         <div className="item-list">
           {lectures.map((lecture) => (
