@@ -165,8 +165,11 @@ describe("guest content authorization (real database)", () => {
     const res = await request(app).get(`/api/v1/guest/lectures/${lectureA}/items`).set("Cookie", cookie);
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(1);
-    expect(res.body.data[0].bodyText).toBe("Granted-subject content.");
+    // lectureA now has two published items (the summary and the PDF slide
+    // seeded for the guest file-access tests below) — find the summary
+    // item specifically rather than assuming it is the only one.
+    const summaryItem = res.body.data.find((item: { itemType: string }) => item.itemType === "summary");
+    expect(summaryItem?.bodyText).toBe("Granted-subject content.");
   });
 
   it("a joined guest can list quizzes for their granted subject (the new route this round added)", async () => {
