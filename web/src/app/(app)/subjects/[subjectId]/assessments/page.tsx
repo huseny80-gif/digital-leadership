@@ -57,25 +57,25 @@ export default async function SubjectAssessmentsPage({
   return (
     <section>
       <Breadcrumbs
-        items={[{ label: "Subjects", href: "/subjects" }, { label: subject!.title, href: `/subjects/${subjectId}` }, { label: "Assessments" }]}
+        items={[{ label: "المواد الدراسية", href: "/subjects" }, { label: subject!.title, href: `/subjects/${subjectId}` }, { label: "الاختبارات" }]}
       />
       <div className="subject-hero">
         <h1 className="subject-hero-title">{subject!.title}</h1>
-        <p className="subject-hero-description">Quizzes available for {subject!.title}.</p>
+        <p className="subject-hero-description">اختبارات تفاعلية متاحة ضمن مادة {subject!.title}.</p>
         <div className="subject-hero-chips">
           <span className="subject-hero-chip">
-            Lectures <b>{lectures.length}</b>
+            المحاضرات <b>{lectures.length}</b>
           </span>
           <span className="subject-hero-chip">
-            Assignments <b>{assignments.length}</b>
+            التكليفات <b>{assignments.length}</b>
           </span>
           <span className="subject-hero-chip">
-            Assessments <b>{quizzes.length}</b>
+            الاختبارات <b>{quizzes.length}</b>
           </span>
         </div>
       </div>
 
-      <SubjectTabs
+      <div className="fq-section-label"><span>مساحة المادة</span><strong>تصفح المحتوى التعليمي</strong></div>\n\n      <SubjectTabs
         tabs={subjectTabs(subjectId, {
           lectures: lectures.length,
           assignments: assignments.length,
@@ -83,8 +83,8 @@ export default async function SubjectAssessmentsPage({
         })}
       />
 
-      {quizzes.length === 0 ? (
-        <EmptyState title="No quizzes yet" message="Quizzes for this subject will appear here once published." />
+      <div className="fq-content-heading"><div><span className="fq-content-icon">❓</span><div><small>اختبر معرفتك</small><h2>الاختبارات</h2></div></div><span>{quizzes.length} اختبار</span></div>\n\n      {quizzes.length === 0 ? (
+        <EmptyState title="لا توجد اختبارات بعد" message="ستظهر اختبارات هذه المادة هنا فور نشرها." />
       ) : (
         <div className="item-list">
           {quizzes.map((quiz) => (
