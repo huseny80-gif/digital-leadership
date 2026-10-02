@@ -15,8 +15,6 @@ import { getEnv } from "../config/env.js";
 function toGrant(row: GrantRow): TrainingAccessGrant {
   return {
     id: row.id,
-    subjectId: row.subject_id,
-    subjectTitle: row.subject_title,
     label: row.label,
     description: row.description,
     maxSessions: row.max_sessions,
@@ -34,8 +32,6 @@ function toGuestSession(row: GuestSessionRow): GuestTrainingSession {
   return {
     id: row.id,
     displayName: row.display_name,
-    subjectId: row.subject_id,
-    subjectTitle: row.subject_title,
     status: row.status,
     createdAt: row.created_at,
     lastSeenAt: row.last_seen_at,
@@ -63,7 +59,6 @@ export class TrainingAccessService {
   ) {}
 
   async createGrant(params: {
-    subjectId: string;
     label: string | null;
     description: string | null;
     maxSessions: number | null;
@@ -77,7 +72,6 @@ export class TrainingAccessService {
     const tokenHash = hashToken(token);
     const expiresAt = new Date(Date.now() + params.expiresInHours * 60 * 60 * 1000);
     const row = await this.repository.createGrant({
-      subjectId: params.subjectId,
       tokenHash,
       label: params.label,
       description: params.description,
@@ -123,7 +117,7 @@ export class TrainingAccessService {
     if (!row || !isGrantJoinable(row)) {
       throw notFound("Training access link");
     }
-    return { subjectTitle: row.subject_title, subjectDescription: row.description };
+    return { title: row.label ?? "Digital Leadership", description: row.description };
   }
 
   /** Public: validates the token + trainee name and creates a new guest
@@ -176,8 +170,6 @@ export class TrainingAccessService {
       guestSessionId: row.guest_session_id,
       displayName: row.display_name,
       grantId: row.grant_id,
-      subjectId: row.subject_id,
-      subjectTitle: row.subject_title,
       status: row.status,
       joinedAt: row.joined_at,
       lastSeenAt: row.last_seen_at,
