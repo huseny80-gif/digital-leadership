@@ -1281,3 +1281,85 @@ a.content-card:hover,
 @media(max-width:1250px){.dl-subject-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){.app-header-inner{height:64px;padding-inline:.75rem}.app-brand-logo{width:42px;height:42px}.app-brand-copy b{font-size:.85rem}.app-brand-copy small{font-size:.48rem}.dl-hero{grid-template-columns:1fr;min-height:auto;padding:1.35rem;border-radius:16px}.dl-hero-copy{text-align:center}.dl-hero p{margin-inline:auto}.dl-hero-dots{justify-content:center}.dl-hero-mark{height:190px;margin-top:.8rem}.dl-subject-grid{grid-template-columns:1fr}.dl-section-heading{align-items:center}.dl-dashboard{padding-bottom:.5rem}}
 @media(min-width:761px) and (max-width:1100px){.dl-hero{grid-template-columns:1.15fr .85fr}.dl-hero-mark{height:230px}.dl-subject-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Video-inspired learner workspace refinement — preserves the approved
+   Digital Leadership identity while adding the polished hierarchy seen
+   in the supplied reference recording. */
+.subject-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  padding: clamp(1.25rem, 3vw, 2.15rem);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at 8% 15%, rgba(212, 170, 65, .18), transparent 24rem),
+    linear-gradient(135deg, #063f3e 0%, #075d59 56%, #08766e 100%);
+  box-shadow: 0 18px 42px rgba(3, 55, 54, .16);
+  color: #fff;
+}
+.subject-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto -3rem -5rem auto;
+  width: 14rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 0 0 2rem rgba(255,255,255,.025), 0 0 0 4rem rgba(255,255,255,.018);
+  z-index: -1;
+}
+.subject-hero-title {
+  color: #fff;
+  font-size: clamp(1.55rem, 4vw, 2.35rem);
+  letter-spacing: -.02em;
+}
+.subject-hero-description {
+  max-width: 72ch;
+  color: rgba(255,255,255,.84);
+  line-height: 1.9;
+}
+.subject-hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+  margin-block: 1rem;
+}
+.subject-hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 2.2rem;
+  padding: .45rem .8rem;
+  border: 1px solid rgba(255,255,255,.17);
+  border-radius: 999px;
+  background: rgba(255,255,255,.09);
+  color: rgba(255,255,255,.92);
+  backdrop-filter: blur(8px);
+}
+.subject-hero-chip b { color: #f3cf70; }
+.subject-tabs {
+  margin-block: 1rem 1.25rem;
+}
+.item-list {
+  display: grid;
+  gap: .9rem;
+}
+.item-list > * {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+@media (hover:hover) {
+  .item-list > *:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(4, 70, 67, .10);
+  }
+}
+@media (max-width: 720px) {
+  .subject-hero { border-radius: 1rem; padding: 1.1rem; }
+  .subject-hero-chips { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .subject-hero-chip { justify-content: center; padding-inline: .45rem; font-size: .78rem; }
+}
+@media (max-width: 430px) {
+  .subject-hero-chips { grid-template-columns: 1fr; }
+}
