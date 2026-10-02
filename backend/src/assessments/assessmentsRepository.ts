@@ -37,7 +37,7 @@ export interface AssessmentsRepository {
   listQuestionsForAttempt(quizId: string): Promise<QuestionForAttempt[]>;
   isOptionValidForQuestion(questionId: string, optionId: string): Promise<boolean>;
   isQuestionInQuiz(quizId: string, questionId: string): Promise<boolean>;
-  getQuestionType(questionId: string): Promise<QuestionType | null>;
+  getQuestionType(questionId: string): Promise<QuestionType | null>;\n  getStudyAnswerSummary(questionId: string): Promise<string | null>;
   scoreOption(questionId: string, optionId: string): Promise<{ isCorrect: boolean; pointsAwarded: number }>;
   scoreFillAnswer(questionId: string, answerText: string): Promise<{ isCorrect: boolean; pointsAwarded: number }>;
   /** Validates every submitted pair belongs to the question and the
@@ -319,6 +319,52 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       matchItems: matchItemsByQuestion.get(row.id) ?? null,
       orderItems: orderItemsByQuestion.get(row.id) ?? null,
     }));
+  }
+
+  async getStudyAnswerSummary(questionId: string): Promise<string | null> {
+    const type = await this.getQuestionType(questionId);
+    if (!type) return null;
+
+    if (type === "multiple_choice" || type === "true_false") {
+      const result = await this.pool.query<{ option_text: string }>(
+        `select option_text from question_options where question_id = $1 and is_correct = true order by order_index`,
+        [questionId],
+      );
+      return result.rows.map((r) => r.option_text).join("، ") || null;
+    }
+    if (type === "fill") {
+      const result = await this.pool.query<{ answer_text: string }>(
+        `select answer_text from question_accepted_answers where question_id = $1 order by id`,
+        [questionId],
+      );
+      return result.rows.map((r) => r.answer_text).join(" / ") || null;
+    }
+    if (type === "match") {
+      const result = await this.pool.query<{ left_text: string; right_text: string }>(
+        `select left_text, right_text from question_pairs where question_id = $1 order by order_index, id`,
+        [questionId],
+      );
+      return result.rows.map((r) => `${r.left_text} ← ${r.right_text}`).join(" | ") || null;
+    }
+    if (type === "order") {
+      const result = await this.pool.query<{ item_text: string }>(
+        `select item_text from question_items where question_id = $1 order by correct_order_index, id`,
+        [questionId],
+      );
+      return result.rows.map((r, i) => `${i + 1}. ${r.item_text}`).join(" ← ") || null;
+    }
+    if (type === "open") {
+      const result = await this.pool.query<{ rubric: unknown }>(
+        `select rubric from questions where id = $1 and deleted_at is null`,
+        [questionId],
+      );
+      const rubric = result.rows[0]?.rubric;
+      if (rubric === null || rubric === undefined) return null;
+      if (Array.isArray(rubric)) return rubric.map(String).join(" • ");
+      if (typeof rubric === "string") return rubric;
+      return JSON.stringify(rubric);
+    }
+    return null;
   }
 
   async isOptionValidForQuestion(questionId: string, optionId: string): Promise<boolean> {
