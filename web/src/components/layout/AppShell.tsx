@@ -8,7 +8,7 @@ import { MobileNav, type NavItem } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 import { Footer } from "./Footer";
-import { HomeIcon, BookIcon, VideoIcon, DocumentIcon, QuizIcon, FolderIcon, CommunityIcon, ChartIcon, MailIcon, GearIcon, UserIcon, InfoIcon, SearchIcon, GlobeIcon, ChevronIcon, BellIcon, SunIcon } from "./Icons";
+import { HomeIcon, BookIcon, VideoIcon, DocumentIcon, QuizIcon, FolderIcon, CommunityIcon, ChartIcon, MailIcon, InfoIcon, SearchIcon, GlobeIcon, ChevronIcon, BellIcon, SunIcon } from "./Icons";
 
 /**
  * Application shell — THE ONE learner platform shell, wrapping every
