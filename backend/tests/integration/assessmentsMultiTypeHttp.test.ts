@@ -80,7 +80,9 @@ describe("POST /attempts/:attemptId/answers — match, over real HTTP", () => {
         ],
       });
     expect(answerRes.status).toBe(200);
-    expect(answerRes.body.data).toEqual(expect.objectContaining({ questionId, recorded: true, isCorrect: true }));\n    expect(answerRes.body.data.correctAnswerSummary).toBeTruthy();\n    expect(answerRes.body.data.feedback).toBeTruthy();
+    expect(answerRes.body.data).toEqual(expect.objectContaining({ questionId, recorded: true, isCorrect: true }));
+    expect(answerRes.body.data.correctAnswerSummary).toBeTruthy();
+    expect(answerRes.body.data.feedback).toBeTruthy();
     // No correctness/points in the ack, for match either (unchanged rule).
     expect(JSON.stringify(answerRes.body)).not.toMatch(/isCorrect|is_correct|pointsAwarded/i);
 
@@ -214,7 +216,9 @@ describe("POST /attempts/:attemptId/answers — order, over real HTTP", () => {
       .set("Authorization", `Bearer ${userToken}`)
       .send({ questionId, orderAnswer: itemIds });
     expect(answerRes.status).toBe(200);
-    expect(answerRes.body.data).toEqual(expect.objectContaining({ questionId, recorded: true, isCorrect: true }));\n    expect(answerRes.body.data.correctAnswerSummary).toBeTruthy();\n    expect(answerRes.body.data.feedback).toBeTruthy();
+    expect(answerRes.body.data).toEqual(expect.objectContaining({ questionId, recorded: true, isCorrect: true }));
+    expect(answerRes.body.data.correctAnswerSummary).toBeTruthy();
+    expect(answerRes.body.data.feedback).toBeTruthy();
 
     const submitRes = await request(app).post(`/api/v1/attempts/${attemptId}/submit`).set("Authorization", `Bearer ${userToken}`);
     expect(submitRes.body.data.score).toBe(1);
