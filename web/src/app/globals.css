@@ -1594,713 +1594,248 @@ a.content-card:hover,
 .fq-study-feedback.is-review{border-color:rgba(212,170,65,.4);background:rgba(212,170,65,.07)}
 
 
-/* ===== Final approved dashboard reference — outer learner interface only =====
- * The subject workspace remains Finquiz-governed. These rules intentionally
- * target the shell/dashboard classes and do not restyle subject internals. */
+
+
+/* =====================================================================
+ * Approved dashboard reference — outer learner shell/dashboard only.
+ * SINGLE canonical implementation (2026-10-03 consolidation). This
+ * replaces FIVE previously stacked, partially-contradictory "final"
+ * rewrite passes that had accumulated here across separate commits —
+ * each one redeclared `.dl-hero`/`.dl-hero-tech`/header/sidebar rules
+ * without removing the ones before it, so properties not re-declared
+ * in a later pass silently persisted from an earlier, different layout
+ * model (grid-area placement vs. absolute positioning), which is what
+ * produced a washed-out, cropped right-hand Hero image in the real
+ * browser despite the source asset itself being correct. There is now
+ * exactly one rule per selector per breakpoint below.
+ *
+ * The subject workspace (Finquiz `fq-*` classes above) is untouched —
+ * none of these selectors are used there.
+ * ===================================================================== */
+
+/* Account dropdown (AppShell's <details class="app-account-menu">) —
+ * structural, not just decorative: without `position` here the popover
+ * renders inline and pushes page content down instead of overlaying.
+ * Unscoped (not inside a min-width query) so it works at every width,
+ * matching where the trigger itself (`.app-profile-pill`) is rendered. */
+.app-account-menu { position: relative; }
+.app-account-menu > summary { list-style: none; cursor: pointer; }
+.app-account-menu > summary::-webkit-details-marker { display: none; }
+.app-account-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 90;
+  min-width: 200px;
+  padding: 10px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 12px;
+  background: #073f4b;
+  box-shadow: 0 18px 42px rgba(0,25,32,.32);
+  display: grid;
+  gap: 6px;
+  color: #fff;
+}
+.app-account-popover > strong { font-size: .85rem; }
+.app-account-popover > small { color: rgba(255,255,255,.7); font-size: .72rem; }
+.app-account-link,
+.app-account-popover .app-header-logout {
+  display: flex;
+  width: 100%;
+  min-height: 36px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 0 !important;
+  background: rgba(255,255,255,.08) !important;
+  color: #fff !important;
+  text-decoration: none;
+  font-size: .82rem;
+}
+.app-account-link:hover,
+.app-account-popover .app-header-logout:hover { background: rgba(255,255,255,.14) !important; }
+
 @media (min-width: 1000px) {
-  :root { --header-height: 88px; --sidebar-width: 238px; --content-max-width: 100%; }
-
-  .app-header {
-    min-height: 88px;
-    background:
-      radial-gradient(circle at 78% 20%, rgba(13,164,176,.26), transparent 24rem),
-      linear-gradient(100deg, rgba(2,42,54,.98), rgba(3,96,108,.94));
-    border-bottom: 1px solid rgba(255,255,255,.13);
-    box-shadow: 0 8px 28px rgba(1,35,45,.18);
-  }
-  .app-header::before {
-    content:""; position:absolute; inset:0; pointer-events:none; opacity:.18;
-    background-image:
-      linear-gradient(115deg, transparent 0 45%, rgba(255,255,255,.08) 46%, transparent 47%),
-      radial-gradient(circle at 15% 50%, rgba(255,255,255,.16) 0 1px, transparent 1.5px);
-    background-size:auto, 22px 22px;
-  }
-  .app-header-inner { height:88px; max-width:none; padding:0 24px; gap:16px; }
-  .app-brand { min-width:285px; gap:12px; }
-  .app-brand-logo { width:74px; height:62px; object-fit:contain; border-radius:0; }
-  .app-brand-copy { display:flex; flex-direction:column; color:#fff; line-height:1.2; }
-  .app-brand-copy b { font-size:1.12rem; font-weight:800; }
-  .app-brand-copy small { color:#e6b934; font-size:.67rem; letter-spacing:.06em; font-weight:800; }
-  .app-header-search { height:48px; max-width:520px; border-color:rgba(87,218,226,.42); background:rgba(0,41,55,.28); box-shadow:inset 0 0 20px rgba(0,180,190,.05); }
-  .app-header-search input { text-align:right; font-size:.9rem; }
-  .app-header-actions { gap:10px; }
-  .app-lang-pill, .app-header-tool, .app-profile-pill, .app-header-logout {
-    min-height:46px; border:1px solid rgba(255,255,255,.18); border-radius:12px;
-    background:rgba(2,48,61,.34); color:#fff;
-  }
-  .app-lang-pill { padding:0 12px; }
-  .app-lang-pill svg:last-child { width:.8rem; }
-  .app-header-tool { display:inline-flex; width:46px; align-items:center; justify-content:center; position:relative; font-size:1.5rem; opacity:1; }
-  .app-header-tool:disabled { cursor:default; opacity:1; }
-  .app-header-notification i { position:absolute; width:8px; height:8px; border-radius:50%; background:#e53945; top:8px; right:8px; }
-  .app-profile-pill { padding:4px 10px; min-width:180px; }
-  .app-profile-avatar { width:36px; height:36px; background:#fff; color:#0b5864; border:2px solid rgba(255,255,255,.5); }
-  .app-header-logout { order:-1; background:transparent; }
-
-  .app-body { max-width:none; align-items:stretch; }
-  .app-sidebar {
-    top:88px; height:calc(100vh - 88px); width:238px; padding:22px 10px;
-    background:
-      linear-gradient(180deg, rgba(4,53,65,.96), rgba(3,42,52,.98)),
-      radial-gradient(circle at 20% 10%, rgba(23,154,163,.22), transparent 20rem);
-    box-shadow:8px 0 28px rgba(1,32,40,.12);
-  }
-  .app-sidebar-link { min-height:48px; border-radius:8px; padding:0 16px; font-size:.95rem; gap:14px; }
-  .app-sidebar-link[aria-current="page"] { background:linear-gradient(90deg, rgba(216,170,49,.20), rgba(15,130,139,.25)); }
-  .app-sidebar-icon { font-size:1.35rem; }
-
-  .app-main { padding:22px 24px 42px; background:#f5f8f8; }
-  .dl-dashboard { max-width:none; }
-  .dl-hero {
-    min-height:304px; border-radius:18px; overflow:hidden; padding:34px 42px;
-    grid-template-columns:minmax(330px,.85fr) minmax(430px,1.15fr);
-    background:
-      radial-gradient(circle at 70% 42%, rgba(25,175,184,.30), transparent 25rem),
-      linear-gradient(105deg,#063c49 0%,#075f68 54%,#063743 100%);
-    box-shadow:0 14px 34px rgba(4,57,66,.16);
-  }
-  .dl-hero::before { opacity:.45; background-size:22px 22px, auto, auto; }
-  .dl-hero-copy { order:1; align-self:center; text-align:right; }
-  .dl-hero-mark { order:2; justify-content:center; }
-  .dl-hero-mark img { width:min(360px,100%); max-height:245px; object-fit:contain; }
-  .dl-hero h1 { font-size:clamp(2rem,3vw,3.2rem); line-height:1.18; }
-  .dl-hero h2 { color:#e6b934; font-size:clamp(1.25rem,1.8vw,1.8rem); }
-  .dl-hero p { max-width:560px; font-size:1rem; line-height:1.9; color:rgba(255,255,255,.84); }
-
-  .dl-subject-section { margin-top:16px; }
-  .dl-section-heading { margin-bottom:12px; }
-  .dl-subject-grid { grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; }
-  .dl-subject-card { min-height:242px; padding:10px; border-radius:14px; box-shadow:0 5px 18px rgba(8,56,65,.10); }
-  .dl-subject-icon { min-height:72px; border-radius:10px; font-size:2rem; }
-  .dl-subject-card h3 { min-height:52px; margin:10px 4px 2px; font-size:.98rem; text-align:center; }
-  .dl-subject-card p { display:none; }
-  .dl-subject-meta { text-align:center; font-size:.78rem; margin-top:auto; }
-  .dl-subject-button { min-height:40px; margin-top:8px; border-radius:8px; justify-content:center; }
-
-  .dl-lower-grid { grid-template-columns:1fr 1fr; gap:18px; margin-top:18px; }
-  .dl-lower-card { border-radius:14px; box-shadow:0 5px 18px rgba(8,56,65,.08); }
-}
-
-@media (min-width:1000px) and (max-width:1250px) {
-  .app-brand { min-width:210px; }
-  .app-brand-logo { width:54px; }
-  .app-header-search { max-width:360px; }
-  .app-profile-pill { min-width:0; }
-  .dl-subject-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
-}
-
-@media (max-width:999px) {
-  .app-header { background:linear-gradient(100deg,#063d49,#08737c); }
-  .app-brand-copy { display:flex; flex-direction:column; color:#fff; line-height:1.15; }
-  .app-brand-copy small { color:#e6b934; font-size:.58rem; font-weight:800; }
-  .app-header-tool { display:none; }
-}
-
-
-/* Reference hero composition: copy left, platform mark center, laptop/network art right.
-   Dashboard shell only; Finquiz subject workspace remains untouched. */
-@media (min-width: 1000px) {
-  .dl-hero {
-    direction: ltr;
-    grid-template-columns: minmax(300px,.9fr) minmax(260px,.72fr) minmax(300px,.9fr);
-    gap: 0;
-    padding-inline: 38px 0;
-  }
-  .dl-hero-copy { order:1; direction:rtl; text-align:right; padding-inline-end:18px; }
-  .dl-hero-mark { order:2; z-index:2; height:270px; margin-inline:-28px -18px; }
-  .dl-hero-mark img { width:min(330px,112%); max-height:265px; }
-  .dl-hero-tech {
-    order:3;
-    position:relative;
-    z-index:1;
-    align-self:stretch;
-    min-width:0;
-    overflow:hidden;
-    border-radius:0 18px 18px 0;
-  }
-  .dl-hero-tech::before {
-    content:"";
-    position:absolute;
-    inset:0;
-    z-index:1;
-    pointer-events:none;
-    background:linear-gradient(90deg,rgba(6,76,86,.82) 0%,rgba(6,76,86,.22) 24%,transparent 48%);
-  }
-  .dl-hero-tech img,
-  .dl-hero-tech-art {
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    object-position:center;
-    filter:saturate(.92) contrast(1.04);
-  }
-  .dl-hero-tech-art {
-    display:block;
-    min-width:430px;
-    transform:scale(1.08);
-    transform-origin:center right;
-    filter:drop-shadow(0 18px 28px rgba(0,0,0,.28));
-  }
-}
-@media (min-width:1000px) and (max-width:1250px) {
-  /* iPad landscape still has enough horizontal room for the complete
-     approved hero composition. Keep all three visual zones visible:
-     copy + platform mark + laptop/network art. */
-  .dl-hero {
-    grid-template-columns:minmax(270px,.95fr) minmax(210px,.68fr) minmax(250px,.82fr);
-    padding-inline:28px 0;
-  }
-  .dl-hero-copy { padding-inline-end:10px; }
-  .dl-hero-mark { height:235px; margin-inline:-18px -12px; }
-  .dl-hero-mark img { width:min(285px,112%); max-height:230px; }
-  .dl-hero-tech { display:block; min-width:0; }
-  .dl-hero-tech-art { min-width:310px; transform:scale(1.03); }
-}
-@media (min-width:761px) and (max-width:999px) {
-  /* Tablet portrait: keep the complete reference hero visible instead of
-     dropping the laptop/network zone. The copy remains readable in the
-     upper/right area while the two visual zones share the lower half. */
-  .dl-hero {
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-    grid-template-areas:
-      "copy copy"
-      "mark tech";
-    gap:.35rem .25rem;
-    padding:1.35rem 1.1rem 0;
-  }
-  .dl-hero-copy { grid-area:copy; text-align:right; }
-  .dl-hero-mark { grid-area:mark; height:170px; margin:0; }
-  .dl-hero-mark img { width:min(270px,100%); max-height:170px; }
-  .dl-hero-tech {
-    grid-area:tech;
-    display:block;
-    position:relative;
-    align-self:stretch;
-    min-width:0;
-    height:170px;
-    overflow:hidden;
-    border-radius:14px 14px 0 0;
-    opacity:.96;
-  }
-  .dl-hero-tech::before {
-    content:"";
-    position:absolute;
-    inset:0;
-    z-index:1;
-    pointer-events:none;
-    background:linear-gradient(90deg,rgba(6,76,86,.58),transparent 45%);
-  }
-  .dl-hero-tech-art {
-    display:block;
-    width:100%;
-    height:100%;
-    min-width:250px;
-    transform:scale(1.05);
-    transform-origin:center;
-    filter:drop-shadow(0 12px 22px rgba(0,0,0,.28));
-  }
-}
-@media (max-width:760px) {
-  /* Phone layout prioritises legibility; the laptop/network artwork is
-     still present as a subtle lower hero layer rather than disappearing. */
-  .dl-hero { position:relative; padding-bottom:9.25rem; }
-  .dl-hero-mark { position:relative; z-index:2; height:150px; }
-  .dl-hero-tech {
-    display:block;
-    position:absolute;
-    z-index:1;
-    inset:auto 0 0 auto;
-    width:52%;
-    height:145px;
-    overflow:hidden;
-    opacity:.72;
-    border-radius:14px 0 0 0;
-  }
-  .dl-hero-tech-art {
-    display:block;
-    width:100%;
-    height:100%;
-    min-width:230px;
-    transform:scale(1.08);
-    transform-origin:center right;
-  }
-}
-
-
-/* ===== Pixel-match dashboard reference pass (2026-10-03) ===== */
-/* Outer dashboard only. Subject/workspace pages keep the Finquiz rules above. */
-@media (min-width:1000px){
-  .app-header-inner{direction:ltr}
-  .app-brand{order:1;direction:rtl;justify-content:flex-start}
-  .app-header-search{order:2;direction:rtl;margin-inline:auto}
-  .app-header-actions{order:3;direction:rtl}
-  .app-body{direction:ltr}
-  .app-sidebar{direction:rtl}
-  .app-main{direction:rtl}
-  .dl-dashboard{direction:rtl}
-  .dl-hero{
-    direction:ltr;
-    grid-template-columns:minmax(300px,.82fr) minmax(300px,.78fr) minmax(330px,.9fr);
-    grid-template-areas:"copy mark tech";
-    min-height:304px;
-    padding:0 0 0 38px;
-  }
-  .dl-hero-copy{grid-area:copy;order:initial;direction:rtl;text-align:right;align-self:center;padding:30px 18px 30px 0}
-  .dl-hero-mark{grid-area:mark;order:initial;height:304px;margin:0;align-self:end}
-  .dl-hero-mark img{width:min(390px,118%);max-height:300px}
-  .dl-hero-tech{grid-area:tech;order:initial;height:304px;border-radius:0 18px 18px 0}
-  .dl-hero-tech-art{height:100%;min-width:420px;transform:scale(1.12);transform-origin:center right}
-  .dl-hero-dots{justify-content:flex-end}
-  .dl-subject-section{margin-top:12px}
-  .dl-section-heading{direction:rtl}
-  .dl-subject-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
-  .dl-subject-card{min-height:232px;padding:9px}
-  .dl-subject-icon{height:74px;min-height:74px;margin-bottom:8px}
-  .dl-subject-card h3{min-height:48px;margin:5px 3px 0;display:flex;align-items:center;justify-content:center;line-height:1.45}
-  .dl-subject-meta{margin-top:0;margin-bottom:4px}
-  .dl-subject-button{margin-top:auto}
-  .dl-lower-grid{margin-top:12px}
-}
-@media (min-width:1260px){
-  .app-main{padding:20px 24px 36px}
-  .dl-hero{min-height:320px;grid-template-columns:minmax(340px,.86fr) minmax(350px,.82fr) minmax(390px,.94fr)}
-  .dl-hero-mark,.dl-hero-tech{height:320px}
-  .dl-hero h1{font-size:2.65rem}
-}
-
-
-/* === Approved final dashboard reference — outer shell only ===
-   The learner workspace inside a subject intentionally remains Finquiz. */
-@media (min-width: 1000px) {
+  /* ---- Header: desktop size-up over the Phase 18.1 base ---- */
+  :root { --header-height: 88px; --sidebar-width: 258px; }
   .app-header {
     background:
-      linear-gradient(90deg, rgba(2,42,55,.96), rgba(2,103,112,.94)),
-      radial-gradient(circle at 72% 0, rgba(30,190,194,.18), transparent 36%);
+      radial-gradient(circle at 80% 18%, rgba(14,181,190,.24), transparent 26rem),
+      linear-gradient(100deg, #032c3a 0%, #075566 55%, #087d84 100%);
     border-bottom: 1px solid rgba(255,255,255,.12);
-    box-shadow: 0 8px 24px rgba(0,37,48,.16);
   }
-  .app-header-inner {
-    max-width: none;
-    height: 86px;
-    padding-inline: 22px;
-    gap: 22px;
-    direction: ltr;
-  }
-  .app-brand { min-width: 300px; direction: rtl; justify-content: flex-end; color:#fff; }
-  .app-brand-logo { width:72px; height:72px; border-radius:0; object-fit:contain; }
-  .app-brand-copy { display:flex; flex-direction:column; align-items:flex-start; line-height:1.1; }
-  .app-brand-copy b { color:#fff; font-size:1.22rem; font-weight:800; }
-  .app-brand-copy small { color:#e8b83f; font-size:.62rem; letter-spacing:.08em; font-weight:800; margin-top:.35rem; }
+  .app-header-inner { height: 88px; padding-inline: 20px; gap: 16px; }
+  .app-brand { min-width: 280px; gap: .7rem; }
+  .app-brand-logo { width: 68px; height: 60px; object-fit: contain; border-radius: 0; }
+  .app-brand-copy b { font-size: 1.15rem; }
+  .app-brand-copy small { color: #e6b934; letter-spacing: .05em; }
   .app-header-search {
-    display:flex !important;
-    flex:1 1 520px;
-    max-width:620px;
-    height:48px;
-    border:1px solid rgba(86,221,228,.5);
-    border-radius:999px;
-    background:rgba(1,49,62,.34);
-    color:#e9ffff;
-    direction:rtl;
-    padding-inline:18px;
-  }
-  .app-header-search input { color:#fff; opacity:1; }
-  .app-header-search input::placeholder { color:rgba(235,252,252,.62); }
-  .app-header-actions { direction:rtl; gap:10px; color:#fff; }
-  .app-lang-pill,.app-header-tool,.app-profile-pill,.app-header-logout {
-    border-color:rgba(255,255,255,.2) !important;
-    background:rgba(3,61,73,.35) !important;
-    color:#fff !important;
-    backdrop-filter:blur(10px);
-  }
-  .app-profile-pill { min-width:210px; }
-  .app-profile-avatar { background:#fff; color:#07525e; }
-  .app-profile-copy b,.app-profile-copy small { color:#fff; }
-
-  .app-body { max-width:none; min-height:calc(100vh - 86px); }
-  .app-sidebar {
-    top:86px;
-    height:calc(100vh - 86px);
-    width:258px;
-    padding:18px 12px;
-    gap:4px;
-    background:
-      linear-gradient(180deg,rgba(2,49,62,.97),rgba(2,42,54,.99)),
-      radial-gradient(circle at 20% 10%,rgba(20,144,151,.2),transparent 40%);
-    box-shadow:10px 0 30px rgba(0,42,52,.12);
-  }
-  .app-sidebar-link {
-    min-height:54px;
-    padding:10px 18px;
-    border-radius:9px;
-    border-inline-start:0;
-    border-inline-end:4px solid transparent;
-    color:#e7f2f3;
-    font-size:.96rem;
-    gap:14px;
-  }
-  .app-sidebar-icon { font-size:1.45rem; color:#dceff0; }
-  .app-sidebar-link[aria-current="page"] {
-    background:linear-gradient(90deg,rgba(219,173,50,.25),rgba(11,126,132,.38));
-    color:#f3c750;
-    border-inline-end-color:#f1c24c;
-    box-shadow:inset 0 0 0 1px rgba(62,205,210,.25);
-  }
-  .app-sidebar-link[aria-current="page"] .app-sidebar-icon { color:#f3c750; }
-  .app-main { padding:26px 28px 42px; background:#f5f8f9; }
-
-  .dl-dashboard { max-width:1600px; }
-  .dl-hero {
-    min-height:350px;
-    grid-template-columns:minmax(330px,.9fr) minmax(300px,.9fr) minmax(360px,1.15fr);
-    grid-template-areas:"copy mark tech";
-    gap:0;
-    padding:0 28px;
-    border-radius:18px;
-    background:
-      radial-gradient(circle at 55% 45%,rgba(16,164,171,.34),transparent 30%),
-      linear-gradient(105deg,#062d3b 0%,#075763 52%,#062f3b 100%);
-  }
-  .dl-hero-copy { grid-area:copy; direction:rtl; text-align:right; align-self:center; padding:32px 10px 30px 18px; }
-  .dl-welcome { display:none; }
-  .dl-hero h1 { font-size:clamp(2rem,2.5vw,3rem); line-height:1.2; white-space:nowrap; }
-  .dl-hero h2 { font-size:clamp(1.2rem,1.7vw,1.65rem); }
-  .dl-hero p { font-size:.98rem; line-height:1.85; max-width:520px; }
-  .dl-hero-dots { justify-content:flex-end; }
-  .dl-hero-mark { grid-area:mark; height:330px; z-index:2; }
-  .dl-hero-mark img { width:min(100%,430px); height:100%; }
-  .dl-hero-tech {
-    grid-area:tech;
-    align-self:stretch;
-    min-width:0;
-    position:relative;
-    z-index:1;
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
-    overflow:hidden;
-  }
-  .dl-hero-tech::before {
-    content:"";
-    position:absolute;
-    inset:7% -8% 4% 0;
-    border-radius:24px;
-    background:
-      radial-gradient(circle at 45% 70%,rgba(22,224,239,.25),transparent 28%),
-      linear-gradient(125deg,rgba(7,52,61,.12),rgba(2,19,26,.55));
-    filter:drop-shadow(0 14px 30px rgba(0,0,0,.28));
-  }
-  .dl-hero-tech-art { position:relative; width:115%; max-width:620px; height:100%; transform:translateX(4%); filter:drop-shadow(0 16px 22px rgba(0,0,0,.32)); }
-  .dl-subject-section { margin-top:16px; }
-  .dl-section-heading { margin-bottom:10px; }
-  .dl-subject-grid { grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; }
-  .dl-subject-card { border-radius:12px; padding:10px; min-height:235px; }
-  .dl-subject-icon { height:78px; margin-bottom:10px; font-size:2.15rem; }
-  .dl-subject-card h3 { min-height:3.2em; text-align:center; font-size:.98rem; margin:0; }
-  .dl-subject-card p { display:none; }
-  .dl-subject-meta { text-align:center; margin:.35rem 0 .55rem; }
-  .dl-subject-button { border-radius:7px; padding:.58rem .7rem; }
-  .dl-lower-grid { margin-top:14px; gap:14px; }
-  .dl-lower-card { border-radius:12px; }
-}
-@media (min-width:1000px) and (max-width:1250px) {
-  .app-brand { min-width:230px; }
-  .app-brand-logo { width:58px;height:58px; }
-  .app-profile-pill { min-width:0; }
-  .app-profile-copy { display:none; }
-  .dl-hero { grid-template-columns:minmax(300px,1fr) minmax(240px,.8fr) minmax(280px,.9fr); }
-  .dl-hero h1 { white-space:normal; }
-}
-@media (max-width:999px) {
-  .dl-hero-tech { display:none; }
-}
-
-
-/* ===== FINAL DASHBOARD CONTRACT — exact approved outer dashboard =====
-   Intentionally last in the cascade. Never applies to Finquiz subject workspaces. */
-@media (min-width:1000px){
-  :root{--header-height:104px;--sidebar-width:270px}
-  .app-header{height:104px;min-height:104px;background:
-    radial-gradient(circle at 78% 15%,rgba(12,164,176,.24),transparent 32rem),
-    linear-gradient(110deg,#032f3e 0%,#045565 52%,#087d84 100%);overflow:visible}
-  .app-header-inner{height:104px;padding:0 18px;gap:18px;direction:ltr;overflow:visible}
-  .mobile-nav-toggle{order:0;display:inline-flex!important;flex:0 0 54px;width:54px;height:54px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(0,43,56,.46);color:#fff;align-items:center;justify-content:center}
-  .app-brand{order:1;min-width:320px;gap:10px;direction:ltr;justify-content:flex-start}
-  .app-brand-logo{width:92px;height:86px;object-fit:contain;mix-blend-mode:normal!important;filter:none!important}
-  .app-brand-copy{align-items:flex-start;text-align:left}
-  .app-brand-copy b{font-size:1.28rem}.app-brand-copy small{font-size:.66rem}
-  .app-header-search{order:2;flex:1 1 520px;max-width:650px;height:52px;margin-inline:auto}
-  .app-header-actions{order:3;direction:ltr;gap:9px;flex:0 0 auto}
-  .app-lang-pill{direction:rtl;min-height:50px;padding:0 14px}
-  .app-header-tool{min-height:50px;width:50px}
-  .app-account-menu{position:relative;direction:rtl}
-  .app-account-menu>summary{list-style:none;cursor:pointer}
-  .app-account-menu>summary::-webkit-details-marker{display:none}
-  .app-profile-pill{min-width:224px;min-height:50px;padding:4px 10px;direction:ltr}
-  .app-profile-avatar{width:40px;height:40px;flex:0 0 40px;background-size:cover;background-position:center;border-radius:50%}
-  .app-profile-copy{direction:ltr;text-align:left}
-  .app-profile-copy b{font-size:.84rem}.app-profile-copy small{font-size:.68rem}
-  .app-account-popover{position:absolute;top:calc(100% + 8px);right:0;z-index:90;min-width:220px;padding:12px;border:1px solid rgba(255,255,255,.15);border-radius:12px;background:#073f4b;box-shadow:0 18px 42px rgba(0,25,32,.32);display:grid;gap:7px;color:#fff}
-  .app-account-popover>small{color:rgba(255,255,255,.7)}
-  .app-account-link,.app-account-popover .app-header-logout{display:flex;width:100%;min-height:38px;align-items:center;padding:0 10px;border-radius:8px;border:0!important;background:rgba(255,255,255,.07)!important;color:#fff!important;text-decoration:none}
-  .app-header-actions>.app-header-logout{display:none!important}
-
-  .app-body{min-height:calc(100vh - 104px);direction:ltr}
-  .app-sidebar{top:104px;width:270px;height:calc(100vh - 104px);padding:18px 10px;background:
-    linear-gradient(180deg,rgba(3,51,64,.97),rgba(2,38,49,.99));direction:rtl}
-  .app-sidebar-link{min-height:55px;padding:0 20px;border-radius:8px;border-inline-end:4px solid transparent;font-size:1rem;gap:15px}
-  .app-sidebar-link[aria-current="page"]{border-inline-end-color:#efbf43;background:linear-gradient(90deg,rgba(219,173,50,.23),rgba(10,126,134,.34));color:#f1c34d}
-  .app-main{direction:rtl;padding:24px 24px 40px;background:#f5f7f7}
-
-  .dl-dashboard{max-width:none}
-  .dl-hero{direction:ltr;display:grid;grid-template-columns:minmax(340px,.92fr) minmax(340px,.9fr) minmax(400px,1.12fr);grid-template-areas:"copy mark tech";min-height:340px;padding:0;border-radius:18px;overflow:hidden;background:linear-gradient(105deg,#052e3b,#075f68 55%,#052d39)}
-  .dl-hero-copy{grid-area:copy;direction:rtl;text-align:right;align-self:center;padding:34px 14px 30px 44px;z-index:3}
-  .dl-hero-copy h1{margin:0 0 10px;color:#fff;font-size:clamp(2rem,2.5vw,3rem);line-height:1.2;white-space:nowrap}
-  .dl-hero-copy h2{margin:0 0 18px;color:#efbd45;font-size:clamp(1.25rem,1.65vw,1.7rem)}
-  .dl-hero-copy p{margin:0;max-width:520px;color:rgba(255,255,255,.88);font-size:1rem;line-height:1.9}
-  .dl-hero-dots{direction:ltr;justify-content:flex-start;margin-top:24px}
-  .dl-hero-mark{grid-area:mark;z-index:3;height:340px;display:flex;align-items:flex-end;justify-content:center;margin:0}
-  .dl-hero-mark img{width:115%;max-width:440px;height:100%;max-height:330px;object-fit:contain;mix-blend-mode:normal!important;filter:none!important}
-  .dl-hero-tech{grid-area:tech;display:block!important;position:relative;height:340px;overflow:hidden;border-radius:0 18px 18px 0;z-index:2}
-  .dl-hero-tech::before{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(90deg,#075c67 0%,rgba(7,92,103,.42) 20%,transparent 48%);pointer-events:none}
-  .dl-hero-tech-art{display:block;width:100%;height:100%;min-width:0;object-fit:cover;object-position:center;transform:none!important;filter:saturate(.95) contrast(1.04)!important}
-
-  .dl-subject-section{margin-top:14px}
-  .dl-section-heading{margin-bottom:10px}
-  .dl-subject-grid{direction:ltr;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
-  .dl-subject-card{direction:rtl;min-height:228px;padding:9px;border-radius:13px}
-  .dl-subject-icon{height:76px;min-height:76px;border-radius:9px;margin:0 0 8px;font-size:2.2rem}
-  .dl-subject-card h3{min-height:48px;margin:2px 2px 0;font-size:.96rem;line-height:1.45;text-align:center;display:flex;align-items:center;justify-content:center}
-  .dl-subject-card p{display:none}
-  .dl-subject-meta{margin:2px 0 6px;text-align:center;font-size:.76rem}
-  .dl-subject-button{min-height:38px;margin-top:auto;border-radius:7px;justify-content:center}
-  .dl-lower-grid{direction:ltr;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
-  .dl-lower-card{direction:rtl;border-radius:13px}
-}
-@media (min-width:1440px){
-  .app-main{padding-inline:26px}
-  .dl-hero{min-height:360px;grid-template-columns:minmax(360px,.9fr) minmax(380px,.92fr) minmax(430px,1.1fr)}
-  .dl-hero-mark,.dl-hero-tech{height:360px}.dl-hero-mark img{max-height:350px}
-}
-@media (min-width:1000px) and (max-width:1366px){
-  :root{--sidebar-width:230px}
-  .app-header-inner{gap:10px;padding-inline:12px}
-  .mobile-nav-toggle{width:46px;height:46px;flex-basis:46px}
-  .app-brand{min-width:215px}.app-brand-logo{width:62px;height:62px}.app-brand-copy b{font-size:1rem}
-  .app-header-search{max-width:420px}
-  .app-profile-pill{min-width:0}.app-profile-copy{display:none}
-  .app-sidebar{width:230px}
-  .dl-hero{grid-template-columns:minmax(290px,.92fr) minmax(245px,.78fr) minmax(300px,.95fr);min-height:310px}
-  .dl-hero-mark,.dl-hero-tech{height:310px}
-  .dl-hero-copy{padding:26px 8px 24px 28px}
-  .dl-hero-copy h1{white-space:normal;font-size:2.15rem}
-  .dl-hero-copy h2{font-size:1.25rem}
-  .dl-hero-copy p{font-size:.9rem}
-  .dl-subject-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
-  .dl-subject-card{min-height:218px}.dl-subject-icon{height:68px;min-height:68px}
-}
-@media (min-width:761px) and (max-width:999px){
-  .dl-hero{grid-template-columns:1fr 1fr;grid-template-areas:"copy copy" "mark tech";padding:18px 16px 0;min-height:390px}
-  .dl-hero-copy{grid-area:copy}.dl-hero-mark{grid-area:mark;height:180px}.dl-hero-tech{grid-area:tech;display:block!important;height:180px;border-radius:12px 12px 0 0}
-  .dl-hero-tech-art{width:100%;height:100%;object-fit:cover}
-  .dl-subject-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media (max-width:760px){
-  .app-brand-logo{mix-blend-mode:normal!important;filter:none!important}
-  .dl-hero{padding-bottom:9rem}
-  .dl-hero-tech{display:block!important;width:54%;height:140px;opacity:.9}
-  .dl-hero-tech-art{width:100%;height:100%;object-fit:cover}
-}
-
-
-/* ===== FINAL REFERENCE DASHBOARD — exact shell/dashboard composition ===== */
-/*
- * Dashboard shell matches the approved reference image.  These rules are
- * deliberately scoped to the learner shell/dashboard; subject workspaces
- * keep the Finquiz rules that follow their own component classes.
- */
-@media (min-width: 1000px) {
-  .app-header-inner {
-    direction: ltr;
-    max-width: none;
-    width: 100%;
-    height: 88px;
-    padding: 0 1.1rem;
-    gap: 1rem;
-    background:
-      radial-gradient(circle at 88% 20%, rgba(14,181,190,.24), transparent 25%),
-      linear-gradient(100deg, rgba(2,44,60,.98), rgba(4,95,108,.96));
-  }
-  .app-header { background: #063d4b; }
-  .app-brand {
-    direction: rtl;
-    min-width: 300px;
-    justify-content: flex-start;
-    gap: .7rem;
-  }
-  .app-brand-logo { width: 92px !important; height: 72px !important; object-fit: contain; }
-  .app-brand-copy { align-items: flex-start; }
-  .app-brand-copy b { font-size: 1.2rem; color:#fff; }
-  .app-brand-copy small { color:#e9b83f; letter-spacing:.04em; }
-  .app-header-search {
-    direction: rtl;
     max-width: 38rem;
     height: 3rem;
     border-color: rgba(105,218,226,.42);
-    background: rgba(0,36,52,.28);
+    background: rgba(0,38,52,.3);
   }
-  .app-header-actions { direction: rtl; margin-inline-start:auto; }
   .app-lang-pill,
   .app-header-tool,
   .app-profile-pill {
-    min-height: 3rem;
-    border: 1px solid rgba(255,255,255,.14);
+    min-height: 2.9rem;
+    border: 1px solid rgba(255,255,255,.18);
     border-radius: 12px;
-    background: rgba(2,49,63,.26);
-    padding-inline: .8rem;
+    background: rgba(2,49,63,.32);
   }
-  .app-profile-pill { min-width: 210px; }
-  .app-profile-avatar { width: 2.35rem; height:2.35rem; background-size:cover; background-position:center; }
+  .app-profile-pill { min-width: 200px; padding-inline-end: .5rem; }
+  .app-header-notification { position: relative; }
+  .app-header-notification i {
+    position: absolute; top: 7px; right: 7px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #e5394a;
+  }
 
-  .app-body { max-width:none; }
+  /* ---- Sidebar: desktop gold active indicator ---- */
   .app-sidebar {
-    top:88px;
-    height:calc(100vh - 88px);
-    width:270px;
-    padding:1.25rem .75rem;
+    width: 258px;
+    padding: 20px 10px;
     background:
-      linear-gradient(180deg, rgba(2,47,61,.97), rgba(2,38,51,.99));
+      linear-gradient(180deg, rgba(3,51,64,.97), rgba(2,38,49,.99)),
+      radial-gradient(circle at 18% 10%, rgba(20,144,151,.18), transparent 20rem);
   }
-  .app-sidebar-link {
-    min-height:3.25rem;
-    padding:.65rem 1rem;
-    border-radius:0 12px 12px 0;
-    font-size:.98rem;
-  }
+  .app-sidebar-link { min-height: 50px; border-radius: 9px; padding-inline: 16px; font-size: .95rem; gap: 14px; }
   .app-sidebar-link[aria-current="page"] {
-    background:linear-gradient(90deg, rgba(217,169,55,.22), rgba(0,134,145,.26));
-    border-inline-start-color:#e5b94e;
-    color:#f0c75e;
+    background: linear-gradient(90deg, rgba(219,173,50,.22), rgba(11,126,134,.3));
+    color: #f1c34d;
+    border-inline-start-color: #f1c34d;
   }
-  .app-sidebar-icon { font-size:1.45rem; }
-  .app-main { padding:1.35rem 1.55rem 3rem; background:#f3f7f8; }
-}
+  .app-main { padding: 24px 26px 42px; background: #f5f8f8; }
 
-.dl-dashboard { max-width: 1500px; margin: 0 auto; }
-.dl-hero {
-  position:relative;
-  overflow:hidden;
-  display:grid;
-  grid-template-columns:minmax(290px,.9fr) minmax(280px,.75fr) minmax(300px,1fr);
-  grid-template-areas:"copy mark tech";
-  align-items:center;
-  min-height:330px;
-  border-radius:22px;
-  padding:2rem 2.25rem;
-  direction:ltr;
-  background:
-    radial-gradient(circle at 48% 58%, rgba(0,199,205,.16), transparent 24%),
-    linear-gradient(105deg,#043646 0%,#075d67 55%,#062f40 100%);
-  box-shadow:0 14px 34px rgba(4,45,57,.12);
-}
-.dl-hero::before {
-  content:"";
-  position:absolute; inset:0;
-  background-image:
-    radial-gradient(circle, rgba(92,219,222,.20) 1px, transparent 1.5px),
-    linear-gradient(115deg, transparent 0 48%, rgba(32,177,182,.10) 49% 50%, transparent 51%);
-  background-size:22px 22px, 100% 100%;
-  opacity:.52; pointer-events:none;
-}
-.dl-hero-copy { grid-area:copy; direction:rtl; text-align:right; position:relative; z-index:3; }
-.dl-hero-copy h1 { color:#fff; font-size:clamp(2rem,2.8vw,3.15rem); line-height:1.15; margin:0 0 .65rem; }
-.dl-hero-copy h2 { color:#f2b93f; font-size:clamp(1.25rem,1.8vw,2rem); margin:0 0 1rem; }
-.dl-hero-copy p { color:rgba(255,255,255,.84); font-size:1rem; line-height:1.9; max-width:34rem; }
-.dl-hero-dots { display:flex; gap:.7rem; margin-top:1.4rem; justify-content:flex-end; }
-.dl-hero-dots i { display:block; width:44px; height:6px; border-radius:99px; background:#1599a5; }
-.dl-hero-dots i:last-child { background:#f0b947; width:58px; }
-
-.dl-hero-mark { grid-area:mark; position:relative; z-index:2; display:flex; align-items:center; justify-content:center; }
-.dl-hero-mark img { width:min(100%,360px); max-height:285px; object-fit:contain; filter:drop-shadow(0 16px 18px rgba(0,0,0,.22)); }
-
-.dl-hero-tech { grid-area:tech; position:absolute; inset-block:0; right:0; width:37%; z-index:1; overflow:hidden; }
-.dl-hero-tech::after {
-  content:""; position:absolute; inset:0;
-  background:linear-gradient(90deg,#075b66 0%,rgba(7,91,102,.15) 42%,rgba(3,34,46,.05) 100%);
-}
-.dl-hero-tech-art { width:100%; height:100%; object-fit:cover; object-position:center right; opacity:.92; }
-
-.dl-section-heading { align-items:end; margin:1.15rem 0 .8rem; }
-.dl-section-heading h2 { font-size:1.55rem; }
-.dl-section-heading > div > span { color:#078f9b; font-weight:700; }
-
-.dl-subject-grid { gap:.85rem; }
-.dl-subject-card {
-  border-radius:14px;
-  padding:.7rem;
-  background:#fff;
-  border:1px solid #e0e8ea;
-  box-shadow:0 6px 18px rgba(9,56,66,.07);
-  min-height:0;
-}
-.dl-subject-icon {
-  height:78px;
-  border-radius:10px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:var(--card);
-  color:#fff;
-  font-size:2.25rem;
-  margin-bottom:.7rem;
-}
-.dl-subject-card h3 { min-height:3rem; margin:.2rem .2rem .35rem; font-size:1.02rem; line-height:1.45; text-align:center; }
-.dl-subject-card p { display:none; }
-.dl-subject-meta { display:block; text-align:center; color:#607981; font-size:.8rem; margin:.25rem 0 .55rem; }
-.dl-subject-button {
-  min-height:2.65rem;
-  border-radius:8px;
-  background:var(--card);
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:.8rem;
-  font-weight:700;
-}
-
-.dl-lower-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem; }
-.dl-lower-card { border-radius:16px; background:#fff; border:1px solid #e0e8ea; box-shadow:0 6px 18px rgba(9,56,66,.06); padding:1rem 1.15rem; }
-.dl-lower-list li { border-top:1px solid #edf1f2; }
-.dl-lower-list li:first-child { border-top:0; }
-.dl-lower-list a { padding:.7rem .25rem; }
-
-@media (min-width: 1280px) {
-  .dl-subject-grid { grid-template-columns:repeat(5,minmax(0,1fr)); }
-}
-@media (min-width:1000px) and (max-width:1279px) {
-  .dl-hero { grid-template-columns:.95fr .8fr .9fr; min-height:315px; padding:1.5rem; }
-  .dl-hero-tech { width:34%; }
-  .dl-subject-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
-}
-@media (max-width:999px) {
+  /* ---- Hero: three coherent regions (copy / central mark / right tech) ---- */
+  .dl-dashboard { max-width: 1560px; }
   .dl-hero {
-    grid-template-columns:1fr 1fr;
-    grid-template-areas:"mark copy";
-    min-height:340px;
-    padding:1.5rem;
+    direction: ltr;
+    display: grid;
+    grid-template-columns: minmax(320px,.92fr) minmax(280px,.78fr) minmax(360px,1fr);
+    grid-template-areas: "copy mark tech";
+    align-items: stretch;
+    min-height: 320px;
+    padding: 0;
+    border-radius: 20px;
+    overflow: hidden;
+    background: linear-gradient(105deg, #052e3b 0%, #075f68 55%, #052d39 100%);
   }
-  .dl-hero-tech { display:none; }
-  .dl-hero-copy h1 { font-size:clamp(1.8rem,5vw,2.6rem); }
-  .dl-lower-grid { grid-template-columns:1fr; }
+  .dl-hero-copy {
+    grid-area: copy;
+    direction: rtl;
+    text-align: right;
+    align-self: center;
+    z-index: 3;
+    padding: 2rem 1rem 2rem 2.2rem;
+  }
+  .dl-hero-mark {
+    grid-area: mark;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+  }
+  .dl-hero-mark img {
+    width: min(100%, 380px);
+    max-height: 280px;
+    object-fit: contain;
+    filter: drop-shadow(0 16px 20px rgba(0,0,0,.28));
+  }
+  /* The right-hand laptop/network scene: full bleed to the hero's edge,
+   * `object-fit: cover` so the real asset always fills its region
+   * without distortion, and only a gentle left-edge gradient (not a
+   * near-opaque wash) so the artwork stays legible — the single
+   * property each rule needs, nothing left to an earlier/other rule. */
+  .dl-hero-tech {
+    grid-area: tech;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+  }
+  .dl-hero-tech::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(5,46,59,.78) 0%, rgba(5,46,59,.18) 22%, transparent 46%);
+  }
+  .dl-hero-tech-art {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+  .dl-hero-dots { justify-content: flex-end; }
+
+  /* ---- Five subject cards in one row ---- */
+  .dl-subject-grid { grid-template-columns: repeat(5, minmax(0,1fr)); gap: 12px; }
+  .dl-subject-card { min-height: 232px; padding: 10px; }
+  .dl-subject-icon { height: 76px; margin-bottom: 8px; font-size: 2.1rem; }
+  .dl-subject-card h3 { min-height: 3.1em; text-align: center; margin: 4px 2px 0; }
+  .dl-subject-card p { display: none; }
+  .dl-subject-meta { text-align: center; margin: .3rem 0 .5rem; }
 }
-@media (max-width:640px) {
+
+@media (min-width: 1260px) {
+  .dl-hero { min-height: 346px; }
+  .dl-hero h1 { font-size: 2.7rem; }
+}
+
+/* ---- Tablet landscape: keep all three Hero regions, narrower ---- */
+@media (min-width: 1000px) and (max-width: 1250px) {
+  .app-brand { min-width: 220px; }
+  .app-brand-logo { width: 54px; height: 48px; }
+  .app-profile-pill { min-width: 0; }
+  .app-profile-copy { display: none; }
+  .app-sidebar { width: 220px; }
+  .dl-hero { grid-template-columns: minmax(260px,.95fr) minmax(220px,.7fr) minmax(260px,.85fr); }
+  .dl-hero h1 { white-space: normal; }
+  .dl-subject-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+
+/* ---- Tablet portrait: sidebar hidden (BottomNav takes over), two-row
+ * hero (copy spans full width, mark+tech share the row below) so the
+ * right-hand artwork is still visible rather than dropped. ---- */
+@media (min-width: 761px) and (max-width: 999px) {
   .dl-hero {
-    grid-template-columns:1fr;
-    grid-template-areas:"copy" "mark";
-    min-height:0;
-    gap:.8rem;
-    padding:1.25rem;
+    direction: ltr;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "copy copy" "mark tech";
+    min-height: 0;
+    padding: 1.35rem 1.1rem 0;
+    gap: .4rem .3rem;
   }
-  .dl-hero-mark img { max-height:180px; }
-  .dl-subject-grid { grid-template-columns:1fr; }
+  .dl-hero-copy { grid-area: copy; direction: rtl; text-align: right; padding: 0; }
+  .dl-hero-mark { grid-area: mark; height: 170px; margin: 0; }
+  .dl-hero-mark img { width: min(100%, 260px); max-height: 170px; }
+  .dl-hero-tech { grid-area: tech; position: relative; height: 170px; overflow: hidden; border-radius: 14px 14px 0 0; }
+  .dl-hero-tech::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,46,59,.55), transparent 48%); }
+  .dl-hero-tech-art { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .dl-subject-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+
+/* ---- Mobile: hero stacks, tech art still present as a lower strip
+ * (per spec: "no clipped content, no horizontal scrolling", not
+ * "omit the artwork") ---- */
+@media (max-width: 760px) {
+  .dl-hero { position: relative; padding-bottom: 8rem; }
+  .dl-hero-mark { position: relative; z-index: 2; height: 160px; margin-top: .6rem; }
+  .dl-hero-tech {
+    display: block;
+    position: absolute;
+    z-index: 1;
+    inset: auto 0 0 0;
+    width: 100%;
+    height: 130px;
+    overflow: hidden;
+    opacity: .85;
+  }
+  .dl-hero-tech::before { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(5,46,59,.35), transparent 60%); }
+  .dl-hero-tech-art { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
 }
