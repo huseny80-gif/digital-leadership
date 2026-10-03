@@ -4,7 +4,6 @@ import type {
   QuestionForAttempt,
   QuizAttempt,
   AttemptAnswer,
-  MatchAnswerPair,
   AssessmentPrincipal,
 } from "@shared/index";
 import { AssessmentsService } from "../../src/assessments/assessmentsService.js";
@@ -201,8 +200,13 @@ describe("Guest quiz flow (via the shared AssessmentsService)", () => {
   it("answer autosave returns study feedback only after the submitted answer is graded", async () => {
     const attempt = await service.startAttempt(QUIZ_IN_SCOPE, guestPrincipal("guest-1"), false);
     const ack = await service.submitAnswer(attempt.id, guestPrincipal("guest-1"), { questionId: QUESTION_ID, selectedOptionId: OPTION_CORRECT });
-    expect(ack).toEqual({ questionId: QUESTION_ID, recorded: true });
-    expect(ack).not.toHaveProperty("isCorrect");
+    expect(ack).toEqual({
+      questionId: QUESTION_ID,
+      recorded: true,
+      isCorrect: true,
+      correctAnswerSummary: "4",
+      feedback: "إجابة صحيحة. راجع الملخص لتثبيت المعلومة.",
+    });
   });
 
   it("submit computes a score server-side and answer-key data never appears in the result", async () => {
