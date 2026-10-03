@@ -31,7 +31,7 @@ describe("LogoutButton", () => {
 
   it("13. signs out via the existing Supabase auth implementation and redirects to /login", async () => {
     render(<LogoutButton />);
-    fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
+    fireEvent.click(screen.getByRole("button", { name: /تسجيل الخروج/ }));
 
     await waitFor(() => expect(signOutMock).toHaveBeenCalled());
     expect(pushMock).toHaveBeenCalledWith("/login");
@@ -41,7 +41,7 @@ describe("LogoutButton", () => {
   it("still redirects to /login even if the best-effort backend logout call fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network error")));
     render(<LogoutButton />);
-    fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
+    fireEvent.click(screen.getByRole("button", { name: /تسجيل الخروج/ }));
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/login"));
   });

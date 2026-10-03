@@ -14,18 +14,24 @@ import type { NavItem } from "./MobileNav";
 export function BottomNav({ items, maxItems = 5 }: { items: NavItem[]; maxItems?: number }) {
   const pathname = usePathname();
   const visible = items.slice(0, maxItems);
+  // Several items intentionally share an href — only the first visible
+  // item for a given href is eligible to be marked active.
+  const firstIndexByHref = new Map<string, number>();
+  visible.forEach((item, index) => {
+    if (!firstIndexByHref.has(item.href)) firstIndexByHref.set(item.href, index);
+  });
 
   return (
     <nav className="app-bottom-nav" aria-label="Bottom">
-      {visible.map((item) => (
+      {visible.map((item, index) => (
         <Link
-          key={item.href}
+          key={`${item.href}-${index}`}
           href={item.href}
           className="app-bottom-nav-link"
-          aria-current={pathname === item.href ? "page" : undefined}
+          aria-current={pathname === item.href && firstIndexByHref.get(item.href) === index ? "page" : undefined}
         >
           <span className="app-bottom-nav-icon" aria-hidden="true">
-            {item.icon ?? "•"}
+            {item.icon}
           </span>
           <span>{item.label}</span>
         </Link>

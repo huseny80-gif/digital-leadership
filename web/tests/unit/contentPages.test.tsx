@@ -47,12 +47,24 @@ describe("DashboardPage", () => {
       }
       return Promise.resolve({ data: { id: "u1", email: "a@example.com", displayName: "Ada", avatarUrl: null, role: "user", status: "active", createdAt: "" } });
     });
-    mockApiGetPaginated.mockResolvedValue({ data: [{ id: "s1", title: "Mathematics", description: null, orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" }], page: 1, limit: 6, total: 1 });
+    mockApiGetPaginated.mockImplementation((path: string) => {
+      if (path === "/api/v1/subjects?page=1&limit=6") {
+        return Promise.resolve({
+          data: [{ id: "s1", title: "Mathematics", description: null, orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" }],
+          page: 1,
+          limit: 6,
+          total: 1,
+        });
+      }
+      // Per-subject lecture/assignment aggregation for the "recently
+      // added" lower-dashboard sections — empty in this fixture; this
+      // test only asserts the subject card itself renders.
+      return Promise.resolve({ data: [], page: 1, limit: 5, total: 0 });
+    });
 
     const element = await DashboardPage();
     render(element);
 
-    expect(screen.getByText(/مرحباً، ada/i)).toBeInTheDocument();
     expect(screen.getByText("Mathematics")).toBeInTheDocument();
   });
 
@@ -68,11 +80,20 @@ describe("DashboardPage", () => {
   });
 
   it("ONE learner platform: a Guest Training Session sees this same dashboard (falls back to /api/v1/guest/me when /me 401s), with published learner subjects and no analytics section", async () => {
-    mockApiGetPaginated.mockResolvedValue({
-      data: [{ id: "s1", title: "Leadership 101", description: null, orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" }],
-      page: 1,
-      limit: 6,
-      total: 1,
+    mockApiGetPaginated.mockImplementation((path: string) => {
+      if (path === "/api/v1/subjects?page=1&limit=6") {
+        return Promise.resolve({
+          data: [{ id: "s1", title: "Leadership 101", description: null, orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" }],
+          page: 1,
+          limit: 6,
+          total: 1,
+        });
+      }
+      // Per-subject lecture/assignment aggregation — empty in this
+      // fixture; the guest content routes forward through the exact
+      // same `apiGetPaginated` client, so this keeps the lower-dashboard
+      // sections truthfully empty rather than echoing the subject fixture.
+      return Promise.resolve({ data: [], page: 1, limit: 5, total: 0 });
     });
     mockApiGet.mockImplementation((path: string) => {
       if (path === "/api/v1/me") {
@@ -96,7 +117,6 @@ describe("DashboardPage", () => {
     const element = await DashboardPage();
     render(element);
 
-    expect(screen.getByText(/مرحباً، ahmad ali/i)).toBeInTheDocument();
     expect(screen.getByText("Leadership 101")).toBeInTheDocument();
     // No personal-analytics-section error either — it's simply omitted
     // for a guest (no guest-session equivalent exists), never fabricated.

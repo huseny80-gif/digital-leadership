@@ -30,8 +30,8 @@ export function GuestLogoutButton() {
   }
 
   return (
-    <button type="button" onClick={handleLogout} disabled={loading}>
-      {loading ? "Signing out…" : "خروج"}
+    <button type="button" className="app-header-logout" onClick={handleLogout} disabled={loading}>
+      {loading ? "جارٍ تسجيل الخروج…" : "تسجيل الخروج"}
     </button>
   );
 }

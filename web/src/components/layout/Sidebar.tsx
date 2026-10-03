@@ -13,14 +13,23 @@ import type { NavItem } from "./MobileNav";
  */
 export function Sidebar({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
+  // Several items intentionally share an href (no dedicated route exists
+  // yet for every nav label — see AppShell's comment on `items`), so
+  // matching by href alone would mark every one of them "active" at
+  // once. Only the first item for a given href is eligible to be the
+  // active one, keeping exactly one gold highlight at a time.
+  const firstIndexByHref = new Map<string, number>();
+  items.forEach((item, index) => {
+    if (!firstIndexByHref.has(item.href)) firstIndexByHref.set(item.href, index);
+  });
   return (
     <aside className="app-sidebar" aria-label="Sidebar">
-      {items.map((item) => (
+      {items.map((item, index) => (
         <Link
-          key={item.href}
+          key={`${item.href}-${index}`}
           href={item.href}
           className="app-sidebar-link"
-          aria-current={pathname === item.href ? "page" : undefined}
+          aria-current={pathname === item.href && firstIndexByHref.get(item.href) === index ? "page" : undefined}
         >
           {item.icon ? (
             <span className="app-sidebar-icon" aria-hidden="true">

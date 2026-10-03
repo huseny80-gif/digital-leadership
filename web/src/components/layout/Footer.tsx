@@ -32,8 +32,8 @@ export function Footer({
         <div>
           <h3 className="app-footer-heading">Navigate</h3>
           <div className="app-footer-links">
-            {items.map((item) => (
-              <Link key={item.href} href={item.href}>
+            {items.map((item, index) => (
+              <Link key={`${item.href}-${index}`} href={item.href}>
                 {item.label}
               </Link>
             ))}
