@@ -224,7 +224,7 @@ export function QuizAttemptRunner({
   return (
     <section>
       <h1 className="page-heading">{quiz.title}</h1>
-      {quiz.description ? <p className="page-subheading">{quiz.description}</p> : null}</div>
+      {quiz.description ? <p className="page-subheading">{quiz.description}</p> : null}
 
       {remainingSeconds !== null ? (
         <div
