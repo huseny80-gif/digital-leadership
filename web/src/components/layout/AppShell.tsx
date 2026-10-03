@@ -48,11 +48,15 @@ export function AppShell({
   isAdmin,
   userEmail,
   guestSession,
+  displayName: profileDisplayName,
+  avatarUrl,
 }: {
   children: ReactNode;
   isAdmin: boolean;
   userEmail: string | null;
   guestSession?: GuestTrainingSession;
+  displayName?: string | null;
+  avatarUrl?: string | null;
 }) {
   const isGuest = Boolean(guestSession);
   const homeHref = "/dashboard";
@@ -81,7 +85,7 @@ export function AppShell({
   // `displayName` is fetched there) — showing the real email is the
   // truthful option available, never a hard-coded name for every user
   // (task constraint).
-  const displayName = isGuest ? guestSession!.displayName : userEmail ?? "مستخدم مسجل";
+  const displayName = isGuest ? guestSession!.displayName : profileDisplayName ?? userEmail ?? "مستخدم مسجل";
   const roleLabel = isGuest ? "متدرب زائر" : isAdmin ? "مدير المنصة" : "متدرب مسجل";
   const initial = displayName.trim().charAt(0).toUpperCase();
 
@@ -92,6 +96,7 @@ export function AppShell({
       </a>
       <header className="app-header">
         <div className="app-header-inner">
+          <MobileNav items={items} />
           <Link href={homeHref} className="app-brand">
             <Image
               src="/logo.webp"
@@ -132,18 +137,27 @@ export function AppShell({
             <button className="app-header-tool app-header-notification" type="button" aria-label="الإشعارات" title="الإشعارات" disabled>
               <BellIcon /><i aria-hidden="true" />
             </button>
-            <div className="app-profile-pill">
-              <span className="app-profile-avatar" aria-hidden="true">
-                {initial}
-              </span>
-              <span className="app-profile-copy">
-                <b>{displayName}</b>
+            <details className="app-account-menu">
+              <summary className="app-profile-pill">
+                <span
+                  className="app-profile-avatar"
+                  aria-hidden="true"
+                  style={avatarUrl ? { backgroundImage: `url("${avatarUrl}")` } : undefined}
+                >
+                  {avatarUrl ? null : initial}
+                </span>
+                <span className="app-profile-copy">
+                  <b>{displayName}</b>
+                  <small>{roleLabel}</small>
+                </span>
+                <ChevronIcon className="app-profile-chevron" />
+              </summary>
+              <div className="app-account-popover">
+                <strong>{displayName}</strong>
                 <small>{roleLabel}</small>
-              </span>
-              <ChevronIcon className="app-profile-chevron" />
-            </div>
-            {isGuest ? <GuestLogoutButton /> : <LogoutButton />}
-            <MobileNav items={items} />
+                {isGuest ? <GuestLogoutButton /> : <LogoutButton />}
+              </div>
+            </details>
           </div>
         </div>
       </header>
