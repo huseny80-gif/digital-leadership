@@ -198,7 +198,7 @@ describe("Guest quiz flow (via the shared AssessmentsService)", () => {
     expect(attempt.userId).toBe("user-1");
   });
 
-  it("answer autosave records the selection without ever returning isCorrect", async () => {
+  it("answer autosave returns study feedback only after the submitted answer is graded", async () => {
     const attempt = await service.startAttempt(QUIZ_IN_SCOPE, guestPrincipal("guest-1"), false);
     const ack = await service.submitAnswer(attempt.id, guestPrincipal("guest-1"), { questionId: QUESTION_ID, selectedOptionId: OPTION_CORRECT });
     expect(ack).toEqual({ questionId: QUESTION_ID, recorded: true });
