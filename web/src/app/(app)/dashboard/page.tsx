@@ -5,6 +5,19 @@ import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 import { LearnerAnalyticsSection } from "@/components/analytics/LearnerAnalyticsSection";
 import { themeForSubject, subjectIconByTheme } from "@/lib/content/subjectTheme";
+import { ChevronIcon } from "@/components/layout/Icons";
+
+// Arabic-locale date formatting for the real `createdAt` timestamp shown
+// in the lower dashboard lists — never a fabricated/placeholder date.
+const lowerListDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  timeZone: "UTC",
+});
+function formatLowerListDate(iso: string): string {
+  return lowerListDateFormatter.format(new Date(iso)).replaceAll("-", "/");
+}
 
 export const metadata = { title: "الرئيسية | القيادة الرقمية" };
 
@@ -160,13 +173,18 @@ export default async function DashboardPage() {
             <div className="dl-lower-card">
               <div className="dl-section-heading">
                 <div><span>محتوى جديد</span><h2>آخر المحاضرات المضافة</h2></div>
+                <Link href="/subjects">عرض الكل ←</Link>
               </div>
               <ul className="dl-lower-list">
                 {recentLectures.map((lecture) => (
                   <li key={lecture.id}>
                     <Link href={`/subjects/${lecture.subjectId}/lectures/${lecture.id}`}>
-                      <b>{lecture.title}</b>
-                      <small>{lecture.subjectTitle}</small>
+                      <span className="dl-lower-item-copy">
+                        <b>{lecture.title}</b>
+                        <small>{lecture.subjectTitle}</small>
+                      </span>
+                      <span className="dl-lower-item-date">{formatLowerListDate(lecture.createdAt)}</span>
+                      <ChevronIcon className="dl-lower-item-chevron" />
                     </Link>
                   </li>
                 ))}
@@ -176,14 +194,25 @@ export default async function DashboardPage() {
           {recentAssignments.length > 0 ? (
             <div className="dl-lower-card">
               <div className="dl-section-heading">
+                {/* The reference image labels this "الأنشطة القادمة"
+                 * (upcoming), but `Assignment` still has no due-date
+                 * field anywhere in the schema — there is no real
+                 * "upcoming" concept to report, only recently-created
+                 * assignments. Keeping the honest label rather than
+                 * matching the reference's wording verbatim. */}
                 <div><span>تدريب عملي</span><h2>أحدث الأنشطة</h2></div>
+                <Link href="/subjects">عرض الكل ←</Link>
               </div>
               <ul className="dl-lower-list">
                 {recentAssignments.map((assignment) => (
                   <li key={assignment.id}>
                     <Link href={`/subjects/${assignment.subjectId}/assignments/${assignment.id}`}>
-                      <b>{assignment.title}</b>
-                      <small>{assignment.subjectTitle}</small>
+                      <span className="dl-lower-item-copy">
+                        <b>{assignment.title}</b>
+                        <small>{assignment.subjectTitle}</small>
+                      </span>
+                      <span className="dl-lower-item-date">{formatLowerListDate(assignment.createdAt)}</span>
+                      <ChevronIcon className="dl-lower-item-chevron" />
                     </Link>
                   </li>
                 ))}
