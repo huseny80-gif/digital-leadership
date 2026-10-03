@@ -129,7 +129,7 @@ describe("QuizAttemptRunner", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<QuizAttemptRunner quiz={quiz} questions={questions} attemptId="attempt-1" />);
-    const submitButton = screen.getByRole("button", { name: /submit quiz/i });
+    const submitButton = screen.getByRole("button", { name: /إنهاء الاختبار/i });
     fireEvent.click(submitButton);
 
     await waitFor(() => expect(submitButton).toBeDisabled());
@@ -154,7 +154,7 @@ describe("QuizAttemptRunner", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<QuizAttemptRunner quiz={quiz} questions={questions} attemptId="attempt-1" />);
-    fireEvent.click(screen.getByRole("button", { name: /submit quiz/i }));
+    fireEvent.click(screen.getByRole("button", { name: /إنهاء الاختبار/i }));
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/quizzes/quiz-1/result/attempt-1"));
   });
@@ -168,7 +168,7 @@ describe("QuizAttemptRunner", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<QuizAttemptRunner quiz={quiz} questions={questions} attemptId="attempt-1" />);
-    fireEvent.click(screen.getByRole("button", { name: /submit quiz/i }));
+    fireEvent.click(screen.getByRole("button", { name: /إنهاء الاختبار/i }));
 
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(screen.queryByText(/relation quiz_attempts/i)).not.toBeInTheDocument();
@@ -186,7 +186,7 @@ describe("QuizAttemptRunner", () => {
     render(<QuizAttemptRunner quiz={quiz} questions={questions} attemptId="attempt-1" initialAnswers={initialAnswers} />);
 
     expect(screen.getByLabelText("4")).toBeChecked();
-    expect(screen.getByText(/1 of 2 answered/i)).toBeInTheDocument();
+    expect(screen.getByText(/تمت الإجابة عن 1 من 2/i)).toBeInTheDocument();
   });
 
   it("with no initialAnswers (or an empty list), starts with nothing selected — same as before this feature", () => {
@@ -194,7 +194,7 @@ describe("QuizAttemptRunner", () => {
 
     expect(screen.getByLabelText("3")).not.toBeChecked();
     expect(screen.getByLabelText("4")).not.toBeChecked();
-    expect(screen.getByText(/0 of 2 answered/i)).toBeInTheDocument();
+    expect(screen.getByText(/تمت الإجابة عن 0 من 2/i)).toBeInTheDocument();
   });
 
   describe("match questions", () => {
