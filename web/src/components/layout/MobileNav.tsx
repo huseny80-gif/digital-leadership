@@ -27,6 +27,13 @@ export interface NavItem {
 export function MobileNav({ items }: { items: NavItem[] }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  // Several items intentionally share an href (no dedicated route exists
+  // yet for every nav label) — only the first item for a given href is
+  // eligible to be marked active, so at most one link highlights at once.
+  const firstIndexByHref = new Map<string, number>();
+  items.forEach((item, index) => {
+    if (!firstIndexByHref.has(item.href)) firstIndexByHref.set(item.href, index);
+  });
 
   return (
     <>
@@ -42,12 +49,12 @@ export function MobileNav({ items }: { items: NavItem[] }) {
       </button>
       {open ? (
         <nav id="mobile-nav-panel" className="mobile-nav-panel" aria-label="Primary">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <Link
-              key={item.href}
+              key={`${item.href}-${index}`}
               href={item.href}
               className="mobile-nav-link"
-              aria-current={pathname === item.href ? "page" : undefined}
+              aria-current={pathname === item.href && firstIndexByHref.get(item.href) === index ? "page" : undefined}
               onClick={() => setOpen(false)}
             >
               {item.label}
