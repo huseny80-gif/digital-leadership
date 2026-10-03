@@ -71,7 +71,9 @@ describe("no answer-key field in LEARNER-facing web client source", () => {
     // excluded — so this checks for no *field declaration* of it, not an
     // absence of the word entirely.
     expect(content).not.toMatch(/\bis_correct\s*[:?]/);
-    const questionForAttemptContract = content.split("export interface QuestionForAttempt")[1]?.split("export interface QuizAttempt")[0] ?? "";\n    expect(questionForAttemptContract).not.toMatch(/\\bisCorrect\\s*[:?]/);\n    expect(content).toMatch(/export interface SubmitAnswerAck[\\s\\S]*isCorrect:\\s*boolean \\| null/);
+    const questionForAttemptContract = content.split("export interface QuestionForAttempt")[1]?.split("export interface QuizAttempt")[0] ?? "";
+    expect(questionForAttemptContract).not.toMatch(/\\bisCorrect\\s*[:?]/);
+    expect(content).toMatch(/export interface SubmitAnswerAck[\\s\\S]*isCorrect:\\s*boolean \\| null/);
   });
 
   /**
