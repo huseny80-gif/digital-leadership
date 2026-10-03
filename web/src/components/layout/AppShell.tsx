@@ -77,8 +77,6 @@ export function AppShell({
     { href: "/dashboard#learning-progress", label: "الإحصائيات", icon: <ChartIcon /> },
     { href: "/about", label: "من نحن", icon: <InfoIcon /> },
     { href: "/about#contact", label: "تواصل معنا", icon: <MailIcon /> },
-    ...(isAdmin ? [{ href: "/admin", label: "الإدارة", icon: <GearIcon /> }] : []),
-    ...(isGuest ? [] : [{ href: "/profile", label: "الملف الشخصي", icon: <UserIcon /> }]),
   ];
 
   // `AppLayout` only resolves `userEmail` for a registered principal (no
@@ -155,6 +153,8 @@ export function AppShell({
               <div className="app-account-popover">
                 <strong>{displayName}</strong>
                 <small>{roleLabel}</small>
+                {!isGuest ? <Link href="/profile" className="app-account-link">الملف الشخصي</Link> : null}
+                {isAdmin ? <Link href="/admin" className="app-account-link">الإدارة</Link> : null}
                 {isGuest ? <GuestLogoutButton /> : <LogoutButton />}
               </div>
             </details>
