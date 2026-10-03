@@ -79,7 +79,8 @@ export function QuizAttemptRunner({
   const [answers, setAnswers] = useState<Record<string, AnswerState>>(() => toInitialAnswers(initialAnswers ?? []));
   const [savingQuestionId, setSavingQuestionId] = useState<string | null>(null);
   const [savedQuestionId, setSavedQuestionId] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);\n  const [studyFeedback, setStudyFeedback] = useState<Record<string, SubmitAnswerAck>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [studyFeedback, setStudyFeedback] = useState<Record<string, SubmitAnswerAck>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -142,7 +143,8 @@ export function QuizAttemptRunner({
         setSaveError("Unable to save your answer. Please try again.");
         return;
       }
-      setSavedQuestionId(questionId);\n      setStudyFeedback((prev) => ({ ...prev, [questionId]: parsed.data! }));
+      setSavedQuestionId(questionId);
+      setStudyFeedback((prev) => ({ ...prev, [questionId]: parsed.data! }));
     } catch {
       setSaveError("Unable to save your answer. Please try again.");
     } finally {
@@ -285,7 +287,8 @@ export function QuizAttemptRunner({
               <label
                 key={option.id}
                 htmlFor={`option-${option.id}`}
-                className="fq-answer-option"\n                style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: "pointer" }}
+                className="fq-answer-option"
+                style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: "pointer" }}
               >
                 <input
                   type="radio"
