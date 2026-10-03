@@ -8,7 +8,7 @@ import { MobileNav, type NavItem } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 import { Footer } from "./Footer";
-import { HomeIcon, GridIcon, GearIcon, UserIcon, InfoIcon, SearchIcon, GlobeIcon, ChevronIcon } from "./Icons";
+import { HomeIcon, BookIcon, VideoIcon, DocumentIcon, QuizIcon, FolderIcon, CommunityIcon, ChartIcon, MailIcon, GearIcon, UserIcon, InfoIcon, SearchIcon, GlobeIcon, ChevronIcon, BellIcon, SunIcon } from "./Icons";
 
 /**
  * Application shell — THE ONE learner platform shell, wrapping every
@@ -57,24 +57,24 @@ export function AppShell({
   const isGuest = Boolean(guestSession);
   const homeHref = "/dashboard";
 
-  // Route inventory (reference-design audit): the reference sidebar also
-  // shows المحاضرات / الملخصات / الواجبات والأنشطة / الاختبارات /
-  // المصادر والملفات / المجتمع التدريبي / الإحصائيات / تواصل معنا as
-  // top-level items. None of those have a real top-level, platform-wide
-  // route today — lectures/assignments/assessments only exist nested
-  // under `/subjects/[subjectId]/*`, there is no community/contact
-  // feature, and "الإحصائيات" already lives inside `/dashboard` as the
-  // learner-analytics panel. Per the "no dead links" rule, none of those
-  // are added here; only routes that actually exist and resolve are
-  // listed (documented again in this branch's PR description).
+  // Dashboard navigation mirrors the approved reference. Items without a
+  // platform-wide content index route lead to the subject chooser rather
+  // than a dead control; once a subject is selected its Finquiz workspace
+  // owns lecture/summary/assignment/quiz navigation.
   const items: NavItem[] = [
     { href: "/dashboard", label: "الرئيسية", icon: <HomeIcon /> },
-    { href: "/subjects", label: "المواد الدراسية", icon: <GridIcon /> },
-    ...(isAdmin ? [{ href: "/admin", label: "الإدارة", icon: <GearIcon /> }] : []),
-    // A guest has no permanent-user account, so no Profile page to link
-    // to (task constraint).
-    ...(isGuest ? [] : [{ href: "/profile", label: "الملف الشخصي", icon: <UserIcon /> }]),
+    { href: "/subjects", label: "المواد الدراسية", icon: <BookIcon /> },
+    { href: "/subjects", label: "المحاضرات", icon: <VideoIcon /> },
+    { href: "/subjects", label: "الملخصات", icon: <DocumentIcon /> },
+    { href: "/subjects", label: "الواجبات والأنشطة", icon: <DocumentIcon /> },
+    { href: "/subjects", label: "الاختبارات", icon: <QuizIcon /> },
+    { href: "/subjects", label: "المصادر والملفات", icon: <FolderIcon /> },
+    { href: "/dashboard#learning-community", label: "المجتمع التدريبي", icon: <CommunityIcon /> },
+    { href: "/dashboard#learning-progress", label: "الإحصائيات", icon: <ChartIcon /> },
     { href: "/about", label: "من نحن", icon: <InfoIcon /> },
+    { href: "/about#contact", label: "تواصل معنا", icon: <MailIcon /> },
+    ...(isAdmin ? [{ href: "/admin", label: "الإدارة", icon: <GearIcon /> }] : []),
+    ...(isGuest ? [] : [{ href: "/profile", label: "الملف الشخصي", icon: <UserIcon /> }]),
   ];
 
   // `AppLayout` only resolves `userEmail` for a registered principal (no
@@ -127,10 +127,10 @@ export function AppShell({
               <ChevronIcon />
             </span>
             <button className="app-header-tool" type="button" aria-label="المظهر" title="المظهر" disabled>
-              <span aria-hidden="true">☼</span>
+              <SunIcon />
             </button>
             <button className="app-header-tool app-header-notification" type="button" aria-label="الإشعارات" title="الإشعارات" disabled>
-              <span aria-hidden="true">♧</span><i aria-hidden="true" />
+              <BellIcon /><i aria-hidden="true" />
             </button>
             <div className="app-profile-pill">
               <span className="app-profile-avatar" aria-hidden="true">
