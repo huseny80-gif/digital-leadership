@@ -492,16 +492,22 @@ button {
 .app-body {
   flex: 1;
   display: flex;
-  /* Reference spec point 14: the page content is Arabic RTL, but the
-   * reference design's sidebar sits on the LEFT regardless — this must
-   * not be left to fall out of `dir="rtl"` by accident. In a `row`
-   * flex container under RTL, the DOM-first child (Sidebar) would sit
-   * on the right; `row-reverse` puts it on the left instead, matching
-   * the reference, while every child's own text still renders RTL. */
-  flex-direction: row-reverse;
+  /* The reference keeps the navigation rail physically on the LEFT even
+   * though the application language is RTL.  Do not combine RTL flex
+   * direction with row-reverse here: browser flex-axis resolution made
+   * the DOM-first Sidebar land on the right in the real Vercel/iPad
+   * render.  Give only the shell geometry an LTR axis, then explicitly
+   * restore RTL inside both children. */
+  direction: ltr;
+  flex-direction: row;
   width: 100%;
   max-width: var(--content-max-width);
   margin: 0 auto;
+}
+
+.app-sidebar,
+.app-main {
+  direction: rtl;
 }
 
 .app-sidebar {
