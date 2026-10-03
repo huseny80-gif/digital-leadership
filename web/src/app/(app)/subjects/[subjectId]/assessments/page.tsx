@@ -75,7 +75,9 @@ export default async function SubjectAssessmentsPage({
         </div>
       </div>
 
-      <div className="fq-section-label"><span>مساحة المادة</span><strong>تصفح المحتوى التعليمي</strong></div>\n\n      <SubjectTabs
+      <div className="fq-section-label"><span>مساحة المادة</span><strong>تصفح المحتوى التعليمي</strong></div>
+
+      <SubjectTabs
         tabs={subjectTabs(subjectId, {
           lectures: lectures.length,
           assignments: assignments.length,
@@ -83,7 +85,9 @@ export default async function SubjectAssessmentsPage({
         })}
       />
 
-      <div className="fq-content-heading"><div><span className="fq-content-icon">❓</span><div><small>اختبر معرفتك</small><h2>الاختبارات</h2></div></div><span>{quizzes.length} اختبار</span></div>\n\n      {quizzes.length === 0 ? (
+      <div className="fq-content-heading"><div><span className="fq-content-icon">❓</span><div><small>اختبر معرفتك</small><h2>الاختبارات</h2></div></div><span>{quizzes.length} اختبار</span></div>
+
+      {quizzes.length === 0 ? (
         <EmptyState title="لا توجد اختبارات بعد" message="ستظهر اختبارات هذه المادة هنا فور نشرها." />
       ) : (
         <div className="item-list">
