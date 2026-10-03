@@ -77,7 +77,9 @@ export default async function SubjectAssignmentsPage({
         </div>
       </div>
 
-      <div className="fq-section-label"><span>مساحة المادة</span><strong>تصفح المحتوى التعليمي</strong></div>\n\n      <SubjectTabs
+      <div className="fq-section-label"><span>مساحة المادة</span><strong>تصفح المحتوى التعليمي</strong></div>
+
+      <SubjectTabs
         tabs={subjectTabs(subjectId, {
           lectures: lectures.length,
           assignments: assignments.length,
@@ -85,7 +87,9 @@ export default async function SubjectAssignmentsPage({
         })}
       />
 
-      <div className="fq-content-heading"><div><span className="fq-content-icon">📋</span><div><small>أنشطة المادة</small><h2>التكليفات</h2></div></div><span>{assignments.length} تكليف</span></div>\n\n      {assignments.length === 0 ? (
+      <div className="fq-content-heading"><div><span className="fq-content-icon">📋</span><div><small>أنشطة المادة</small><h2>التكليفات</h2></div></div><span>{assignments.length} تكليف</span></div>
+
+      {assignments.length === 0 ? (
         <EmptyState title="لا توجد تكليفات بعد" message="ستظهر تكليفات هذه المادة هنا فور نشرها." />
       ) : (
         <div className="item-list">
