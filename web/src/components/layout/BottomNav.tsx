@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { NavItem } from "./MobileNav";
+import { PlatformIcon } from "@/components/ui/PlatformIcon";
 
 /**
  * Mobile bottom tab bar (Phase 18.1), visible below 1000px only. Reuses
@@ -25,7 +26,7 @@ export function BottomNav({ items, maxItems = 5 }: { items: NavItem[]; maxItems?
           aria-current={pathname === item.href ? "page" : undefined}
         >
           <span className="app-bottom-nav-icon" aria-hidden="true">
-            {item.icon ?? "•"}
+            <PlatformIcon name={item.icon ?? "home"} />
           </span>
           <span>{item.label}</span>
         </Link>

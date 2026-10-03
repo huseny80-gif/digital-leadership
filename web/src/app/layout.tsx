@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cairo, Tajawal } from "next/font/google";
 import "./globals.css";
+import "./reference-dashboard.css";
 
 /**
  * Phase 18.1 — Finquiz Visual Identity Foundation: typography pairing
@@ -10,7 +11,7 @@ import "./globals.css";
  */
 const cairo = Cairo({
   subsets: ["latin"],
-  weight: ["700", "800", "900"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-heading",
   display: "swap",
 });
@@ -23,8 +24,8 @@ const tajawal = Tajawal({
 });
 
 export const metadata: Metadata = {
-  title: "Digital Leadership",
-  description: "Educational platform (scaffolding phase — no business logic implemented yet).",
+  title: "القيادة الرقمية | Digital Leadership",
+  description: "منصة تعليمية تفاعلية تقدم محتوى دبلوم القيادة الرقمية بأسلوب تفاعلي حديث ومرن، لدعم بناء قدرات القادة.",
   icons: { icon: "/favicon.webp" },
 };
 
@@ -34,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${cairo.variable} ${tajawal.variable}`}>
+    <html lang="ar" dir="rtl" className={`${cairo.variable} ${tajawal.variable}`}>
       <body>{children}</body>
     </html>
   );

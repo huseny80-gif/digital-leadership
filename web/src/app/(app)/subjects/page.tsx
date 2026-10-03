@@ -3,6 +3,7 @@ import { apiGetPaginated } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 import { SubjectCard } from "@/components/content/SubjectCard";
+import { ContentHub, contentViews, type ContentView } from "@/components/content/ContentHub";
 
 export const metadata = { title: "Subjects | Digital Leadership" };
 
@@ -15,7 +16,8 @@ export const metadata = { title: "Subjects | Digital Leadership" };
  * never be treated as an authorization boundary (PHASE 09A explicit
  * instruction).
  */
-export default async function SubjectsPage() {
+export default async function SubjectsPage({ searchParams }: { searchParams?: Promise<{ view?: string; q?: string }> }) {
+  const params = await searchParams;
   let subjects: Subject[] = [];
   let errorMessage: string | null = null;
 
@@ -24,6 +26,10 @@ export default async function SubjectsPage() {
     subjects = result.data;
   } catch (err) {
     errorMessage = toSafeErrorMessage(err, "subjects").message;
+  }
+
+  if (!errorMessage && params?.view && Object.hasOwn(contentViews, params.view)) {
+    return <ContentHub subjects={subjects} view={params.view as ContentView} query={params.q?.trim().slice(0, 200)} />;
   }
 
   return (
