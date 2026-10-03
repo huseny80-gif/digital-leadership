@@ -64,7 +64,7 @@ describe("no answer-key field in LEARNER-facing web client source", () => {
     expect(adminFilesReferencingIt.map((f) => f.split("/").pop())).toEqual(["page.tsx"]);
   });
 
-  it("the shared QuestionForAttempt/QuizAttemptResult contracts have no correctness field", () => {
+  it("QuestionForAttempt still has no answer key while post-answer feedback may contain correctness", () => {
     const quizTypes = join(__dirname, "..", "..", "..", "shared", "src", "types", "quiz.ts");
     const content = readFileSync(quizTypes, "utf8");
     // The file legitimately documents, in prose, why is_correct is
