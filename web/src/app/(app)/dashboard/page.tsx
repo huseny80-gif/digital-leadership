@@ -10,7 +10,6 @@ export const metadata = { title: "الرئيسية | القيادة الرقمي
 
 export default async function DashboardPage() {
   let profile: UserProfile | null = null;
-  let guestSession: GuestTrainingSession | null = null;
   let subjectsResult: PaginatedResult<Subject> | null = null;
   let errorMessage: string | null = null;
 
@@ -20,7 +19,7 @@ export default async function DashboardPage() {
       profile = (await apiGet<UserProfile>("/api/v1/me")).data;
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        guestSession = (await apiGet<GuestTrainingSession>("/api/v1/guest/me")).data;
+        await apiGet<GuestTrainingSession>("/api/v1/guest/me");
       } else throw err;
     }
   } catch (err) {

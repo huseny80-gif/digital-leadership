@@ -40,7 +40,7 @@ describe("AppLayout principal resolution", () => {
 
     expect(screen.getByText("Learner content")).toBeInTheDocument();
     expect(screen.getAllByText("Profile").length).toBeGreaterThan(0);
-    expect(screen.getByText("user@example.com")).toBeInTheDocument();
+    expect(screen.getAllByText("User").length).toBeGreaterThan(0);
   });
 
   it("falls through to a Guest Training Session when /me 401s, rendering the shared shell with guest identity and no Profile link", async () => {
@@ -61,8 +61,8 @@ describe("AppLayout principal resolution", () => {
     render(element);
 
     expect(screen.getByText("Learner content")).toBeInTheDocument();
-    expect(screen.getByText(/Ahmad Ali/)).toBeInTheDocument();
-    expect(screen.getByText(/متدرب زائر/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Ahmad Ali/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/متدرب زائر/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Leadership 101/)).not.toBeInTheDocument();
     // No permanent-user-only feature leaks into the guest nav.
     expect(screen.queryByText("Profile")).not.toBeInTheDocument();

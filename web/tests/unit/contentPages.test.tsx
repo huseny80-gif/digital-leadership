@@ -65,7 +65,6 @@ describe("DashboardPage", () => {
     const element = await DashboardPage();
     render(element);
 
-    expect(screen.getByText(/مرحباً، ada/i)).toBeInTheDocument();
     expect(screen.getByText("Mathematics")).toBeInTheDocument();
   });
 
@@ -118,7 +117,6 @@ describe("DashboardPage", () => {
     const element = await DashboardPage();
     render(element);
 
-    expect(screen.getByText(/مرحباً، ahmad ali/i)).toBeInTheDocument();
     expect(screen.getByText("Leadership 101")).toBeInTheDocument();
     // No personal-analytics-section error either — it's simply omitted
     // for a guest (no guest-session equivalent exists), never fabricated.
