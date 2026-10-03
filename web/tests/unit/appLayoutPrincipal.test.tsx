@@ -62,7 +62,7 @@ describe("AppLayout principal resolution", () => {
 
     expect(screen.getByText("Learner content")).toBeInTheDocument();
     expect(screen.getByText(/Ahmad Ali/)).toBeInTheDocument();
-    expect(screen.getByText(/Guest Learner/)).toBeInTheDocument();
+    expect(screen.getByText(/متدرب زائر/)).toBeInTheDocument();
     expect(screen.queryByText(/Leadership 101/)).not.toBeInTheDocument();
     // No permanent-user-only feature leaks into the guest nav.
     expect(screen.queryByText("Profile")).not.toBeInTheDocument();

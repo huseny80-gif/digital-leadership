@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browserClient";
 import { getSiteUrl } from "@/config/env";
+import { resolveTrustedOrigin } from "@/config/trustedOrigin";
 
 /**
  * The Login page (PHASE 06 §11). This is the platform's only
@@ -18,15 +19,17 @@ import { getSiteUrl } from "@/config/env";
  * this app's `/auth/callback` with a code -> the callback route exchanges
  * it for a session -> the user lands on `/dashboard`.
  *
- * The OAuth `redirectTo` is built from `NEXT_PUBLIC_SITE_URL` (a fixed,
- * canonical origin), never from `window.location.origin`. Supabase's PKCE
- * `code_verifier` is a cookie scoped to the origin `signInWithOAuth` was
- * called from — if a user reaches this page on a different host (e.g. a
- * Vercel per-deployment preview URL instead of the stable branch-alias
- * domain), starting OAuth from that host would set the verifier cookie
- * there while the callback could complete on a different host, losing the
- * cookie and failing `exchangeCodeForSession`. So a non-canonical host is
- * bounced to the canonical one *before* OAuth ever starts.
+ * The OAuth `redirectTo` is built from the TRUSTED origin
+ * (`resolveTrustedOrigin` — see that file), never blindly from
+ * `window.location.origin`. Supabase's PKCE `code_verifier` is a cookie
+ * scoped to the origin `signInWithOAuth` was called from — if a user
+ * reaches this page on a different host than the one the callback
+ * completes on, that cookie never reaches the callback and
+ * `exchangeCodeForSession` fails. A trusted host (production, or a Vercel
+ * preview/deployment URL for this same project) now completes OAuth on
+ * ITSELF rather than always bouncing to production; any other, untrusted
+ * host is still bounced to the canonical production origin exactly as
+ * before (never an open redirect to an arbitrary host).
  */
 function LoginPageInner() {
   const [status, setStatus] = useState<"idle" | "redirecting" | "error">("idle");
@@ -39,20 +42,20 @@ function LoginPageInner() {
     // Not component state: this only ever triggers a same-tick full page
     // navigation away from this component, so there is nothing further
     // for React to render here.
-    const canonicalOrigin = new URL(getSiteUrl()).origin;
-    if (window.location.origin === canonicalOrigin) return;
+    const trustedOrigin = resolveTrustedOrigin(window.location.origin, getSiteUrl());
+    if (window.location.origin === trustedOrigin) return;
 
-    const target = new URL("/login", canonicalOrigin);
+    const target = new URL("/login", trustedOrigin);
     if (redirectTo) target.searchParams.set("redirectTo", redirectTo);
     if (oauthError) target.searchParams.set("error", oauthError);
     window.location.replace(target.toString());
   }, [redirectTo, oauthError]);
 
   async function handleContinueWithGoogle() {
-    const canonicalOrigin = new URL(getSiteUrl()).origin;
-    if (window.location.origin !== canonicalOrigin) {
-      // Mid-redirect to the canonical host (see effect above) — never
-      // start OAuth from a non-canonical origin.
+    const trustedOrigin = resolveTrustedOrigin(window.location.origin, getSiteUrl());
+    if (window.location.origin !== trustedOrigin) {
+      // Mid-redirect to the trusted host (see effect above) — never
+      // start OAuth from an untrusted origin.
       return;
     }
 
@@ -60,7 +63,7 @@ function LoginPageInner() {
     setErrorMessage(null);
     try {
       const supabase = createSupabaseBrowserClient();
-      const callbackUrl = new URL("/auth/callback", canonicalOrigin);
+      const callbackUrl = new URL("/auth/callback", trustedOrigin);
       if (redirectTo) callbackUrl.searchParams.set("redirectTo", redirectTo);
 
       const { error } = await supabase.auth.signInWithOAuth({

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/serverClient";
 import { getSiteUrl } from "@/config/env";
+import { resolveTrustedOrigin } from "@/config/trustedOrigin";
 
 /**
  * OAuth callback (PHASE 06 flow: "Google OAuth -> Supabase Auth ->
@@ -16,13 +17,17 @@ import { getSiteUrl } from "@/config/env";
  * AUTHENTICATION.md). This route's only job is finishing the Supabase
  * handshake and redirecting into the app.
  *
- * Every redirect this route issues targets `NEXT_PUBLIC_SITE_URL` (the
- * canonical origin), not `request.url`'s own origin — `login/page.tsx`
- * always starts the OAuth flow from that same canonical origin, so a
- * request ever arriving here on a different host would mean the PKCE
- * `code_verifier` cookie (scoped to the origin OAuth started from) cannot
- * be present, and keeping every redirect on the canonical origin avoids
- * compounding that with a second host switch.
+ * Every redirect this route issues targets the TRUSTED origin
+ * (`resolveTrustedOrigin` — see that file) for the incoming request,
+ * not blindly `request.url`'s own origin. `login/page.tsx` always starts
+ * the OAuth flow from that same trusted origin (production, or a Vercel
+ * preview/deployment URL for this project), so this route lands on the
+ * identical host OAuth started from — required for the PKCE
+ * `code_verifier` cookie (scoped to that origin) to actually be present.
+ * A request arriving here on an UNTRUSTED host — one `resolveTrustedOrigin`
+ * would not have let the login page start OAuth from in the first place —
+ * still only ever redirects to the fixed canonical production origin,
+ * never to that untrusted host itself.
  */
 const DEFAULT_REDIRECT = "/dashboard";
 
@@ -123,11 +128,11 @@ function logExchangeFailure(err: unknown, request: NextRequest, hasCode: boolean
 }
 
 function redirectToLoginWithError(
-  canonicalOrigin: string,
+  trustedOrigin: string,
   errorParam: string,
   diagnostics?: { errorName: string; errorCode: string; hasVerifier: boolean },
 ): NextResponse {
-  const loginUrl = new URL("/login", canonicalOrigin);
+  const loginUrl = new URL("/login", trustedOrigin);
   loginUrl.searchParams.set("error", errorParam);
   if (diagnostics) {
     loginUrl.searchParams.set("error_name", diagnostics.errorName);
@@ -138,19 +143,19 @@ function redirectToLoginWithError(
 }
 
 export async function GET(request: NextRequest) {
-  const canonicalOrigin = new URL(getSiteUrl()).origin;
+  const trustedOrigin = resolveTrustedOrigin(request.nextUrl.origin, getSiteUrl());
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const redirectTo = safeRedirectPath(searchParams.get("redirectTo"), canonicalOrigin);
+  const redirectTo = safeRedirectPath(searchParams.get("redirectTo"), trustedOrigin);
   const oauthError = searchParams.get("error");
 
   if (oauthError) {
-    return redirectToLoginWithError(canonicalOrigin, oauthError);
+    return redirectToLoginWithError(trustedOrigin, oauthError);
   }
 
   if (!code) {
     const { name, code: diagCode } = logExchangeFailure(new Error("missing_code"), request, false);
-    return redirectToLoginWithError(canonicalOrigin, "missing_code", {
+    return redirectToLoginWithError(trustedOrigin, "missing_code", {
       errorName: name,
       errorCode: diagCode,
       hasVerifier: hasVerifierCookie(request),
@@ -162,12 +167,12 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     const { name, code: diagCode } = logExchangeFailure(error, request, true);
-    return redirectToLoginWithError(canonicalOrigin, "exchange_failed", {
+    return redirectToLoginWithError(trustedOrigin, "exchange_failed", {
       errorName: name,
       errorCode: diagCode,
       hasVerifier: hasVerifierCookie(request),
     });
   }
 
-  return NextResponse.redirect(new URL(redirectTo, canonicalOrigin));
+  return NextResponse.redirect(new URL(redirectTo, trustedOrigin));
 }

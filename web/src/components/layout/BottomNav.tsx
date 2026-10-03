@@ -25,7 +25,7 @@ export function BottomNav({ items, maxItems = 5 }: { items: NavItem[]; maxItems?
           aria-current={pathname === item.href ? "page" : undefined}
         >
           <span className="app-bottom-nav-icon" aria-hidden="true">
-            {item.icon ?? "•"}
+            {item.icon}
           </span>
           <span>{item.label}</span>
         </Link>

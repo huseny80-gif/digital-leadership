@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
 import { GuestLogoutButton } from "./GuestLogoutButton";
-import { PrimaryNav } from "./PrimaryNav";
 import { MobileNav, type NavItem } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 import { Footer } from "./Footer";
+import { HomeIcon, BookIcon, VideoIcon, DocumentIcon, QuizIcon, FolderIcon, CommunityIcon, ChartIcon, MailIcon, GearIcon, UserIcon, InfoIcon, SearchIcon, GlobeIcon, ChevronIcon, BellIcon, SunIcon } from "./Icons";
 
 /**
  * Application shell — THE ONE learner platform shell, wrapping every
@@ -57,15 +57,33 @@ export function AppShell({
   const isGuest = Boolean(guestSession);
   const homeHref = "/dashboard";
 
+  // Dashboard navigation mirrors the approved reference. Items without a
+  // platform-wide content index route lead to the subject chooser rather
+  // than a dead control; once a subject is selected its Finquiz workspace
+  // owns lecture/summary/assignment/quiz navigation.
   const items: NavItem[] = [
-    { href: "/dashboard", label: "الرئيسية", icon: "⌂" },
-    { href: "/subjects", label: "المواد الدراسية", icon: "▣" },
-    ...(isAdmin ? [{ href: "/admin", label: "الإدارة", icon: "⚙" }] : []),
-    // A guest has no permanent-user account, so no Profile page to link
-    // to (task constraint).
-    ...(isGuest ? [] : [{ href: "/profile", label: "الملف الشخصي", icon: "◉" }]),
-    { href: "/about", label: "من نحن", icon: "ℹ️" },
+    { href: "/dashboard", label: "الرئيسية", icon: <HomeIcon /> },
+    { href: "/subjects", label: "المواد الدراسية", icon: <BookIcon /> },
+    { href: "/subjects", label: "المحاضرات", icon: <VideoIcon /> },
+    { href: "/subjects", label: "الملخصات", icon: <DocumentIcon /> },
+    { href: "/subjects", label: "الواجبات والأنشطة", icon: <DocumentIcon /> },
+    { href: "/subjects", label: "الاختبارات", icon: <QuizIcon /> },
+    { href: "/subjects", label: "المصادر والملفات", icon: <FolderIcon /> },
+    { href: "/dashboard#learning-community", label: "المجتمع التدريبي", icon: <CommunityIcon /> },
+    { href: "/dashboard#learning-progress", label: "الإحصائيات", icon: <ChartIcon /> },
+    { href: "/about", label: "من نحن", icon: <InfoIcon /> },
+    { href: "/about#contact", label: "تواصل معنا", icon: <MailIcon /> },
+    ...(isAdmin ? [{ href: "/admin", label: "الإدارة", icon: <GearIcon /> }] : []),
+    ...(isGuest ? [] : [{ href: "/profile", label: "الملف الشخصي", icon: <UserIcon /> }]),
   ];
+
+  // `AppLayout` only resolves `userEmail` for a registered principal (no
+  // `displayName` is fetched there) — showing the real email is the
+  // truthful option available, never a hard-coded name for every user
+  // (task constraint).
+  const displayName = isGuest ? guestSession!.displayName : userEmail ?? "مستخدم مسجل";
+  const roleLabel = isGuest ? "متدرب زائر" : isAdmin ? "مدير المنصة" : "متدرب مسجل";
+  const initial = displayName.trim().charAt(0).toUpperCase();
 
   return (
     <div className="app-shell" dir="rtl">
@@ -85,15 +103,45 @@ export function AppShell({
             />
             <span className="app-brand-copy"><b>القيادة الرقمية</b><small>DIGITAL LEADERSHIP</small></span>
           </Link>
-          <PrimaryNav items={items} />
+          {/* Search affordance: no search API/data path exists anywhere
+           * in the backend (checked `backend/src` for a search route
+           * before building this) — rendered as a disabled, honest
+           * "coming soon" control rather than a fake, wired-up search
+           * box (task requirement: never fabricate a search endpoint). */}
+          <div className="app-header-search" aria-hidden="false">
+            <SearchIcon />
+            <input
+              type="search"
+              placeholder="البحث في المحاضرات والملفات والاختبارات ..."
+              disabled
+              aria-label="البحث (قريبًا)"
+              title="البحث قريبًا"
+              readOnly
+            />
+          </div>
+
           <div className="app-header-actions">
-            {isGuest ? (
-              <span className="app-user-email">
-                {guestSession!.displayName} · Guest Learner
+            <span className="app-lang-pill">
+              <GlobeIcon />
+              العربية
+              <ChevronIcon />
+            </span>
+            <button className="app-header-tool" type="button" aria-label="المظهر" title="المظهر" disabled>
+              <SunIcon />
+            </button>
+            <button className="app-header-tool app-header-notification" type="button" aria-label="الإشعارات" title="الإشعارات" disabled>
+              <BellIcon /><i aria-hidden="true" />
+            </button>
+            <div className="app-profile-pill">
+              <span className="app-profile-avatar" aria-hidden="true">
+                {initial}
               </span>
-            ) : userEmail ? (
-              <span className="app-user-email">{userEmail}</span>
-            ) : null}
+              <span className="app-profile-copy">
+                <b>{displayName}</b>
+                <small>{roleLabel}</small>
+              </span>
+              <ChevronIcon className="app-profile-chevron" />
+            </div>
             {isGuest ? <GuestLogoutButton /> : <LogoutButton />}
             <MobileNav items={items} />
           </div>
