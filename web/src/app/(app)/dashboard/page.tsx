@@ -4,35 +4,9 @@ import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 import { LearnerAnalyticsSection } from "@/components/analytics/LearnerAnalyticsSection";
+import { themeForSubject, subjectIconByTheme } from "@/lib/content/subjectTheme";
 
 export const metadata = { title: "الرئيسية | القيادة الرقمية" };
-
-/**
- * Stable title → theme mapping (reference design requirement: don't rely
- * on array index alone, since `Subject` has no `slug` field and API
- * ordering isn't a guaranteed identity). Falls back to cycling by index
- * for any subject whose title doesn't match one of the five known ones,
- * so a future/renamed subject still renders instead of breaking.
- */
-const subjectThemeByTitle: Record<string, (typeof subjectThemeCycle)[number]> = {
-  "الذكاء الاصطناعي وتحليل البيانات": "ai",
-  "الثقافة القانونية والتنظيمية": "legal",
-  "حوكمة الأمن السيبراني": "cyber",
-  "الابتكار وإدارة المشاريع": "innovation",
-  "إدارة المخاطر": "risk",
-};
-const subjectThemeCycle = ["ai", "legal", "cyber", "innovation", "risk"] as const;
-const subjectIconByTheme: Record<(typeof subjectThemeCycle)[number], string> = {
-  ai: "◉",
-  legal: "⚖",
-  cyber: "⬡",
-  innovation: "✦",
-  risk: "△",
-};
-
-function themeForSubject(subject: Subject, index: number) {
-  return subjectThemeByTitle[subject.title] ?? subjectThemeCycle[index % subjectThemeCycle.length];
-}
 
 export default async function DashboardPage() {
   let profile: UserProfile | null = null;

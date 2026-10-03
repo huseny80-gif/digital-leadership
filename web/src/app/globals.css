@@ -190,11 +190,22 @@ button {
   max-width: var(--content-max-width);
   margin: 0 auto;
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
   padding: 0 var(--space-4);
   height: var(--header-height);
+  overflow: visible;
+}
+
+/* Brand and actions must never be the ones that shrink/clip when the
+ * middle (search) is tight — only the search bar itself should give up
+ * space, and below 1000px it's hidden entirely instead (see
+ * `.app-header-search` below) rather than fighting for room. */
+.app-brand,
+.app-header-actions {
+  flex-shrink: 0;
 }
 
 .app-brand {
@@ -269,13 +280,22 @@ button {
 }
 
 /* Header search affordance — disabled on purpose (no search API exists
- * yet). Hidden below 760px to keep the compact mobile header readable;
- * the header's own flex layout still shrinks it gracefully on tablet. */
+ * yet). CONFIRMED VISUAL BUG (real iPad portrait test, ~820px): showing
+ * this from 760px up crammed the full-width search bar into the same
+ * row as the new profile pill/logout/hamburger at tablet-portrait
+ * widths, visually breaking the header. Per the explicit fix direction
+ * ("do not try to fit desktop search + profile + language controls
+ * into 820px"), this is now desktop-only (>=1000px, the same breakpoint
+ * where the sidebar appears and the profile pill's name/role text and
+ * the language pill also turn on) — tablet portrait and below get the
+ * plain compact header (brand + hamburger + avatar + logout) that was
+ * already proven to work before this affordance existed. */
 .app-header-search {
   display: none;
   align-items: center;
   gap: var(--space-2);
   flex: 1;
+  min-width: 0;
   max-width: 34rem;
   margin: 0 var(--space-3);
   padding: 0 var(--space-4);
@@ -286,7 +306,7 @@ button {
   color: rgba(255, 255, 255, 0.85);
 }
 
-@media (min-width: 760px) {
+@media (min-width: 1000px) {
   .app-header-search {
     display: flex;
   }
@@ -1407,7 +1427,18 @@ a.content-card:hover,
 .dl-lower-list li a small{font-size:.74rem;color:#7c8e92}
 @media(max-width:1250px){.dl-subject-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){.app-header-inner{height:64px;padding-inline:.75rem}.app-brand-logo{width:42px;height:42px}.app-brand-copy b{font-size:.85rem}.app-brand-copy small{font-size:.48rem}.dl-hero{grid-template-columns:1fr;min-height:auto;padding:1.35rem;border-radius:16px}.dl-hero-copy{text-align:center}.dl-hero p{margin-inline:auto}.dl-hero-dots{justify-content:center}.dl-hero-mark{height:190px;margin-top:.8rem}.dl-subject-grid{grid-template-columns:1fr}.dl-section-heading{align-items:center}.dl-dashboard{padding-bottom:.5rem}.dl-lower-grid{grid-template-columns:1fr}}
-@media(min-width:761px) and (max-width:1100px){.dl-hero{grid-template-columns:1.15fr .85fr}.dl-hero-mark{height:230px}.dl-subject-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:761px) and (max-width:1100px){.dl-hero{grid-template-columns:1.15fr .85fr}.dl-hero-mark{height:230px}.dl-subject-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+/* Confirmed real iPad-portrait defect: `.dl-subject-card h3`'s fixed
+ * `min-height:3.3em` (sized for narrow 5-column desktop cards, where
+ * long titles wrap to 2-3 lines) left a large empty gap under short
+ * titles once cards are this much wider at 2 columns. Tightened here
+ * only, at the width band this 2-column layout actually applies —
+ * desktop's 5-column spacing is untouched. */
+.dl-subject-icon{height:58px;margin-bottom:.65rem;font-size:1.6rem}
+.dl-subject-card h3{min-height:auto;margin-bottom:.15rem}
+.dl-subject-card p{margin:.3rem 0 .6rem}
+.dl-subject-meta{margin-bottom:.3rem}
+}
 
 
 /* Video-inspired learner workspace refinement — preserves the approved
