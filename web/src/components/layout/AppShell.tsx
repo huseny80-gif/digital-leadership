@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
 import { GuestLogoutButton } from "./GuestLogoutButton";
-import { PrimaryNav } from "./PrimaryNav";
 import { MobileNav, type NavItem } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 import { Footer } from "./Footer";
+import { HomeIcon, GridIcon, GearIcon, UserIcon, InfoIcon, SearchIcon, GlobeIcon, ChevronIcon } from "./Icons";
 
 /**
  * Application shell — THE ONE learner platform shell, wrapping every
@@ -57,15 +57,33 @@ export function AppShell({
   const isGuest = Boolean(guestSession);
   const homeHref = "/dashboard";
 
+  // Route inventory (reference-design audit): the reference sidebar also
+  // shows المحاضرات / الملخصات / الواجبات والأنشطة / الاختبارات /
+  // المصادر والملفات / المجتمع التدريبي / الإحصائيات / تواصل معنا as
+  // top-level items. None of those have a real top-level, platform-wide
+  // route today — lectures/assignments/assessments only exist nested
+  // under `/subjects/[subjectId]/*`, there is no community/contact
+  // feature, and "الإحصائيات" already lives inside `/dashboard` as the
+  // learner-analytics panel. Per the "no dead links" rule, none of those
+  // are added here; only routes that actually exist and resolve are
+  // listed (documented again in this branch's PR description).
   const items: NavItem[] = [
-    { href: "/dashboard", label: "الرئيسية", icon: "⌂" },
-    { href: "/subjects", label: "المواد الدراسية", icon: "▣" },
-    ...(isAdmin ? [{ href: "/admin", label: "الإدارة", icon: "⚙" }] : []),
+    { href: "/dashboard", label: "الرئيسية", icon: <HomeIcon /> },
+    { href: "/subjects", label: "المواد الدراسية", icon: <GridIcon /> },
+    ...(isAdmin ? [{ href: "/admin", label: "الإدارة", icon: <GearIcon /> }] : []),
     // A guest has no permanent-user account, so no Profile page to link
     // to (task constraint).
-    ...(isGuest ? [] : [{ href: "/profile", label: "الملف الشخصي", icon: "◉" }]),
-    { href: "/about", label: "من نحن", icon: "ℹ️" },
+    ...(isGuest ? [] : [{ href: "/profile", label: "الملف الشخصي", icon: <UserIcon /> }]),
+    { href: "/about", label: "من نحن", icon: <InfoIcon /> },
   ];
+
+  // `AppLayout` only resolves `userEmail` for a registered principal (no
+  // `displayName` is fetched there) — showing the real email is the
+  // truthful option available, never a hard-coded name for every user
+  // (task constraint).
+  const displayName = isGuest ? guestSession!.displayName : userEmail ?? "مستخدم مسجل";
+  const roleLabel = isGuest ? "متدرب زائر" : isAdmin ? "مدير المنصة" : "متدرب مسجل";
+  const initial = displayName.trim().charAt(0).toUpperCase();
 
   return (
     <div className="app-shell" dir="rtl">
@@ -85,15 +103,38 @@ export function AppShell({
             />
             <span className="app-brand-copy"><b>القيادة الرقمية</b><small>DIGITAL LEADERSHIP</small></span>
           </Link>
-          <PrimaryNav items={items} />
+          {/* Search affordance: no search API/data path exists anywhere
+           * in the backend (checked `backend/src` for a search route
+           * before building this) — rendered as a disabled, honest
+           * "coming soon" control rather than a fake, wired-up search
+           * box (task requirement: never fabricate a search endpoint). */}
+          <div className="app-header-search" aria-hidden="false">
+            <SearchIcon />
+            <input
+              type="search"
+              placeholder="البحث في المحاضرات والملفات والاختبارات ..."
+              disabled
+              aria-label="البحث (قريبًا)"
+              title="البحث قريبًا"
+              readOnly
+            />
+          </div>
+
           <div className="app-header-actions">
-            {isGuest ? (
-              <span className="app-user-email">
-                {guestSession!.displayName} · Guest Learner
+            <span className="app-lang-pill">
+              <GlobeIcon />
+              العربية
+            </span>
+            <div className="app-profile-pill">
+              <span className="app-profile-avatar" aria-hidden="true">
+                {initial}
               </span>
-            ) : userEmail ? (
-              <span className="app-user-email">{userEmail}</span>
-            ) : null}
+              <span className="app-profile-copy">
+                <b>{displayName}</b>
+                <small>{roleLabel}</small>
+              </span>
+              <ChevronIcon className="app-profile-chevron" />
+            </div>
             {isGuest ? <GuestLogoutButton /> : <LogoutButton />}
             <MobileNav items={items} />
           </div>
