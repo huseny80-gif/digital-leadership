@@ -318,7 +318,7 @@ describe("Answer submission", () => {
     expect(res.status).toBe(400);
   });
 
-  it("10. client cannot submit correctness or points — the answer acknowledgment carries no such fields", async () => {
+  it("10. client cannot claim correctness or points — server returns authoritative study feedback after grading", async () => {
     const { publishedQuizId, userToken, questionId, correctOptionId } = await seedQuizScenario();
     const app = createApp();
     const attemptId = await startAttempt(app, publishedQuizId, userToken);
