@@ -29,8 +29,20 @@ import { join } from "node:path";
  * scan alone would not catch a bug where the type omits the field but the
  * server accidentally serializes it anyway — that is why the backend
  * tests exist and are the authoritative check, not this one.
+ *
+ * `QuizAttemptRunner.tsx` is the one additional, deliberate exclusion
+ * here (same pattern as the Admin Console carve-out below): PHASE 09B's
+ * own `SubmitAnswerAck.isCorrect` is "training-mode feedback returned
+ * only after the learner answers" (see quiz.ts), not a pre-answer answer
+ * key — exactly what the third test below already documents and asserts
+ * (`SubmitAnswerAck[\s\S]*isCorrect`). It renders that field to show the
+ * learner whether their already-submitted answer was right, never a
+ * `QuestionForAttempt`/pre-answer value — `QuestionForAttempt` still has
+ * no such field (enforced by that same third test), so there is nothing
+ * for this component to leak before an answer is recorded.
  */
 const ADMIN_ONLY_PATH_SEGMENT = `${join("app", "(app)", "admin")}`;
+const POST_ANSWER_FEEDBACK_FILE = join("components", "quiz", "QuizAttemptRunner.tsx");
 function listFiles(dir: string): string[] {
   const entries = readdirSync(dir, { withFileTypes: true });
   return entries.flatMap((entry) => {
@@ -49,8 +61,29 @@ describe("no answer-key field in LEARNER-facing web client source", () => {
     const offenders = listFiles(srcDir)
       .filter((file) => /\.(ts|tsx)$/.test(file))
       .filter((file) => !file.includes(ADMIN_ONLY_PATH_SEGMENT))
+      .filter((file) => !file.includes(POST_ANSWER_FEEDBACK_FILE))
       .filter((file) => /is_correct|isCorrect/i.test(readFileSync(file, "utf8")));
     expect(offenders).toEqual([]);
+  });
+
+  it("QuizAttemptRunner only reads isCorrect from the post-answer SubmitAnswerAck, never a pre-answer field", () => {
+    const srcDir = join(__dirname, "..", "..", "src");
+    const runnerPath = listFiles(srcDir).find((file) => file.includes(POST_ANSWER_FEEDBACK_FILE));
+    expect(runnerPath).toBeDefined();
+    const content = readFileSync(runnerPath!, "utf8");
+    // Every `isCorrect` reference must be a property access on
+    // `studyFeedback[...]` (typed `Record<string, SubmitAnswerAck>`,
+    // populated only from a `saveAnswer` response — never seeded from
+    // `question`/`QuestionForAttempt`), and the type never comes from a
+    // destructured `isCorrect` or a direct `question.isCorrect` read,
+    // either of which could smuggle in a pre-answer field instead.
+    const matches = [...content.matchAll(/[.\w\]\[!]*\.isCorrect/g)].map((m) => m[0]);
+    expect(matches.length).toBeGreaterThan(0);
+    for (const match of matches) {
+      expect(match).toMatch(/^studyFeedback\[question\.id\]!?\.isCorrect$/);
+    }
+    expect(content).not.toMatch(/question\.isCorrect/);
+    expect(content).not.toMatch(/\bconst\s*\{\s*isCorrect/);
   });
 
   it("the Admin Console IS the only place isCorrect appears, confirming the boundary is intentional and narrow", () => {

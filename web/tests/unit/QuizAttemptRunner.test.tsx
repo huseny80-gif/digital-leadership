@@ -197,6 +197,71 @@ describe("QuizAttemptRunner", () => {
     expect(screen.getByText(/تمت الإجابة عن 0 من 2/i)).toBeInTheDocument();
   });
 
+  describe("study-mode feedback", () => {
+    it("selecting an MCQ option immediately reveals the correct-answer summary and explanation", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          data: {
+            questionId: "q1",
+            recorded: true,
+            isCorrect: false,
+            correctAnswerSummary: "4",
+            feedback: "Addition fact.",
+          },
+        }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      render(<QuizAttemptRunner quiz={quiz} questions={questions} attemptId="attempt-1" />);
+      fireEvent.click(screen.getByLabelText("3"));
+
+      expect(await screen.findByText("إجابة غير صحيحة", { exact: false })).toBeInTheDocument();
+      // "4" appears both as the option label and the correct-answer
+      // summary — asserting length 2 confirms the summary rendered too.
+      expect(screen.getAllByText("4")).toHaveLength(2);
+      expect(screen.getByText("Addition fact.")).toBeInTheDocument();
+    });
+
+    it("an essay/short-answer question shows an explicit 'تحقق من الإجابة' button instead of auto-revealing on blur", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          data: {
+            questionId: "q-essay",
+            recorded: true,
+            isCorrect: null,
+            correctAnswerSummary: "Model answer: defense in depth.",
+            feedback: "Reviewed manually.",
+          },
+        }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const essayQuestion: QuestionForAttempt = {
+        id: "q-essay",
+        questionType: "open",
+        prompt: "Explain defense in depth.",
+        points: 5,
+        options: null,
+        matchItems: null,
+        orderItems: null,
+      };
+
+      render(<QuizAttemptRunner quiz={quiz} questions={[essayQuestion]} attemptId="attempt-1" />);
+      fireEvent.change(screen.getByLabelText("إجابتك"), { target: { value: "My answer." } });
+      fireEvent.blur(screen.getByLabelText("إجابتك"));
+
+      // Blur saves the answer (so it's never lost on navigation) but must
+      // NOT reveal the correct-answer summary by itself.
+      await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      expect(screen.queryByText("Model answer: defense in depth.")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "تحقق من الإجابة" }));
+      expect(await screen.findByText("Model answer: defense in depth.")).toBeInTheDocument();
+    });
+  });
+
   describe("match questions", () => {
     const matchQuestion: QuestionForAttempt = {
       id: "q-match",

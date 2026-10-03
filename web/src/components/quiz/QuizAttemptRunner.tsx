@@ -81,6 +81,15 @@ export function QuizAttemptRunner({
   const [savedQuestionId, setSavedQuestionId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [studyFeedback, setStudyFeedback] = useState<Record<string, SubmitAnswerAck>>({});
+  // Which questions' feedback is actually shown. An MCQ/true-false
+  // selection is itself the deliberate "check my answer" action, so its
+  // feedback reveals immediately (see `selectOption`). A free-text answer
+  // is saved on blur for persistence (so navigating away never loses it)
+  // but must NOT reveal the correct-answer summary just because the
+  // learner clicked out of the textarea mid-draft — only the explicit
+  // "تحقق من الإجابة" button reveals it for those question types.
+  const [revealedQuestionIds, setRevealedQuestionIds] = useState<Set<string>>(new Set());
+  const [checkingQuestionId, setCheckingQuestionId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -155,7 +164,28 @@ export function QuizAttemptRunner({
   function selectOption(optionId: string) {
     const answer: AnswerState = { selectedOptionId: optionId };
     setAnswers((prev) => ({ ...prev, [question.id]: answer }));
+    setRevealedQuestionIds((prev) => new Set(prev).add(question.id));
     void saveAnswer(question.id, answer);
+  }
+
+  /** Explicit "تحقق من الإجابة" action for question types that aren't
+   * auto-revealed on selection (free text, match, order) — saves the
+   * current answer if it hasn't been saved yet, then reveals the
+   * feedback panel. Also how a learner re-reveals a short-answer/essay
+   * question's correct-answer summary/rubric after already having
+   * answered it (the panel stays hidden again only on navigating to a
+   * different question, never after being shown once). */
+  async function checkAnswer() {
+    const current = answers[question.id];
+    setCheckingQuestionId(question.id);
+    try {
+      if (current !== undefined && !studyFeedback[question.id]) {
+        await saveAnswer(question.id, current);
+      }
+      setRevealedQuestionIds((prev) => new Set(prev).add(question.id));
+    } finally {
+      setCheckingQuestionId(null);
+    }
   }
 
   function updateAnswerText(value: string) {
@@ -404,6 +434,46 @@ export function QuizAttemptRunner({
             />
           </div>
         )}
+
+        {/* MCQ/true-false reveal immediately on selection (see
+         * `selectOption`) — this explicit "تحقق من الإجابة" action is only
+         * for the question types that don't have a single, deliberate
+         * selection moment: free text, match, and order. Also doubles as
+         * "عرض الإجابة الصحيحة" for an essay/scenario question the learner
+         * has already answered — clicking it again after the panel is
+         * already showing just re-confirms it's visible, never hides it. */}
+        {!question.options && currentAnswer !== undefined && !revealedQuestionIds.has(question.id) ? (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => void checkAnswer()}
+            disabled={checkingQuestionId === question.id}
+            style={{ marginTop: "var(--space-3)" }}
+          >
+            {checkingQuestionId === question.id ? "جارٍ التحقق…" : "تحقق من الإجابة"}
+          </button>
+        ) : null}
+
+        {revealedQuestionIds.has(question.id) && studyFeedback[question.id] ? (
+          <div
+            className={`fq-study-feedback ${studyFeedback[question.id]!.isCorrect === true ? "is-correct" : studyFeedback[question.id]!.isCorrect === false ? "is-wrong" : "is-review"}`}
+          >
+            <strong>
+              {studyFeedback[question.id]!.isCorrect === true
+                ? "✓ إجابة صحيحة"
+                : studyFeedback[question.id]!.isCorrect === false
+                  ? "✕ إجابة غير صحيحة"
+                  : "بانتظار المراجعة"}
+            </strong>
+            <p>{studyFeedback[question.id]!.feedback}</p>
+            {studyFeedback[question.id]!.correctAnswerSummary ? (
+              <div>
+                <span>الإجابة الصحيحة</span>
+                <p>{studyFeedback[question.id]!.correctAnswerSummary}</p>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         <p role="status" aria-live="polite" className="item-row-meta" style={{ marginTop: "var(--space-3)" }}>
           {savingQuestionId === question.id ? "جارٍ الحفظ…" : savedQuestionId === question.id ? "تم الحفظ ✓" : ""}
