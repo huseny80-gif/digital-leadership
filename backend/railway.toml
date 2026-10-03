@@ -1,4 +1,5 @@
 # Railway deployment configuration for the backend service.
+# Deployment trigger: refresh backend after PR #14 study-feedback merge.
 # Railway's Nixpacks builder auto-detects this as a Node/npm project from
 # package.json; this file only pins the build/start commands and health
 # check to match what's actually defined there (package.json "scripts"),
