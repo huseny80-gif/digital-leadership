@@ -4,11 +4,11 @@ export const subjectThemeCycle = ["ai", "legal", "cyber", "innovation", "risk"] 
 export type SubjectTheme = (typeof subjectThemeCycle)[number];
 
 export const subjectIconByTheme: Record<SubjectTheme, string> = {
-  ai: "◉",
+  ai: "🧠",
   legal: "⚖",
-  cyber: "⬡",
-  innovation: "✦",
-  risk: "△",
+  cyber: "🛡",
+  innovation: "💡",
+  risk: "⚠",
 };
 
 /**
