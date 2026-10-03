@@ -44,5 +44,9 @@ export function subjectTabs(
       icon: "📋",
       count: counts.assignments,
     },
+    { key: "summaries", href: `/subjects/${subjectId}/library?section=summaries`, label: "الملخصات", icon: "📄" },
+    { key: "references", href: `/subjects/${subjectId}/library?section=references`, label: "المراجع", icon: "📚" },
+    { key: "resources", href: `/subjects/${subjectId}/library?section=resources`, label: "الموارد", icon: "📁" },
+    { key: "updates", href: `/subjects/${subjectId}/library?section=updates`, label: "التحديثات", icon: "🗓️" },
   ];
 }

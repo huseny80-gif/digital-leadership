@@ -204,3 +204,17 @@
   .dl-workspace .dl-hero-copy h1 { font-size: 23px; }
 }
 @media (prefers-reduced-motion: reduce) { .dl-workspace * { scroll-behavior: auto; transition: none; } }
+.dl-workspace .dl-library-list { display: grid; gap: 16px; margin-top: 18px; }
+.dl-workspace .dl-library-entry { padding: 20px; line-height: 1.9; }
+.dl-workspace .dl-library-entry h2 { color: var(--dl-ink); font-size: 20px; }
+.dl-workspace .dl-library-entry h3 { margin-top: 16px; font-size: 17px; }
+.dl-workspace .dl-library-text { white-space: pre-wrap; }
+.dl-workspace .dl-library-document { margin-block: 16px; }
+.dl-workspace .dl-library-document > summary, .dl-workspace .dl-library-file summary { cursor: pointer; color: #057b89; font-weight: 700; }
+.dl-workspace .dl-library-reader { overflow-wrap: anywhere; overflow-x: auto; }
+.dl-workspace .dl-library-reader table { border-collapse: collapse; width: 100%; }
+.dl-workspace .dl-library-reader td, .dl-workspace .dl-library-reader th { border: 1px solid #dce6e9; padding: 8px; }
+.dl-workspace .dl-library-reader p, .dl-workspace .dl-library-reader ul { margin-block: 12px; }
+.dl-workspace .dl-library-file { padding-block: 10px; border-top: 1px solid #dce6e9; }
+.dl-workspace .dl-library-file small { display: block; }
+.dl-workspace .dl-library-file iframe { width: 100%; height: 70vh; border: 1px solid #dce6e9; margin-top: 12px; }

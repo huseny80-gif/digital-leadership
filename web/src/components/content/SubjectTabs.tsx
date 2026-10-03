@@ -28,7 +28,7 @@ export { subjectTabs } from "./subjectTabs.config";
  * Components — a plain function can't be imported from a "use client"
  * module into server code, only the component itself can.
  */
-export function SubjectTabs({ tabs }: { tabs: SubjectTabDef[] }) {
+export function SubjectTabs({ tabs, activeKey }: { tabs: SubjectTabDef[]; activeKey?: string }) {
   const pathname = usePathname();
 
   return (
@@ -38,7 +38,7 @@ export function SubjectTabs({ tabs }: { tabs: SubjectTabDef[] }) {
           key={tab.key}
           href={tab.href}
           className="section-tab"
-          aria-current={pathname === tab.href ? "page" : undefined}
+          aria-current={(activeKey ? tab.key === activeKey : pathname === tab.href) ? "page" : undefined}
         >
           <span aria-hidden="true">{tab.icon}</span> {tab.label}
           {typeof tab.count === "number" ? (

@@ -1,12 +1,12 @@
 import Link from "next/link";
-import type { Assignment, Lecture, LectureItemResponse, Quiz, Subject } from "@shared/index";
-import { apiGetPaginated } from "@/lib/api/client";
+import type { Assignment, Lecture, LectureItemResponse, Quiz, Subject, SubjectLibrary } from "@shared/index";
+import { apiGet, apiGetPaginated } from "@/lib/api/client";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
 
 export const contentViews = { lectures: "المحاضرات", summaries: "الملخصات", assignments: "الواجبات والأنشطة", assessments: "الاختبارات", files: "المصادر والملفات", search: "نتائج البحث" } as const;
 export type ContentView = keyof typeof contentViews;
-type Entry = { id: string; title: string; subjectTitle: string; href: string; icon: string };
+type Entry = { id: string; title: string; subjectTitle: string; href: string; icon: string; keywords?: string };
 
 export async function ContentHub({ subjects, view, query = "" }: { subjects: Subject[]; view: ContentView; query?: string }) {
   const entries: Entry[] = [];
@@ -15,6 +15,26 @@ export async function ContentHub({ subjects, view, query = "" }: { subjects: Sub
   for (let offset = 0; offset < subjects.length; offset += 5) {
     await Promise.all(subjects.slice(offset, offset + 5).map(async (subject) => {
       try {
+        if (["summaries", "files", "search"].includes(view)) {
+          try {
+            const library = (await apiGet<SubjectLibrary>(`/api/v1/subjects/${subject.id}/library`)).data;
+            const files = new Set<string>();
+            for (const row of library.entries) {
+              const href = `/subjects/${subject.id}/library?section=${row.section}&entry=${encodeURIComponent(row.id)}`;
+              if (view === "summaries" && row.section !== "summaries") continue;
+              if (view === "files") {
+                for (const file of row.files) {
+                  if (files.has(file.id)) continue;
+                  files.add(file.id);
+                  entries.push({ id: `library-file-${file.id}`, title: file.label + " — " + file.filename, subjectTitle: subject.title, href, icon: "folder" });
+                }
+                if (row.section === "references" || row.section === "resources") entries.push({ id: `library-${row.id}`, title: row.title, subjectTitle: subject.title, href, icon: "book" });
+                continue;
+              }
+              entries.push({ id: `library-${row.id}`, title: row.title, subjectTitle: subject.title, href, icon: "document", keywords: [row.description, row.note, ...(row.keyPoints ?? []), ...(row.concepts ?? []).map(c => c.term + " " + c.definition), ...row.files.map(f => f.bodyHtml?.replace(/<[^>]+>/g, " ") ?? f.filename)].join(" ") });
+            }
+          } catch { /* Existing platform content remains available if the supplemental library is temporarily unavailable. */ }
+        }
         if (["lectures", "summaries", "files", "search"].includes(view)) {
           const lectures = await apiGetPaginated<Lecture>(`/api/v1/subjects/${subject.id}/lectures?page=1&limit=50`);
           if (view === "lectures" || view === "search") entries.push(...lectures.data.map((lecture) => ({ id: `lecture-${lecture.id}`, title: lecture.title, subjectTitle: subject.title, href: `/subjects/${subject.id}/lectures/${lecture.id}`, icon: "video" })));
@@ -32,7 +52,7 @@ export async function ContentHub({ subjects, view, query = "" }: { subjects: Sub
           entries.push(...assignments.data.map((assignment) => ({ id: `assignment-${assignment.id}`, title: assignment.title, subjectTitle: subject.title, href: `/subjects/${subject.id}/assignments/${assignment.id}`, icon: "clipboard" })));
         }
         if (view === "assessments" || view === "search") {
-          const quizzes = await apiGetPaginated<Quiz>(`/api/v1/subjects/${subject.id}/quizzes?page=1&limit=50`);
+          const quizzes = await apiGet<Quiz[]>(`/api/v1/subjects/${subject.id}/assessments`);
           entries.push(...quizzes.data.map((quiz) => ({ id: `quiz-${quiz.id}`, title: quiz.title, subjectTitle: subject.title, href: `/quizzes/${quiz.id}`, icon: "quiz" })));
         }
       } catch { failures.push(subject.id); }
@@ -40,7 +60,7 @@ export async function ContentHub({ subjects, view, query = "" }: { subjects: Sub
   }
   const failed = failures.length > 0;
   const normalize = (value: string) => value.normalize("NFKC").replace(/[\u064B-\u065F\u0670]/g, "").replace(/[أإآ]/g, "ا").toLowerCase();
-  const results = entries.filter((entry) => !query || normalize(`${entry.title} ${entry.subjectTitle}`).includes(normalize(query))).sort((a, b) => a.subjectTitle.localeCompare(b.subjectTitle, "ar") || a.title.localeCompare(b.title, "ar"));
+  const results = entries.filter((entry) => !query || normalize(`${entry.title} ${entry.subjectTitle} ${entry.keywords ?? ""}`).includes(normalize(query))).sort((a, b) => a.subjectTitle.localeCompare(b.subjectTitle, "ar") || a.title.localeCompare(b.title, "ar"));
   return <section>
     <h1 className="page-heading">{contentViews[view]}</h1>
     {query ? <p className="page-subheading">نتائج البحث عن «{query}»</p> : null}
