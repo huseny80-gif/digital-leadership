@@ -45,8 +45,8 @@ export function LogoutButton() {
   }
 
   return (
-    <button type="button" onClick={handleLogout} disabled={loading}>
-      {loading ? "Signing out…" : "Sign out"}
+    <button type="button" className="app-header-logout" onClick={handleLogout} disabled={loading}>
+      {loading ? "جارٍ تسجيل الخروج…" : "تسجيل الخروج"}
     </button>
   );
 }
