@@ -66,7 +66,7 @@ describe("SubjectAssessmentsPage", () => {
     const element = await SubjectAssessmentsPage({ params: Promise.resolve({ subjectId: "s1" }) });
     render(element);
 
-    expect(screen.getByText(/no quizzes yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/لا توجد اختبارات بعد/i)).toBeInTheDocument();
   });
 
   it("renders a NotFoundState for an inaccessible/nonexistent subject", async () => {

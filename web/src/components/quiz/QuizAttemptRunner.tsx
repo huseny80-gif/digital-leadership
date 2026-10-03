@@ -80,6 +80,7 @@ export function QuizAttemptRunner({
   const [savingQuestionId, setSavingQuestionId] = useState<string | null>(null);
   const [savedQuestionId, setSavedQuestionId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [studyFeedback, setStudyFeedback] = useState<Record<string, SubmitAnswerAck>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -143,6 +144,7 @@ export function QuizAttemptRunner({
         return;
       }
       setSavedQuestionId(questionId);
+      setStudyFeedback((prev) => ({ ...prev, [questionId]: parsed.data! }));
     } catch {
       setSaveError("Unable to save your answer. Please try again.");
     } finally {
@@ -235,17 +237,17 @@ export function QuizAttemptRunner({
             color: remainingSeconds <= 60 ? "var(--color-danger)" : undefined,
           }}
         >
-          Time remaining: {formatRemainingTime(remainingSeconds)}
+          الوقت المتبقي: {formatRemainingTime(remainingSeconds)}
         </div>
       ) : null}
 
       <div role="status" aria-live="polite" className="item-row-meta" style={{ marginBottom: "var(--space-3)" }}>
-        Question {currentIndex + 1} of {questions.length} — {answeredCount} of {questions.length} answered
+        السؤال {currentIndex + 1} من {questions.length} — تمت الإجابة عن {answeredCount} من {questions.length}
       </div>
 
       <div
         role="navigation"
-        aria-label="Jump to question"
+        aria-label="الانتقال إلى سؤال"
         style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}
       >
         {questions.map((q, index) => {
@@ -274,7 +276,7 @@ export function QuizAttemptRunner({
         })}
       </div>
 
-      <fieldset style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "var(--space-5)" }}>
+      <fieldset className="fq-question-card" style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "var(--space-5)" }}>
         <legend style={{ fontWeight: 600, fontSize: "var(--font-size-lg)", padding: "0 var(--space-2)" }}>
           {question.prompt}
         </legend>
@@ -285,6 +287,7 @@ export function QuizAttemptRunner({
               <label
                 key={option.id}
                 htmlFor={`option-${option.id}`}
+                className="fq-answer-option"
                 style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: "pointer" }}
               >
                 <input
@@ -321,7 +324,7 @@ export function QuizAttemptRunner({
                     }}
                   >
                     <option value="" disabled>
-                      Select a match…
+                      اختر المطابقة…
                     </option>
                     {question.matchItems!.right.map((rightItem) => (
                       <option key={rightItem.id} value={rightItem.id}>
@@ -380,7 +383,7 @@ export function QuizAttemptRunner({
         ) : (
           <div style={{ marginTop: "var(--space-3)" }}>
             <label htmlFor={`answer-${question.id}`} className="item-row-meta">
-              Your answer
+              إجابتك
             </label>
             <textarea
               id={`answer-${question.id}`}
@@ -403,7 +406,7 @@ export function QuizAttemptRunner({
         )}
 
         <p role="status" aria-live="polite" className="item-row-meta" style={{ marginTop: "var(--space-3)" }}>
-          {savingQuestionId === question.id ? "Saving…" : savedQuestionId === question.id ? "Saved ✓" : ""}
+          {savingQuestionId === question.id ? "جارٍ الحفظ…" : savedQuestionId === question.id ? "تم الحفظ ✓" : ""}
         </p>
         {saveError ? (
           <p role="alert" className="item-row-meta" style={{ color: "var(--color-danger)" }}>
@@ -430,7 +433,7 @@ export function QuizAttemptRunner({
           Next
         </button>
         <button type="button" className="btn" onClick={handleSubmit} disabled={submitting} style={{ marginLeft: "auto" }}>
-          {submitting ? "Submitting…" : "Submit Quiz"}
+          {submitting ? "جارٍ الإرسال…" : "إنهاء الاختبار"}
         </button>
       </div>
 

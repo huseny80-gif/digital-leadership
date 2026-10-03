@@ -215,7 +215,7 @@ describe("SubjectAssignmentsPage", () => {
     const element = await SubjectAssignmentsPage({ params: Promise.resolve({ subjectId: "s1" }) });
     render(element);
 
-    expect(screen.getByText(/no assignments yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/لا توجد تكليفات بعد/i)).toBeInTheDocument();
   });
 
   it("lectureId = null does not break rendering (assignments are subject-scoped)", async () => {

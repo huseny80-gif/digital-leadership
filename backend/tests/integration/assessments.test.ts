@@ -318,7 +318,7 @@ describe("Answer submission", () => {
     expect(res.status).toBe(400);
   });
 
-  it("10. client cannot submit correctness or points — the answer acknowledgment carries no such fields", async () => {
+  it("10. client cannot claim correctness or points — server returns authoritative study feedback after grading", async () => {
     const { publishedQuizId, userToken, questionId, correctOptionId } = await seedQuizScenario();
     const app = createApp();
     const attemptId = await startAttempt(app, publishedQuizId, userToken);
@@ -329,8 +329,10 @@ describe("Answer submission", () => {
       .send({ questionId, selectedOptionId: correctOptionId, isCorrect: true, pointsAwarded: 999, score: 100 });
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toEqual({ questionId, recorded: true });
-    expect(JSON.stringify(res.body)).not.toMatch(/isCorrect|pointsAwarded|score/i);
+    expect(res.body.data).toEqual(expect.objectContaining({ questionId, recorded: true, isCorrect: true }));
+    expect(res.body.data.correctAnswerSummary).toBeTruthy();
+    expect(res.body.data.feedback).toBeTruthy();
+    expect(JSON.stringify(res.body)).not.toMatch(/pointsAwarded|score/i);
   });
 
   it("8. a user cannot submit an answer after the attempt has already been submitted", async () => {

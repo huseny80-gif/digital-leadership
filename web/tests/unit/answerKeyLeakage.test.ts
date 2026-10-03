@@ -64,14 +64,16 @@ describe("no answer-key field in LEARNER-facing web client source", () => {
     expect(adminFilesReferencingIt.map((f) => f.split("/").pop())).toEqual(["page.tsx"]);
   });
 
-  it("the shared QuestionForAttempt/QuizAttemptResult contracts have no correctness field", () => {
+  it("QuestionForAttempt still has no answer key while post-answer feedback may contain correctness", () => {
     const quizTypes = join(__dirname, "..", "..", "..", "shared", "src", "types", "quiz.ts");
     const content = readFileSync(quizTypes, "utf8");
     // The file legitimately documents, in prose, why is_correct is
     // excluded — so this checks for no *field declaration* of it, not an
     // absence of the word entirely.
     expect(content).not.toMatch(/\bis_correct\s*[:?]/);
-    expect(content).not.toMatch(/\bisCorrect\s*[:?]/);
+    const questionForAttemptContract = content.split("export interface QuestionForAttempt")[1]?.split("export interface QuizAttempt")[0] ?? "";
+    expect(questionForAttemptContract).not.toMatch(/\\bisCorrect\\s*[:?]/);
+    expect(content).toMatch(/export interface SubmitAnswerAck[\\s\\S]*isCorrect:\\s*boolean \\| null/);
   });
 
   /**
