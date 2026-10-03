@@ -99,6 +99,9 @@ export default async function DashboardPage() {
         <div className="dl-hero-mark" aria-hidden="true">
           <img src="/logo.webp" alt="" />
         </div>
+        <div className="dl-hero-tech" aria-hidden="true">
+          <img src="/hero-tech-right.webp" alt="" />
+        </div>
       </div>
 
       {errorMessage ? <ErrorState message={errorMessage} retryHref="/dashboard" /> : null}
