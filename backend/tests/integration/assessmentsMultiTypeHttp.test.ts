@@ -84,7 +84,10 @@ describe("POST /attempts/:attemptId/answers — match, over real HTTP", () => {
     expect(answerRes.body.data.correctAnswerSummary).toBeTruthy();
     expect(answerRes.body.data.feedback).toBeTruthy();
     // No correctness/points in the ack, for match either (unchanged rule).
-    expect(answerRes.body.data.isCorrect).toBe(true);\n    expect(answerRes.body.data.correctAnswerSummary).toBeTruthy();\n    expect(answerRes.body.data.feedback).toBeTruthy();\n    expect(JSON.stringify(answerRes.body)).not.toMatch(/is_correct|pointsAwarded/i);
+    expect(answerRes.body.data.isCorrect).toBe(true);
+    expect(answerRes.body.data.correctAnswerSummary).toBeTruthy();
+    expect(answerRes.body.data.feedback).toBeTruthy();
+    expect(JSON.stringify(answerRes.body)).not.toMatch(/is_correct|pointsAwarded/i);
 
     const submitRes = await request(app).post(`/api/v1/attempts/${attemptId}/submit`).set("Authorization", `Bearer ${userToken}`);
     expect(submitRes.body.data.score).toBe(2);
