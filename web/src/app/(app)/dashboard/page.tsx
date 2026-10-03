@@ -85,15 +85,22 @@ export default async function DashboardPage() {
   }
 
   const welcomeName = profile?.displayName ?? guestSession?.displayName;
+  const themeOrder = { ai: 0, legal: 1, cyber: 2, innovation: 3, risk: 4 } as const;
+  const orderedSubjects = subjectsResult
+    ? [...subjectsResult.data].sort((a, b) => {
+        const aTheme = themeForSubject(a, 99);
+        const bTheme = themeForSubject(b, 99);
+        return themeOrder[aTheme] - themeOrder[bTheme];
+      })
+    : [];
 
   return (
     <section className="dl-dashboard" dir="rtl">
       <div className="dl-hero">
         <div className="dl-hero-copy">
-          <span className="dl-welcome">{welcomeName ? `مرحباً، ${welcomeName}` : "مرحباً بك"}</span>
           <h1>منصة القيادة الرقمية</h1>
           <h2>التعلم ... نحو مستقبل رقمي أفضل</h2>
-          <p>منصة تعليمية تفاعلية حديثة لعرض محتوى الدبلوم، المحاضرات والاختبارات بأسلوب واضح ومرن يدعم بناء قدرات القادة.</p>
+          <p>منصة تعليمية تفاعلية حديثة تقدم محتوى ديبلوم القيادة الرقمية بأسلوب تفاعلي حديث ومرن لدعم بناء قدرات القادة.</p>
           <div className="dl-hero-dots" aria-hidden="true"><i /><i /><i /></div>
         </div>
         <div className="dl-hero-mark" aria-hidden="true">
@@ -120,11 +127,11 @@ export default async function DashboardPage() {
             </div>
             <Link href="/subjects">عرض جميع المواد ←</Link>
           </div>
-          {subjectsResult.data.length === 0 ? (
+          {orderedSubjects.length === 0 ? (
             <EmptyState title="لا توجد مواد متاحة حالياً" message="ستظهر المواد هنا فور نشرها." />
           ) : (
             <div className="dl-subject-grid">
-              {subjectsResult.data.map((subject, index) => {
+              {orderedSubjects.map((subject, index) => {
                 const theme = themeForSubject(subject, index);
                 const subjectAnalytics = analytics?.subjects.find((s) => s.subjectId === subject.id);
                 return (
