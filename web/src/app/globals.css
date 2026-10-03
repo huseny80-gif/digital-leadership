@@ -1819,3 +1819,45 @@ a.content-card:hover,
     transform-origin:center right;
   }
 }
+
+
+/* ===== Pixel-match dashboard reference pass (2026-10-03) ===== */
+/* Outer dashboard only. Subject/workspace pages keep the Finquiz rules above. */
+@media (min-width:1000px){
+  .app-header-inner{direction:ltr}
+  .app-brand{order:1;direction:rtl;justify-content:flex-start}
+  .app-header-search{order:2;direction:rtl;margin-inline:auto}
+  .app-header-actions{order:3;direction:rtl}
+  .app-body{direction:ltr}
+  .app-sidebar{direction:rtl}
+  .app-main{direction:rtl}
+  .dl-dashboard{direction:rtl}
+  .dl-hero{
+    direction:ltr;
+    grid-template-columns:minmax(300px,.82fr) minmax(300px,.78fr) minmax(330px,.9fr);
+    grid-template-areas:"copy mark tech";
+    min-height:304px;
+    padding:0 0 0 38px;
+  }
+  .dl-hero-copy{grid-area:copy;order:initial;direction:rtl;text-align:right;align-self:center;padding:30px 18px 30px 0}
+  .dl-hero-mark{grid-area:mark;order:initial;height:304px;margin:0;align-self:end}
+  .dl-hero-mark img{width:min(390px,118%);max-height:300px}
+  .dl-hero-tech{grid-area:tech;order:initial;height:304px;border-radius:0 18px 18px 0}
+  .dl-hero-tech-art{height:100%;min-width:420px;transform:scale(1.12);transform-origin:center right}
+  .dl-hero-dots{justify-content:flex-end}
+  .dl-subject-section{margin-top:12px}
+  .dl-section-heading{direction:rtl}
+  .dl-subject-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+  .dl-subject-card{min-height:232px;padding:9px}
+  .dl-subject-icon{height:74px;min-height:74px;margin-bottom:8px}
+  .dl-subject-card h3{min-height:48px;margin:5px 3px 0;display:flex;align-items:center;justify-content:center;line-height:1.45}
+  .dl-subject-meta{margin-top:0;margin-bottom:4px}
+  .dl-subject-button{margin-top:auto}
+  .dl-lower-grid{margin-top:12px}
+}
+@media (min-width:1260px){
+  .app-main{padding:20px 24px 36px}
+  .dl-hero{min-height:320px;grid-template-columns:minmax(340px,.86fr) minmax(350px,.82fr) minmax(390px,.94fr)}
+  .dl-hero-mark,.dl-hero-tech{height:320px}
+  .dl-hero h1{font-size:2.65rem}
+}
