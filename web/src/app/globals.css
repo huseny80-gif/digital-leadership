@@ -439,6 +439,13 @@ button {
 .app-body {
   flex: 1;
   display: flex;
+  /* Reference spec point 14: the page content is Arabic RTL, but the
+   * reference design's sidebar sits on the LEFT regardless — this must
+   * not be left to fall out of `dir="rtl"` by accident. In a `row`
+   * flex container under RTL, the DOM-first child (Sidebar) would sit
+   * on the right; `row-reverse` puts it on the left instead, matching
+   * the reference, while every child's own text still renders RTL. */
+  flex-direction: row-reverse;
   width: 100%;
   max-width: var(--content-max-width);
   margin: 0 auto;
@@ -461,7 +468,10 @@ button {
     height: calc(100vh - var(--header-height));
     overflow-y: auto;
     background: linear-gradient(180deg, #053b48 0%, #042c37 100%);
-    border-inline-end: 1px solid rgba(255, 255, 255, 0.08);
+    /* Sidebar now sits on the left (`.app-body`'s row-reverse above) —
+     * the border must face the main content on its right, which in RTL
+     * is the inline-start edge. */
+    border-inline-start: 1px solid rgba(255, 255, 255, 0.08);
   }
 }
 
