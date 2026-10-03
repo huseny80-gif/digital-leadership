@@ -29,7 +29,7 @@ export default async function DashboardPage() {
 
   let analytics: LearnerAnalytics | null = null;
   let analyticsErrorMessage: string | null = null;
-  if (!errorMessage && !guestSession) {
+  if (!errorMessage && profile) {
     try {
       analytics = (await apiGet<LearnerAnalytics>("/api/v1/analytics/me")).data;
     } catch (err) {
@@ -84,7 +84,6 @@ export default async function DashboardPage() {
     }
   }
 
-  const welcomeName = profile?.displayName ?? guestSession?.displayName;
   const themeOrder = { ai: 0, legal: 1, cyber: 2, innovation: 3, risk: 4 } as const;
   const orderedSubjects = subjectsResult
     ? [...subjectsResult.data].sort((a, b) => {
