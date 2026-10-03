@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authRoutes } from "../auth/authRoutes.js";
 import { usersRoutes, meHandler } from "../users/usersRoutes.js";
 import { contentRoutes } from "../content/contentRoutes.js";
+import { libraryRoutes } from "../finquiz/libraryRoutes.js";
 import { lectureRoutes } from "../content/lectureRoutes.js";
 import { filesRoutes } from "../files/filesRoutes.js";
 import { assessmentsRoutes } from "../assessments/assessmentsRoutes.js";
@@ -22,6 +23,7 @@ export function apiV1Router(): Router {
   router.use("/auth", authRoutes());
   router.use("/users", usersRoutes());
   router.use("/", contentRoutes());
+  router.use("/", libraryRoutes());
   router.use("/lectures", lectureRoutes());
   router.use("/files", filesRoutes());
   router.use("/", assessmentsRoutes());

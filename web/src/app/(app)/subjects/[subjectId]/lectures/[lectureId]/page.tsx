@@ -4,6 +4,7 @@ import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
 import { LectureItemCard } from "@/components/content/LectureItemCard";
+import { getLectureLibraryEntries, LibraryEntryContent } from "@/components/content/LibraryContent";
 import { LectureCompleteToggle } from "@/components/content/LectureCompleteToggle";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
@@ -94,6 +95,7 @@ export default async function LectureDetailPage({
   }
 
   const currentIndex = siblingLectures.findIndex((l) => l.id === lectureId);
+  const libraryEntries = await getLectureLibraryEntries(lecture!.subjectId, lecture!.id);
   const hasPosition = currentIndex !== -1 && siblingLectures.length > 0;
   const previousLecture = hasPosition && currentIndex > 0 ? siblingLectures[currentIndex - 1] : null;
   const nextLecture =
@@ -110,6 +112,7 @@ export default async function LectureDetailPage({
       />
 
       <h1 className="page-heading">{lecture!.title}</h1>
+      <div className="dl-library-list">{libraryEntries.map(entry => <LibraryEntryContent key={entry.id} subjectId={lecture!.subjectId} entry={entry} />)}</div>
       <p className="item-row-meta" style={{ marginBottom: "var(--space-2)" }}>
         {subjectTitle}
         {hasPosition ? ` · Lecture ${currentIndex + 1} of ${siblingLectures.length}` : null}
