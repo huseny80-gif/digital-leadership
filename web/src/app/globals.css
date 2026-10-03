@@ -1750,6 +1750,72 @@ a.content-card:hover,
   .dl-hero-tech { display:block; min-width:0; }
   .dl-hero-tech-art { min-width:310px; transform:scale(1.03); }
 }
-@media (max-width:999px) {
-  .dl-hero-tech { display:none; }
+@media (min-width:761px) and (max-width:999px) {
+  /* Tablet portrait: keep the complete reference hero visible instead of
+     dropping the laptop/network zone. The copy remains readable in the
+     upper/right area while the two visual zones share the lower half. */
+  .dl-hero {
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    grid-template-areas:
+      "copy copy"
+      "mark tech";
+    gap:.35rem .25rem;
+    padding:1.35rem 1.1rem 0;
+  }
+  .dl-hero-copy { grid-area:copy; text-align:right; }
+  .dl-hero-mark { grid-area:mark; height:170px; margin:0; }
+  .dl-hero-mark img { width:min(270px,100%); max-height:170px; }
+  .dl-hero-tech {
+    grid-area:tech;
+    display:block;
+    position:relative;
+    align-self:stretch;
+    min-width:0;
+    height:170px;
+    overflow:hidden;
+    border-radius:14px 14px 0 0;
+    opacity:.96;
+  }
+  .dl-hero-tech::before {
+    content:"";
+    position:absolute;
+    inset:0;
+    z-index:1;
+    pointer-events:none;
+    background:linear-gradient(90deg,rgba(6,76,86,.58),transparent 45%);
+  }
+  .dl-hero-tech-art {
+    display:block;
+    width:100%;
+    height:100%;
+    min-width:250px;
+    transform:scale(1.05);
+    transform-origin:center;
+    filter:drop-shadow(0 12px 22px rgba(0,0,0,.28));
+  }
+}
+@media (max-width:760px) {
+  /* Phone layout prioritises legibility; the laptop/network artwork is
+     still present as a subtle lower hero layer rather than disappearing. */
+  .dl-hero { position:relative; padding-bottom:9.25rem; }
+  .dl-hero-mark { position:relative; z-index:2; height:150px; }
+  .dl-hero-tech {
+    display:block;
+    position:absolute;
+    z-index:1;
+    inset:auto 0 0 auto;
+    width:52%;
+    height:145px;
+    overflow:hidden;
+    opacity:.72;
+    border-radius:14px 0 0 0;
+  }
+  .dl-hero-tech-art {
+    display:block;
+    width:100%;
+    height:100%;
+    min-width:230px;
+    transform:scale(1.08);
+    transform-origin:center right;
+  }
 }
