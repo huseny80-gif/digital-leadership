@@ -57,7 +57,7 @@ class FakeAssessmentsRepository implements AssessmentsRepository {
   async getQuestionType(): Promise<"multiple_choice"> {
     return "multiple_choice";
   }
-  async scoreOption(_q: string, optionId: string) {
+  async getStudyAnswerSummary(): Promise<string | null> {\n    return "4";\n  }\n  async getQuestionExplanation(): Promise<string | null> {\n    return null;\n  }\n  async scoreOption(_q: string, optionId: string) {
     return { isCorrect: optionId === OPTION_CORRECT, pointsAwarded: optionId === OPTION_CORRECT ? 10 : 0 };
   }
   async scoreFillAnswer() {
