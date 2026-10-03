@@ -5,7 +5,7 @@ import { SessionExpiredState } from "@/components/layout/SessionExpiredState";
 import { apiGet, ApiError } from "@/lib/api/client";
 
 type Principal =
-  | { kind: "user"; isAdmin: boolean; userEmail: string | null }
+  | { kind: "user"; isAdmin: boolean; userEmail: string | null; displayName: string | null; avatarUrl: string | null }
   | { kind: "guest"; guestSession: GuestTrainingSession }
   | { kind: "expired" };
 
@@ -28,7 +28,7 @@ type Principal =
 async function resolvePrincipal(): Promise<Principal> {
   try {
     const { data } = await apiGet<UserProfile>("/api/v1/me");
-    return { kind: "user", isAdmin: data.role === "admin", userEmail: data.email };
+    return { kind: "user", isAdmin: data.role === "admin", userEmail: data.email, displayName: data.displayName, avatarUrl: data.avatarUrl };
   } catch (err) {
     // A genuine 401 means "not a registered user" (no Supabase session,
     // or `proxy.ts` let a guest cookie through this far) — fall through
@@ -40,7 +40,7 @@ async function resolvePrincipal(): Promise<Principal> {
     // display-data fetch hiccup must never block access to content that
     // check already authorized.
     if (!(err instanceof ApiError) || err.status !== 401) {
-      return { kind: "user", isAdmin: false, userEmail: null };
+      return { kind: "user", isAdmin: false, userEmail: null, displayName: null, avatarUrl: null };
     }
   }
 
@@ -89,7 +89,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AppShell isAdmin={principal.isAdmin} userEmail={principal.userEmail}>
+    <AppShell isAdmin={principal.isAdmin} userEmail={principal.userEmail} displayName={principal.displayName} avatarUrl={principal.avatarUrl}>
       {children}
     </AppShell>
   );
