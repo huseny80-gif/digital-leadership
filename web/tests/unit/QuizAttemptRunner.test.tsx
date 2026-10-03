@@ -66,7 +66,7 @@ describe("QuizAttemptRunner", () => {
     render(<QuizAttemptRunner quiz={quiz} questions={questions} attemptId="attempt-1" />);
     expect(screen.getByRole("heading", { name: "Arithmetic Quiz" })).toBeInTheDocument();
     expect(screen.getByText("2 + 2 = ?")).toBeInTheDocument();
-    expect(screen.getByText(/question 1 of 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/السؤال 1 من 2/i)).toBeInTheDocument();
   });
 
   it("3. renders options as accessible radio inputs, with no answer-key data", () => {
@@ -133,7 +133,7 @@ describe("QuizAttemptRunner", () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => expect(submitButton).toBeDisabled());
-    expect(screen.getByRole("button", { name: /submitting/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /جارٍ الإرسال/i })).toBeInTheDocument();
 
     resolveSubmit({
       ok: true,
