@@ -80,7 +80,9 @@ describe("fill questions", () => {
       .set("Authorization", `Bearer ${userToken}`)
       .send({ questionId, answerText: "  ميثاق   المشروع  " });
     expect(answerRes.status).toBe(200);
-    expect(answerRes.body.data).toEqual(expect.objectContaining({ questionId, recorded: true, isCorrect: true }));\n    expect(answerRes.body.data.correctAnswerSummary).toContain("ميثاق المشروع");\n    expect(answerRes.body.data.feedback).toBeTruthy();
+    expect(answerRes.body.data).toEqual(expect.objectContaining({ questionId, recorded: true, isCorrect: true }));
+    expect(answerRes.body.data.correctAnswerSummary).toContain("ميثاق المشروع");
+    expect(answerRes.body.data.feedback).toBeTruthy();
 
     const submitRes = await request(app).post(`/api/v1/attempts/${attemptId}/submit`).set("Authorization", `Bearer ${userToken}`);
     expect(submitRes.status).toBe(200);
