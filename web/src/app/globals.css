@@ -352,7 +352,19 @@ button {
     top: var(--header-height);
     height: calc(100vh - var(--header-height));
     overflow-y: auto;
-    border-inline-end: 1px solid var(--color-border);
+    background: linear-gradient(180deg, #053b48 0%, #042c37 100%);
+    border-inline-end: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* Keep the sidebar from ever growing past a comfortable width on iPad
+ * portrait (~820px) — the reference's sidebar proportions are a desktop
+ * pattern only; narrower viewports use BottomNav/MobileNav instead, but
+ * this caps it defensively in case the 1000px breakpoint is ever
+ * adjusted. */
+@media (min-width: 1000px) and (max-width: 1180px) {
+  .app-sidebar {
+    width: min(var(--sidebar-width), 15rem);
   }
 }
 
@@ -360,7 +372,7 @@ button {
   font-size: var(--font-size-sm);
   font-weight: 700;
   font-family: var(--font-heading, "Cairo"), sans-serif;
-  color: var(--color-text-muted);
+  color: rgba(255, 255, 255, 0.55);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: var(--space-3) var(--space-3) var(--space-1);
@@ -374,18 +386,21 @@ button {
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--color-text-muted);
+  color: rgba(233, 247, 247, 0.78);
   min-height: 2.5rem;
+  position: relative;
+  border-inline-start: 3px solid transparent;
 }
 
 .app-sidebar-link:hover {
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
 }
 
 .app-sidebar-link[aria-current="page"] {
-  background: var(--turquoise-100);
-  color: var(--color-primary-hover);
+  background: linear-gradient(90deg, rgba(212, 167, 44, 0.16), rgba(212, 167, 44, 0.03));
+  color: var(--gold-2, #d4a72c);
+  border-inline-start-color: var(--gold-2, #d4a72c);
 }
 
 .app-sidebar-icon {
@@ -418,8 +433,8 @@ button {
   display: flex;
   justify-content: space-around;
   height: var(--bottom-nav-height);
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  background: linear-gradient(180deg, #053b48 0%, #042c37 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: var(--shadow-lg);
 }
 
@@ -438,11 +453,11 @@ button {
   flex: 1;
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--color-text-muted);
+  color: rgba(233, 247, 247, 0.7);
 }
 
 .app-bottom-nav-link[aria-current="page"] {
-  color: var(--color-primary);
+  color: var(--gold-2, #d4a72c);
 }
 
 .app-bottom-nav-icon {
