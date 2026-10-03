@@ -124,7 +124,14 @@ export function AppShell({
             <span className="app-lang-pill">
               <GlobeIcon />
               العربية
+              <ChevronIcon />
             </span>
+            <button className="app-header-tool" type="button" aria-label="المظهر" title="المظهر" disabled>
+              <span aria-hidden="true">☼</span>
+            </button>
+            <button className="app-header-tool app-header-notification" type="button" aria-label="الإشعارات" title="الإشعارات" disabled>
+              <span aria-hidden="true">♧</span><i aria-hidden="true" />
+            </button>
             <div className="app-profile-pill">
               <span className="app-profile-avatar" aria-hidden="true">
                 {initial}
