@@ -1737,9 +1737,18 @@ a.content-card:hover,
   }
 }
 @media (min-width:1000px) and (max-width:1250px) {
-  .dl-hero { grid-template-columns:minmax(280px,1fr) minmax(230px,.8fr); padding-inline:30px; }
-  .dl-hero-tech { display:none; }
-  .dl-hero-mark { margin-inline:0; }
+  /* iPad landscape still has enough horizontal room for the complete
+     approved hero composition. Keep all three visual zones visible:
+     copy + platform mark + laptop/network art. */
+  .dl-hero {
+    grid-template-columns:minmax(270px,.95fr) minmax(210px,.68fr) minmax(250px,.82fr);
+    padding-inline:28px 0;
+  }
+  .dl-hero-copy { padding-inline-end:10px; }
+  .dl-hero-mark { height:235px; margin-inline:-18px -12px; }
+  .dl-hero-mark img { width:min(285px,112%); max-height:230px; }
+  .dl-hero-tech { display:block; min-width:0; }
+  .dl-hero-tech-art { min-width:310px; transform:scale(1.03); }
 }
 @media (max-width:999px) {
   .dl-hero-tech { display:none; }
