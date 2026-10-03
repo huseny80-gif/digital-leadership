@@ -116,7 +116,7 @@ describe("SubjectsPage", () => {
       total: 2,
     });
 
-    const element = await SubjectsPage();
+    const element = await SubjectsPage({});
     render(element);
 
     expect(screen.getByText("Mathematics")).toBeInTheDocument();
@@ -127,7 +127,7 @@ describe("SubjectsPage", () => {
   it("4. renders an empty state when there are no subjects", async () => {
     mockApiGetPaginated.mockResolvedValue({ data: [], page: 1, limit: 50, total: 0 });
 
-    const element = await SubjectsPage();
+    const element = await SubjectsPage({});
     render(element);
 
     expect(screen.getByText(/no subjects available yet/i)).toBeInTheDocument();
@@ -138,7 +138,7 @@ describe("SubjectsPage", () => {
       new ApiError({ error: { code: "internal_error", message: "select * from subjects failed: connection refused" } }, 500),
     );
 
-    const element = await SubjectsPage();
+    const element = await SubjectsPage({});
     render(element);
 
     expect(screen.getByRole("alert")).toBeInTheDocument();

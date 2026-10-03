@@ -49,7 +49,7 @@ export default function AboutPage() {
           ))}
         </ul>
 
-        <h2 style={{ fontSize: "var(--font-size-lg)", margin: "0 0 var(--space-3)", color: "var(--color-text)" }}>تواصل معنا</h2>
+        <h2 id="contact" style={{ fontSize: "var(--font-size-lg)", margin: "0 0 var(--space-3)", color: "var(--color-text)" }}>تواصل معنا</h2>
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: "var(--space-2)" }}>
           <li>
             <a href={`tel:${contactInfo.phone}`} style={{ color: "var(--color-primary)" }}>

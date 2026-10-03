@@ -4,11 +4,13 @@ import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 import { LearnerAnalyticsSection } from "@/components/analytics/LearnerAnalyticsSection";
+import { ReferenceArtwork } from "@/components/ui/ReferenceArtwork";
+import { DashboardSubjectCard } from "@/components/content/DashboardSubjectCard";
+import { DashboardPanels } from "@/components/content/DashboardPanels";
+import { getSubjectTheme, subjectThemes } from "@/components/content/subjectTheme";
+import { getDashboardContent } from "@/lib/dashboardContent";
 
 export const metadata = { title: "الرئيسية | القيادة الرقمية" };
-
-const subjectThemes = ["ai", "legal", "cyber", "innovation", "risk"] as const;
-const subjectIcons = ["◉", "⚖", "⬡", "✦", "△"];
 
 export default async function DashboardPage() {
   let profile: UserProfile | null = null;
@@ -17,7 +19,7 @@ export default async function DashboardPage() {
   let errorMessage: string | null = null;
 
   try {
-    subjectsResult = await apiGetPaginated<Subject>("/api/v1/subjects?page=1&limit=6");
+    subjectsResult = await apiGetPaginated<Subject>("/api/v1/subjects?page=1&limit=5");
     try {
       profile = (await apiGet<UserProfile>("/api/v1/me")).data;
     } catch (err) {
@@ -40,19 +42,19 @@ export default async function DashboardPage() {
   }
 
   const welcomeName = profile?.displayName ?? guestSession?.displayName;
+  const subjects = [...(subjectsResult?.data ?? [])].sort((a, b) => subjectThemes.indexOf(getSubjectTheme(a.title)) - subjectThemes.indexOf(getSubjectTheme(b.title)) || a.orderIndex - b.orderIndex);
+  const content = !errorMessage ? await getDashboardContent(subjects) : null;
 
   return (
     <section className="dl-dashboard" dir="rtl">
       <div className="dl-hero">
+        <ReferenceArtwork x={203} y={97} width={1065} height={246} className="dl-hero-artwork" eager />
         <div className="dl-hero-copy">
-          <span className="dl-welcome">{welcomeName ? `مرحباً، ${welcomeName}` : "مرحباً بك"}</span>
+          <span className="sr-only">{welcomeName ? `مرحباً، ${welcomeName}` : "مرحباً بك"}</span>
           <h1>منصة القيادة الرقمية</h1>
           <h2>التعلم ... نحو مستقبل رقمي أفضل</h2>
-          <p>منصة تعليمية تفاعلية حديثة لعرض محتوى الدبلوم، المحاضرات والاختبارات بأسلوب واضح ومرن يدعم بناء قدرات القادة.</p>
+          <p>منصة تعليمية تفاعلية تقدم محتوى دبلوم القيادة الرقمية<br />بأسلوب تفاعلي حديث ومرن، لدعم بناء قدرات القادة.</p>
           <div className="dl-hero-dots" aria-hidden="true"><i /><i /><i /></div>
-        </div>
-        <div className="dl-hero-mark" aria-hidden="true">
-          <img src="/logo.webp" alt="" />
         </div>
       </div>
 
@@ -71,21 +73,16 @@ export default async function DashboardPage() {
             <EmptyState title="لا توجد مواد متاحة حالياً" message="ستظهر المواد هنا فور نشرها." />
           ) : (
             <div className="dl-subject-grid">
-              {subjectsResult.data.map((subject, index) => (
-                <Link key={subject.id} href={`/subjects/${subject.id}`} className={`dl-subject-card dl-theme-${subjectThemes[index % subjectThemes.length]}`}>
-                  <div className="dl-subject-icon" aria-hidden="true">{subjectIcons[index % subjectIcons.length]}</div>
-                  <h3>{subject.title}</h3>
-                  {subject.description ? <p>{subject.description}</p> : <p>استعرض المحاضرات والمحتوى والاختبارات الخاصة بالمادة.</p>}
-                  <span className="dl-subject-button">عرض المادة <b>←</b></span>
-                </Link>
-              ))}
+              {subjects.map((subject, index) => <DashboardSubjectCard key={subject.id} subject={subject} index={index} lectureCount={content?.lectureCounts[subject.id] ?? null} />)}
             </div>
           )}
         </div>
       ) : null}
 
+      {content ? <DashboardPanels content={content} /> : null}
+
       {analytics ? (
-        <div className="dl-analytics-panel">
+        <div className="dl-analytics-panel" id="learning-analytics">
           <div className="dl-section-heading"><div><span>متابعة التعلم</span><h2>تقدمك الدراسي</h2></div></div>
           <LearnerAnalyticsSection analytics={analytics} />
         </div>

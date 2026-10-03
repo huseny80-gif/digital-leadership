@@ -1,112 +1,95 @@
-import type { ReactNode } from "react";
-import type { GuestTrainingSession } from "@shared/index";
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import type { GuestTrainingSession } from "@shared/index";
+import { PlatformIcon } from "@/components/ui/PlatformIcon";
+import { ReferenceArtwork } from "@/components/ui/ReferenceArtwork";
+import { contactInfo } from "@/config/about";
 import { LogoutButton } from "./LogoutButton";
 import { GuestLogoutButton } from "./GuestLogoutButton";
-import { PrimaryNav } from "./PrimaryNav";
-import { MobileNav, type NavItem } from "./MobileNav";
+import type { NavItem } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 import { Footer } from "./Footer";
 
-/**
- * Application shell — THE ONE learner platform shell, wrapping every
- * route under `src/app/(app)` for all three principals: registered user,
- * Admin (a registered user whose role happens to be admin), and Guest
- * Training Session. Route access itself is enforced by `proxy.ts` (the
- * hard authentication wall) — showing/hiding the "Admin" link here based
- * on `isAdmin` is a UX convenience only and has no security value on its
- * own; the `/admin` route and every admin API call are independently
- * protected server-side regardless of what this renders
- * (SECURITY_ARCHITECTURE.md §14, AUTHORIZATION.md §5).
- *
- * `guestSession` being present is what distinguishes the third
- * principal: a Guest Training Session is never admin (`isAdmin` is
- * always `false` for it) and is a TEMPORARY LEARNER, not a read-only or
- * single-page visitor — it gets the full Dashboard/Subjects/quiz nav a
- * registered learner gets, minus only "Profile" (no permanent-user
- * account behind it — task constraint: never convert Guest into a
- * permanent User to reuse this UI) and "Admin" (never shown regardless
- * of principal unless `isAdmin`, which a guest never is). A guest gets a
- * guest-specific logout action that clears the signed guest-session
- * cookie instead of signing out of Supabase. Every other page,
- * component, and data-fetching path in this shell's `children` is
- * completely unaware of which principal is rendering it; the distinction
- * lives only here and in the API layer.
- *
- * Phase 18.1 — Finquiz Visual Identity Foundation: this shell was
- * restyled/recomposed (header + sidebar + mobile bottom nav + footer) to
- * match the approved Phase 18 UI/UX analysis. `items` is the single nav
- * data source feeding the header's PrimaryNav/MobileNav *and* the new
- * Sidebar/BottomNav — no Finquiz code, data, or backend wiring was
- * reused, only its visual/layout pattern (see globals.css's design
- * tokens and layout-shell rules for the ported values).
- */
-export function AppShell({
-  children,
-  isAdmin,
-  userEmail,
-  guestSession,
-}: {
-  children: ReactNode;
-  isAdmin: boolean;
-  userEmail: string | null;
-  guestSession?: GuestTrainingSession;
+/** One application shell for registered users, admins and scoped guests.
+ * Route/API authorization stays at the existing server boundaries. */
+export function AppShell({ children, isAdmin, userEmail, userDisplayName, userAvatarUrl, guestSession }: {
+  children: ReactNode; isAdmin: boolean; userEmail: string | null;
+  userDisplayName?: string | null; userAvatarUrl?: string | null; guestSession?: GuestTrainingSession;
 }) {
+  const [navigationOpen, setNavigationOpen] = useState(false);
+  const [menu, setMenu] = useState<"account" | "language" | "notifications" | null>(null);
+  const [dark, setDark] = useState(false);
   const isGuest = Boolean(guestSession);
-  const homeHref = "/dashboard";
-
+  const isPlatformOwner = !isGuest && isAdmin && userEmail === contactInfo.email;
+  const name = guestSession?.displayName ?? userDisplayName ?? (isPlatformOwner ? "Eng. Husen Yasen" : userEmail ?? "المتدرب");
+  const role = isGuest ? "Guest Learner" : isAdmin ? "مدير المنصة" : "متدرب";
   const items: NavItem[] = [
-    { href: "/dashboard", label: "الرئيسية", icon: "⌂" },
-    { href: "/subjects", label: "المواد الدراسية", icon: "▣" },
-    ...(isAdmin ? [{ href: "/admin", label: "الإدارة", icon: "⚙" }] : []),
-    // A guest has no permanent-user account, so no Profile page to link
-    // to (task constraint).
-    ...(isGuest ? [] : [{ href: "/profile", label: "الملف الشخصي", icon: "◉" }]),
-    { href: "/about", label: "من نحن", icon: "ℹ️" },
-  ];
+    { href: "/dashboard", label: "الرئيسية", icon: "home" },
+    { href: "/subjects", label: "المواد الدراسية", icon: "book" },
+    { href: "/subjects?view=lectures", label: "المحاضرات", icon: "video" },
+    { href: "/subjects?view=summaries", label: "الملخصات", icon: "document" },
+    { href: "/subjects?view=assignments", label: "الواجبات والأنشطة", icon: "document" },
+    { href: "/subjects?view=assessments", label: "الاختبارات", icon: "quiz" },
+    { href: "/subjects?view=files", label: "المصادر والملفات", icon: "folder" },
+    { href: "/training", label: "المجتمع التدريبي", icon: "users" },
+    { href: "/dashboard#learning-analytics", label: "الإحصائيات", icon: "chart" },
+    { href: "/about", label: "من نحن", icon: "info" },
+    { href: "/about#contact", label: "تواصل معنا", icon: "mail" },
+  ].filter((item) => !isGuest || item.icon !== "chart");
 
-  return (
-    <div className="app-shell" dir="rtl">
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
-      <header className="app-header">
-        <div className="app-header-inner">
-          <Link href={homeHref} className="app-brand">
-            <Image
-              src="/logo.webp"
-              alt=""
-              width={32}
-              height={32}
-              className="app-brand-logo"
-              priority
-            />
-            <span className="app-brand-copy"><b>القيادة الرقمية</b><small>DIGITAL LEADERSHIP</small></span>
-          </Link>
-          <PrimaryNav items={items} />
-          <div className="app-header-actions">
-            {isGuest ? (
-              <span className="app-user-email">
-                {guestSession!.displayName} · Guest Learner
-              </span>
-            ) : userEmail ? (
-              <span className="app-user-email">{userEmail}</span>
-            ) : null}
-            {isGuest ? <GuestLogoutButton /> : <LogoutButton />}
-            <MobileNav items={items} />
+  useEffect(() => {
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { setMenu(null); setNavigationOpen(false); }
+    };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, []);
+
+  const toggleMenu = (next: typeof menu) => setMenu(menu === next ? null : next);
+
+  return <div className="app-shell dl-workspace" dir="rtl" data-navigation-open={navigationOpen} data-theme={dark ? "dark" : "light"}>
+    <a href="#main-content" className="skip-link">Skip to main content</a>
+    <header className="app-header">
+      <div className="app-header-inner">
+        <button className="dl-menu-toggle" type="button" aria-label={navigationOpen ? "Close menu" : "Open menu"} aria-expanded={navigationOpen} aria-controls="platform-sidebar" onClick={() => setNavigationOpen(!navigationOpen)}><PlatformIcon name={navigationOpen ? "close" : "menu"} /></button>
+        <Link href="/dashboard" className="app-brand" aria-label="القيادة الرقمية — الرئيسية"><ReferenceArtwork x={94} y={0} width={232} height={82} eager /></Link>
+        <form action="/subjects" className="dl-header-search" role="search">
+          <input type="hidden" name="view" value="search" />
+          <button type="submit" aria-label="بحث"><PlatformIcon name="search" /></button>
+          <input name="q" type="search" aria-label="البحث في المحاضرات والملفات والاختبارات" placeholder="البحث في المحاضرات والملفات والاختبارات ..." autoComplete="off" />
+        </form>
+        <div className="app-header-actions">
+          <div className="dl-control-wrap dl-language-control">
+            <button type="button" className="dl-header-control dl-language-button" aria-label="اللغة العربية" aria-expanded={menu === "language"} aria-controls="language-menu" onClick={() => toggleMenu("language")}><PlatformIcon name="globe" /><span>العربية</span><PlatformIcon name="chevron" /></button>
+            {menu === "language" ? <div className="dl-header-popover" id="language-menu"><button type="button" onClick={() => setMenu(null)} lang="ar">العربية <span aria-hidden="true">✓</span></button></div> : null}
+          </div>
+          <button type="button" className="dl-header-control dl-theme-control" aria-label={dark ? "تفعيل الوضع الفاتح" : "تفعيل الوضع الداكن"} aria-pressed={dark} onClick={() => setDark(!dark)}><PlatformIcon name={dark ? "moon" : "sun"} /></button>
+          <div className="dl-control-wrap">
+            <button type="button" className="dl-header-control" aria-label="الإشعارات" aria-expanded={menu === "notifications"} aria-controls="notifications-menu" onClick={() => toggleMenu("notifications")}><ReferenceArtwork x={1047} y={23} width={41} height={41} className="dl-notification-icon" /></button>
+            {menu === "notifications" ? <div className="dl-header-popover" id="notifications-menu"><strong>الإشعارات</strong><p>لا توجد إشعارات لعرضها حاليًا.</p></div> : null}
+          </div>
+          <div className="dl-control-wrap">
+            <button type="button" className="dl-account-button" aria-label="قائمة الحساب" aria-expanded={menu === "account"} aria-controls="account-menu" onClick={() => toggleMenu("account")}>
+              <span className="dl-user-avatar">{userAvatarUrl ? <Image src={userAvatarUrl} alt="" width={38} height={38} unoptimized /> : isPlatformOwner ? <ReferenceArtwork x={1101} y={24} width={38} height={38} /> : <PlatformIcon name="user" />}</span>
+              <span className="dl-user-copy"><b dir="auto">{name}</b><small>{role}</small></span><PlatformIcon name="chevron" />
+            </button>
+            {userEmail && userDisplayName ? <span className="sr-only">{userEmail}</span> : null}
+            {menu === "account" ? <div className="dl-header-popover" id="account-menu">
+              {isGuest ? null : <Link href="/profile" onClick={() => setMenu(null)}>الملف الشخصي</Link>}
+              {isAdmin && !isGuest ? <Link href="/admin" onClick={() => setMenu(null)}>الإدارة</Link> : null}
+              {isGuest ? <GuestLogoutButton /> : <LogoutButton />}
+            </div> : null}
           </div>
         </div>
-      </header>
-      <div className="app-body">
-        <Sidebar items={items} />
-        <main id="main-content" className="app-main">
-          {children}
-        </main>
       </div>
-      <Footer items={items} accountLinks={isGuest ? [] : undefined} />
-      <BottomNav items={items} />
-    </div>
-  );
+    </header>
+    {navigationOpen ? <button type="button" className="dl-sidebar-backdrop" aria-label="إغلاق القائمة" onClick={() => setNavigationOpen(false)} /> : null}
+    <div className="app-body"><Sidebar items={items} onNavigate={() => setNavigationOpen(false)} /><main id="main-content" className="app-main">{children}</main></div>
+    <Footer items={items} accountLinks={isGuest ? [] : undefined} />
+    <BottomNav items={items.filter((item) => ["home", "book", "quiz", "info"].includes(item.icon ?? ""))} />
+  </div>;
 }
