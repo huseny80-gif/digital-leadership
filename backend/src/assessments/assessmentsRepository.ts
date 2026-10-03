@@ -37,7 +37,9 @@ export interface AssessmentsRepository {
   listQuestionsForAttempt(quizId: string): Promise<QuestionForAttempt[]>;
   isOptionValidForQuestion(questionId: string, optionId: string): Promise<boolean>;
   isQuestionInQuiz(quizId: string, questionId: string): Promise<boolean>;
-  getQuestionType(questionId: string): Promise<QuestionType | null>;\n  getStudyAnswerSummary(questionId: string): Promise<string | null>;\n  getQuestionExplanation(questionId: string): Promise<string | null>;
+  getQuestionType(questionId: string): Promise<QuestionType | null>;
+  getStudyAnswerSummary(questionId: string): Promise<string | null>;
+  getQuestionExplanation(questionId: string): Promise<string | null>;
   scoreOption(questionId: string, optionId: string): Promise<{ isCorrect: boolean; pointsAwarded: number }>;
   scoreFillAnswer(questionId: string, answerText: string): Promise<{ isCorrect: boolean; pointsAwarded: number }>;
   /** Validates every submitted pair belongs to the question and the
