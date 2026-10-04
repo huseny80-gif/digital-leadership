@@ -4,10 +4,10 @@ import { join } from "node:path";
 
 /**
  * PHASE 09B "Answer-Key Leakage Test" (mandatory), extended in PHASE 09C.
- * `question_options.is_correct` must never reach the LEARNER-facing
- * client — not in a type, not in a component, not in a fixture that
- * could accidentally ship. This statically scans every learner-facing
- * source file under `web/src` for `is_correct`/`isCorrect` in any casing.
+ * Initial questions never contain answer keys. After a validated answer,
+ * the two owned feedback views may consume SubmitAnswerAck.isCorrect.
+ * This scans the rest of the learner source for unexpected correctness
+ * access; runtime HTTP tests verify the before/after boundary itself.
  *
  * PHASE 09C's Admin Console legitimately displays and edits `isCorrect`
  * (an admin managing a question's answer key needs to see it — that is
@@ -31,6 +31,9 @@ import { join } from "node:path";
  * tests exist and are the authoritative check, not this one.
  */
 const ADMIN_ONLY_PATH_SEGMENT = `${join("app", "(app)", "admin")}`;
+// The user explicitly enabled feedback after an answer is recorded.
+// Only these two views consume that owned, post-answer feedback DTO.
+const POST_ANSWER_VIEWS = [join("components", "quiz", "QuizAttemptRunner.tsx"), join("quizzes", "[quizId]", "result", "[attemptId]", "page.tsx")];
 function listFiles(dir: string): string[] {
   const entries = readdirSync(dir, { withFileTypes: true });
   return entries.flatMap((entry) => {
@@ -44,11 +47,12 @@ function listFiles(dir: string): string[] {
 }
 
 describe("no answer-key field in LEARNER-facing web client source", () => {
-  it("web/src (excluding the admin-only Admin Console) contains no reference to is_correct/isCorrect", () => {
+  it("correctness is consumed only by admin management or the two owned post-answer views", () => {
     const srcDir = join(__dirname, "..", "..", "src");
     const offenders = listFiles(srcDir)
       .filter((file) => /\.(ts|tsx)$/.test(file))
       .filter((file) => !file.includes(ADMIN_ONLY_PATH_SEGMENT))
+      .filter((file) => !POST_ANSWER_VIEWS.some(view => file.endsWith(view)))
       .filter((file) => /is_correct|isCorrect/i.test(readFileSync(file, "utf8")));
     expect(offenders).toEqual([]);
   });
@@ -72,8 +76,8 @@ describe("no answer-key field in LEARNER-facing web client source", () => {
     // absence of the word entirely.
     expect(content).not.toMatch(/\bis_correct\s*[:?]/);
     const questionForAttemptContract = content.split("export interface QuestionForAttempt")[1]?.split("export interface QuizAttempt")[0] ?? "";
-    expect(questionForAttemptContract).not.toMatch(/\\bisCorrect\\s*[:?]/);
-    expect(content).toMatch(/export interface SubmitAnswerAck[\\s\\S]*isCorrect:\\s*boolean \\| null/);
+    expect(questionForAttemptContract).not.toMatch(/\b(isCorrect|answerReview|rubric|correctOptionIds|correctMatches|correctOrder|explanation)\s*[:?]/);
+    expect(content).toMatch(/export interface SubmitAnswerAck[\s\S]*isCorrect:\s*boolean \| null/);
   });
 
   /**

@@ -8,9 +8,23 @@ import type {
   AttemptAnswer,
   MatchAnswerPair,
   AssessmentPrincipal,
+  QuestionAnswerReview,
+  AnswerRubricPoint,
 } from "@shared/index";
 import { fillAnswerMatches } from "./fillNormalization.js";
 import { ValidationError } from "../lib/validation.js";
+
+/** Source rubrics contain {text, keywords}; never display them through
+ * String(object), JSON or heuristic grading. Plain legacy text is also supported. */
+export function normalizeAnswerRubric(value: unknown): AnswerRubricPoint[] {
+  const entries = Array.isArray(value) ? value : value == null ? [] : [value];
+  return entries.flatMap(entry => {
+    if (typeof entry === "string") return entry.trim() ? [{ text: entry, keywords: [] }] : [];
+    if (!entry || typeof entry !== "object" || !("text" in entry) || typeof entry.text !== "string") return [];
+    const keywords = "keywords" in entry && Array.isArray(entry.keywords) ? entry.keywords.filter((word: unknown): word is string => typeof word === "string") : [];
+    return entry.text.trim() ? [{ text: entry.text, keywords }] : [];
+  });
+}
 
 /**
  * Data-access boundary for assessments (DATABASE_DESIGN.md §4;
@@ -38,8 +52,9 @@ export interface AssessmentsRepository {
   isOptionValidForQuestion(questionId: string, optionId: string): Promise<boolean>;
   isQuestionInQuiz(quizId: string, questionId: string): Promise<boolean>;
   getQuestionType(questionId: string): Promise<QuestionType | null>;
-  getStudyAnswerSummary(questionId: string): Promise<string | null>;
+  getStudyAnswer(questionId: string): Promise<{ summary: string | null; review: QuestionAnswerReview }>;
   getQuestionExplanation(questionId: string): Promise<string | null>;
+  listAnsweredQuestionGrades(attemptId: string): Promise<Array<{ questionId: string; isCorrect: boolean | null }>>;
   scoreOption(questionId: string, optionId: string): Promise<{ isCorrect: boolean; pointsAwarded: number }>;
   scoreFillAnswer(questionId: string, answerText: string): Promise<{ isCorrect: boolean; pointsAwarded: number }>;
   /** Validates every submitted pair belongs to the question and the
@@ -331,37 +346,38 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
     return result.rows[0]?.explanation ?? null;
   }
 
-  async getStudyAnswerSummary(questionId: string): Promise<string | null> {
+  async getStudyAnswer(questionId: string): Promise<{ summary: string | null; review: QuestionAnswerReview }> {
     const type = await this.getQuestionType(questionId);
-    if (!type) return null;
+    const empty = { summary: null, review: {} };
+    if (!type) return empty;
 
     if (type === "multiple_choice" || type === "true_false") {
-      const result = await this.pool.query<{ option_text: string }>(
-        `select option_text from question_options where question_id = $1 and is_correct = true order by order_index`,
+      const result = await this.pool.query<{ id: string; option_text: string }>(
+        `select id, option_text from question_options where question_id = $1 and is_correct = true order by order_index`,
         [questionId],
       );
-      return result.rows.map((r) => r.option_text).join("، ") || null;
+      return { summary: result.rows.map((r) => r.option_text).join("، ") || null, review: { correctOptionIds: result.rows.map(r => r.id) } };
     }
     if (type === "fill") {
       const result = await this.pool.query<{ answer_text: string }>(
         `select answer_text from question_accepted_answers where question_id = $1 order by id`,
         [questionId],
       );
-      return result.rows.map((r) => r.answer_text).join(" / ") || null;
+      return { summary: result.rows.map((r) => r.answer_text).join(" / ") || null, review: {} };
     }
     if (type === "match") {
-      const result = await this.pool.query<{ left_text: string; right_text: string }>(
-        `select left_text, right_text from question_pairs where question_id = $1 order by order_index, id`,
+      const result = await this.pool.query<{ id: string; left_text: string; right_text: string }>(
+        `select id, left_text, right_text from question_pairs where question_id = $1 order by order_index, id`,
         [questionId],
       );
-      return result.rows.map((r) => `${r.left_text} ← ${r.right_text}`).join(" | ") || null;
+      return { summary: result.rows.map((r) => `${r.left_text} ← ${r.right_text}`).join(" | ") || null, review: { correctMatches: result.rows.map(r => ({ leftId: r.id, rightId: r.id })) } };
     }
     if (type === "order") {
-      const result = await this.pool.query<{ item_text: string }>(
-        `select item_text from question_items where question_id = $1 order by correct_order_index, id`,
+      const result = await this.pool.query<{ id: string; item_text: string }>(
+        `select id, item_text from question_items where question_id = $1 order by correct_order_index, id`,
         [questionId],
       );
-      return result.rows.map((r, i) => `${i + 1}. ${r.item_text}`).join(" ← ") || null;
+      return { summary: result.rows.map((r, i) => `${i + 1}. ${r.item_text}`).join(" ← ") || null, review: { correctOrder: result.rows.map(r => r.id) } };
     }
     if (type === "open") {
       const result = await this.pool.query<{ rubric: unknown }>(
@@ -369,12 +385,28 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
         [questionId],
       );
       const rubric = result.rows[0]?.rubric;
-      if (rubric === null || rubric === undefined) return null;
-      if (Array.isArray(rubric)) return rubric.map(String).join(" • ");
-      if (typeof rubric === "string") return rubric;
-      return JSON.stringify(rubric);
+      const points = normalizeAnswerRubric(rubric);
+      return { summary: points.map(point => point.text).join("\n") || null, review: { rubric: points } };
     }
-    return null;
+    return empty;
+  }
+
+  /** Feedback is scoped to recorded answers in this attempt's own quiz.
+   * Ownership is checked by the service before this query is called. */
+  async listAnsweredQuestionGrades(attemptId: string): Promise<Array<{ questionId: string; isCorrect: boolean | null }>> {
+    const result = await this.pool.query<{ question_id: string; is_correct: boolean | null }>(
+      `select aa.question_id, aa.is_correct from quiz_attempt_answers aa
+       join quiz_attempts a on a.id = aa.attempt_id
+       join quiz_questions qq on qq.quiz_id = a.quiz_id and qq.question_id = aa.question_id
+       join questions q on q.id = aa.question_id and q.deleted_at is null
+       where aa.attempt_id = $1 and (
+         aa.selected_option_id is not null or nullif(btrim(aa.answer_text), '') is not null
+         or exists (select 1 from quiz_attempt_answer_matches m where m.attempt_answer_id = aa.id)
+         or exists (select 1 from quiz_attempt_answer_order_items o where o.attempt_answer_id = aa.id)
+       ) order by qq.order_index`,
+      [attemptId],
+    );
+    return result.rows.map(row => ({ questionId: row.question_id, isCorrect: row.is_correct }));
   }
 
   async isOptionValidForQuestion(questionId: string, optionId: string): Promise<boolean> {

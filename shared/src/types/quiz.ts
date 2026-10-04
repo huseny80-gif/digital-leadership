@@ -1,10 +1,9 @@
 /**
  * Mirrors the assessment model in DATABASE_DESIGN.md §4. Note
  * `QuestionForAttempt` deliberately omits `isCorrect`/answer-key data —
- * DATABASE_SECURITY.md §5 requires the backend to strip that before
- * serving an in-progress quiz to a `user`-role client. The full
- * `is_correct` shape is intentionally not modeled here at all, to avoid
- * accidentally giving a client-facing type that includes it.
+ * initial question delivery excludes grading material. Correctness and
+ * answer details are modeled separately in SubmitAnswerAck, available
+ * only after an owned answer has been validated and recorded.
  */
 export type QuestionType =
   | "multiple_choice"
@@ -62,6 +61,12 @@ export interface QuestionForAttempt {
   /** Present only for `questionType === "order"`; shuffled per-request
    * server-side. Null for every other type. */
   orderItems: OrderItemForAttempt[] | null;
+  /** Presentation metadata only; never includes an explanation or answer key. */
+  difficulty?: "easy" | "medium" | "hard";
+  lectureId?: string;
+  lectureNumber?: number;
+  lectureTitle?: string;
+  kind?: string;
 }
 
 export interface QuizAttempt {
@@ -108,11 +113,21 @@ export interface SubmitAnswerInput {
   orderAnswer?: string[];
 }
 
-/** Acknowledges that an answer was recorded — deliberately carries no
- * correctness/scoring information (PHASE 09B "Answer Submission": the
- * client never learns whether an individual answer is right until the
- * attempt is submitted and graded, and even then only via the aggregate
- * `QuizAttemptResult`, never a per-question answer key). */
+export interface AnswerRubricPoint {
+  text: string;
+  keywords: string[];
+}
+
+/** Available only after the owning learner has submitted this question. */
+export interface QuestionAnswerReview {
+  correctOptionIds?: string[];
+  correctMatches?: MatchAnswerPair[];
+  correctOrder?: string[];
+  rubric?: AnswerRubricPoint[];
+}
+
+/** Training feedback after a validated answer has been recorded. The
+ * initial question payload never contains these answer details. */
 export interface SubmitAnswerAck {
   questionId: string;
   recorded: boolean;
@@ -122,6 +137,8 @@ export interface SubmitAnswerAck {
   correctAnswerSummary: string | null;
   /** Concise learning feedback; never exposes an answer before submission. */
   feedback: string;
+  /** Structured details for Finquiz's option/pair/position highlighting. */
+  answerReview?: QuestionAnswerReview;
 }
 
 /** One previously-recorded answer for an attempt, as returned to the

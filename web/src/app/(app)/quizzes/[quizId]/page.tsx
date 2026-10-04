@@ -39,7 +39,7 @@ export default async function QuizDetailPage({ params }: { params: Promise<{ qui
     <section>
       <Breadcrumbs
         items={[
-          { label: "Subjects", href: "/subjects" },
+          { label: "المواد الدراسية", href: "/subjects" },
           { label: quiz!.title },
         ]}
       />
@@ -47,7 +47,7 @@ export default async function QuizDetailPage({ params }: { params: Promise<{ qui
       {quiz!.description ? <p className="page-subheading">{quiz!.description}</p> : null}
       {quiz!.timeLimitSeconds ? (
         <p className="item-row-meta" style={{ marginBottom: "var(--space-5)" }}>
-          Time limit: {Math.round(quiz!.timeLimitSeconds / 60)} minutes
+          المدة: {Math.round(quiz!.timeLimitSeconds / 60)} دقيقة
         </p>
       ) : null}
 

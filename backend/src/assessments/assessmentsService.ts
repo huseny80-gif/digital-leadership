@@ -11,6 +11,7 @@ import type {
 import type { AssessmentsRepository } from "./assessmentsRepository.js";
 import { conflict, forbidden, notFound } from "../lib/httpError.js";
 import { ValidationError } from "../lib/validation.js";
+import { withFinquizQuestionMetadata } from "../finquiz/questionMetadata.js";
 
 /** True when `attempt` belongs to `principal` — the one check every
  * ownership-gated method below re-derives from, so "a user principal"
@@ -65,8 +66,9 @@ export class AssessmentsService {
    * "Answer-Key Protection").
    */
   async getQuestionsOrThrow(quizId: string, isAdmin: boolean): Promise<QuestionForAttempt[]> {
-    await this.getQuizOrThrow(quizId, isAdmin);
-    return this.repository.listQuestionsForAttempt(quizId);
+    const quiz = await this.getQuizOrThrow(quizId, isAdmin);
+    const questions = await this.repository.listQuestionsForAttempt(quizId);
+    return withFinquizQuestionMetadata(quiz, questions);
   }
 
   /**
@@ -138,8 +140,8 @@ export class AssessmentsService {
    * data the client never receives — never accepted from the request body.
    */
   private async studyAck(questionId: string, isCorrect: boolean | null): Promise<SubmitAnswerAck> {
-    const [correctAnswerSummary, sourceExplanation] = await Promise.all([
-      this.repository.getStudyAnswerSummary(questionId),
+    const [answer, sourceExplanation] = await Promise.all([
+      this.repository.getStudyAnswer(questionId),
       this.repository.getQuestionExplanation(questionId),
     ]);
     const fallback =
@@ -148,7 +150,16 @@ export class AssessmentsService {
         : isCorrect === false
           ? "راجع الإجابة الصحيحة والملخص، ثم أعد المحاولة لتثبيت المعلومة."
           : "قارن إجابتك بملخص الإجابة ومعاييرها للمراجعة الذاتية.";
-    return { questionId, recorded: true, isCorrect, correctAnswerSummary, feedback: sourceExplanation ?? fallback };
+    return { questionId, recorded: true, isCorrect, correctAnswerSummary: answer.summary, feedback: sourceExplanation?.trim() || fallback, answerReview: answer.review };
+  }
+
+  /** Restore only feedback already earned by answering. An empty attempt
+   * returns no answer keys; another learner's attempt is always a 404. */
+  async getFeedbackOrThrow(attemptId: string, principal: AssessmentPrincipal, isAdmin: boolean): Promise<SubmitAnswerAck[]> {
+    const attempt = await this.getAttemptOrThrow(attemptId, principal);
+    await this.getQuizOrThrow(attempt.quizId, isAdmin);
+    const answered = await this.repository.listAnsweredQuestionGrades(attemptId);
+    return Promise.all(answered.map(answer => this.studyAck(answer.questionId, answer.isCorrect)));
   }
 
   async submitAnswer(attemptId: string, principal: AssessmentPrincipal, input: SubmitAnswerInput): Promise<SubmitAnswerAck> {
@@ -161,6 +172,9 @@ export class AssessmentsService {
 
     if (submittedFieldCount(input) !== 1) {
       throw new ValidationError("Exactly one of 'selectedOptionId', 'answerText', 'matchAnswer', or 'orderAnswer' is required.");
+    }
+    if (input.answerText !== undefined && !input.answerText.trim()) {
+      throw new ValidationError("Write an answer before requesting feedback.");
     }
 
     // The server, never the client, decides which grading path applies —

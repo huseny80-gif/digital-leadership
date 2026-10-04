@@ -16,6 +16,7 @@ export function StartQuizButton({
   quizId,
   apiBasePath = "/api",
   routeBasePath = "/quizzes",
+  label = "بدء الاختبار",
 }: {
   quizId: string;
   /** Same-origin proxy prefix to call — `/api` for an authenticated
@@ -28,6 +29,7 @@ export function StartQuizButton({
   /** Page-route prefix to navigate to after starting — `/quizzes`
    * (default, unchanged) for a learner, `/training/quizzes` for a guest. */
   routeBasePath?: string;
+  label?: string;
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<"idle" | "starting" | "error">("idle");
@@ -50,11 +52,11 @@ export function StartQuizButton({
   return (
     <div>
       <button type="button" className="btn" onClick={handleStart} disabled={status === "starting"}>
-        {status === "starting" ? "Starting…" : "Start Quiz"}
+        {status === "starting" ? "جارٍ بدء الاختبار…" : label}
       </button>
       {status === "error" ? (
         <p role="alert" className="state-message" style={{ color: "var(--color-danger)", marginTop: "var(--space-2)" }}>
-          Unable to start this quiz. Please try again.
+          تعذر بدء الاختبار. حاول مرة أخرى.
         </p>
       ) : null}
     </div>
