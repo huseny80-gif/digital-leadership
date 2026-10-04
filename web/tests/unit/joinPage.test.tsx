@@ -18,13 +18,13 @@ describe("Join page (/join/[token])", () => {
     vi.restoreAllMocks();
   });
 
-  it("shows a generic error for an invalid/expired/revoked link, never distinguishing which", async () => {
+  it("shows a generic error for an invalid or revoked link", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ error: { code: "not_found", message: "not found" } }), { status: 404 }),
     );
     render(<JoinPage params={paramsOf("bogus")} />);
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(/invalid, has expired, or has been revoked/i);
+      expect(screen.getByRole("alert")).toHaveTextContent(/invalid or has been revoked/i);
     });
   });
 
@@ -37,6 +37,7 @@ describe("Join page (/join/[token])", () => {
       expect(screen.getByText("Digital Leadership")).toBeInTheDocument();
     });
     expect(screen.getByText("General learner access.")).toBeInTheDocument();
+    expect(screen.getByText(/الدخول متاح دائمًا/)).toBeInTheDocument();
     const input = screen.getByLabelText("الاسم الثلاثي") as HTMLInputElement;
     expect(input).toBeRequired();
   });

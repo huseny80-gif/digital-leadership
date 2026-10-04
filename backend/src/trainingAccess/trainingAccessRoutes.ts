@@ -31,7 +31,6 @@ const createGrantSchema = z.object({
   label: z.string().max(200).nullable().optional(),
   description: z.string().max(2000).nullable().optional(),
   maxSessions: z.number().int().positive().nullable().optional(),
-  expiresInHours: z.number().int().positive().max(24 * 365),
 });
 
 const joinSchema = z.object({
@@ -74,7 +73,6 @@ export function trainingAccessRoutes(): Router {
         label: input.label ?? null,
         description: input.description ?? null,
         maxSessions: input.maxSessions ?? null,
-        expiresInHours: input.expiresInHours,
         createdBy: req.user!.id,
       });
       const body: { data: TrainingAccessGrantCreated } = { data: grant };
@@ -151,8 +149,8 @@ export function trainingAccessRoutes(): Router {
       const token = tokenParamSchema.safeParse(req.params.token);
       if (!token.success) throw notFound("Training access link");
       const input = joinSchema.parse(req.body ?? {});
-      const { session, ttlMs } = await getService().joinWithToken(token.data, input.name);
-      setGuestSessionCookie(res, session.id, new Date(Date.now() + ttlMs));
+      const { session } = await getService().joinWithToken(token.data, input.name);
+      setGuestSessionCookie(res, session.id, null);
       const body: { data: GuestTrainingSession } = { data: session };
       res.status(201).json(body);
     } catch (err) {

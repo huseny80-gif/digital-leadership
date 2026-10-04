@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Request, Response } from "express";
 import { getEnv } from "../config/env.js";
+import { GUEST_SESSION_COOKIE_MAX_AGE_SECONDS } from "@digital-leadership/shared";
 
 /**
  * The guest session cookie (task requirement #4): HttpOnly, Secure in
@@ -76,14 +77,14 @@ export function readGuestSessionCookie(req: Request): string | null {
   return null;
 }
 
-export function setGuestSessionCookie(res: Response, sessionId: string, expiresAt: Date): void {
+export function setGuestSessionCookie(res: Response, sessionId: string, expiresAt: Date | null): void {
   const env = getEnv();
   const value = signGuestSessionCookieValue(sessionId);
   res.cookie(COOKIE_NAME, value, {
     httpOnly: true,
     secure: env.NODE_ENV === "production",
     sameSite: "lax",
-    expires: expiresAt,
+    ...(expiresAt ? { expires: expiresAt } : { maxAge: GUEST_SESSION_COOKIE_MAX_AGE_SECONDS * 1000 }),
     path: "/",
   });
 }

@@ -1,12 +1,23 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { Response } from "express";
 
 process.env.GUEST_SESSION_SIGNING_SECRET = "test-secret-for-guest-session-cookie-signing";
 
-const { signGuestSessionCookieValue, verifyGuestSessionCookieValue, readGuestSessionCookie } = await import(
+const { signGuestSessionCookieValue, verifyGuestSessionCookieValue, readGuestSessionCookie, setGuestSessionCookie } = await import(
   "../../src/trainingAccess/guestSessionCookie.js"
 );
 
 describe("guest session cookie signing", () => {
+  it("keeps a permanent session signed and persistent without using a session expiry", () => {
+    const cookie = vi.fn();
+    setGuestSessionCookie({ cookie } as unknown as Response, "session-1", null);
+    const [name, value, options] = cookie.mock.calls[0]!;
+    expect(name).toBe("training_guest_session");
+    expect(verifyGuestSessionCookieValue(value)).toBe("session-1");
+    expect(options).toMatchObject({ httpOnly: true, sameSite: "lax", path: "/" });
+    expect(options.maxAge).toBeGreaterThan(365 * 24 * 60 * 60 * 1000);
+    expect(options).not.toHaveProperty("expires");
+  });
   it("verifies a value it signed, returning the original session id", () => {
     const sessionId = "11111111-1111-1111-1111-111111111111";
     const signed = signGuestSessionCookieValue(sessionId);

@@ -18,7 +18,8 @@ export interface TrainingAccessGrant {
   sessionCount: number;
   revoked: boolean;
   revokedAt: string | null;
-  expiresAt: string;
+  /** Null means permanent access, with no platform time limit. */
+  expiresAt: string | null;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -41,7 +42,8 @@ export interface GuestTrainingSession {
   status: "active" | "expired" | "revoked";
   createdAt: string;
   lastSeenAt: string;
-  expiresAt: string;
+  /** Null means the learner session has no platform time limit. */
+  expiresAt: string | null;
 }
 
 /**

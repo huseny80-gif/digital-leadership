@@ -9,8 +9,6 @@ import type { GrantRow, GuestSessionRow, TrainingAccessRepository } from "./trai
 import { generateAccessToken, hashToken } from "./token.js";
 import { validateTraineeName } from "./nameValidation.js";
 import { conflict, notFound } from "../lib/httpError.js";
-import { ValidationError } from "../lib/validation.js";
-import { getEnv } from "../config/env.js";
 
 function toGrant(row: GrantRow): TrainingAccessGrant {
   return {
@@ -48,7 +46,7 @@ function toGuestSession(row: GuestSessionRow): GuestTrainingSession {
  * creation"). */
 function isGrantJoinable(row: GrantRow): boolean {
   if (row.revoked) return false;
-  if (new Date(row.expires_at).getTime() <= Date.now()) return false;
+  if (row.expires_at !== null && new Date(row.expires_at).getTime() <= Date.now()) return false;
   return true;
 }
 
@@ -62,21 +60,16 @@ export class TrainingAccessService {
     label: string | null;
     description: string | null;
     maxSessions: number | null;
-    expiresInHours: number;
     createdBy: string;
   }): Promise<TrainingAccessGrantCreated> {
-    if (params.expiresInHours <= 0) {
-      throw new ValidationError("expiresInHours must be positive.");
-    }
     const token = generateAccessToken();
     const tokenHash = hashToken(token);
-    const expiresAt = new Date(Date.now() + params.expiresInHours * 60 * 60 * 1000);
     const row = await this.repository.createGrant({
       tokenHash,
       label: params.label,
       description: params.description,
       maxSessions: params.maxSessions,
-      expiresAt,
+      expiresAt: null,
       createdBy: params.createdBy,
     });
     return {
@@ -124,7 +117,7 @@ export class TrainingAccessService {
    * session. Never returns the grant's own id/token — only the new guest
    * session's own identity (task requirement #3: the session, not the
    * grant, is what subsequent requests are authorized against). */
-  async joinWithToken(rawToken: string, rawName: unknown): Promise<{ session: GuestTrainingSession; ttlMs: number }> {
+  async joinWithToken(rawToken: string, rawName: unknown): Promise<{ session: GuestTrainingSession }> {
     const row = await this.repository.getGrantByTokenHash(hashToken(rawToken));
     if (!row || !isGrantJoinable(row)) {
       throw notFound("Training access link");
@@ -138,20 +131,12 @@ export class TrainingAccessService {
       }
     }
 
-    const ttlHours = getEnv().GUEST_SESSION_TTL_HOURS;
-    const ttlMs = ttlHours * 60 * 60 * 1000;
-    // A guest session never outlives its grant, even if the grant's own
-    // remaining lifetime is shorter than the default session TTL.
-    const grantRemainingMs = new Date(row.expires_at).getTime() - Date.now();
-    const sessionTtlMs = Math.min(ttlMs, grantRemainingMs);
-    const expiresAt = new Date(Date.now() + sessionTtlMs);
-
     const sessionRow = await this.repository.createGuestSession({
       grantId: row.id,
       displayName,
-      expiresAt,
+      expiresAt: null,
     });
-    return { session: toGuestSession(sessionRow), ttlMs: sessionTtlMs };
+    return { session: toGuestSession(sessionRow) };
   }
 
   /** Resolves and revalidates an existing guest session by id (from the
@@ -185,7 +170,7 @@ export class TrainingAccessService {
     const row = await this.repository.getGuestSessionById(sessionId);
     if (!row) return null;
     if (row.status !== "active") return null;
-    if (new Date(row.expires_at).getTime() <= Date.now()) return null;
+    if (row.expires_at !== null && new Date(row.expires_at).getTime() <= Date.now()) return null;
     await this.repository.touchLastSeen(sessionId);
     return toGuestSession(row);
   }

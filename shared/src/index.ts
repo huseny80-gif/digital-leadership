@@ -8,4 +8,5 @@ export * from "./types/quiz.js";
 export * from "./types/admin.js";
 export * from "./types/analytics.js";
 export * from "./types/trainingAccess.js";
+export * from "./constants/guestSession.js";
 export * from "./contracts/api.js";

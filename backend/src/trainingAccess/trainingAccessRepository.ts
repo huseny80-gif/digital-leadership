@@ -8,7 +8,7 @@ export interface GrantRow {
   session_count: string;
   revoked: boolean;
   revoked_at: string | null;
-  expires_at: string;
+  expires_at: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -21,7 +21,7 @@ export interface GuestSessionRow {
   status: "active" | "expired" | "revoked";
   created_at: string;
   last_seen_at: string;
-  expires_at: string;
+  expires_at: string | null;
 }
 
 /**
@@ -39,7 +39,7 @@ export class TrainingAccessRepository {
     label: string | null;
     description: string | null;
     maxSessions: number | null;
-    expiresAt: Date;
+    expiresAt: Date | null;
     createdBy: string;
   }): Promise<GrantRow> {
     const result = await this.pool.query<{ id: string }>(
@@ -97,7 +97,7 @@ export class TrainingAccessRepository {
   async createGuestSession(params: {
     grantId: string;
     displayName: string;
-    expiresAt: Date;
+    expiresAt: Date | null;
   }): Promise<GuestSessionRow> {
     const result = await this.pool.query<{ id: string }>(
       `insert into guest_training_sessions (grant_id, display_name, expires_at)
