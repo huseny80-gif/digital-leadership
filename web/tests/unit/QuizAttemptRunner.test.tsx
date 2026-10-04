@@ -28,7 +28,7 @@ describe("Finquiz interaction", () => {
   it("renders one question with lettered option buttons, without feedback before checking", () => {
     renderQuiz([choice, tf]);
     expect(screen.getByRole("heading", { name: quiz.title })).toBeInTheDocument();
-    expect(screen.getByText("السؤال 1 من 2")).toBeInTheDocument();
+    expect(screen.getByText("سؤال 1/2")).toBeInTheDocument();
     expect(screen.queryByText(tf.prompt)).not.toBeInTheDocument();
     expect(screen.queryByText(/التوضيح والتغذية الراجعة/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "ثلاثة" })).toHaveAttribute("aria-pressed", "false");

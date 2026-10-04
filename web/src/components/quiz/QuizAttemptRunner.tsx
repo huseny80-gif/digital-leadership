@@ -7,7 +7,6 @@ import type { Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer, MatchAns
 type AnswerState = { selectedOptionId?: string; answerText?: string; matchAnswer?: MatchAnswerPair[]; orderAnswer?: string[] };
 const levels = [{ id: "all", label: "الكل" }, { id: "easy", label: "سهل" }, { id: "medium", label: "متوسط" }, { id: "hard", label: "صعب" }];
 const letters = ["أ", "ب", "ج", "د", "هـ", "و"];
-const typeLabels = { multiple_choice: "اختيار من متعدد", true_false: "صح أو خطأ", fill: "أكمل الفراغ", match: "مطابقة", order: "ترتيب", open: "سؤال مفتوح", short_answer: "إجابة قصيرة" };
 
 function toInitialAnswers(initialAnswers: AttemptAnswer[]): Record<string, AnswerState> {
   return Object.fromEntries(initialAnswers.map(answer => [answer.questionId, {
@@ -256,7 +255,7 @@ export function QuizAttemptRunner({
       </div>
       <div className="quiz-progress">
         <div className="progress-meta" role="status" aria-live="polite">
-          <span>التقدّم: {answeredCount}/{filteredQuestions.length}</span><span>النتيجة: {automaticCorrect}/{automaticQuestions.length}</span>
+          <span>التقدّم: {answeredCount}/{filteredQuestions.length}</span><span>النتيجة: {automaticCorrect}/{filteredQuestions.length}</span>
         </div>
         <div className="progress-track" role="progressbar" aria-label="التقدّم" aria-valuemin={0} aria-valuemax={100} aria-valuenow={filteredQuestions.length ? Math.round(answeredCount / filteredQuestions.length * 100) : 0}>
           <div className="progress-fill" style={{ width: `${filteredQuestions.length ? answeredCount / filteredQuestions.length * 100 : 0}%` }} />
@@ -265,9 +264,9 @@ export function QuizAttemptRunner({
       <div className="quiz-body">
         {question ? <>
           <div className="q-prompt">
-            <span className="qnum">السؤال {currentIndex + 1} من {filteredQuestions.length}</span>
+            <span className="qnum">سؤال {currentIndex + 1}/{filteredQuestions.length}</span>
             <span className={`badge badge-${question.difficulty ?? "medium"}`}>{levels.find(level => level.id === (question.difficulty ?? "medium"))?.label}</span>
-            <span className="badge badge-type">{question.kind ?? typeLabels[question.questionType]}</span>
+            {isOpen ? <span className="badge badge-type" title={question.kind}>سؤال مفتوح</span> : null}
             <h2 id={`prompt-${question.id}`}>{question.prompt}</h2>
           </div>
           <div aria-labelledby={`prompt-${question.id}`}>
@@ -307,7 +306,7 @@ export function QuizAttemptRunner({
                 </li>;
               })}</ol>
             </> : <>
-              <label className="question-hint" htmlFor={`answer-${question.id}`}>إجابتك</label>
+              <label className="sr-only" htmlFor={`answer-${question.id}`}>إجابتك</label>
               {question.questionType === "fill" ? <input id={`answer-${question.id}`} className="fill-input" type="text" autoComplete="off" placeholder="اكتب الإجابة هنا" value={currentAnswer?.answerText ?? ""} disabled={locked} maxLength={5000} onChange={event => updateAnswer({ answerText: event.target.value })} /> : <textarea id={`answer-${question.id}`} className="open-input" rows={5} autoComplete="off" placeholder="اكتب إجابتك هنا للمراجعة الذاتية…" value={currentAnswer?.answerText ?? ""} disabled={locked} maxLength={5000} onChange={event => updateAnswer({ answerText: event.target.value })} />}
             </>}
           </div>
