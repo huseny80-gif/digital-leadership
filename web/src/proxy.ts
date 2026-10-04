@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseMiddlewareClient } from "@/lib/supabase/middlewareClient";
 import { isProtectedPath, isGuestReachablePath } from "@/lib/authGuard";
+import { GUEST_SESSION_COOKIE_MAX_AGE_SECONDS } from "@digital-leadership/shared";
 
 const GUEST_SESSION_COOKIE = "training_guest_session";
 
@@ -55,6 +56,12 @@ export async function proxy(request: NextRequest) {
   // lets either through.
   const hasGuestCookie = Boolean(request.cookies.get(GUEST_SESSION_COOKIE)?.value);
   if (hasGuestCookie && isGuestReachablePath(pathname)) {
+    // Browser persistence renews on activity. This preserves the existing
+    // signed reference; authorization still happens in the backend.
+    response.cookies.set(GUEST_SESSION_COOKIE, request.cookies.get(GUEST_SESSION_COOKIE)!.value, {
+      httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/",
+      maxAge: GUEST_SESSION_COOKIE_MAX_AGE_SECONDS,
+    });
     return response;
   }
 

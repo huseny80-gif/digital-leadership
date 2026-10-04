@@ -30,16 +30,10 @@ export default function TrainingAccessPage() {
   const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [label, setLabel] = useState("");
-  const [expiresInHours, setExpiresInHours] = useState(24 * 7);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [justCreated, setJustCreated] = useState<TrainingAccessGrantCreated | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
-  // Captured once via a lazy initializer (not re-evaluated on every
-  // render) so the expiry check below never calls the impure `Date.now()`
-  // during render itself (react-hooks/purity) — a grant's expired/active
-  // status only needs to be "as of this page load", not live-ticking.
-  const [now] = useState(() => Date.now());
 
   async function load() {
     setError(null);
@@ -69,7 +63,6 @@ export default function TrainingAccessPage() {
         label: label || null,
         description: null,
         maxSessions: null,
-        expiresInHours,
       });
       setJustCreated(created);
       setLabel("");
@@ -101,12 +94,14 @@ export default function TrainingAccessPage() {
     <section>
       <div className="admin-toolbar">
         <h1 className="page-heading" style={{ marginBottom: 0 }}>
-          Training Access
+          دخول المتدربين والزوار
         </h1>
         <button type="button" className="btn" onClick={() => setFormOpen((o) => !o)}>
-          {formOpen ? "Cancel" : "New Access Link"}
+          {formOpen ? "إلغاء" : "رابط دخول جديد"}
         </button>
       </div>
+
+      <p className="page-subheading">الدخول عبر الرابط أو رمز QR متاح دائمًا للتصفح وإجراء الاختبارات التدريبية، دون تحديد ساعات أو أيام.</p>
 
       {justCreated ? (
         <div
@@ -140,20 +135,6 @@ export default function TrainingAccessPage() {
             </label>
             <input id="grant-label" className="form-input" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Q3 onboarding cohort" />
           </div>
-          <div className="form-field">
-            <label className="form-label" htmlFor="grant-expires">
-              Expires in (hours)
-            </label>
-            <input
-              id="grant-expires"
-              type="number"
-              min={1}
-              className="form-input"
-              value={expiresInHours}
-              onChange={(e) => setExpiresInHours(Number(e.target.value))}
-              required
-            />
-          </div>
           {formError ? (
             <p role="alert" style={{ color: "var(--color-danger)" }}>
               {formError}
@@ -181,15 +162,14 @@ export default function TrainingAccessPage() {
                 <th>Label</th>
                 <th>Sessions</th>
                 <th>Status</th>
-                <th>Expires</th>
+                <th>الصلاحية</th>
                 <th>Created</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {grants.map((g) => {
-                const expired = new Date(g.expiresAt).getTime() <= now;
-                const statusLabel = g.revoked ? "Revoked" : expired ? "Expired" : "Active";
+                const statusLabel = g.revoked ? "معطّل" : "مفعّل";
                 return (
                   <tr key={g.id}>
                     <td>{g.label ?? "—"}</td>
@@ -198,7 +178,7 @@ export default function TrainingAccessPage() {
                       {g.maxSessions ? ` / ${g.maxSessions}` : ""}
                     </td>
                     <td>{statusLabel}</td>
-                    <td>{new Date(g.expiresAt).toLocaleString()}</td>
+                    <td>دائم — دون تاريخ انتهاء</td>
                     <td>{new Date(g.createdAt).toLocaleString()}</td>
                     <td>
                       {!g.revoked ? (

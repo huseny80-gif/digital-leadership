@@ -78,5 +78,11 @@ by the time migration 16 runs. Full corrected order:
 Current full order:
 
 ```
-1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 14 → 12 → 13 → 15 → 16 → 17 → 18
+1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 14 → 12 → 13 → 15 → 16 → 17 → 18 → 19
 ```
+
+19. `00000000000019_permanent_training_access.sql` — removes time limits
+    from existing and new training links and guest sessions. Preserves
+    token hashes, session IDs, quiz results, progress and explicit
+    revocations. Backend startup applies it idempotently before serving
+    requests. Apply after migration 18 in the corrected order above.

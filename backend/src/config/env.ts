@@ -85,12 +85,6 @@ const envSchema = z.object({
   // closed rather than falling back to a well-known secret.
   GUEST_SESSION_SIGNING_SECRET: z.string().optional(),
 
-  // Phase 6 — default lifetime of a guest training session (task
-  // requirement #7, "resumption ... within whatever expiry policy you
-  // design"). 12 hours: long enough to resume the same training day
-  // without a rejoin, short enough that an unrevoked link doesn't grant
-  // indefinite standing access.
-  GUEST_SESSION_TTL_HOURS: z.coerce.number().int().positive().default(12),
 });
 
 /** The same placeholder previously used as a schema-level default — now

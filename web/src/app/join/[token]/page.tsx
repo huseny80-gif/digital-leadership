@@ -48,7 +48,7 @@ export default function JoinPage({ params }: { params: Promise<{ token: string }
         if (!res.ok) {
           setLoadError(
             res.status === 404
-              ? "This training access link is invalid, has expired, or has been revoked."
+              ? "This training access link is invalid or has been revoked."
               : "Unable to load this training link. Please try again.",
           );
           return;
@@ -134,6 +134,7 @@ export default function JoinPage({ params }: { params: Promise<{ token: string }
             {info.description && (
               <p style={{ color: "var(--color-text-muted)", marginBottom: "var(--space-5)" }}>{info.description}</p>
             )}
+            <p style={{ color: "var(--color-text-muted)", marginBottom: "var(--space-4)" }}>الدخول متاح دائمًا، ويمكنك العودة للتصفح والاختبارات التدريبية في أي وقت.</p>
 
             <form onSubmit={handleSubmit}>
               <label htmlFor="trainee-name" style={{ display: "block", fontSize: "var(--font-size-sm)", marginBottom: "var(--space-2)", color: "var(--color-text)" }}>

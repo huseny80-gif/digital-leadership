@@ -32,7 +32,7 @@ export function SessionExpiredState() {
       >
         <h1 style={{ fontSize: "var(--font-size-lg)", margin: "0 0 var(--space-3)" }}>Your training session has ended</h1>
         <p style={{ color: "var(--color-text-muted)" }}>
-          Your training session has expired or could not be found. Please use your training link or QR code again to rejoin.
+          تعذّر العثور على جلسة الدخول. استخدم رابط التدريب أو رمز QR للدخول مجددًا؛ الوصول إلى التدريب متاح دون مدة انتهاء.
         </p>
         <p style={{ marginTop: "var(--space-5)" }}>
           <a href="/about" style={{ color: "var(--color-text-muted)", fontSize: "var(--font-size-sm)" }}>

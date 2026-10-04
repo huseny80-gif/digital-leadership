@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 
 process.env.GUEST_SESSION_SIGNING_SECRET = "test-secret";
 
@@ -35,7 +35,7 @@ class FakeTrainingAccessRepository implements Pick<
     label: string | null;
     description: string | null;
     maxSessions: number | null;
-    expiresAt: Date;
+    expiresAt: Date | null;
     createdBy: string;
   }): Promise<GrantRow> {
     const id = `grant-${++this.grantSeq}`;
@@ -47,7 +47,7 @@ class FakeTrainingAccessRepository implements Pick<
       session_count: "0",
       revoked: false,
       revoked_at: null,
-      expires_at: params.expiresAt.toISOString(),
+      expires_at: params.expiresAt?.toISOString() ?? null,
       created_by: params.createdBy,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -76,7 +76,7 @@ class FakeTrainingAccessRepository implements Pick<
     }
   }
 
-  async createGuestSession(params: { grantId: string; displayName: string; expiresAt: Date }): Promise<GuestSessionRow> {
+  async createGuestSession(params: { grantId: string; displayName: string; expiresAt: Date | null }): Promise<GuestSessionRow> {
     const id = `session-${++this.sessionSeq}`;
     const row: GuestSessionRow = {
       id,
@@ -85,7 +85,7 @@ class FakeTrainingAccessRepository implements Pick<
       status: "active",
       created_at: new Date().toISOString(),
       last_seen_at: new Date().toISOString(),
-      expires_at: params.expiresAt.toISOString(),
+      expires_at: params.expiresAt?.toISOString() ?? null,
     };
     this.sessions.set(id, row);
     const grant = this.grants.get(params.grantId)!;
@@ -124,7 +124,6 @@ async function createGrantWithToken(
     label: "Cohort A",
     description: "desc",
     maxSessions: null,
-    expiresInHours: 24,
     createdBy: "admin-1",
     ...overrides,
   });
@@ -133,6 +132,7 @@ async function createGrantWithToken(
 }
 
 describe("TrainingAccessService", () => {
+  afterEach(() => { vi.useRealTimers(); });
   let repo: FakeTrainingAccessRepository;
   let service: InstanceType<typeof TrainingAccessService>;
 
@@ -146,6 +146,8 @@ describe("TrainingAccessService", () => {
     const created = await createGrantWithToken(service);
     expect(created.joinUrl).toBe(`https://example.test/join/${created.token}`);
     expect(created.token.length).toBeGreaterThan(20);
+    expect(created.expiresAt).toBeNull();
+    expect(repo.grants.get(created.id)!.expires_at).toBeNull();
   });
 
   it("the stored grant never carries the raw token, only accessible via join()/joinUrl at creation time", async () => {
@@ -177,7 +179,7 @@ describe("TrainingAccessService", () => {
   });
 
   it("expired token → rejected (test case #3)", async () => {
-    const created = await createGrantWithToken(service, { expiresInHours: 1 });
+    const created = await createGrantWithToken(service);
     const row = repo.grants.get(created.id)!;
     row.expires_at = new Date(Date.now() - 1000).toISOString(); // force into the past
     await expect(service.joinWithToken(created.token, "Ahmad Ali")).rejects.toThrow(HttpError);
@@ -205,11 +207,22 @@ describe("TrainingAccessService", () => {
     expect(session.displayName).toBe("سارة أحمد المطيري");
   });
 
-  it("guest session creation produces a platform-wide temporary learner session (test case #8)", async () => {
+  it("guest session creation produces permanent platform-wide learner access", async () => {
     const created = await createGrantWithToken(service);
-    const { session, ttlMs } = await service.joinWithToken(created.token, "Ahmad Ali Hassan");
+    const { session } = await service.joinWithToken(created.token, "Ahmad Ali Hassan");
     expect(session).not.toHaveProperty("subjectId");
-    expect(ttlMs).toBeGreaterThan(0);
+    expect(session.expiresAt).toBeNull();
+    expect(repo.sessions.get(session.id)!.expires_at).toBeNull();
+  });
+
+  it("the same link and existing session remain usable after twenty years", async () => {
+    vi.useFakeTimers(); vi.setSystemTime(new Date("2026-10-04T00:00:00Z"));
+    const created = await createGrantWithToken(service);
+    const { session } = await service.joinWithToken(created.token, "Ahmad Ali Hassan");
+    vi.setSystemTime(new Date("2046-10-04T00:00:00Z"));
+    expect(await service.resolveUsableSession(session.id)).toMatchObject({ id: session.id, expiresAt: null });
+    expect(await service.resolveJoinInfo(created.token)).toMatchObject({ title: "Cohort A" });
+    expect((await service.joinWithToken(created.token, "سارة أحمد علي")).session.expiresAt).toBeNull();
   });
 
   it("session expiration is enforced — an expired session resolves to null, not reusable (test case #14)", async () => {
