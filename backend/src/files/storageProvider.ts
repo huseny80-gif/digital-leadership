@@ -19,6 +19,9 @@ export interface StorageProvider {
    * version, never reusing one). */
   upload(objectKey: string, data: Buffer, contentType: string): Promise<void>;
 
+  /** Server-only processing of a private object; never a browser URL. */
+  read?(objectKey: string): Promise<Buffer>;
+
   /** Generates a short-lived signed URL for reading the object. Must only
    * ever be called after the caller has already verified authorization —
    * this method itself performs no authorization check (that is

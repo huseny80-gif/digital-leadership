@@ -3,6 +3,7 @@ import { Cairo, Tajawal } from "next/font/google";
 import "./globals.css";
 import "./reference-dashboard.css";
 import "./quiz-training.css";
+import "./content-automation.css";
 
 /**
  * Phase 18.1 — Finquiz Visual Identity Foundation: typography pairing

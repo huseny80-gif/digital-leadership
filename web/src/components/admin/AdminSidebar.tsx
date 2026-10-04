@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/subjects", label: "Subjects" },
+  { href: "/admin/content", label: "تحديث المحتوى تلقائيًا" },
   { href: "/admin/training-access", label: "Training Access" },
   { href: "/admin/files", label: "Files" },
   { href: "/admin/question-banks", label: "Question Banks" },

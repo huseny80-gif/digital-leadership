@@ -68,3 +68,15 @@ by the time migration 16 runs. Full corrected order:
 ```
 
 17. `00000000000017_global_guest_access.sql` — makes Training Access platform-wide by allowing new grants without a subject binding; legacy subject ids remain nullable for backward compatibility.
+
+18. `00000000000018_content_imports.sql` — adds durable PDF/text imports,
+    private upload parts, per-lecture question metadata and quiz edition
+    links. Apply after the existing assessment schema. This migration is
+    additive and idempotent; backend startup also applies it under a
+    transaction and advisory lock, before starting the import worker.
+
+Current full order:
+
+```
+1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 14 → 12 → 13 → 15 → 16 → 17 → 18
+```

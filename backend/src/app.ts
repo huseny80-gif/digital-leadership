@@ -48,6 +48,7 @@ export function createApp(): Express {
     }),
   );
 
+  app.use("/api/v1/admin/content-imports", express.json({ limit: "2mb" }));
   app.use(express.json());
   app.use(authenticate);
   // Mirrors `authenticate` exactly: only ever *attaches* `req.guestSession`

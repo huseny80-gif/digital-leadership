@@ -14,6 +14,7 @@ import { FilesService } from "./filesService.js";
 import { LocalFilesystemStorageProvider } from "./localStorageProvider.js";
 import { verifyLocalSignedToken } from "./localSignedUrlToken.js";
 import { notFound } from "../lib/httpError.js";
+import { getContentImportService, wakeContentImportWorker } from "../contentAutomation/runtime.js";
 
 const uploadBodySchema = z.object({
   subjectId: z.string().uuid(),
@@ -69,6 +70,8 @@ export function filesRoutes(): Router {
       });
 
       const body: ApiResult<FileMetadata> = { data: file };
+      await getContentImportService().enqueueFile(file.id, req.user!.id, { subjectId: parsed.data.subjectId, lectureId: parsed.data.lectureId ?? null });
+      wakeContentImportWorker();
       res.status(201).json(body);
     } catch (err) {
       next(err);
@@ -118,6 +121,8 @@ export function filesRoutes(): Router {
           uploadedBy: req.user!.id,
         });
         const body: ApiResult<FileMetadata> = { data: file };
+        await getContentImportService().enqueueFile(file.id, req.user!.id, { replacesFileId: req.params.fileId as string });
+        wakeContentImportWorker();
         res.json(body);
       } catch (err) {
         next(err);

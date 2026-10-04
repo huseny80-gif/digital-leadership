@@ -52,6 +52,12 @@ export class SupabaseStorageProvider implements StorageProvider {
     return data.signedUrl;
   }
 
+  async read(objectKey: string): Promise<Buffer> {
+    const { data, error } = await this.client.storage.from(this.bucket).download(objectKey);
+    if (error || !data) throw new HttpError(500, "storage_error", "Failed to read the uploaded file.");
+    return Buffer.from(await data.arrayBuffer());
+  }
+
   async delete(objectKey: string): Promise<void> {
     // Best-effort: Supabase's remove() does not error on a missing key,
     // matching the interface's "never throws if already absent" contract.
