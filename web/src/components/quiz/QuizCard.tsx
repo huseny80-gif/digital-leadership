@@ -23,7 +23,7 @@ export function QuizCard({
           {quiz.description ? <p className="content-card-meta">{quiz.description}</p> : null}
         </div>
         {quiz.timeLimitSeconds ? (
-          <span className="badge">{Math.round(quiz.timeLimitSeconds / 60)} min</span>
+          <span className="badge">{Math.round(quiz.timeLimitSeconds / 60)} دقيقة</span>
         ) : null}
       </div>
     </Link>

@@ -25,6 +25,7 @@ import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import SubjectAssessmentsPage from "@/app/(app)/subjects/[subjectId]/assessments/page";
 import QuizDetailPage from "@/app/(app)/quizzes/[quizId]/page";
 import QuizResultPage from "@/app/(app)/quizzes/[quizId]/result/[attemptId]/page";
+import QuizAttemptPage from "@/app/(app)/quizzes/[quizId]/attempt/[attemptId]/page";
 
 const mockApiGet = vi.mocked(apiGet);
 const mockApiGetPaginated = vi.mocked(apiGetPaginated);
@@ -99,7 +100,7 @@ describe("QuizDetailPage", () => {
     render(element);
 
     expect(screen.getByRole("heading", { name: "Arithmetic Quiz" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /start quiz/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "بدء الاختبار" })).toBeInTheDocument();
   });
 
   it("12. unauthorized/inaccessible quiz access is handled as not-found, not a raw error", async () => {
@@ -113,8 +114,8 @@ describe("QuizDetailPage", () => {
 });
 
 describe("QuizResultPage", () => {
-  it("8. renders the server-provided result — score, percentage, and status", async () => {
-    mockApiGet.mockResolvedValue({
+  it("renders saved server-graded feedback, excluding essays from the automatic ratio", async () => {
+    const result = {
       data: {
         attemptId: "attempt-1",
         quizId: "quiz-1",
@@ -126,15 +127,26 @@ describe("QuizResultPage", () => {
         percentage: 100,
         submittedAt: new Date().toISOString(),
       },
+    };
+    mockApiGet.mockImplementation(async (path: string) => {
+      if (path.endsWith("/result")) return result;
+      if (path.endsWith("/questions")) return { data: [
+        { id: "q1", questionType: "multiple_choice", prompt: "Question one", points: 1, options: [{ id: "o1", optionText: "First", orderIndex: 0 }], matchItems: null, orderItems: null },
+        { id: "q2", questionType: "open", prompt: "Essay question", points: 1, options: null, matchItems: null, orderItems: null },
+      ] };
+      if (path.endsWith("/answers")) return { data: [{ questionId: "q1", selectedOptionId: "o1", answerText: null, matchAnswer: null, orderAnswer: null }] };
+      if (path.endsWith("/feedback")) return { data: [{ questionId: "q1", recorded: true, isCorrect: true, correctAnswerSummary: "First", feedback: "Source explanation", answerReview: { correctOptionIds: ["o1"] } }] };
+      return { data: { id: "quiz-1", subjectId: "s1", title: "Arithmetic Quiz", timeLimitSeconds: null, status: "published" } };
     });
 
     const element = await QuizResultPage({ params: Promise.resolve({ quizId: "quiz-1", attemptId: "attempt-1" }) });
     render(element);
 
-    expect(screen.getByText(/2 \/ 2 correct \(100%\)/i)).toBeInTheDocument();
-    expect(screen.getByRole("progressbar", { name: "Score" })).toHaveAttribute("aria-valuenow", "100");
-    expect(screen.getByText(/status: completed/i)).toBeInTheDocument();
-    // No answer key is ever rendered alongside the result.
+    expect(screen.getByText("1 / 1 (100%)")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "نتيجة الاختبار" })).toBeInTheDocument();
+    expect(screen.getByText("Source explanation")).toBeInTheDocument();
+    // Essays are excluded from automatic correctness, and database flags
+    // themselves are not embedded in the rendered HTML.
     expect(document.body.innerHTML).not.toMatch(/is_correct|isCorrect/i);
   });
 
@@ -144,8 +156,8 @@ describe("QuizResultPage", () => {
     const element = await QuizResultPage({ params: Promise.resolve({ quizId: "quiz-1", attemptId: "attempt-1" }) });
     render(element);
 
-    expect(screen.getByText(/not submitted yet/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /continue quiz/i })).toHaveAttribute("href", "/quizzes/quiz-1/attempt/attempt-1");
+    expect(screen.getByText("لم يُنهَ الاختبار بعد")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "متابعة الاختبار" })).toHaveAttribute("href", "/quizzes/quiz-1/attempt/attempt-1");
   });
 
   it("14. a result belonging to another user (404) is handled as not-found", async () => {
@@ -155,5 +167,33 @@ describe("QuizResultPage", () => {
     render(element);
 
     expect(screen.getByText(/not found/i)).toBeInTheDocument();
+  });
+});
+
+describe("QuizAttemptPage feedback", () => {
+  function mockAttempt(quizId = "quiz-1", status = "in_progress") {
+    mockApiGet.mockImplementation(async (path: string) => {
+      if (path.endsWith("/questions")) return { data: [{ id: "q1", questionType: "multiple_choice", prompt: "Question", points: 1, options: [{ id: "o1", optionText: "Answer", orderIndex: 0 }], matchItems: null, orderItems: null }] };
+      if (path.endsWith("/answers")) return { data: [{ questionId: "q1", selectedOptionId: "o1", answerText: null, matchAnswer: null, orderAnswer: null }] };
+      if (path.endsWith("/feedback")) return { data: [{ questionId: "q1", recorded: true, isCorrect: true, correctAnswerSummary: "Answer", feedback: "Saved explanation", answerReview: { correctOptionIds: ["o1"] } }] };
+      if (path.includes("/attempts/")) return { data: { id: "a1", quizId, status, startedAt: new Date().toISOString() } };
+      return { data: { id: "quiz-1", title: "Quiz", timeLimitSeconds: null } };
+    });
+  }
+  it("restores recorded feedback through the owned attempt endpoint", async () => {
+    mockAttempt(); render(await QuizAttemptPage({ params: Promise.resolve({ quizId: "quiz-1", attemptId: "a1" }) }));
+    expect(mockApiGet).toHaveBeenCalledWith("/api/v1/attempts/a1/feedback");
+    expect(screen.getByText("Saved explanation")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Answer/ })).toBeDisabled();
+  });
+  it("rejects a URL pairing an owned attempt with a different quiz", async () => {
+    mockAttempt("different-quiz"); render(await QuizAttemptPage({ params: Promise.resolve({ quizId: "quiz-1", attemptId: "a1" }) }));
+    expect(screen.getByText(/not found/i)).toBeInTheDocument();
+    expect(screen.queryByText("Saved explanation")).not.toBeInTheDocument();
+  });
+  it("opens submitted attempts as read-only review, without a second submission", async () => {
+    mockAttempt("quiz-1", "submitted"); render(await QuizAttemptPage({ params: Promise.resolve({ quizId: "quiz-1", attemptId: "a1" }) }));
+    expect(screen.getByRole("region", { name: "مراجعة الإجابات" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "تحقق من الإجابة" })).not.toBeInTheDocument();
   });
 });

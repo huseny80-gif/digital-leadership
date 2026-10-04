@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cairo, Tajawal } from "next/font/google";
 import "./globals.css";
 import "./reference-dashboard.css";
+import "./quiz-training.css";
 
 /**
  * Phase 18.1 — Finquiz Visual Identity Foundation: typography pairing

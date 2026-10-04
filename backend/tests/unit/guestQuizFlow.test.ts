@@ -56,8 +56,11 @@ class FakeAssessmentsRepository implements AssessmentsRepository {
   async getQuestionType(): Promise<"multiple_choice"> {
     return "multiple_choice";
   }
-  async getStudyAnswerSummary(): Promise<string | null> {
-    return "4";
+  async getStudyAnswer() {
+    return { summary: "4", review: { correctOptionIds: [OPTION_CORRECT] } };
+  }
+  async listAnsweredQuestionGrades(attemptId: string) {
+    return [...(this.answers.get(attemptId) ?? new Map()).entries()].map(([questionId, answer]) => ({ questionId, isCorrect: answer.isCorrect }));
   }
   async getQuestionExplanation(): Promise<string | null> {
     return null;
@@ -206,7 +209,23 @@ describe("Guest quiz flow (via the shared AssessmentsService)", () => {
       isCorrect: true,
       correctAnswerSummary: "4",
       feedback: "إجابة صحيحة. راجع الملخص لتثبيت المعلومة.",
+      answerReview: { correctOptionIds: [OPTION_CORRECT] },
     });
+  });
+
+  it("feedback is empty before answering and restores only the owner's recorded answer afterwards", async () => {
+    const attempt = await service.startAttempt(QUIZ_IN_SCOPE, guestPrincipal("guest-1"), false);
+    expect(await service.getFeedbackOrThrow(attempt.id, guestPrincipal("guest-1"), false)).toEqual([]);
+    const ack = await service.submitAnswer(attempt.id, guestPrincipal("guest-1"), { questionId: QUESTION_ID, selectedOptionId: OPTION_WRONG });
+    expect(await service.getFeedbackOrThrow(attempt.id, guestPrincipal("guest-1"), false)).toEqual([ack]);
+    await expect(service.getFeedbackOrThrow(attempt.id, guestPrincipal("guest-2"), false)).rejects.toMatchObject({ status: 404 });
+    await expect(service.getFeedbackOrThrow(attempt.id, { kind: "user", userId: "user-1" }, true)).rejects.toMatchObject({ status: 404 });
+  });
+
+  it("an empty text submission cannot earn an answer reveal", async () => {
+    const attempt = await service.startAttempt(QUIZ_IN_SCOPE, guestPrincipal("guest-1"), false);
+    await expect(service.submitAnswer(attempt.id, guestPrincipal("guest-1"), { questionId: QUESTION_ID, answerText: "   " })).rejects.toMatchObject({ status: 400 });
+    expect(await service.getFeedbackOrThrow(attempt.id, guestPrincipal("guest-1"), false)).toEqual([]);
   });
 
   it("submit computes a score server-side and answer-key data never appears in the result", async () => {

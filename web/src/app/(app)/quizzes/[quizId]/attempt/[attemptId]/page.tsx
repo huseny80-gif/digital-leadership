@@ -1,4 +1,4 @@
-import type { Quiz, QuestionForAttempt, AttemptAnswer, QuizAttempt } from "@shared/index";
+import type { Quiz, QuestionForAttempt, AttemptAnswer, QuizAttempt, SubmitAnswerAck } from "@shared/index";
 import { apiGet, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { ErrorState, NotFoundState } from "@/components/ui/States";
@@ -36,21 +36,24 @@ export default async function QuizAttemptPage({
   let questions: QuestionForAttempt[] = [];
   let existingAnswers: AttemptAnswer[] = [];
   let attempt: QuizAttempt | null = null;
+  let feedback: SubmitAnswerAck[] = [];
   let notFound = false;
   let errorMessage: string | null = null;
 
   try {
-    console.error("[attempt-page] loading answers", attemptId); // TEMP DIAGNOSTIC — remove after debugging
-    const [quizRes, questionsRes, answersRes, attemptRes] = await Promise.all([
+    const [quizRes, questionsRes, answersRes, attemptRes, feedbackRes] = await Promise.all([
       apiGet<Quiz>(`/api/v1/quizzes/${quizId}`),
       apiGet<QuestionForAttempt[]>(`/api/v1/quizzes/${quizId}/questions`),
       apiGet<AttemptAnswer[]>(`/api/v1/attempts/${attemptId}/answers`),
       apiGet<QuizAttempt>(`/api/v1/attempts/${attemptId}`),
+      apiGet<SubmitAnswerAck[]>(`/api/v1/attempts/${attemptId}/feedback`),
     ]);
     quiz = quizRes.data;
     questions = questionsRes.data;
     existingAnswers = answersRes.data;
     attempt = attemptRes.data;
+    feedback = feedbackRes.data;
+    if (attempt.quizId !== quizId) notFound = true;
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
       notFound = true;
@@ -69,11 +72,14 @@ export default async function QuizAttemptPage({
 
   return (
     <QuizAttemptRunner
+      key={attemptId}
       quiz={quiz!}
       questions={questions}
       attemptId={attemptId}
       initialAnswers={existingAnswers}
+      initialFeedback={feedback}
       startedAt={attempt!.startedAt}
+      reviewMode={attempt!.status !== "in_progress"}
     />
   );
 }

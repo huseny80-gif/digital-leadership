@@ -220,6 +220,23 @@ export function assessmentsRoutes(): Router {
     },
   );
 
+  router.get(
+    "/attempts/:attemptId/feedback",
+    requireLearnerPrincipal,
+    requireUuidParam("attemptId"),
+    async (req, res, next) => {
+      try {
+        const service = getService();
+        const feedback = await service.getFeedbackOrThrow(req.params.attemptId as string, principalOf(req), req.user?.role === "admin");
+        const body: ApiResult<SubmitAnswerAck[]> = { data: feedback };
+        res.setHeader("Cache-Control", "private, no-store");
+        res.json(body);
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
   router.post(
     "/attempts/:attemptId/submit",
     requireLearnerPrincipal,
