@@ -205,7 +205,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       `select q.id, q.subject_id, q.lecture_id, q.title, q.description, q.time_limit_seconds, q.status
        from quizzes q
        ${QUIZ_VISIBILITY_JOIN}
-       where q.subject_id = $1 and q.deleted_at is null and s.deleted_at is null ${visibility}
+       where q.subject_id = $1 and q.deleted_at is null and s.deleted_at is null and q.superseded_by is null ${visibility}
        order by q.title asc`,
       [subjectId],
     );
@@ -237,10 +237,17 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       prompt: string;
       points: number;
       order_index: number;
+      lecture_id: string | null;
+      lecture_number: number | null;
+      lecture_title: string | null;
+      difficulty: "easy" | "medium" | "hard" | null;
+      kind: string | null;
     }>(
-      `select qn.id, qn.question_type, qn.prompt, qn.points, qq.order_index
+      `select qn.id, qn.question_type, qn.prompt, qn.points, qq.order_index,
+         qn.lecture_id, qn.difficulty, qn.kind, l.order_index as lecture_number, l.title as lecture_title
        from quiz_questions qq
        join questions qn on qn.id = qq.question_id and qn.deleted_at is null
+       left join lectures l on l.id=qn.lecture_id
        where qq.quiz_id = $1
        order by qq.order_index asc`,
       [quizId],
@@ -332,6 +339,11 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       questionType: row.question_type,
       prompt: row.prompt,
       points: row.points,
+      ...(row.lecture_id ? { lectureId: row.lecture_id } : {}),
+      ...(row.lecture_number !== null && row.lecture_number !== undefined ? { lectureNumber: row.lecture_number } : {}),
+      ...(row.lecture_title ? { lectureTitle: row.lecture_title } : {}),
+      ...(row.difficulty ? { difficulty: row.difficulty } : {}),
+      ...(row.kind ? { kind: row.kind } : {}),
       options: optionsByQuestion.get(row.id) ?? null,
       matchItems: matchItemsByQuestion.get(row.id) ?? null,
       orderItems: orderItemsByQuestion.get(row.id) ?? null,

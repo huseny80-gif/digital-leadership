@@ -5,27 +5,22 @@ import type { FileMetadata, SignedFileUrl } from "@shared/index";
 import { adminGet } from "@/lib/api/adminBrowserClient";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/States";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
+import { SmartContentUpload } from "@/components/admin/SmartContentUpload";
 
 function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
 /**
- * File management (PHASE 09C "File Management"). Lists files via the
- * admin proxy; upload goes through `/api/admin/upload-file` (a
- * multipart-forwarding proxy to the unmodified Phase 8
- * `POST /api/v1/files`); deletion reuses the per-file proxy's `DELETE`.
+ * Lists files via the admin proxy. SmartContentUpload automatically
+ * assigns uploaded PDFs to their course and lecture and updates quizzes;
+ * deletion reuses the per-file proxy's DELETE.
  * No storage credential, signed URL, or Supabase Storage call ever
  * reaches this page — every operation is backend-mediated.
  */
 export default function AdminFilesPage() {
   const [files, setFiles] = useState<FileMetadata[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [subjectId, setSubjectId] = useState("");
-  const [lectureId, setLectureId] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [openingFileId, setOpeningFileId] = useState<string | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
 
@@ -45,38 +40,10 @@ export default function AdminFilesPage() {
     // within the effect body itself.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
+    const refresh = () => { void load(); };
+    window.addEventListener("content-import-completed", refresh);
+    return () => window.removeEventListener("content-import-completed", refresh);
   }, []);
-
-  async function handleUpload(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedFile) {
-      setUploadError("Choose a PDF file to upload.");
-      return;
-    }
-    setUploading(true);
-    setUploadError(null);
-    try {
-      const formData = new FormData();
-      formData.set("subjectId", subjectId);
-      if (lectureId) formData.set("lectureId", lectureId);
-      formData.set("file", selectedFile);
-
-      const res = await fetch("/api/admin/upload-file", { method: "POST", body: formData });
-      const body = await res.json();
-      if (!res.ok) {
-        setUploadError(body.error?.message ?? "Unable to upload this file. Please try again.");
-        return;
-      }
-      setSelectedFile(null);
-      setSubjectId("");
-      setLectureId("");
-      await load();
-    } catch {
-      setUploadError("Unable to upload this file. Please try again.");
-    } finally {
-      setUploading(false);
-    }
-  }
 
   // Opens a file via the backend-mediated signed-URL flow — the bucket
   // stays private; this page only ever handles the short-lived URL the
@@ -114,49 +81,10 @@ export default function AdminFilesPage() {
 
   return (
     <section>
-      <h1 className="page-heading">Files</h1>
-      <p className="page-subheading">
-        PDFs uploaded to the platform. Upload validates MIME type, extension, magic bytes, and size, then stores the file
-        privately (Phase 8, unmodified) — copy a file&apos;s ID to attach it to a lecture item.
-      </p>
+      <h1 className="page-heading">المحاضرات والملفات الدراسية</h1>
+      <p className="page-subheading">تُحفظ الملفات تلقائيًا في مادتها ومحاضرتها، وتُحدَّث اختبارات المادة عند اكتمال قراءتها.</p>
 
-      <form className="admin-form" onSubmit={handleUpload} style={{ marginBottom: "var(--space-6)" }}>
-        <div className="form-field">
-          <label className="form-label" htmlFor="upload-subject-id">
-            Subject ID
-          </label>
-          <input id="upload-subject-id" className="form-input" value={subjectId} onChange={(e) => setSubjectId(e.target.value)} required />
-        </div>
-        <div className="form-field">
-          <label className="form-label" htmlFor="upload-lecture-id">
-            Lecture ID (optional)
-          </label>
-          <input id="upload-lecture-id" className="form-input" value={lectureId} onChange={(e) => setLectureId(e.target.value)} />
-        </div>
-        <div className="form-field">
-          <label className="form-label" htmlFor="upload-file">
-            PDF file
-          </label>
-          <input
-            id="upload-file"
-            className="form-input"
-            type="file"
-            accept="application/pdf"
-            onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
-            required
-          />
-        </div>
-        {uploadError ? (
-          <p role="alert" style={{ color: "var(--color-danger)" }}>
-            {uploadError}
-          </p>
-        ) : null}
-        <div className="form-actions">
-          <button type="submit" className="btn" disabled={uploading}>
-            {uploading ? "Uploading…" : "Upload PDF"}
-          </button>
-        </div>
-      </form>
+      <SmartContentUpload />
 
       {openError ? (
         <p role="alert" style={{ color: "var(--color-danger)" }}>

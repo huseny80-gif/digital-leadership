@@ -4,11 +4,18 @@ import { logger } from "./lib/logger.js";
 import { initMonitoring } from "./lib/monitoring.js";
 import { synchronizeFinquizCore } from "./finquiz/synchronizeCore.js";
 import { getPool } from "./lib/db.js";
+import { ensureContentAutomationSchema } from "./contentAutomation/schema.js";
+import { startContentImportWorker } from "./contentAutomation/runtime.js";
 
 initMonitoring();
 
 const env = getEnv();
 const app = createApp();
+
+if (env.DATABASE_URL) {
+  await ensureContentAutomationSchema(getPool());
+  logger.info("content_automation_schema_ready");
+}
 
 if (env.NODE_ENV === "production" && env.DATABASE_URL) {
   const result = await synchronizeFinquizCore(getPool());
@@ -22,3 +29,8 @@ if (env.NODE_ENV === "production" && env.DATABASE_URL) {
 app.listen(env.PORT, "0.0.0.0", () => {
   logger.info({ port: env.PORT }, "backend_listening");
 });
+
+if (env.DATABASE_URL) {
+  startContentImportWorker();
+  logger.info("content_import_worker_started");
+}

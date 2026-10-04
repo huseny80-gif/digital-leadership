@@ -9,10 +9,13 @@ const types: Record<string, string> = { mcq: "multiple_choice", tf: "true_false"
 export function withFinquizQuestionMetadata(quiz: Quiz, questions: QuestionForAttempt[]): QuestionForAttempt[] {
   const subject = manifest.subjects.find(source => subjectMapping[source.id] === quiz.subjectId);
   const sourceQuiz = subject?.quizzes.find(source => normalized(source.title) === normalized(quiz.title));
-  if (!subject || !sourceQuiz) return questions;
+  if (!subject) return questions;
   return questions.map(question => {
-    const source = sourceQuiz.questions.find(row => types[String(row.type)] === question.questionType && normalized(String(row.prompt)) === normalized(question.prompt));
-    if (!source) return question;
+    const source = sourceQuiz?.questions.find(row => types[String(row.type)] === question.questionType && normalized(String(row.prompt)) === normalized(question.prompt));
+    if (!source) {
+      const lecture = subject.lectures.find(row => row.number === question.lectureNumber && normalized(row.title) === normalized(question.lectureTitle ?? ""));
+      return lecture ? { ...question, lectureId: lecture.id } : question;
+    }
     const lecture = subject.lectures.find(row => row.id === source.lectureId);
     const difficulty = source.difficulty;
     return {

@@ -36,6 +36,15 @@ import { AdminOverviewRepository } from "./adminOverviewRepository.js";
 import { AdminAnalyticsRepository } from "./adminAnalyticsRepository.js";
 import { AdminAnalyticsService } from "./adminAnalyticsService.js";
 import { buildCsv } from "../lib/csv.js";
+import { getContentImportService, wakeContentImportWorker } from "../contentAutomation/runtime.js";
+
+async function queuePublishedItem(item: LectureItem, actorId: string): Promise<void> {
+  if (item.status !== "published") return;
+  const service = getContentImportService();
+  if (item.fileId) await service.enqueueFile(item.fileId, actorId, { lectureId: item.lectureId, itemId: item.id });
+  else if (item.bodyText && item.bodyText.trim().split(/\s+/).length >= 25) await service.submitText({ actorId, title: item.title, text: item.bodyText, lectureId: item.lectureId, itemId: item.id });
+  wakeContentImportWorker();
+}
 
 const publicationStatusSchema = z.enum(["draft", "published"]);
 
@@ -327,6 +336,14 @@ export function adminRoutes(): Router {
       const parsed = lectureUpdateSchema.safeParse(req.body);
       if (!parsed.success) throw new ValidationError("Invalid lecture update payload.");
       const lecture = await contentService.updateLecture(req.params.lectureId as string, stripUndefined(parsed.data), req.user!.id);
+      if (lecture.status === "published") {
+        if (lecture.description && lecture.description.trim().split(/\s+/).length >= 25) {
+          await getContentImportService().submitText({ actorId: req.user!.id, text: lecture.description, title: lecture.title, subjectId: lecture.subjectId, lectureId: lecture.id });
+        }
+        const items = await contentService.listItems(lecture.id);
+        for (const item of items) await queuePublishedItem(item, req.user!.id);
+        wakeContentImportWorker();
+      }
       res.json({ data: lecture } as ApiResult<Lecture>);
     } catch (err) {
       next(err);
@@ -367,6 +384,7 @@ export function adminRoutes(): Router {
         },
         req.user!.id,
       );
+      await queuePublishedItem(item, req.user!.id);
       res.status(201).json({ data: item } as ApiResult<LectureItem>);
     } catch (err) {
       next(err);
@@ -378,6 +396,7 @@ export function adminRoutes(): Router {
       const parsed = itemUpdateSchema.safeParse(req.body);
       if (!parsed.success) throw new ValidationError("Invalid lecture item update payload.");
       const item = await contentService.updateItem(req.params.itemId as string, stripUndefined(parsed.data), req.user!.id);
+      await queuePublishedItem(item, req.user!.id);
       res.json({ data: item } as ApiResult<LectureItem>);
     } catch (err) {
       next(err);
