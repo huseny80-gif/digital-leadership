@@ -8,6 +8,13 @@ afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 describe("automatic subject and lecture classification", () => {
   it.each([["مصفوفة المخاطر واحتمالية المخاطر", "RiskManagement5.pdf", "0"], ["التشفير والأمن السيبراني وجدار الحماية", "Cybersecurity5.pdf", "1"], ["التشريع والقوانين والامتثال القانوني", "Legal5.pdf", "2"], ["التفكير التصميمي والابتكار وإدارة المشاريع", "Innovation5.pdf", "3"], ["تعلم الآلة والشبكات العصبية وتحليل البيانات", "Ai-week3.pdf", "4"]])("classifies %s without a destination", (body, filename, expected) => { expect(classifySubject(subjects, body, filename)?.id).toBe(expected); });
   it("does not guess an unrelated subject", () => { expect(classifySubject(subjects, "الموسيقى والإيقاع والعزف على الآلات الموسيقية", "music.pdf")).toBeNull(); });
+  it.each(["خارطة الطريق للحصول على الشهادة الدولية ISO 27001⁩.pdf", "ISO27001.pdf", "ISO-27001.pdf", "ISO/IEC ٢٧٠٠١.pdf"])("places %s in cybersecurity despite legal compliance vocabulary", filename => {
+    expect(classifySubject(subjects, "الامتثال القانوني والتشريعات والقوانين والعقود والتنظيمية ".repeat(20), filename)?.id).toBe("1");
+  });
+  it("recognizes ISO 27001 inside the source without confusing other ISO standards", () => {
+    expect(classifySubject(subjects, "خارطة الطريق للحصول على الشهادة الدولية ISO/IEC 27001", "certification.pdf")?.id).toBe("1");
+    expect(classifySubject(subjects, "التشريعات والامتثال القانوني للحصول على ISO 9001", "certification.pdf")?.id).toBe("2");
+  });
   it("detects Arabic/English lecture numbers and ignores unrelated ordinal words", () => {
     expect(lectureNumber("المحاضرة الثالثة")).toBe(3); expect(lectureNumber("المحاضرة ٥")).toBe(5); expect(lectureNumber("week 4")).toBe(4); expect(lectureNumber("المرحلة الثانية من المشروع")).toBeNull();
   });
