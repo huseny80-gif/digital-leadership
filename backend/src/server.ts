@@ -7,6 +7,7 @@ import { getPool } from "./lib/db.js";
 import { ensureContentAutomationSchema } from "./contentAutomation/schema.js";
 import { startContentImportWorker } from "./contentAutomation/runtime.js";
 import { ensurePermanentTrainingAccessSchema } from "./trainingAccess/schema.js";
+import { relocateIso27001Roadmap } from "./contentAutomation/relocateIso27001Roadmap.js";
 
 initMonitoring();
 
@@ -23,6 +24,8 @@ if (env.DATABASE_URL) {
 if (env.NODE_ENV === "production" && env.DATABASE_URL) {
   const result = await synchronizeFinquizCore(getPool());
   logger.info(result, "finquiz_core_content_synchronized");
+  const moved = await relocateIso27001Roadmap(getPool());
+  logger.info({ moved }, "iso27001_roadmap_relocated");
 }
 
 // Bind explicitly to 0.0.0.0 — Railway's healthcheck prober connects over
