@@ -9,6 +9,7 @@ import { notFound } from "../lib/httpError.js";
 import { logger } from "../lib/logger.js";
 import { classifySubject, splitLectures, type SubjectCandidate, type LectureSection } from "./sourceAnalysis.js";
 import { extractPdfText } from "./pdfText.js";
+import { cleanSourceText } from "./sourceText.js";
 import { generateQuestions, type GeneratedQuestion } from "./questionGeneration.js";
 
 type ImportRow = {
@@ -110,14 +111,14 @@ export class ContentImportService {
     } catch (error) { await this.storage.delete(key); throw error; }
   }
   async submitText(input: { actorId: string; text: string; title?: string } & Context): Promise<ContentImport> {
-    const text = input.text.trim();
+    const text = cleanSourceText(input.text).trim();
     if (text.length > 500_000 || text.split(/\s+/).length < 25) throw new ValidationError("أدخل نص المحاضرة كاملًا؛ يلزم 25 كلمة على الأقل لتوليد أسئلة موثّقة.");
-    const title = (input.title?.trim() || text.split(/\n/)[0]!.slice(0, 120)).slice(0, 200);
+    const title = (input.title ? cleanSourceText(input.title).trim() : "") || text.split(/\n/)[0]!.slice(0, 120);
     const hash = hashSource(text, input);
     const result = await this.pool.query<{ id: string }>(
       `insert into content_imports(created_by,source_hash,title,source_text,subject_id,lecture_id,lecture_item_id)
        values($1,$2,$3,$4,$5,$6,$7) on conflict(source_hash) do update set source_hash=excluded.source_hash returning id`,
-      [input.actorId, hash, title, text, input.subjectId ?? null, input.lectureId ?? null, input.itemId ?? null],
+      [input.actorId, hash, title.slice(0, 200), text, input.subjectId ?? null, input.lectureId ?? null, input.itemId ?? null],
     );
     return this.get(result.rows[0]!.id);
   }
@@ -178,12 +179,13 @@ export class ContentImportService {
     const heartbeat = async (stage?: string) => {
       const updated = await this.pool.query("update content_imports set lease_until=now()+interval '3 minutes',stage=coalesce($3,stage),updated_at=now() where id=$1 and lease_token=$2 and status='processing'", [job.id, lease, stage ?? null]);
       if (!updated.rowCount) throw new Error("lease_lost");
+      if (stage) job.stage = stage;
     };
     const interval = setInterval(() => { void heartbeat().catch(() => {}); }, 20_000);
     interval.unref();
     try {
       const bytes = job.source_text ? null : (await this.readSource(job.id)).bytes;
-      const text = job.source_text ?? await (this.dependencies.extract ?? extractPdfText)(bytes!, () => heartbeat());
+      const text = cleanSourceText(job.source_text ?? await (this.dependencies.extract ?? extractPdfText)(bytes!, () => heartbeat()));
       await heartbeat("classifying");
       if (job.lecture_id) {
         const parent = (await this.pool.query<{ subject_id: string }>("select subject_id from lectures where id=$1 and deleted_at is null", [job.lecture_id])).rows[0];
@@ -216,7 +218,15 @@ export class ContentImportService {
         : /document_too_long|too_many_lectures/.test(reason) ? "الملف محفوظ. قسّمه إلى ملفات أصغر لإكمال القراءة وتوليد الأسئلة."
         : "الملف أو النص محفوظ. تعذرت المعالجة؛ يمكنك إعادة المحاولة.";
       await this.pool.query("update content_imports set status='failed',stage='failed',error_message=$3,lease_token=null,lease_until=null,updated_at=now() where id=$1 and lease_token=$2", [job.id, lease, message]);
-      logger.warn({ importId: job.id, errorName: error instanceof Error ? error.name : "UnknownError" }, "content_import_failed");
+      // SQL state and constraint identify a persistence failure without logging
+      // the document, generated answers, database URL, or raw error detail.
+      const databaseError = error as { code?: unknown; constraint?: unknown } | null;
+      logger.warn({
+        importId: job.id, stage: job.stage,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        errorCode: typeof databaseError?.code === "string" && /^[A-Z0-9]{5}$/.test(databaseError.code) ? databaseError.code : null,
+        constraint: typeof databaseError?.constraint === "string" && /^[a-zA-Z0-9_]{1,100}$/.test(databaseError.constraint) ? databaseError.constraint : null,
+      }, "content_import_failed");
     } finally { clearInterval(interval); }
     return true;
   }

@@ -69,6 +69,45 @@ describe("durable automatic content imports", () => {
     expect(await s.storage.read(file.storage_key)).toEqual(bytes);
     expect([...s.storage.objects.keys()].some(key => key.startsWith("imports/"))).toBe(false);
   });
+  it("recovers a saved PDF whose extracted text contains zero characters without changing its bytes", async () => {
+    const s = await seed();
+    const bytes = Buffer.from("%PDF-original-with-character-map");
+    const dirty = source.replace(/([\p{L}])/gu, "$1\u0000");
+    const oldQuiz = await createQuiz(pool, { subjectId: s.risk, title: "اختبار المخاطر", status: "published", createdBy: s.actor });
+    const bank = await createQuestionBankWithAnswer(pool, { subjectId: s.risk, createdBy: s.actor });
+    await addQuestionToQuiz(pool, { quizId: oldQuiz, questionId: bank.questionId });
+    const service = new ContentImportService(pool, s.storage, 10485760, { extract: async () => dirty });
+    const job = await service.submitPdf({ actorId: s.actor, filename: "RiskManagement5.pdf", mimeType: "application/pdf", buffer: bytes });
+    // Failed uploads from the previous processor retain their source and can
+    // resume through the same retry endpoint after deploying the fix.
+    await pool.query("update content_imports set status='failed',stage='failed',attempts=3 where id=$1", [job.id]);
+    await service.retry(job.id);
+    expect(await service.processNext()).toBe(true);
+    const done = await service.get(job.id);
+    expect(done.status).toBe("completed");
+    expect(done.subjectId).toBe(s.risk);
+    expect(done.questionCount).toBeGreaterThan(3);
+    expect((await service.readSource(job.id)).bytes).toEqual(bytes);
+    const item = (await pool.query("select body_text from lecture_items where lecture_id=$1", [done.lectures[0]!.id])).rows[0];
+    expect(item.body_text.trim()).toBe(source);
+    const repo = new PgAssessmentsRepository(pool);
+    expect((await repo.listQuestionsForAttempt(oldQuiz)).map(q => q.id)).toEqual([bank.questionId]);
+    const available = await repo.listQuizzesForSubject(s.risk, false);
+    const current = available.find(q => q.lectureId === null)!;
+    expect(await repo.listQuestionsForAttempt(current.id)).toHaveLength(done.questionCount + 1);
+    expect((await service.submitPdf({ actorId: s.actor, filename: "RiskManagement5.pdf", mimeType: "application/pdf", buffer: bytes })).id).toBe(job.id);
+    expect(await service.processNext()).toBe(false);
+  });
+  it("accepts lecture text and copied titles containing invisible PDF zero characters", async () => {
+    const s = await seed();
+    const job = await s.service.submitText({ actorId: s.actor, title: "المحاضرة\u0000 الخامسة", text: source.replace(/المخاطر/g, "الم\u0000خاطر") });
+    await s.service.processNext();
+    const done = await s.service.get(job.id);
+    expect(done.status).toBe("completed");
+    expect(done.subjectId).toBe(s.risk);
+    expect(done.lectures[0]?.number).toBe(5);
+    expect((await pool.query("select source_text from content_imports where id=$1", [job.id])).rows[0].source_text).toBe(source);
+  });
   it("splits multiple lectures and assigns every question to its own lecture", async () => {
     const s = await seed(); const job = await s.service.submitText({ actorId: s.actor, title: "المخاطر", text: `المحاضرة الأولى\n${source}\nالمحاضرة الثانية\n${source}` });
     await s.service.processNext(); const done = await s.service.get(job.id);

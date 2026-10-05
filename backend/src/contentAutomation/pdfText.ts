@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { PDFParse } from "pdf-parse";
 import { createWorker, OEM } from "tesseract.js";
+import { cleanSourceText } from "./sourceText.js";
 
 /** All parsing is server-side. OCR language data ships with the dependencies;
  * no document bytes are sent to an external OCR service. */
@@ -15,7 +16,7 @@ export async function extractPdfText(buffer: Buffer, heartbeat: () => Promise<vo
     if (result.total > 200) throw new Error("document_too_long");
     const pages: string[] = [];
     for (const page of result.pages) {
-      let text = page.text;
+      let text = cleanSourceText(page.text);
       if (text.replace(/\s/g, "").length < 100 || (text.match(/[\p{L}]{3,}/gu)?.length ?? 0) < 15) {
         if (!worker) {
           const langPath = join(tmpdir(), "digital-leadership-ocr");
@@ -31,10 +32,11 @@ export async function extractPdfText(buffer: Buffer, heartbeat: () => Promise<vo
         const image = rendered.pages[0];
         if (image) {
           const ocr = await worker.recognize(Buffer.from(image.data));
-          if (ocr.data.confidence >= 35 && ocr.data.text.length > text.length) text = ocr.data.text;
+          const recognized = cleanSourceText(ocr.data.text);
+          if (ocr.data.confidence >= 35 && recognized.length > text.length) text = recognized;
         }
       }
-      pages.push(text.normalize("NFKC"));
+      pages.push(text);
       await heartbeat();
     }
     const text = pages.join("\n\n").slice(0, 500_000).trim();
