@@ -23,6 +23,13 @@ function occurrences(text: string, phrase: string): number {
 }
 export function classifySubject(subjects: SubjectCandidate[], text: string, filename = ""): SubjectCandidate | null {
   const body = normalizeText(text), name = normalizeText(filename.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/([a-zA-Z])([0-9])/g, "$1 $2").replace(/[_.-]/g, " "));
+  // ISO 27001 is an information-security management standard. Compliance
+  // terminology in a certification roadmap must not outweigh its subject.
+  const iso27001 = /\biso(?:\s*\/\s*iec)?[\s-]*27001\b/;
+  if (iso27001.test(name) || iso27001.test(body)) {
+    const cybersecurity = subjects.find(subject => /سيبر|cyber/.test(normalizeText(subject.title)));
+    if (cybersecurity) return cybersecurity;
+  }
   const ranked = subjects.map(subject => {
     const title = normalizeText(subject.title);
     const aliases = vocabulary.find(([pattern]) => pattern.test(title))?.[1] ?? significantWords(subject.title);
