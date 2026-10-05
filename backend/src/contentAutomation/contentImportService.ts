@@ -178,6 +178,7 @@ export class ContentImportService {
     const heartbeat = async (stage?: string) => {
       const updated = await this.pool.query("update content_imports set lease_until=now()+interval '3 minutes',stage=coalesce($3,stage),updated_at=now() where id=$1 and lease_token=$2 and status='processing'", [job.id, lease, stage ?? null]);
       if (!updated.rowCount) throw new Error("lease_lost");
+      if (stage) job.stage = stage;
     };
     const interval = setInterval(() => { void heartbeat().catch(() => {}); }, 20_000);
     interval.unref();
@@ -216,7 +217,15 @@ export class ContentImportService {
         : /document_too_long|too_many_lectures/.test(reason) ? "الملف محفوظ. قسّمه إلى ملفات أصغر لإكمال القراءة وتوليد الأسئلة."
         : "الملف أو النص محفوظ. تعذرت المعالجة؛ يمكنك إعادة المحاولة.";
       await this.pool.query("update content_imports set status='failed',stage='failed',error_message=$3,lease_token=null,lease_until=null,updated_at=now() where id=$1 and lease_token=$2", [job.id, lease, message]);
-      logger.warn({ importId: job.id, errorName: error instanceof Error ? error.name : "UnknownError" }, "content_import_failed");
+      // SQL state and constraint identify a persistence failure without logging
+      // the document, generated answers, database URL, or raw error detail.
+      const databaseError = error as { code?: unknown; constraint?: unknown } | null;
+      logger.warn({
+        importId: job.id, stage: job.stage,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        errorCode: typeof databaseError?.code === "string" && /^[A-Z0-9]{5}$/.test(databaseError.code) ? databaseError.code : null,
+        constraint: typeof databaseError?.constraint === "string" && /^[a-zA-Z0-9_]{1,100}$/.test(databaseError.constraint) ? databaseError.constraint : null,
+      }, "content_import_failed");
     } finally { clearInterval(interval); }
     return true;
   }
