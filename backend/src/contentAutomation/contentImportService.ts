@@ -9,6 +9,7 @@ import { notFound } from "../lib/httpError.js";
 import { logger } from "../lib/logger.js";
 import { classifySubject, splitLectures, type SubjectCandidate, type LectureSection } from "./sourceAnalysis.js";
 import { extractPdfText } from "./pdfText.js";
+import { cleanSourceText } from "./sourceText.js";
 import { generateQuestions, type GeneratedQuestion } from "./questionGeneration.js";
 
 type ImportRow = {
@@ -110,14 +111,14 @@ export class ContentImportService {
     } catch (error) { await this.storage.delete(key); throw error; }
   }
   async submitText(input: { actorId: string; text: string; title?: string } & Context): Promise<ContentImport> {
-    const text = input.text.trim();
+    const text = cleanSourceText(input.text).trim();
     if (text.length > 500_000 || text.split(/\s+/).length < 25) throw new ValidationError("أدخل نص المحاضرة كاملًا؛ يلزم 25 كلمة على الأقل لتوليد أسئلة موثّقة.");
-    const title = (input.title?.trim() || text.split(/\n/)[0]!.slice(0, 120)).slice(0, 200);
+    const title = (input.title ? cleanSourceText(input.title).trim() : "") || text.split(/\n/)[0]!.slice(0, 120);
     const hash = hashSource(text, input);
     const result = await this.pool.query<{ id: string }>(
       `insert into content_imports(created_by,source_hash,title,source_text,subject_id,lecture_id,lecture_item_id)
        values($1,$2,$3,$4,$5,$6,$7) on conflict(source_hash) do update set source_hash=excluded.source_hash returning id`,
-      [input.actorId, hash, title, text, input.subjectId ?? null, input.lectureId ?? null, input.itemId ?? null],
+      [input.actorId, hash, title.slice(0, 200), text, input.subjectId ?? null, input.lectureId ?? null, input.itemId ?? null],
     );
     return this.get(result.rows[0]!.id);
   }
@@ -184,7 +185,7 @@ export class ContentImportService {
     interval.unref();
     try {
       const bytes = job.source_text ? null : (await this.readSource(job.id)).bytes;
-      const text = job.source_text ?? await (this.dependencies.extract ?? extractPdfText)(bytes!, () => heartbeat());
+      const text = cleanSourceText(job.source_text ?? await (this.dependencies.extract ?? extractPdfText)(bytes!, () => heartbeat()));
       await heartbeat("classifying");
       if (job.lecture_id) {
         const parent = (await this.pool.query<{ subject_id: string }>("select subject_id from lectures where id=$1 and deleted_at is null", [job.lecture_id])).rows[0];
