@@ -1,5 +1,6 @@
 import type { QuestionType, AnswerRubricPoint } from "@shared/index";
 import { normalizeText, significantWords } from "./sourceAnalysis.js";
+import { assertReadableSourceText, hasBrokenSourceEncoding } from "./sourceTextQuality.js";
 
 /** Answer material stays inside the backend. Every generated question retains
  * a source excerpt, used both to validate generation and to give feedback. */
@@ -24,10 +25,8 @@ export function sourceFacts(text: string): string[] {
 }
 
 export function generateSourceQuestions(text: string, title: string): GeneratedQuestion[] {
-  let facts = sourceFacts(text);
-  if (!facts.length) {
-    facts = text.replace(/\s+/g, " ").match(/.{80,400}(?:\s|$)/g)?.map(s => s.trim()).filter(s => significantWords(s).length >= 5) ?? [];
-  }
+  assertReadableSourceText(text);
+  const facts = sourceFacts(text);
   if (!facts.length) throw new Error("insufficient_text");
   const pool = significantWords(text).filter(word => word.length >= 5 && word.length <= 30);
   const count = Math.min(10, facts.length);
@@ -62,6 +61,7 @@ export function generateSourceQuestions(text: string, title: string): GeneratedQ
 /** Optional AI enhancements use an existing, server-configured compatible
  * gateway. Source extraction remains a working, grounded default. */
 export async function generateQuestions(text: string, title: string): Promise<{ questions: GeneratedQuestion[]; method: "source" | "ai" }> {
+  assertReadableSourceText(text);
   const token = process.env.CONTENT_AI_API_KEY || process.env.NEON_AI_GATEWAY_TOKEN || process.env.OPENAI_API_KEY;
   const base = process.env.CONTENT_AI_BASE_URL || (process.env.NEON_AI_GATEWAY_BASE_URL ? `${process.env.NEON_AI_GATEWAY_BASE_URL.replace(/\/$/, "")}/v1` : "https://api.openai.com/v1");
   if (!token) return { questions: generateSourceQuestions(text, title), method: "source" };
@@ -90,6 +90,7 @@ export async function generateQuestions(text: string, title: string): Promise<{ 
 export function validGeneratedQuestion(value: unknown, source: string): value is GeneratedQuestion {
   if (!value || typeof value !== "object") return false;
   const q = value as GeneratedQuestion;
+  if (hasBrokenSourceEncoding(JSON.stringify(q))) return false;
   if (typeof q.prompt !== "string" || q.prompt.length < 10 || q.prompt.length > 2000 || typeof q.excerpt !== "string" || q.excerpt.length < 30 || typeof q.explanation !== "string" || q.explanation.length > 5000 || !["easy", "medium", "hard"].includes(q.difficulty)) return false;
   const document = normalizeText(source), excerpt = normalizeText(q.excerpt);
   if (!document.includes(excerpt)) return false;
