@@ -14,12 +14,13 @@ import { PlatformIcon } from "@/components/ui/PlatformIcon";
  */
 export function BottomNav({ items, maxItems = 5 }: { items: NavItem[]; maxItems?: number }) {
   const pathname = usePathname();
+  const NavigationLink = pathname.startsWith("/quizzes/") ? "a" : Link;
   const visible = items.slice(0, maxItems);
 
   return (
     <nav className="app-bottom-nav" aria-label="Bottom">
       {visible.map((item) => (
-        <Link
+        <NavigationLink
           key={item.href}
           href={item.href}
           className="app-bottom-nav-link"
@@ -29,7 +30,7 @@ export function BottomNav({ items, maxItems = 5 }: { items: NavItem[]; maxItems?
             <PlatformIcon name={item.icon ?? "home"} />
           </span>
           <span>{item.label}</span>
-        </Link>
+        </NavigationLink>
       ))}
     </nav>
   );

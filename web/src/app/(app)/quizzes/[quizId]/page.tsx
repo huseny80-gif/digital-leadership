@@ -4,6 +4,7 @@ import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { ErrorState, NotFoundState } from "@/components/ui/States";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { StartQuizButton } from "@/components/quiz/StartQuizButton";
+import { QuizNavigation } from "@/components/quiz/QuizNavigation";
 
 /** Quiz detail (`GET /api/v1/quizzes/:quizId`). Shows the quiz's title,
  * description, and a "Start Quiz" action that begins (or resumes) an
@@ -28,15 +29,16 @@ export default async function QuizDetailPage({ params }: { params: Promise<{ qui
   }
 
   if (notFound) {
-    return <NotFoundState message="This quiz doesn't exist or is not available." />;
+    return <section><QuizNavigation /><NotFoundState message="This quiz doesn't exist or is not available." /></section>;
   }
 
   if (errorMessage) {
-    return <ErrorState message={errorMessage} retryHref={`/quizzes/${quizId}`} />;
+    return <section><QuizNavigation /><ErrorState message={errorMessage} retryHref={`/quizzes/${quizId}`} /></section>;
   }
 
   return (
     <section>
+      <QuizNavigation quiz={quiz} />
       <Breadcrumbs
         items={[
           { label: "المواد الدراسية", href: "/subjects" },

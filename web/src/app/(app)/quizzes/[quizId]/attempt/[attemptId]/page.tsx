@@ -3,6 +3,7 @@ import { apiGet, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { ErrorState, NotFoundState } from "@/components/ui/States";
 import { QuizAttemptRunner } from "@/components/quiz/QuizAttemptRunner";
+import { QuizNavigation } from "@/components/quiz/QuizNavigation";
 
 /**
  * The quiz-taking screen. Fetches the quiz and its learner-safe questions
@@ -63,11 +64,11 @@ export default async function QuizAttemptPage({
   }
 
   if (notFound) {
-    return <NotFoundState message="This quiz doesn't exist or is not available." />;
+    return <section><QuizNavigation /><NotFoundState message="This quiz doesn't exist or is not available." /></section>;
   }
 
   if (errorMessage) {
-    return <ErrorState message={errorMessage} retryHref={`/quizzes/${quizId}/attempt/${attemptId}`} />;
+    return <section><QuizNavigation quiz={quiz} /><ErrorState message={errorMessage} retryHref={`/quizzes/${quizId}/attempt/${attemptId}`} /></section>;
   }
 
   return (

@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer, MatchAnswerPair, QuizAttempt } from "@shared/index";
+import type { Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer, QuizAttempt } from "@shared/index";
+import { QuizNavigation } from "./QuizNavigation";
+import { readQuizDraft, writeQuizDraft, type AnswerState } from "./quizDraft";
 
-type AnswerState = { selectedOptionId?: string; answerText?: string; matchAnswer?: MatchAnswerPair[]; orderAnswer?: string[] };
 const levels = [{ id: "all", label: "الكل" }, { id: "easy", label: "سهل" }, { id: "medium", label: "متوسط" }, { id: "hard", label: "صعب" }];
 const letters = ["أ", "ب", "ج", "د", "هـ", "و"];
 
@@ -81,8 +82,37 @@ export function QuizAttemptRunner({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const operationInFlight = useRef(false);
   const autoSubmitted = useRef(false);
+  const restoredDraftAttempt = useRef<string | null>(null);
+  const [draftReady, setDraftReady] = useState(false);
   const deadline = !reviewMode && quiz.timeLimitSeconds && startedAt ? new Date(startedAt).getTime() + quiz.timeLimitSeconds * 1000 : null;
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(deadline !== null ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : null);
+
+  useEffect(() => {
+    if (reviewMode || restoredDraftAttempt.current === attemptId) return;
+    restoredDraftAttempt.current = attemptId;
+    const draft = readQuizDraft(attemptId, quiz.id, questions);
+    if (draft) {
+      // Restore tab-local input after hydration; the server's recorded
+      // answers override drafts, and drafts never unlock model answers.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAnswers({ ...draft.answers, ...toInitialAnswers(initialAnswers) });
+      setDifficulty(draft.difficulty);
+      setLecture(draft.lecture);
+      const visible = questions.filter(item => (draft.difficulty === "all" || (item.difficulty ?? "medium") === draft.difficulty) && (draft.lecture === "all" || item.lectureId === draft.lecture));
+      setCurrentIndex(Math.max(0, visible.findIndex(item => item.id === draft.questionId)));
+    }
+    setDraftReady(true);
+  }, [attemptId, quiz.id, questions, initialAnswers, reviewMode]);
+
+  useEffect(() => {
+    if (!draftReady || reviewMode) return;
+    const visible = questions.filter(item => (difficulty === "all" || (item.difficulty ?? "medium") === difficulty) && (lecture === "all" || item.lectureId === lecture));
+    writeQuizDraft(attemptId, {
+      quizId: quiz.id,
+      answers: Object.fromEntries(Object.entries(answers).filter(([id]) => !studyFeedback[id])),
+      questionId: visible[currentIndex]?.id, difficulty, lecture,
+    });
+  }, [draftReady, reviewMode, attemptId, quiz.id, questions, answers, studyFeedback, currentIndex, difficulty, lecture]);
 
   useEffect(() => {
     if (deadline === null) return;
@@ -93,13 +123,13 @@ export function QuizAttemptRunner({
   }, [deadline]);
 
   useEffect(() => {
-    if (remainingSeconds === 0 && !autoSubmitted.current && !operationInFlight.current) {
+    if (draftReady && remainingSeconds === 0 && !autoSubmitted.current && !operationInFlight.current) {
       autoSubmitted.current = true;
       void handleSubmit();
     }
     // Re-evaluate on completion of a check if the timer expired mid-request.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remainingSeconds, savingQuestionId]);
+  }, [draftReady, remainingSeconds, savingQuestionId]);
 
   const filteredQuestions = questions.filter(question => (difficulty === "all" || (question.difficulty ?? "medium") === difficulty) && (lecture === "all" || question.lectureId === lecture));
   const question = filteredQuestions[currentIndex];
@@ -233,10 +263,11 @@ export function QuizAttemptRunner({
     }
   }
 
-  if (questions.length === 0) return <div className="state-block"><p className="state-title">لا توجد أسئلة في هذا الاختبار</p></div>;
+  if (questions.length === 0) return <section><QuizNavigation quiz={quiz} backHref={`${routeBasePath}/${quiz.id}`} /><div className="state-block"><p className="state-title">لا توجد أسئلة في هذا الاختبار</p></div></section>;
 
   return (
     <section className="finquiz-training" aria-label={reviewMode ? "مراجعة الإجابات" : "الاختبار التفاعلي"}>
+      <QuizNavigation quiz={quiz} backHref={`${routeBasePath}/${quiz.id}`} />
       <div className="quiz-head">
         {reviewMode ? <h2>مراجعة الإجابات — {quiz.title}</h2> : <h1>{quiz.title}</h1>}
         {quiz.description ? <p>{quiz.description}</p> : null}

@@ -101,6 +101,7 @@ describe("QuizDetailPage", () => {
 
     expect(screen.getByRole("heading", { name: "Arithmetic Quiz" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "بدء الاختبار" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "اختبارات المادة" })).toHaveAttribute("href", "/subjects/s1/assessments");
   });
 
   it("12. unauthorized/inaccessible quiz access is handled as not-found, not a raw error", async () => {
@@ -110,6 +111,7 @@ describe("QuizDetailPage", () => {
     render(element);
 
     expect(screen.getByText(/not found/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "جميع الاختبارات" })).toHaveAttribute("href", "/subjects?view=assessments");
   });
 });
 
@@ -145,6 +147,7 @@ describe("QuizResultPage", () => {
     expect(screen.getByText("1 / 1 (100%)")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "نتيجة الاختبار" })).toBeInTheDocument();
     expect(screen.getByText("Source explanation")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "اختيار المادة أو الموضوع" })).toHaveAttribute("href", "/subjects");
     // Essays are excluded from automatic correctness, and database flags
     // themselves are not embedded in the rendered HTML.
     expect(document.body.innerHTML).not.toMatch(/is_correct|isCorrect/i);
