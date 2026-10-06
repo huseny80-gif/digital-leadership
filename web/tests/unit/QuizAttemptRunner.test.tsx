@@ -21,8 +21,87 @@ function renderQuiz(items = [choice], extra: Partial<React.ComponentProps<typeof
 const check = () => fireEvent.click(screen.getByRole("button", { name: "تحقق من الإجابة" }));
 const finish = () => fireEvent.click(screen.getByRole("button", { name: "إنهاء وعرض النتيجة" }));
 
-beforeEach(() => { vi.restoreAllMocks(); pushMock.mockReset(); });
+beforeEach(() => { vi.restoreAllMocks(); pushMock.mockReset(); sessionStorage.clear(); });
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
+
+describe("leaving and resuming a quiz", () => {
+  it.each([false, true])("offers working destinations in attempt/review mode (%s), even on a direct visit", reviewMode => {
+    const fetchMock = stubAnswer(); renderQuiz([choice], { reviewMode });
+    const nav = within(screen.getByRole("navigation", { name: "التنقل من الاختبار" }));
+    expect(nav.getByRole("link", { name: "رجوع" })).toHaveAttribute("href", "/quizzes/quiz-1");
+    expect(nav.getByRole("link", { name: "اختبارات المادة" })).toHaveAttribute("href", "/subjects/subject-1/assessments");
+    expect(nav.getByRole("link", { name: "جميع الاختبارات" })).toHaveAttribute("href", "/subjects?view=assessments");
+    expect(nav.getByRole("link", { name: "اختيار المادة أو الموضوع" })).toHaveAttribute("href", "/subjects");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it("keeps exit links when the quiz contains no questions", () => {
+    renderQuiz([]);
+    expect(screen.getByRole("link", { name: "اختبارات المادة" })).toHaveAttribute("href", "/subjects/subject-1/assessments");
+  });
+  it("restores unsubmitted inputs, selected filters and question position after leaving, without grading or finishing", () => {
+    const fetchMock = stubAnswer();
+    const view = renderQuiz([choice, tf]);
+    fireEvent.click(screen.getByRole("button", { name: "ثلاثة" }));
+    fireEvent.click(screen.getByRole("button", { name: /السؤال التالي/ }));
+    fireEvent.click(screen.getByRole("button", { name: "صح" }));
+    fireEvent.click(screen.getByRole("button", { name: "صعب" }));
+    view.unmount();
+    renderQuiz([choice, tf]);
+    expect(screen.getByRole("button", { name: "صعب" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "صح" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(within(screen.getByRole("group", { name: "تصفية حسب الصعوبة" })).getByRole("button", { name: "الكل" }));
+    expect(screen.getByRole("button", { name: "ثلاثة" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByText(ack.feedback)).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it("restores the active question after reopening a multi-question attempt", () => {
+    const view = renderQuiz([choice, tf]);
+    fireEvent.click(screen.getByRole("button", { name: /السؤال التالي/ }));
+    view.unmount(); renderQuiz([choice, tf]);
+    expect(screen.getByText("سؤال 2/2")).toBeInTheDocument();
+  });
+  it("uses saved server answers over local drafts and never treats a draft as checked", () => {
+    const view = renderQuiz();
+    fireEvent.click(screen.getByRole("button", { name: "أربعة" }));
+    view.unmount(); renderQuiz([choice], { initialAnswers: [initial], initialFeedback: [ack] });
+    expect(screen.getByRole("button", { name: /ثلاثة/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(ack.feedback)).toBeInTheDocument();
+  });
+  it("does not carry drafts into another attempt or a completed review", () => {
+    const view = renderQuiz();
+    fireEvent.click(screen.getByRole("button", { name: "ثلاثة" }));
+    view.unmount();
+    const next = renderQuiz([choice], { attemptId: "another-attempt" });
+    expect(screen.getByRole("button", { name: "ثلاثة" })).toHaveAttribute("aria-pressed", "false");
+    next.unmount(); renderQuiz([choice], { reviewMode: true });
+    expect(screen.getByRole("button", { name: "ثلاثة" })).toHaveAttribute("aria-pressed", "false");
+  });
+  it.each(["broken JSON", JSON.stringify({ quizId: "different-quiz", answers: { q1: { selectedOptionId: "opt-3" } } })])("ignores unreadable or unrelated local drafts", value => {
+    sessionStorage.setItem("digital-leadership:quiz-draft:attempt-1", value);
+    renderQuiz();
+    expect(screen.getByRole("button", { name: "ثلاثة" })).toHaveAttribute("aria-pressed", "false");
+  });
+  it("retains editable essays and partial matches across page visits", () => {
+    const view = renderQuiz([open, match]);
+    fireEvent.change(screen.getByLabelText("إجابتك"), { target: { value: "مسودة الإجابة" } });
+    fireEvent.click(screen.getByRole("button", { name: /السؤال التالي/ }));
+    fireEvent.change(screen.getByLabelText("فرنسا"), { target: { value: "fr" } });
+    view.unmount(); renderQuiz([open, match]);
+    expect(screen.getByLabelText("فرنسا")).toHaveValue("fr");
+    expect(screen.getByLabelText("اليابان")).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: /السؤال السابق/ }));
+    expect(screen.getByLabelText("إجابتك")).toHaveValue("مسودة الإجابة");
+    expect(screen.queryByText("📋 معايير الإجابة النموذجية")).not.toBeInTheDocument();
+  });
+  it("still permits navigation and checking when browser storage is blocked", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("Storage blocked"); });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("Storage full"); });
+    stubAnswer(); renderQuiz();
+    expect(screen.getByRole("link", { name: "جميع الاختبارات" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "ثلاثة" })); check();
+    await screen.findByText("✕ إجابة غير صحيحة");
+  });
+});
 
 describe("Finquiz interaction", () => {
   it("renders one question with lettered option buttons, without feedback before checking", () => {
@@ -164,6 +243,16 @@ describe("essays and scenarios", () => {
 });
 
 describe("finalization, retry and timers", () => {
+  it("restores drafts before finalizing a reopened attempt whose timer already expired", async () => {
+    vi.useFakeTimers();
+    sessionStorage.setItem("digital-leadership:quiz-draft:attempt-1", JSON.stringify({ quizId: quiz.id, answers: { q1: { selectedOptionId: "opt-3" } }, difficulty: "all", lecture: "all" }));
+    const fetchMock = vi.fn().mockResolvedValueOnce(reply(ack)).mockResolvedValueOnce(reply({})); vi.stubGlobal("fetch", fetchMock);
+    renderQuiz([choice], { quiz: { ...quiz, timeLimitSeconds: 1 }, startedAt: new Date(Date.now() - 2000).toISOString() });
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(fetchMock.mock.calls.map(call => call[0])).toEqual(["/api/attempts/attempt-1/answers", "/api/attempts/attempt-1/submit"]);
+    expect(pushMock).toHaveBeenCalledWith("/quizzes/quiz-1/result/attempt-1");
+  });
+
   it("saves complete drafts before submission, without client-claimed scores", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(reply(ack)).mockResolvedValueOnce(reply({})); vi.stubGlobal("fetch", fetchMock);
     renderQuiz(); fireEvent.click(screen.getByRole("button", { name: "ثلاثة" })); finish();

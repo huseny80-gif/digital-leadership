@@ -14,10 +14,12 @@ import { PlatformIcon } from "@/components/ui/PlatformIcon";
  */
 export function Sidebar({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
   const pathname = usePathname();
+  // Leaving a quiz must work independently of its client router state.
+  const NavigationLink = pathname.startsWith("/quizzes/") ? "a" : Link;
   return (
     <aside className="app-sidebar" id="platform-sidebar" aria-label="Sidebar">
       {items.map((item) => (
-        <Link
+        <NavigationLink
           key={item.href}
           href={item.href}
           className="app-sidebar-link"
@@ -30,7 +32,7 @@ export function Sidebar({ items, onNavigate }: { items: NavItem[]; onNavigate?: 
             </span>
           ) : null}
           <span>{item.label}</span>
-        </Link>
+        </NavigationLink>
       ))}
     </aside>
   );

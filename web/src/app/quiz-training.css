@@ -1,5 +1,10 @@
 /* Question UI and dimensions ported from Finquiz@b737ce3's quiz rules.
    Scoped to the learning card; the approved platform shell is retained. */
+.quiz-navigation { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:12px 18px; margin-bottom:14px; border:1px solid var(--color-border); border-radius:12px; background:var(--color-surface); }
+.quiz-navigation .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:44px; padding:7px 12px; font-size:.85rem; }
+.quiz-navigation svg { width:18px; height:18px; }
+.finquiz-training > .quiz-navigation { margin:0; border:0; border-bottom:1px solid var(--color-border-soft); border-radius:0; }
+@media(max-width:600px) { .quiz-navigation { padding:10px; } .quiz-navigation .btn { flex:1 1 auto; } }
 .finquiz-training {
   --ink: var(--color-text); --navy: var(--turquoise-700); --navy2: var(--turquoise-900);
   --paper: var(--color-surface); --line: var(--color-border); --line2: var(--color-border-soft);
