@@ -11,6 +11,9 @@ export type Role = string;
 export const KNOWN_ROLES = {
   ADMIN: "admin",
   USER: "user",
+  INSTRUCTOR: "instructor",
 } as const;
+
+export type AssignableRole = typeof KNOWN_ROLES[keyof typeof KNOWN_ROLES];
 
 export type UserStatus = "active" | "suspended";

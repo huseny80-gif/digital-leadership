@@ -8,7 +8,7 @@ import type { Pool } from "pg";
  * only small, descriptive fields (e.g. `{ mimeType, sizeBytes }`).
  */
 export async function writeAuditLog(
-  pool: Pool,
+  pool: Pick<Pool, "query">,
   entry: { actorUserId: string; action: string; entityType: string; entityId: string; metadata?: Record<string, unknown> },
 ): Promise<void> {
   await pool.query(

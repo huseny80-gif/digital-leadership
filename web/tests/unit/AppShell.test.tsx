@@ -11,6 +11,13 @@ import { AppShell } from "@/components/layout/AppShell";
 beforeEach(() => { route.pathname = "/dashboard"; });
 
 describe("reference application shell", () => {
+  it.each([{ isAdmin: false, isInstructor: false, staff: false }, { isAdmin: true, isInstructor: false, staff: true }, { isAdmin: false, isInstructor: true, staff: true }])("shows feedback navigation for the current role: %o", props => {
+    render(<AppShell {...props} userEmail="user@example.com"><p>Content</p></AppShell>);
+    const sidebar = within(screen.getByRole("complementary", { name: "Sidebar" }));
+    expect(sidebar.getByRole("link", { name: "شاركنا رأيك" })).toHaveAttribute("href", "/feedback");
+    if (props.staff) expect(sidebar.getByRole("link", { name: "آراء المشاركين" })).toHaveAttribute("href", "/participant-feedback");
+    else expect(sidebar.queryByRole("link", { name: "آراء المشاركين" })).not.toBeInTheDocument();
+  });
   it.each(["/quizzes/quiz-1/attempt/attempt-1", "/quizzes/quiz-1/result/attempt-1"])("leaves %s through document links in the sidebar and mobile tabs", pathname => {
     route.pathname = pathname;
     render(<AppShell isAdmin={false} userEmail="learner@example.com"><p>Quiz content</p></AppShell>);
@@ -44,6 +51,8 @@ describe("reference application shell", () => {
     expect(screen.queryByRole("link", { name: "الإدارة" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "الملف الشخصي" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "خروج" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "شاركنا رأيك" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "آراء المشاركين" })).not.toBeInTheDocument();
   });
 
   it("opens in the reference light theme and allows explicit dark mode", () => {

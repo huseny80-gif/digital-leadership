@@ -16,12 +16,20 @@ export function ConfirmButton({
   confirmMessage,
   onConfirm,
   variant = "danger",
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
+  busyLabel = "Working…",
+  errorMessage = "This action could not be completed. Please try again.",
 }: {
   label: string;
   confirmTitle: string;
   confirmMessage: string;
   onConfirm: () => Promise<void>;
   variant?: "danger" | "default";
+  confirmLabel?: string;
+  cancelLabel?: string;
+  busyLabel?: string;
+  errorMessage?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -34,7 +42,7 @@ export function ConfirmButton({
       await onConfirm();
       setOpen(false);
     } catch {
-      setError("This action could not be completed. Please try again.");
+      setError(errorMessage);
     } finally {
       setBusy(false);
     }
@@ -70,10 +78,10 @@ export function ConfirmButton({
             ) : null}
             <div className="form-actions">
               <button type="button" className="btn" onClick={handleConfirm} disabled={busy}>
-                {busy ? "Working…" : "Confirm"}
+                {busy ? busyLabel : confirmLabel}
               </button>
               <button type="button" className="btn btn-secondary" onClick={() => setOpen(false)} disabled={busy}>
-                Cancel
+                {cancelLabel}
               </button>
             </div>
           </div>

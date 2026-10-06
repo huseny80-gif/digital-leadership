@@ -19,14 +19,16 @@ export type PermissionKey =
   | "user.manage"
   | "quiz.attempt"
   | "quiz.manage"
-  | "file.upload";
+  | "file.upload"
+  | "feedback.manage";
 
 /** Placeholder permission map, mirroring the MVP roles in
  * DATABASE_MIGRATION_PLAN.md §4. Replaced by a real database-backed lookup
  * in Phase 5/6 — kept here only so the shape of `can()` is fixed now. */
 const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
-  admin: ["content.manage", "content.view", "user.manage", "quiz.attempt", "quiz.manage", "file.upload"],
+  admin: ["content.manage", "content.view", "user.manage", "quiz.attempt", "quiz.manage", "file.upload", "feedback.manage"],
   user: ["content.view", "quiz.attempt"],
+  instructor: ["content.view", "quiz.attempt", "feedback.manage"],
 };
 
 export function can(role: Role, permission: PermissionKey): boolean {

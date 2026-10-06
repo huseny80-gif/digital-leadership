@@ -30,6 +30,12 @@ beforeEach(() => {
 });
 
 describe("AppLayout principal resolution", () => {
+  it("resolves the instructor role from the backend and exposes the private inbox entry", async () => {
+    mockApiGet.mockResolvedValueOnce({ data: { id: "trainer", email: "trainer@example.com", displayName: "مدرب", avatarUrl: null, role: "instructor", status: "active", createdAt: "" } });
+    render(await AppLayout({ children: <p>Trainer content</p> }));
+    expect(screen.getAllByRole("link", { name: "آراء المشاركين" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "الإدارة" })).not.toBeInTheDocument();
+  });
   it("renders the shared shell for a registered user, with the registered-user nav (Profile, no guest identity)", async () => {
     mockApiGet.mockResolvedValueOnce({
       data: { id: "u1", email: "user@example.com", displayName: "User", avatarUrl: null, role: "user", status: "active", createdAt: "" },

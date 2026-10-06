@@ -163,7 +163,7 @@ const studentAnalyticsQuerySchema = z.object({
   to: z.string().min(1).optional(),
 });
 
-const roleAssignSchema = z.object({ role: z.enum(["admin", "user"]) });
+const roleAssignSchema = z.object({ role: z.enum(["admin", "user", "instructor"]) });
 const statusAssignSchema = z.object({ status: z.enum(["active", "suspended"]) });
 
 /** Removes keys whose value is `undefined` (but keeps explicit `null`) —

@@ -11,6 +11,7 @@ const paths: Record<string, ReactNode> = {
   chart: <><path d="M3 21h19M5 21v-6h4v6M11 21V9h4v12M17 21V4h4v17M3 11l6-6 5 1 7-5" /></>,
   info: <><circle cx="12" cy="12" r="10" /><path d="M12 10v7M12 6v1" /></>,
   mail: <><rect x="2" y="4" width="20" height="16" rx="1" /><path d="m2 5 10 9L22 5" /></>,
+  feedback: <><path d="M21 11a9 9 0 0 1-9 9H4l-3 3V11a10 10 0 0 1 20 0Z" /><path d="M6 8h10M6 12h10M6 16h6" /></>,
   search: <><circle cx="10.5" cy="10.5" r="7.5" /><path d="m16 16 6 6" /></>,
   globe: <><circle cx="12" cy="12" r="10" /><ellipse cx="12" cy="12" rx="4.5" ry="10" /><path d="M2 12h20M4 6h16M4 18h16" /></>,
   sun: <><circle cx="12" cy="12" r="4" /><path d="M12 1v2M12 21v2M1 12h2M21 12h2M4.2 4.2l1.5 1.5M18.3 18.3l1.5 1.5M4.2 19.8l1.5-1.5M18.3 5.7l1.5-1.5" /></>,
