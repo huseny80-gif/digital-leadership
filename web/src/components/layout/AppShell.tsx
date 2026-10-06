@@ -16,8 +16,9 @@ import { Footer } from "./Footer";
 
 /** One application shell for registered users, admins and scoped guests.
  * Route/API authorization stays at the existing server boundaries. */
-export function AppShell({ children, isAdmin, userEmail, userDisplayName, userAvatarUrl, guestSession }: {
+export function AppShell({ children, isAdmin, isInstructor = false, userEmail, userDisplayName, userAvatarUrl, guestSession }: {
   children: ReactNode; isAdmin: boolean; userEmail: string | null;
+  isInstructor?: boolean;
   userDisplayName?: string | null; userAvatarUrl?: string | null; guestSession?: GuestTrainingSession;
 }) {
   const [navigationOpen, setNavigationOpen] = useState(false);
@@ -26,7 +27,7 @@ export function AppShell({ children, isAdmin, userEmail, userDisplayName, userAv
   const isGuest = Boolean(guestSession);
   const isPlatformOwner = !isGuest && isAdmin && userEmail === contactInfo.email;
   const name = guestSession?.displayName ?? userDisplayName ?? (isPlatformOwner ? "Eng. Husen Yasen" : userEmail ?? "المتدرب");
-  const role = isGuest ? "Guest Learner" : isAdmin ? "مدير المنصة" : "متدرب";
+  const role = isGuest ? "Guest Learner" : isAdmin ? "مدير المنصة" : isInstructor ? "مدرب" : "متدرب";
   const items: NavItem[] = [
     { href: "/dashboard", label: "الرئيسية", icon: "home" },
     { href: "/subjects", label: "المواد الدراسية", icon: "book" },
@@ -37,9 +38,13 @@ export function AppShell({ children, isAdmin, userEmail, userDisplayName, userAv
     { href: "/subjects?view=files", label: "المصادر والملفات", icon: "folder" },
     { href: "/training", label: "المجتمع التدريبي", icon: "users" },
     { href: "/dashboard#learning-analytics", label: "الإحصائيات", icon: "chart" },
+    { href: "/feedback", label: "شاركنا رأيك", icon: "feedback" },
     { href: "/about", label: "من نحن", icon: "info" },
     { href: "/about#contact", label: "تواصل معنا", icon: "mail" },
   ].filter((item) => !isGuest || item.icon !== "chart");
+  if (!isGuest && (isAdmin || isInstructor)) {
+    items.splice(items.findIndex(item => item.href === "/about"), 0, { href: "/participant-feedback", label: "آراء المشاركين", icon: "clipboard" });
+  }
 
   useEffect(() => {
     const close = (event: KeyboardEvent) => {
@@ -81,6 +86,7 @@ export function AppShell({ children, isAdmin, userEmail, userDisplayName, userAv
             {menu === "account" ? <div className="dl-header-popover" id="account-menu">
               {isGuest ? null : <Link href="/profile" onClick={() => setMenu(null)}>الملف الشخصي</Link>}
               {isAdmin && !isGuest ? <Link href="/admin" onClick={() => setMenu(null)}>الإدارة</Link> : null}
+              {!isGuest && (isAdmin || isInstructor) ? <Link href="/participant-feedback" onClick={() => setMenu(null)}>آراء المشاركين</Link> : null}
               {isGuest ? <GuestLogoutButton /> : <LogoutButton />}
             </div> : null}
           </div>
@@ -90,6 +96,6 @@ export function AppShell({ children, isAdmin, userEmail, userDisplayName, userAv
     {navigationOpen ? <button type="button" className="dl-sidebar-backdrop" aria-label="إغلاق القائمة" onClick={() => setNavigationOpen(false)} /> : null}
     <div className="app-body"><Sidebar items={items} onNavigate={() => setNavigationOpen(false)} /><main id="main-content" className="app-main">{children}</main></div>
     <Footer items={items} accountLinks={isGuest ? [] : undefined} />
-    <BottomNav items={items.filter((item) => ["home", "book", "quiz", "info"].includes(item.icon ?? ""))} />
+    <BottomNav items={items.filter((item) => ["home", "book", "quiz", "feedback", "info"].includes(item.icon ?? ""))} />
   </div>;
 }

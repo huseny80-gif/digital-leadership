@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import type { AssignableRole } from "@shared/index";
 
 /** Test-only fixture helpers — direct SQL inserts against the local test
  * database (AUTHENTICATION_TEST_PLAN.md "Local Test Database"), used to
@@ -8,7 +9,7 @@ import type { Pool } from "pg";
 
 export async function createUser(
   pool: Pool,
-  opts: { email: string; roleName: "admin" | "user"; providerSubject: string },
+  opts: { email: string; roleName: AssignableRole; providerSubject: string },
 ) {
   const roleResult = await pool.query<{ id: string }>("select id from roles where name = $1", [opts.roleName]);
   const roleId = roleResult.rows[0]?.id;

@@ -78,7 +78,7 @@ by the time migration 16 runs. Full corrected order:
 Current full order:
 
 ```
-1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 14 → 12 → 13 → 15 → 16 → 17 → 18 → 19
+1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 14 → 12 → 13 → 15 → 16 → 17 → 18 → 19 → 20
 ```
 
 19. `00000000000019_permanent_training_access.sql` — removes time limits
@@ -86,3 +86,8 @@ Current full order:
     token hashes, session IDs, quiz results, progress and explicit
     revocations. Backend startup applies it idempotently before serving
     requests. Apply after migration 18 in the corrected order above.
+
+20. `00000000000020_participant_feedback.sql` — adds the private feedback
+    inbox and the instructor role. Browser database roles have no access
+    to feedback; the backend authorizes submission and staff management.
+    Apply after migration 19. Backend startup applies it idempotently.

@@ -22,6 +22,8 @@ describe("isProtectedPath", () => {
     "/quizzes/abc-123",
     "/quizzes/abc-123/attempt/def-456",
     "/quizzes/abc-123/result/def-456",
+    "/feedback",
+    "/participant-feedback",
   ])("protects %s", (path) => {
     expect(isProtectedPath(path)).toBe(true);
   });
@@ -58,11 +60,12 @@ describe("isGuestReachablePath", () => {
     "/subjects/abc-123/lectures/def-456",
     "/quizzes",
     "/quizzes/abc-123/attempt/def-456",
+    "/feedback",
   ])("a guest may reach %s", (path) => {
     expect(isGuestReachablePath(path)).toBe(true);
   });
 
-  it.each(["/admin", "/admin/users", "/profile"])("a guest may NEVER reach %s", (path) => {
+  it.each(["/admin", "/admin/users", "/profile", "/participant-feedback"])("a guest may NEVER reach %s", (path) => {
     expect(isGuestReachablePath(path)).toBe(false);
   });
 });

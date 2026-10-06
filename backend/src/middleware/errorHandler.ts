@@ -16,9 +16,12 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   const code = httpError?.code ?? "internal_error";
   const message = httpError?.message ?? "An unexpected error occurred.";
 
-  logger.error({ err, path: req.path, method: req.method, status }, "request_failed");
+  // Database/parser exceptions can contain a submitted value in their
+  // detail/body. Private feedback must never enter logs or monitoring.
+  const privateFeedback = req.path === "/api/v1/feedback" || req.path.startsWith("/api/v1/feedback/");
+  logger.error({ err: privateFeedback ? { name: "FeedbackRequestError", code } : err, path: req.path, method: req.method, status }, "request_failed");
   if (status >= 500) {
-    captureException(err, { path: req.path, method: req.method, status });
+    captureException(privateFeedback ? new Error(`Feedback request failed (${code})`) : err, { path: req.path, method: req.method, status });
   }
 
   const body: ApiErrorBody = { error: { code, message } };

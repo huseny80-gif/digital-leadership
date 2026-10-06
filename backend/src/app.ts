@@ -48,6 +48,7 @@ export function createApp(): Express {
     }),
   );
 
+  app.use("/api/v1/feedback", (_req, res, next) => { res.set("Cache-Control", "private, no-store"); next(); });
   app.use("/api/v1/admin/content-imports", express.json({ limit: "2mb" }));
   app.use(express.json());
   app.use(authenticate);

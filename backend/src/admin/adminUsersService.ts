@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import type { AdminUser } from "@shared/index";
+import type { AdminUser, AssignableRole } from "@shared/index";
 import type { AdminUsersRepository } from "./adminUsersRepository.js";
 import { conflict, notFound } from "../lib/httpError.js";
 import { ValidationError } from "../lib/validation.js";
@@ -8,8 +8,7 @@ import { writeAuditLog } from "../lib/audit.js";
 /**
  * Admin user/role management (PHASE 09C "User Management" /
  * "Role Management" / "Self-Lockout Protection"). Only two fields are
- * ever mutable here — `role` (admin/user, the two roles this schema
- * already defines — never a new one) and `status` (active/suspended,
+ * ever mutable here — `role` (admin/user/instructor) and `status` (active/suspended,
  * the existing `user_status` enum) — matching the explicit restriction
  * against inventing password/login/new-provider functionality.
  */
@@ -37,10 +36,10 @@ export class AdminUsersService {
    * is a platform-wide admin, so "my last access" and "the last admin"
    * collapse to one check).
    */
-  async assignRole(targetUserId: string, role: "admin" | "user", actorUserId: string): Promise<AdminUser> {
+  async assignRole(targetUserId: string, role: AssignableRole, actorUserId: string): Promise<AdminUser> {
     const target = await this.getUserOrThrow(targetUserId);
 
-    if (role === "user" && target.role === "admin") {
+    if (role !== "admin" && target.role === "admin") {
       const adminCount = await this.repository.countAdmins();
       if (adminCount <= 1) {
         throw conflict("Cannot remove the platform's last administrator. Promote another user to admin first.");

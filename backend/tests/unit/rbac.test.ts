@@ -15,6 +15,15 @@ describe("rbac.can", () => {
   });
 
   it("denies an unknown role everything", () => {
-    expect(can("instructor", "content.view")).toBe(false);
+    expect(can("observer", "content.view")).toBe(false);
+  });
+
+  it("limits the instructor to learner access and private feedback management", () => {
+    expect(can("instructor", "content.view")).toBe(true);
+    expect(can("instructor", "quiz.attempt")).toBe(true);
+    expect(can("instructor", "feedback.manage")).toBe(true);
+    for (const permission of ["user.manage", "quiz.manage", "content.manage", "file.upload"] as const) expect(can("instructor", permission)).toBe(false);
+    expect(can("user", "feedback.manage")).toBe(false);
+    expect(can("admin", "feedback.manage")).toBe(true);
   });
 });

@@ -1,0 +1,38 @@
+.participant-feedback { width: 100%; max-width: 62rem; margin-inline: auto; }
+.feedback-heading { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-5); padding: var(--space-5); border-radius: var(--radius-md); background: linear-gradient(110deg, var(--turquoise-900), var(--turquoise-600)); color: white; }
+.feedback-heading h1 { margin: 0; font-size: var(--font-size-xl); }
+.feedback-heading p { margin: var(--space-2) 0 0; line-height: 1.8; }
+.feedback-heading-icon { width: 3rem; height: 3rem; display: grid; place-items: center; flex-shrink: 0; border: 1px solid rgb(255 255 255 / 30%); border-radius: var(--radius-md); }
+.feedback-panel { padding: var(--space-5); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow); }
+.feedback-privacy { margin: 0 0 var(--space-5); padding: var(--space-4); border-inline-start: 3px solid var(--color-primary); border-radius: var(--radius-sm); background: var(--color-bg); line-height: 1.8; }
+.participant-feedback fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.feedback-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.participant-feedback .form-field { min-width: 0; }
+.participant-feedback textarea { resize: vertical; line-height: 1.9; }
+.feedback-muted { color: var(--color-text-muted); }
+.feedback-error { color: var(--color-danger); }
+.feedback-submit { min-width: 10rem; }
+.feedback-success { padding: var(--space-5); text-align: center; background: var(--color-success-bg); border-radius: var(--radius-md); }
+.feedback-success [role="status"] { font: 700 var(--font-size-xl) var(--font-heading), sans-serif; color: var(--color-success); }
+.feedback-back { display: inline-block; margin-block: var(--space-5); color: var(--color-primary); }
+.feedback-inbox-tools { display: flex; align-items: end; flex-wrap: wrap; gap: var(--space-4); margin-bottom: var(--space-5); }
+.feedback-inbox-tools .form-field { flex: 1 1 10rem; margin: 0; }
+.feedback-inbox-tools .feedback-muted { align-self: center; }
+.feedback-list { display: grid; gap: var(--space-4); }
+.feedback-list[aria-busy="true"] { opacity: .6; pointer-events: none; }
+.feedback-card-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-3); }
+.feedback-card h2 { font-size: var(--font-size-base); margin: 0 0 var(--space-1); }
+.feedback-badges { display: flex; align-items: start; flex-wrap: wrap; gap: var(--space-2); }
+.feedback-badges [data-feedback-status="new"] { background: var(--color-success-bg); color: var(--color-success); }
+.feedback-message { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.9; margin-block: var(--space-5); }
+.feedback-card-management { padding-top: var(--space-4) !important; border-top: 1px solid var(--color-border) !important; }
+.feedback-card-management select { max-width: 16rem; }
+.feedback-actions, .feedback-pagination { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+.feedback-pagination { justify-content: center; margin-top: var(--space-5); }
+@media (max-width: 600px) {
+  .feedback-heading, .feedback-panel { padding: var(--space-4); }
+  .feedback-form-row { grid-template-columns: 1fr; gap: 0; }
+  .feedback-heading { align-items: start; }
+  .feedback-heading-icon { width: 2.5rem; height: 2.5rem; }
+  .feedback-submit { width: 100%; }
+}

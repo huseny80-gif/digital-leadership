@@ -28,7 +28,7 @@ export function isPublicPath(pathname: string): boolean {
  * is protected by construction, not by remembering to update this file. */
 export function isProtectedPath(pathname: string): boolean {
   if (isPublicPath(pathname)) return false;
-  const protectedRoots = ["/dashboard", "/subjects", "/admin", "/profile", "/quizzes", "/about"];
+  const protectedRoots = ["/dashboard", "/subjects", "/admin", "/profile", "/quizzes", "/about", "/feedback", "/participant-feedback"];
   return protectedRoots.some((root) => pathname === root || pathname.startsWith(`${root}/`));
 }
 
@@ -47,6 +47,6 @@ export function isProtectedPath(pathname: string): boolean {
  * `/login` for a guest exactly as they do for a fully anonymous visitor.
  */
 export function isGuestReachablePath(pathname: string): boolean {
-  const guestRoots = ["/dashboard", "/subjects", "/quizzes", "/about"];
+  const guestRoots = ["/dashboard", "/subjects", "/quizzes", "/about", "/feedback"];
   return guestRoots.some((root) => pathname === root || pathname.startsWith(`${root}/`));
 }

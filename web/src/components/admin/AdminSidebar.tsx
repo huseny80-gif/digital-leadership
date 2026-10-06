@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/admin/question-banks", label: "Question Banks" },
   { href: "/admin/quizzes", label: "Quizzes" },
   { href: "/admin/users", label: "Users" },
+  { href: "/participant-feedback", label: "آراء المشاركين" },
   { href: "/admin/audit-logs", label: "Audit Logs" },
 ];
 

@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import type { AdminUser } from "@shared/index";
+import type { AdminUser, AssignableRole } from "@shared/index";
 
 interface AdminUserRow {
   id: string;
@@ -70,7 +70,7 @@ export class AdminUsersRepository {
     return Number(result.rows[0]?.count ?? 0);
   }
 
-  async getRoleIdByName(name: "admin" | "user"): Promise<string | null> {
+  async getRoleIdByName(name: AssignableRole): Promise<string | null> {
     const result = await this.pool.query<{ id: string }>("select id from roles where name = $1", [name]);
     return result.rows[0]?.id ?? null;
   }

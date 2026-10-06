@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { AdminUser } from "@shared/index";
+import type { AdminUser, AssignableRole } from "@shared/index";
 import { adminGet, adminPatch, AdminApiError } from "@/lib/api/adminBrowserClient";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/States";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
@@ -34,7 +34,7 @@ export default function AdminUsersPage() {
     void load();
   }, []);
 
-  async function changeRole(user: AdminUser, role: "admin" | "user") {
+  async function changeRole(user: AdminUser, role: AssignableRole) {
     setRowError((prev) => ({ ...prev, [user.id]: "" }));
     try {
       await adminPatch(`users/${user.id}/role`, { role });
@@ -64,8 +64,8 @@ export default function AdminUsersPage() {
     <section>
       <h1 className="page-heading">Users</h1>
       <p className="page-subheading">
-        Assign the existing admin/user roles and suspend/reactivate accounts. Authentication itself remains
-        Google/Supabase-based — nothing here manages passwords or logins.
+        تعيين صلاحيات المدير أو المدرب أو المتدرب، وإيقاف الحسابات أو إعادة تفعيلها.
+        يستطيع المدرب مشاهدة آراء المشاركين وإدارتها.
       </p>
 
       {error ? <ErrorState message={error} retryHref="/admin/users" /> : null}
@@ -126,6 +126,15 @@ export default function AdminUsersPage() {
                           variant="default"
                         />
                       )}
+                      <ConfirmButton
+                        label={user.role === "instructor" ? "إزالة صلاحية المدرب" : "تعيين مدرب"}
+                        confirmTitle={user.role === "instructor" ? "إزالة صلاحية المدرب؟" : "تعيين هذا المستخدم مدربًا؟"}
+                        confirmMessage={user.role === "instructor" ? "سيصبح المستخدم متدربًا ولن يستطيع مشاهدة آراء المشاركين." : `${user.email} سيتمكن من مشاهدة آراء المشاركين وإدارتها.${user.role === "admin" ? " وسيتم استبدال صلاحية المدير بصلاحية المدرب." : ""}`}
+                        onConfirm={() => changeRole(user, user.role === "instructor" ? "user" : "instructor")}
+                        variant="default"
+                        confirmLabel="تأكيد" cancelLabel="إلغاء" busyLabel="جارٍ الحفظ…"
+                        errorMessage="تعذر تعديل الصلاحية. حاول مرة أخرى."
+                      />
                       {user.status === "active" ? (
                         <ConfirmButton
                           label="Suspend"
