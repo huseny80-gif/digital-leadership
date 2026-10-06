@@ -11,6 +11,8 @@ import { classifySubject, splitLectures, type SubjectCandidate, type LectureSect
 import { extractPdfText } from "./pdfText.js";
 import { cleanSourceText } from "./sourceText.js";
 import { generateQuestions, type GeneratedQuestion } from "./questionGeneration.js";
+import { reviewedAiPdf } from "./aiAssessmentReviewCatalog.js";
+import { assertReadableSourceText } from "./sourceTextQuality.js";
 
 type ImportRow = {
   id: string; created_by: string; source_hash: string; title: string; filename: string | null;
@@ -185,7 +187,9 @@ export class ContentImportService {
     interval.unref();
     try {
       const bytes = job.source_text ? null : (await this.readSource(job.id)).bytes;
-      const text = cleanSourceText(job.source_text ?? await (this.dependencies.extract ?? extractPdfText)(bytes!, () => heartbeat()));
+      const reviewed = bytes ? reviewedAiPdf(bytes) : null;
+      const text = cleanSourceText(reviewed?.text ?? job.source_text ?? await (this.dependencies.extract ?? extractPdfText)(bytes!, () => heartbeat()));
+      assertReadableSourceText(text);
       await heartbeat("classifying");
       if (job.lecture_id) {
         const parent = (await this.pool.query<{ subject_id: string }>("select subject_id from lectures where id=$1 and deleted_at is null", [job.lecture_id])).rows[0];
@@ -195,12 +199,12 @@ export class ContentImportService {
       const candidates = (await this.pool.query<SubjectCandidate>("select id,title,description from subjects where deleted_at is null order by order_index,id")).rows;
       const specified = job.subject_id ? candidates.find(s => s.id === job.subject_id) : null;
       if (job.subject_id && !specified) throw new Error("source_unavailable");
-      const subject = specified ?? classifySubject(candidates, text, `${job.title} ${job.filename ?? ""}`);
-      const sections = job.lecture_id ? [{ title: job.title, number: null, text }] : splitLectures(text, job.title);
+      const subject = specified ?? (reviewed ? candidates.find(candidate => candidate.id === reviewed.subjectId) : null) ?? classifySubject(candidates, text, `${job.title} ${job.filename ?? ""}`);
+      const sections = job.lecture_id || reviewed ? [{ title: job.title, number: null, text }] : splitLectures(text, job.title);
       await heartbeat("generating");
       const generated: Array<{ section: LectureSection; questions: GeneratedQuestion[]; method: "source" | "ai" }> = [];
       for (const section of sections) {
-        const output = await (this.dependencies.generate ?? generateQuestions)(section.text, section.title);
+        const output = reviewed ? { questions: reviewed.questions, method: "source" as const } : await (this.dependencies.generate ?? generateQuestions)(section.text, section.title);
         if (!output.questions.length) throw new Error("insufficient_text");
         generated.push({ section, ...output });
         await heartbeat();
@@ -214,7 +218,8 @@ export class ContentImportService {
       logger.info({ importId: job.id, lectureCount: generated.length, questionCount: generated.reduce((n, s) => n + s.questions.length, 0) }, "content_import_completed");
     } catch (error) {
       const reason = error instanceof Error ? error.message : "processing_failed";
-      const message = /insufficient_text|password|encrypt/i.test(reason) ? "تعذر قراءة نص كافٍ لتوليد الأسئلة. الملف الأصلي محفوظ؛ أعد رفع نسخة واضحة أو أضف نص المحاضرة."
+      const message = /unreadable_source_text/.test(reason) ? "الملف الأصلي محفوظ، لكن النص المستخرج مشوّه ولا يصلح لإنشاء أسئلة مفهومة. أضف نسخة واضحة أو نص المحاضرة لإكمال المعالجة."
+        : /insufficient_text|password|encrypt/i.test(reason) ? "تعذر قراءة نص كافٍ لتوليد الأسئلة. الملف الأصلي محفوظ؛ أعد رفع نسخة واضحة أو أضف نص المحاضرة."
         : /document_too_long|too_many_lectures/.test(reason) ? "الملف محفوظ. قسّمه إلى ملفات أصغر لإكمال القراءة وتوليد الأسئلة."
         : "الملف أو النص محفوظ. تعذرت المعالجة؛ يمكنك إعادة المحاولة.";
       await this.pool.query("update content_imports set status='failed',stage='failed',error_message=$3,lease_token=null,lease_until=null,updated_at=now() where id=$1 and lease_token=$2", [job.id, lease, message]);

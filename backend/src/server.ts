@@ -8,6 +8,7 @@ import { ensureContentAutomationSchema } from "./contentAutomation/schema.js";
 import { startContentImportWorker } from "./contentAutomation/runtime.js";
 import { ensurePermanentTrainingAccessSchema } from "./trainingAccess/schema.js";
 import { relocateIso27001Roadmap } from "./contentAutomation/relocateIso27001Roadmap.js";
+import { reviewAiAssessments } from "./contentAutomation/reviewAiAssessments.js";
 
 initMonitoring();
 
@@ -26,6 +27,8 @@ if (env.NODE_ENV === "production" && env.DATABASE_URL) {
   logger.info(result, "finquiz_core_content_synchronized");
   const moved = await relocateIso27001Roadmap(getPool());
   logger.info({ moved }, "iso27001_roadmap_relocated");
+  const reviewed = await reviewAiAssessments(getPool());
+  logger.info(reviewed, "ai_assessments_language_reviewed");
 }
 
 // Bind explicitly to 0.0.0.0 — Railway's healthcheck prober connects over

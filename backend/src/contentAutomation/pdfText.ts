@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { PDFParse } from "pdf-parse";
 import { createWorker, OEM } from "tesseract.js";
 import { cleanSourceText } from "./sourceText.js";
+import { assertReadableSourceText, hasBrokenSourceEncoding } from "./sourceTextQuality.js";
 
 /** All parsing is server-side. OCR language data ships with the dependencies;
  * no document bytes are sent to an external OCR service. */
@@ -17,7 +18,8 @@ export async function extractPdfText(buffer: Buffer, heartbeat: () => Promise<vo
     const pages: string[] = [];
     for (const page of result.pages) {
       let text = cleanSourceText(page.text);
-      if (text.replace(/\s/g, "").length < 100 || (text.match(/[\p{L}]{3,}/gu)?.length ?? 0) < 15) {
+      const broken = hasBrokenSourceEncoding(text);
+      if (broken || text.replace(/\s/g, "").length < 100 || (text.match(/[\p{L}]{3,}/gu)?.length ?? 0) < 15) {
         if (!worker) {
           const langPath = join(tmpdir(), "digital-leadership-ocr");
           await mkdir(langPath, { recursive: true });
@@ -33,9 +35,10 @@ export async function extractPdfText(buffer: Buffer, heartbeat: () => Promise<vo
         if (image) {
           const ocr = await worker.recognize(Buffer.from(image.data));
           const recognized = cleanSourceText(ocr.data.text);
-          if (ocr.data.confidence >= 35 && recognized.length > text.length) text = recognized;
+          if (!hasBrokenSourceEncoding(recognized) && ocr.data.confidence >= (broken ? 65 : 35) && (broken || recognized.length > text.length)) text = recognized;
         }
       }
+      assertReadableSourceText(text);
       pages.push(text);
       await heartbeat();
     }
