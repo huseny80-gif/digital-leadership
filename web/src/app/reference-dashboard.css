@@ -33,18 +33,18 @@
 .dl-reference-artwork { position: relative; display: block; overflow: hidden; isolation: isolate; }
 .dl-reference-artwork > img { position: absolute; width: var(--art-width); height: var(--art-height); max-width: none; left: var(--art-left); top: var(--art-top); object-fit: fill; pointer-events: none; user-select: none; }
 .dl-workspace .app-header { position: sticky; top: 0; z-index: 30; height: var(--header-height); border: 0; background: linear-gradient(112deg, #002d3e 0%, #00475c 56%, #008694 100%); color: #edf9fc; }
-.dl-workspace .app-header-inner { height: 100%; max-width: none; margin: 0; padding: 0; display: block; direction: ltr; }
-.dl-menu-toggle { position: absolute; left: 11px; top: 13px; width: 39px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 8px; background: rgb(9 110 133 / 35%); color: #e9f7fa; cursor: pointer; }
+.dl-workspace .app-header-inner { height: 100%; max-width: none; margin: 0; padding: 0; display: block; direction: rtl; }
+.dl-menu-toggle { position: absolute; inset-inline-start: 11px; top: 13px; width: 39px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 8px; background: rgb(9 110 133 / 35%); color: #e9f7fa; cursor: pointer; }
 .dl-menu-toggle svg { width: 23px; height: 23px; }
-.dl-workspace .app-brand { position: absolute; left: 94px; top: 0; width: 232px; height: 82px; display: block; }
-/* Blend the atlas background into the header while keeping the bright wordmark visible. */
+.dl-workspace .app-brand { position: absolute; inset-inline-start: 94px; top: 0; width: 232px; height: 82px; display: block; }
+/* Blend only the logo artwork background into the existing header. */
 .dl-workspace .app-brand > .dl-reference-artwork { width: 100%; height: 100%; mix-blend-mode: lighten; }
-.dl-header-search { position: absolute; top: 21px; left: 32.5%; width: 33.67%; height: 42px; display: flex; align-items: center; direction: rtl; border: 1.5px solid #20a9c6; border-radius: 24px; background: rgb(0 51 67 / 10%); box-shadow: inset 0 0 12px rgb(22 155 180 / 8%); }
+.dl-header-search { position: absolute; top: 21px; inset-inline-start: 32.5%; width: 33.67%; height: 42px; display: flex; align-items: center; direction: rtl; border: 1.5px solid #20a9c6; border-radius: 24px; background: rgb(0 51 67 / 10%); box-shadow: inset 0 0 12px rgb(22 155 180 / 8%); }
 .dl-header-search input[type="search"] { min-width: 0; width: 100%; height: 100%; padding: 0 2px 0 15px; border: 0; outline: none; background: transparent; color: #fff; font-family: var(--font-heading), sans-serif; font-size: 14px; direction: rtl; }
 .dl-header-search input::placeholder { color: #d0e2e9; opacity: 1; }
 .dl-header-search button { width: 45px; height: 40px; border: 0; background: transparent; color: #e9f8fd; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
 .dl-header-search:focus-within { box-shadow: 0 0 0 3px rgb(65 215 232 / 22%); }
-.dl-workspace .app-header-actions { position: absolute; right: 12px; top: 22px; display: flex; flex-direction: row; align-items: center; gap: 8px; direction: ltr; }
+.dl-workspace .app-header-actions { position: absolute; inset-inline-end: 12px; top: 22px; display: flex; flex-direction: row; align-items: center; gap: 8px; direction: rtl; }
 .dl-control-wrap { position: relative; }
 .dl-notification-icon { width: 41px; height: 41px; border-radius: 8px; }
 .dl-header-control { width: 42px; height: 41px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid rgb(87 197 214 / 23%); border-radius: 9px; background: rgb(0 42 61 / 13%); color: #e4f2f7; cursor: pointer; }
@@ -59,7 +59,7 @@
 .dl-user-copy b { font-family: Arial, var(--font-body), sans-serif; font-size: 10.5px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .dl-user-copy small { font-size: 10px; line-height: 13px; }
 .dl-account-button > svg { width: 12px; height: 12px; }
-.dl-header-popover { position: absolute; top: calc(100% + 9px); right: 0; z-index: 40; min-width: 170px; max-width: calc(100vw - 24px); padding: 8px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; color: var(--color-text); box-shadow: 0 8px 26px rgb(0 29 44 / 18%); direction: rtl; text-align: right; }
+.dl-header-popover { position: absolute; top: calc(100% + 9px); inset-inline-end: 0; z-index: 40; min-width: 170px; max-width: calc(100vw - 24px); padding: 8px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; color: var(--color-text); box-shadow: 0 8px 26px rgb(0 29 44 / 18%); direction: rtl; text-align: right; }
 .dl-header-popover > a, .dl-header-popover > button { display: block; width: 100%; text-align: right; padding: 9px; border: 0; border-radius: 6px; background: transparent; color: var(--color-text); font: inherit; font-size: 14px; cursor: pointer; }
 .dl-header-popover > :is(a, button):hover { background: var(--color-bg); }
 .dl-header-popover p { margin: 7px 3px; font-size: 13px; white-space: nowrap; }
@@ -140,8 +140,8 @@
 .dl-workspace[data-navigation-open="true"] .app-sidebar-link[href="/about"] { padding-inline-start: 11px; }
 .dl-workspace[data-navigation-open="true"] .app-footer { margin-inline-start: 64px; }
 @media (max-width: 1100px) {
-  .dl-workspace .app-brand { left: 64px; width: 205px; height: 73px; top: 5px; }
-  .dl-header-search { left: 28%; width: 32%; }
+  .dl-workspace .app-brand { inset-inline-start: 64px; width: 205px; height: 73px; top: 5px; }
+  .dl-header-search { inset-inline-start: 28%; width: 32%; }
   .dl-workspace .app-header-actions { gap: 6px; }
   .dl-language-button { width: 86px; gap: 5px; }
   .dl-account-button { width: 156px; }
@@ -152,8 +152,8 @@
 }
 @media (max-width: 999px) {
   .dl-workspace { --sidebar-width: 0px; --header-height: 128px; }
-  .dl-workspace .app-brand { left: 60px; top: 0; width: 220px; height: 78px; }
-  .dl-header-search { top: 79px; left: 14px; width: calc(100% - 28px); height: 37px; }
+  .dl-workspace .app-brand { inset-inline-start: 60px; top: 0; width: 220px; height: 78px; }
+  .dl-header-search { top: 79px; inset-inline-start: 14px; width: calc(100% - 28px); height: 37px; }
   .dl-workspace .app-header-actions { top: 20px; }
   .dl-workspace .app-sidebar, .dl-workspace[data-navigation-open="true"] .app-sidebar { position: fixed; inset-inline-start: 0; top: var(--header-height); z-index: 25; width: 188px; height: calc(100dvh - var(--header-height)); transform: translateX(100%); visibility: hidden; }
   .dl-workspace[data-navigation-open="true"] .app-sidebar { transform: translateX(0); visibility: visible; }
@@ -172,11 +172,11 @@
   .dl-lecture-thumbnail { flex-basis: 120px; }
 }
 @media (max-width: 620px) {
-  .dl-workspace .app-brand { left: 54px; width: 198px; height: 70px; top: 4px; }
+  .dl-workspace .app-brand { inset-inline-start: 54px; width: 198px; height: 70px; top: 4px; }
   .dl-language-control, .dl-theme-control { display: none; }
   .dl-account-button { width: 45px; padding: 2px; }
   .dl-user-copy, .dl-account-button > svg { display: none; }
-  .dl-workspace .app-header-actions { right: 10px; gap: 7px; }
+  .dl-workspace .app-header-actions { inset-inline-end: 10px; gap: 7px; }
   .dl-workspace .dl-hero { aspect-ratio: auto; height: 220px; background: linear-gradient(90deg, rgb(0 39 53 / 94%), rgb(0 39 53 / 65%)), url("/design/dashboard-reference.jpg") right -87px / 1150px 575px; }
   .dl-hero-artwork { display: none; }
   .dl-workspace .dl-hero-copy { position: relative; clip-path: none; overflow: visible; width: auto; height: auto; padding: 28px 20px; text-align: right; }
@@ -199,8 +199,8 @@
   .dl-panel-heading h2 { font-size: 13px; gap: 7px; }
 }
 @media (max-width: 359px) {
-  .dl-workspace .app-brand { width: 170px; height: 60px; top: 8px; left: 50px; }
-  .dl-workspace .app-header-actions { gap: 3px; right: 7px; }
+  .dl-workspace .app-brand { width: 170px; height: 60px; top: 8px; inset-inline-start: 50px; }
+  .dl-workspace .app-header-actions { gap: 3px; inset-inline-end: 7px; }
   .dl-workspace .dl-subject-grid { grid-template-columns: 1fr; }
   .dl-workspace .dl-hero-copy h1 { font-size: 23px; }
 }
