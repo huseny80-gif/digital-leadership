@@ -37,7 +37,8 @@
 .dl-menu-toggle { position: absolute; inset-inline-start: 11px; top: 13px; width: 39px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 8px; background: rgb(9 110 133 / 35%); color: #e9f7fa; cursor: pointer; }
 .dl-menu-toggle svg { width: 23px; height: 23px; }
 .dl-workspace .app-brand { position: absolute; inset-inline-start: 94px; top: 0; width: 232px; height: 82px; display: block; }
-.dl-workspace .app-brand > .dl-reference-artwork { width: 100%; height: 100%; }
+/* Blend only the logo artwork background into the existing header. */
+.dl-workspace .app-brand > .dl-reference-artwork { width: 100%; height: 100%; mix-blend-mode: lighten; }
 .dl-header-search { position: absolute; top: 21px; inset-inline-start: 32.5%; width: 33.67%; height: 42px; display: flex; align-items: center; direction: rtl; border: 1.5px solid #20a9c6; border-radius: 24px; background: rgb(0 51 67 / 10%); box-shadow: inset 0 0 12px rgb(22 155 180 / 8%); }
 .dl-header-search input[type="search"] { min-width: 0; width: 100%; height: 100%; padding: 0 2px 0 15px; border: 0; outline: none; background: transparent; color: #fff; font-family: var(--font-heading), sans-serif; font-size: 14px; direction: rtl; }
 .dl-header-search input::placeholder { color: #d0e2e9; opacity: 1; }
