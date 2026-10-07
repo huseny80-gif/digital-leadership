@@ -108,11 +108,10 @@
 .dl-workspace .dl-subject-card:focus-visible { outline: 2px solid var(--subject-accent); outline-offset: 4px; }
 @media (hover: hover) and (pointer: fine) { .dl-workspace .dl-subject-card:hover { transform: translateY(-4px) scale(1.015); } }
 .dl-workspace .dl-subject-icon {
-  width: 88px; height: 88px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; margin: 0 0 15px;
-  border: 1px solid rgb(var(--subject-glow) / 35%); background: radial-gradient(circle at 30% 15%, rgb(255 255 255 / 17%), transparent 65%), linear-gradient(150deg, rgb(var(--subject-glow) / 25%), rgb(3 12 25 / 70%));
-  box-shadow: inset 0 2px 3px rgb(255 255 255 / 12%), inset 0 -5px 12px rgb(0 6 17 / 48%), 0 8px 20px rgb(var(--subject-glow) / 12%);
+  width: 132px; height: 120px; flex-shrink: 0; display: grid; place-items: center; margin: 0 0 12px;
+  border: 0; border-radius: 0; background: transparent; box-shadow: none;
 }
-.dl-workspace .dl-subject-mark { display: block; width: 74px; height: 74px; flex-shrink: 0; }
+.dl-workspace .dl-subject-mark { display: block; width: 132px; height: 120px; flex-shrink: 0; overflow: hidden; }
 .dl-workspace .dl-subject-card h3 { display: grid; place-items: center; flex: 1; width: 100%; min-height: 52px; height: auto; margin: 0; font-family: var(--font-heading), sans-serif; font-size: 16px; font-weight: 800; line-height: 1.65; color: #fff; overflow-wrap: anywhere; }
 .dl-lecture-count { min-height: 28px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #c4d3e5; font-size: 12px; line-height: 18px; direction: rtl; margin-block: 5px 10px; }
 .dl-lecture-count svg { width: 18px; height: 15px; fill: none; color: #b4c9e2; }
