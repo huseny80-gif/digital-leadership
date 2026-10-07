@@ -22,6 +22,8 @@ export interface Quiz {
   title: string;
   description: string | null;
   timeLimitSeconds: number | null;
+  /** Optional reminder deadline; practice remains available afterwards. */
+  dueAt?: string | null;
   status: "draft" | "published";
 }
 

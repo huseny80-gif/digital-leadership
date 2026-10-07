@@ -74,6 +74,8 @@ export interface Assignment {
   lectureId: string | null;
   title: string;
   description: string | null;
+  /** Optional trainer-defined deadline; it never restricts training access. */
+  dueAt?: string | null;
   orderIndex: number;
   status: PublicationStatus;
   createdBy: string;

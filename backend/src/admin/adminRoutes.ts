@@ -47,6 +47,7 @@ async function queuePublishedItem(item: LectureItem, actorId: string): Promise<v
 }
 
 const publicationStatusSchema = z.enum(["draft", "published"]);
+const dueAtSchema = z.string().datetime({ offset: true }).nullable().optional();
 
 const openAnswerReviewSchema = z.object({
   pointsAwarded: z.number().min(0),
@@ -55,6 +56,7 @@ const openAnswerReviewSchema = z.object({
 
 // PHASE 12H — assignments (subject-scoped, Phase 12G-R Option B).
 const assignmentCreateSchema = z.object({
+  dueAt: dueAtSchema,
   subjectId: z.string().uuid(),
   lectureId: z.string().uuid().nullable().optional(),
   title: z.string().min(1).max(200),
@@ -62,6 +64,7 @@ const assignmentCreateSchema = z.object({
   orderIndex: z.number().int().min(0).optional().default(0),
 });
 const assignmentUpdateSchema = z.object({
+  dueAt: dueAtSchema,
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(20000).nullable().optional(),
   orderIndex: z.number().int().min(0).optional(),
@@ -137,6 +140,7 @@ const optionUpdateSchema = z.object({
 });
 
 const quizCreateSchema = z.object({
+  dueAt: dueAtSchema,
   subjectId: z.string().uuid(),
   lectureId: z.string().uuid().nullable().optional(),
   title: z.string().min(1).max(200),
@@ -144,6 +148,7 @@ const quizCreateSchema = z.object({
   timeLimitSeconds: z.number().int().min(1).nullable().optional(),
 });
 const quizUpdateSchema = z.object({
+  dueAt: dueAtSchema,
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(5000).nullable().optional(),
   timeLimitSeconds: z.number().int().min(1).nullable().optional(),
@@ -598,6 +603,7 @@ export function adminRoutes(): Router {
           title: parsed.data.title,
           description: parsed.data.description ?? null,
           timeLimitSeconds: parsed.data.timeLimitSeconds ?? null,
+          dueAt: parsed.data.dueAt ?? null,
         },
         req.user!.id,
       );
@@ -738,6 +744,7 @@ export function adminRoutes(): Router {
         description: parsed.data.description ?? null,
         orderIndex: parsed.data.orderIndex,
         createdBy: req.user!.id,
+        dueAt: parsed.data.dueAt ?? null,
       });
       const body: ApiResult<Assignment> = { data: assignment };
       res.status(201).json(body);

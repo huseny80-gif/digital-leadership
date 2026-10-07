@@ -133,6 +133,7 @@ interface QuizRow {
   title: string;
   description: string | null;
   time_limit_seconds: number | null;
+  due_at: Date | null;
   status: "draft" | "published";
 }
 
@@ -144,6 +145,7 @@ function toQuiz(row: QuizRow): Quiz {
     title: row.title,
     description: row.description,
     timeLimitSeconds: row.time_limit_seconds,
+    ...(row.due_at ? { dueAt: row.due_at.toISOString() } : {}),
     status: row.status,
   };
 }
@@ -202,7 +204,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
   async listQuizzesForSubject(subjectId: string, isAdmin: boolean): Promise<Quiz[]> {
     const visibility = quizVisibilityClause(isAdmin);
     const result = await this.pool.query<QuizRow>(
-      `select q.id, q.subject_id, q.lecture_id, q.title, q.description, q.time_limit_seconds, q.status
+      `select q.id, q.subject_id, q.lecture_id, q.title, q.description, q.time_limit_seconds, q.due_at, q.status
        from quizzes q
        ${QUIZ_VISIBILITY_JOIN}
        where q.subject_id = $1 and q.deleted_at is null and s.deleted_at is null and q.superseded_by is null ${visibility}
@@ -215,7 +217,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
   async getQuizById(quizId: string, isAdmin: boolean): Promise<Quiz | null> {
     const visibility = quizVisibilityClause(isAdmin);
     const result = await this.pool.query<QuizRow>(
-      `select q.id, q.subject_id, q.lecture_id, q.title, q.description, q.time_limit_seconds, q.status
+      `select q.id, q.subject_id, q.lecture_id, q.title, q.description, q.time_limit_seconds, q.due_at, q.status
        from quizzes q
        ${QUIZ_VISIBILITY_JOIN}
        where q.id = $1 and q.deleted_at is null and s.deleted_at is null ${visibility}`,

@@ -6,6 +6,7 @@ import type { Quiz } from "@shared/index";
 import { adminGet, adminPost, adminPatch, adminDelete, AdminApiError } from "@/lib/api/adminBrowserClient";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/States";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
+import { deadlineToIso } from "@/lib/deadline";
 
 /** Quiz management (PHASE 09C "Quiz Management"). */
 export default function AdminQuizzesPage() {
@@ -14,6 +15,7 @@ export default function AdminQuizzesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [subjectId, setSubjectId] = useState("");
+  const [dueAt, setDueAt] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
@@ -41,9 +43,10 @@ export default function AdminQuizzesPage() {
     setSubmitting(true);
     setFormError(null);
     try {
-      await adminPost("quizzes", { subjectId, title });
+      await adminPost("quizzes", { subjectId, title, dueAt: deadlineToIso(dueAt) });
       setTitle("");
       setSubjectId("");
+      setDueAt("");
       setFormOpen(false);
       await load();
     } catch (err) {
@@ -98,6 +101,7 @@ export default function AdminQuizzesPage() {
             </label>
             <input id="quiz-title" className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} required />
           </div>
+          <div className="form-field" dir="rtl"><label className="form-label" htmlFor="quiz-deadline">الموعد النهائي (اختياري)</label><input type="datetime-local" id="quiz-deadline" className="form-input" value={dueAt} onChange={event=>setDueAt(event.target.value)} /></div>
           {formError ? (
             <p role="alert" style={{ color: "var(--color-danger)" }}>
               {formError}

@@ -6,6 +6,7 @@ import { adminGet, adminPatch, adminPost, adminDelete, AdminApiError } from "@/l
 import { LoadingState, EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { deadlineToIso, toLocalDateTime } from "@/lib/deadline";
 
 /** Quiz detail: edit fields, and manage which questions belong to it
  * (PHASE 09C "Quiz Management"). Question order is set by the order in
@@ -20,6 +21,7 @@ export default function AdminQuizDetailPage({ params }: { params: Promise<{ quiz
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [dueAt, setDueAt] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -35,6 +37,7 @@ export default function AdminQuizDetailPage({ params }: { params: Promise<{ quiz
       setLinks(l);
       setTitle(q.title);
       setDescription(q.description ?? "");
+      setDueAt(toLocalDateTime(q.dueAt));
     } catch (err) {
       if (err instanceof AdminApiError && err.status === 404) setNotFound(true);
       else setError("Unable to load this quiz. Please try again.");
@@ -55,7 +58,7 @@ export default function AdminQuizDetailPage({ params }: { params: Promise<{ quiz
     setSaving(true);
     setSaveError(null);
     try {
-      await adminPatch(`quizzes/${quizId}`, { title, description: description || null });
+      await adminPatch(`quizzes/${quizId}`, { title, description: description || null, dueAt: deadlineToIso(dueAt) });
       await load();
     } catch (err) {
       setSaveError(err instanceof AdminApiError ? err.message : "Unable to save changes. Please try again.");
@@ -106,6 +109,7 @@ export default function AdminQuizDetailPage({ params }: { params: Promise<{ quiz
           </label>
           <textarea id="quiz-edit-description" className="form-textarea" value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
+        <div className="form-field" dir="rtl"><label className="form-label" htmlFor="quiz-edit-deadline">الموعد النهائي للاختبار (اختياري)</label><input type="datetime-local" id="quiz-edit-deadline" className="form-input" value={dueAt} onChange={event=>setDueAt(event.target.value)} /><p className="content-card-meta">يُعرض حسب المنطقة الزمنية لجهازك، ويظهر في تنبيهات المتدربين. يبقى التدريب متاحًا بعد الموعد.</p></div>
         {saveError ? (
           <p role="alert" style={{ color: "var(--color-danger)" }}>
             {saveError}

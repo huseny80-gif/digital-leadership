@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer, QuizAttempt } from "@shared/index";
 import { QuizNavigation } from "./QuizNavigation";
 import { readQuizDraft, writeQuizDraft, type AnswerState } from "./quizDraft";
+import { notifyLearningProgress } from "@/lib/learning";
 
 const levels = [{ id: "all", label: "الكل" }, { id: "easy", label: "سهل" }, { id: "medium", label: "متوسط" }, { id: "hard", label: "صعب" }];
 const letters = ["أ", "ب", "ج", "د", "هـ", "و"];
@@ -227,6 +228,7 @@ export function QuizAttemptRunner({
       const response = await fetch(`${apiBasePath}/attempts/${attemptId}/submit`, { method: "POST" });
       await response.json();
       if (!response.ok && response.status !== 409) throw new Error("Submit failed");
+      notifyLearningProgress();
       finished = true;
       const filters = new URLSearchParams();
       if (difficulty !== "all") filters.set("difficulty", difficulty);

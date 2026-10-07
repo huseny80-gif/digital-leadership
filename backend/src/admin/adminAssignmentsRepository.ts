@@ -13,6 +13,7 @@ interface AssignmentRow {
   lecture_id: string | null;
   title: string;
   description: string | null;
+  due_at: Date | null;
   order_index: number;
   status: PublicationStatus;
   created_by: string;
@@ -27,6 +28,7 @@ function toAssignment(row: AssignmentRow): Assignment {
     lectureId: row.lecture_id,
     title: row.title,
     description: row.description,
+    ...(row.due_at ? { dueAt: row.due_at.toISOString() } : {}),
     orderIndex: row.order_index,
     status: row.status,
     createdBy: row.created_by,
@@ -45,7 +47,7 @@ export class AdminAssignmentsRepository {
 
   async listForSubject(subjectId: string): Promise<Assignment[]> {
     const result = await this.pool.query<AssignmentRow>(
-      `select id, subject_id, lecture_id, title, description, order_index, status, created_by, created_at, updated_at
+      `select id, subject_id, lecture_id, title, description, due_at, order_index, status, created_by, created_at, updated_at
        from assignments where subject_id = $1 and deleted_at is null order by order_index asc`,
       [subjectId],
     );
@@ -57,30 +59,32 @@ export class AdminAssignmentsRepository {
     lectureId: string | null;
     title: string;
     description: string | null;
+    dueAt?: string | null;
     orderIndex: number;
     createdBy: string;
   }): Promise<Assignment> {
     const result = await this.pool.query<AssignmentRow>(
-      `insert into assignments (subject_id, lecture_id, title, description, order_index, created_by)
-       values ($1, $2, $3, $4, $5, $6)
-       returning id, subject_id, lecture_id, title, description, order_index, status, created_by, created_at, updated_at`,
-      [input.subjectId, input.lectureId, input.title, input.description, input.orderIndex, input.createdBy],
+      `insert into assignments (subject_id, lecture_id, title, description, order_index, created_by, due_at)
+       values ($1, $2, $3, $4, $5, $6, $7)
+       returning id, subject_id, lecture_id, title, description, due_at, order_index, status, created_by, created_at, updated_at`,
+      [input.subjectId, input.lectureId, input.title, input.description, input.orderIndex, input.createdBy, input.dueAt ?? null],
     );
     return toAssignment(result.rows[0]!);
   }
 
   async update(
     id: string,
-    fields: { title?: string; description?: string | null; orderIndex?: number; status?: PublicationStatus },
+    fields: { title?: string; description?: string | null; orderIndex?: number; status?: PublicationStatus; dueAt?: string | null },
   ): Promise<Assignment | null> {
     const result = await this.pool.query<AssignmentRow>(
       `update assignments set
          title = coalesce($2, title),
          description = case when $3 then $4 else description end,
          order_index = coalesce($5, order_index),
-         status = coalesce($6, status)
+         status = coalesce($6, status),
+         due_at = case when $7::boolean then $8::timestamptz else due_at end
        where id = $1 and deleted_at is null
-       returning id, subject_id, lecture_id, title, description, order_index, status, created_by, created_at, updated_at`,
+       returning id, subject_id, lecture_id, title, description, due_at, order_index, status, created_by, created_at, updated_at`,
       [
         id,
         fields.title ?? null,
@@ -88,6 +92,8 @@ export class AdminAssignmentsRepository {
         fields.description ?? null,
         fields.orderIndex ?? null,
         fields.status ?? null,
+        fields.dueAt !== undefined,
+        fields.dueAt ?? null,
       ],
     );
     return result.rows[0] ? toAssignment(result.rows[0]) : null;

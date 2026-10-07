@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ApiErrorBody, LectureProgress } from "@shared/index";
+import { notifyLearningProgress } from "@/lib/learning";
 
 /**
  * "Mark as complete" action for a lecture (PHASE4_ENHANCEMENT_PLAN.md
@@ -34,6 +35,7 @@ export function LectureCompleteToggle({
         return;
       }
       setCompleted(body.data.completed);
+      notifyLearningProgress();
       setStatus("idle");
     } catch {
       setStatus("error");

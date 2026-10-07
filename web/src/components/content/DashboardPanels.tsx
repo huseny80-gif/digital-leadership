@@ -3,6 +3,7 @@ import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import { ReferenceArtwork } from "@/components/ui/ReferenceArtwork";
 import { contentDate, type DashboardContent } from "@/lib/dashboardContent";
 import { getSubjectTheme, subjectArtwork } from "./subjectTheme";
+import { ActivityFeed } from "@/components/learning/ActivityFeed";
 
 export function DashboardPanels({ content }: { content: DashboardContent }) {
   return <div className="dl-dashboard-panels">
@@ -15,15 +16,6 @@ export function DashboardPanels({ content }: { content: DashboardContent }) {
       </Link>)}
       {content.lectures.length === 0 ? <p className="dl-panel-empty">{content.lecturesFailed ? "تعذّر تحميل المحاضرات. حاول مرة أخرى." : "لا توجد محاضرات متاحة حاليًا."}</p> : null}
     </section>
-    <section className="dl-preview-panel" id="upcoming-activities" aria-labelledby="upcoming-activities-title">
-      <div className="dl-panel-heading"><h2 id="upcoming-activities-title"><PlatformIcon name="calendar" />الأنشطة القادمة</h2><Link href="/subjects?view=assignments">عرض الكل <PlatformIcon name="next" /></Link></div>
-      {content.assignments.slice(0, 3).map(({ assignment, subject }) => <Link className="dl-preview-row dl-activity-row" href={`/subjects/${subject.id}/assignments/${assignment.id}`} key={assignment.id}>
-        <span className={`dl-activity-icon dl-theme-${getSubjectTheme(subject.title)}`}><PlatformIcon name="clipboard" /></span>
-        <span className="dl-preview-copy"><strong>{assignment.title}</strong><small>{subject.title}</small></span>
-        {contentDate(assignment.createdAt) ? <span className="dl-preview-date" title="تاريخ إضافة النشاط"><PlatformIcon name="calendar" /><time dateTime={assignment.createdAt}>{contentDate(assignment.createdAt)}</time></span> : null}
-        <PlatformIcon name="next" className="dl-row-chevron" />
-      </Link>)}
-      {content.assignments.length === 0 ? <p className="dl-panel-empty">{content.assignmentsFailed ? "تعذّر تحميل الأنشطة. حاول مرة أخرى." : "لا توجد أنشطة متاحة حاليًا."}</p> : null}
-    </section>
+    <ActivityFeed />
   </div>;
 }
