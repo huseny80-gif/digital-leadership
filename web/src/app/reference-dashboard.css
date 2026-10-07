@@ -86,15 +86,36 @@
 .dl-workspace .dl-section-heading > div > span { color: #187b8a; font-size: 12px; font-weight: 700; line-height: 18px; }
 .dl-workspace .dl-section-heading h2 { color: var(--color-text); font-family: var(--font-heading), sans-serif; font-size: 18px; line-height: 22px; font-weight: 800; margin: 0; }
 .dl-workspace .dl-section-heading > a { font-family: var(--font-body), sans-serif; font-size: 15px; font-weight: 700; line-height: 20px; margin-bottom: 5px; color: #14788a; }
-.dl-workspace .dl-subject-grid { display: grid; grid-template-columns: minmax(0,205fr) minmax(0,199fr) minmax(0,205fr) minmax(0,205fr) minmax(0,211fr); gap: 9px; margin-right: 5px; direction: ltr; }
-.dl-workspace .dl-subject-card { display: flex; flex-direction: column; min-width: 0; height: 173px; padding: 8px 8px 9px; border: 1px solid var(--color-border-soft); border-radius: 14px; background: var(--color-surface); box-shadow: var(--shadow); direction: rtl; text-align: center; transition: border-color .15s; }
-.dl-workspace .dl-subject-card:hover { transform: none; border-color: #afd4df; box-shadow: var(--shadow); }
-.dl-workspace .dl-subject-icon { width: 100%; height: 50px; flex-shrink: 0; border-radius: 8px; margin: 0; background: var(--card); }
-.dl-workspace .dl-subject-card h3 { display: grid; place-items: center; min-height: 0; height: 46px; flex-shrink: 0; margin: 0; font-family: var(--font-heading), sans-serif; font-size: 14px; font-weight: 800; line-height: 20px; color: var(--color-text); }
-.dl-lecture-count { height: 24px; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--color-text-muted); font-size: 11px; line-height: 16px; direction: rtl; }
-.dl-lecture-count svg { width: 18px; height: 15px; fill: #567787; color: #567787; }
-.dl-lecture-count svg path { stroke: #fff; fill: #fff; stroke-width: .7px; }
-.dl-workspace .dl-subject-button { display: flex; align-items: center; justify-content: center; gap: 12px; flex-shrink: 0; height: 30px; margin-top: 3px; padding: 0; border-radius: 7px; background: var(--subject-button); color: #fff; font-family: var(--font-body), sans-serif; font-weight: 500; font-size: 13px; }
+.dl-workspace .dl-subject-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-right: 5px; padding-block: 10px 16px; direction: ltr; }
+.dl-workspace .dl-subject-card {
+  --subject-accent: #459eff; --subject-highlight: #c6e9ff; --subject-depth: #1552af; --subject-glow: 55 145 255;
+  position: relative; isolation: isolate; display: flex; flex-direction: column; align-items: center; min-width: 0; min-height: 270px; height: auto; padding: 20px 14px 14px;
+  border: 1px solid rgb(255 255 255 / 16%); border-radius: 20px;
+  background: radial-gradient(ellipse at 50% 120%, rgb(var(--subject-glow) / 34%), transparent 65%), linear-gradient(145deg, rgb(255 255 255 / 7%), transparent 55%), rgb(8 19 33 / 88%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%); backdrop-filter: blur(18px) saturate(135%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 9%), 0 10px 24px rgb(3 15 27 / 14%);
+  direction: rtl; text-align: center; color: #fff; overflow: hidden; transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.dl-workspace .dl-subject-card.dl-theme-legal { --subject-accent: #38dda6; --subject-highlight: #c9ffe8; --subject-depth: #077858; --subject-glow: 32 207 148; }
+.dl-workspace .dl-subject-card.dl-theme-cyber { --subject-accent: #ab79ff; --subject-highlight: #ead8ff; --subject-depth: #5d2ba8; --subject-glow: 155 100 255; }
+.dl-workspace .dl-subject-card.dl-theme-innovation { --subject-accent: #3bd9f5; --subject-highlight: #d1faff; --subject-depth: #086eac; --subject-glow: 36 192 237; }
+.dl-workspace .dl-subject-card.dl-theme-risk { --subject-accent: #ff8956; --subject-highlight: #ffe2b9; --subject-depth: #c23e2a; --subject-glow: 255 105 64; }
+.dl-workspace .dl-subject-card:hover, .dl-workspace .dl-subject-card:focus-visible { transform: none; border-color: rgb(var(--subject-glow) / 66%); box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%), 0 12px 28px rgb(3 15 27 / 22%), 0 0 22px rgb(var(--subject-glow) / 16%); }
+.dl-workspace .dl-subject-card:focus-visible { outline: 2px solid var(--subject-accent); outline-offset: 4px; }
+@media (hover: hover) and (pointer: fine) { .dl-workspace .dl-subject-card:hover { transform: translateY(-4px) scale(1.015); } }
+.dl-workspace .dl-subject-icon {
+  width: 88px; height: 88px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; margin: 0 0 15px;
+  border: 1px solid rgb(var(--subject-glow) / 35%); background: radial-gradient(circle at 30% 15%, rgb(255 255 255 / 17%), transparent 65%), linear-gradient(150deg, rgb(var(--subject-glow) / 25%), rgb(3 12 25 / 70%));
+  box-shadow: inset 0 2px 3px rgb(255 255 255 / 12%), inset 0 -5px 12px rgb(0 6 17 / 48%), 0 8px 20px rgb(var(--subject-glow) / 12%);
+}
+.dl-workspace .dl-subject-mark { display: block; width: 74px; height: 74px; flex-shrink: 0; }
+.dl-workspace .dl-subject-card h3 { display: grid; place-items: center; flex: 1; width: 100%; min-height: 52px; height: auto; margin: 0; font-family: var(--font-heading), sans-serif; font-size: 16px; font-weight: 800; line-height: 1.65; color: #fff; overflow-wrap: anywhere; }
+.dl-lecture-count { min-height: 28px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #c4d3e5; font-size: 12px; line-height: 18px; direction: rtl; margin-block: 5px 10px; }
+.dl-lecture-count svg { width: 18px; height: 15px; fill: none; color: #b4c9e2; }
+.dl-lecture-count svg path { stroke: #b4c9e2; fill: #b4c9e2; stroke-width: .7px; }
+.dl-workspace .dl-subject-button { display: flex; align-items: center; justify-content: center; gap: 12px; flex-shrink: 0; width: 100%; min-height: 42px; height: auto; margin-top: auto; padding: 8px 10px; border: 1px solid rgb(var(--subject-glow) / 30%); border-radius: 11px; background: rgb(var(--subject-glow) / 10%); color: #fff; font-family: var(--font-body), sans-serif; font-weight: 700; font-size: 13px; transition: background .2s ease; }
+.dl-workspace .dl-subject-card:hover .dl-subject-button, .dl-workspace .dl-subject-card:focus-visible .dl-subject-button { background: rgb(var(--subject-glow) / 22%); }
+.dl-workspace[data-theme="dark"] .dl-subject-card { background: radial-gradient(ellipse at 50% 120%, rgb(var(--subject-glow) / 28%), transparent 65%), linear-gradient(145deg, rgb(255 255 255 / 6%), transparent 55%), rgb(7 17 31 / 72%); }
 .dl-subject-button svg { width: 15px; height: 15px; }
 .dl-workspace .dl-theme-ai { --card: #075b90; --subject-button: linear-gradient(90deg, #044c86, #015794); }
 .dl-workspace .dl-theme-legal { --card: #007b70; --subject-button: linear-gradient(90deg, #047768, #01756a); }
@@ -145,7 +166,7 @@
   .dl-workspace .app-header-actions { gap: 6px; }
   .dl-language-button { width: 86px; gap: 5px; }
   .dl-account-button { width: 156px; }
-  .dl-workspace .dl-subject-card h3 { font-size: 14px; }
+  .dl-workspace .dl-subject-card h3 { font-size: 15px; }
   .dl-preview-date { font-size: 10px; gap: 4px; }
   .dl-preview-row { gap: 8px; }
   .dl-lecture-thumbnail { flex-basis: 85px; }
@@ -203,6 +224,10 @@
   .dl-workspace .app-header-actions { gap: 3px; inset-inline-end: 7px; }
   .dl-workspace .dl-subject-grid { grid-template-columns: 1fr; }
   .dl-workspace .dl-hero-copy h1 { font-size: 23px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dl-workspace .dl-subject-card, .dl-workspace .dl-subject-button { transition: none; }
+  .dl-workspace .dl-subject-card:hover { transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { .dl-workspace * { scroll-behavior: auto; transition: none; } }
 .dl-workspace .dl-library-list { display: grid; gap: 16px; margin-top: 18px; }
