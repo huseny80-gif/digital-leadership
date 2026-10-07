@@ -139,7 +139,7 @@ export class AdminAssessmentsService {
   }
 
   async createQuiz(
-    input: { subjectId: string; lectureId: string | null; title: string; description: string | null; timeLimitSeconds: number | null },
+    input: { subjectId: string; lectureId: string | null; title: string; description: string | null; timeLimitSeconds: number | null; dueAt?: string | null },
     actorUserId: string,
   ): Promise<Quiz> {
     const subjectExists = await this.repository.subjectExists(input.subjectId);
@@ -151,7 +151,7 @@ export class AdminAssessmentsService {
 
   async updateQuiz(
     id: string,
-    fields: { title?: string; description?: string | null; timeLimitSeconds?: number | null; status?: PublicationStatus },
+    fields: { title?: string; description?: string | null; timeLimitSeconds?: number | null; status?: PublicationStatus; dueAt?: string | null },
     actorUserId: string,
   ): Promise<Quiz> {
     const updated = await this.repository.updateQuiz(id, fields);

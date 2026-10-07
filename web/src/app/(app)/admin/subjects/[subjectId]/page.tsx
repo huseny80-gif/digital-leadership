@@ -7,6 +7,7 @@ import { adminGet, adminPost, adminPatch, adminDelete, AdminApiError } from "@/l
 import { LoadingState, EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { AssignmentDeadlines } from "@/components/admin/AssignmentDeadlines";
 
 /** Subject detail: edit its own fields, and manage its lectures
  * (PHASE 09C "Lecture Management" — subjectId is always re-validated
@@ -248,6 +249,7 @@ export default function AdminSubjectDetailPage({ params }: { params: Promise<{ s
           </div>
         </>
       )}
+      <AssignmentDeadlines subjectId={subjectId} />
     </section>
   );
 }

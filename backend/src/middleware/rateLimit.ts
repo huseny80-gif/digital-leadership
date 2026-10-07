@@ -1,4 +1,4 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 
 /**
  * Basic, in-process API rate limiting (API_SECURITY.md "Rate Limiting").
@@ -21,6 +21,9 @@ import rateLimit from "express-rate-limit";
 export const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 300,
+  // Auth has already verified these identities. Visitors behind the same
+  // web proxy must not consume one another's study/search request budget.
+  keyGenerator: req => req.user ? `user:${req.user.id}` : req.guestSession ? `guest:${req.guestSession.id}` : ipKeyGenerator(req.ip ?? "unknown"),
   standardHeaders: true,
   legacyHeaders: false,
 });

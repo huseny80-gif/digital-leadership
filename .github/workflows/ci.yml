@@ -103,10 +103,11 @@ jobs:
           end
           $$;
           SQL
-          for f in $(ls migrations/*.sql | grep -v -E '/0000000000001[234]_' | sort) \
+          for f in migrations/0000000000000*.sql migrations/00000000000010_*.sql migrations/00000000000011_*.sql \
                    migrations/00000000000014_complete_assessment_schema.sql \
                    migrations/00000000000012_quiz_attempt_answer_match_order.sql \
-                   migrations/00000000000013_rubric_and_assignments.sql; do
+                   migrations/00000000000013_rubric_and_assignments.sql \
+                   $(ls migrations/*.sql | grep -v -E '/000000000000(0[0-9]|1[0-4])_' | sort); do
             psql -h localhost -U postgres -d digital_leadership_backend_test -v ON_ERROR_STOP=1 -f "$f"
           done
           # Grants must run after every table exists (grant ... on all

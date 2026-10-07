@@ -5,6 +5,7 @@ import "./reference-dashboard.css";
 import "./quiz-training.css";
 import "./content-automation.css";
 import "./participant-feedback.css";
+import "./learning-dashboard.css";
 
 /**
  * Phase 18.1 — Finquiz Visual Identity Foundation: typography pairing

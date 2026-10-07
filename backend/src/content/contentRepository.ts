@@ -96,6 +96,7 @@ interface AssignmentRow {
   lecture_id: string | null;
   title: string;
   description: string | null;
+  due_at: Date | null;
   order_index: number;
   status: "draft" | "published";
   created_by: string;
@@ -180,6 +181,7 @@ function toAssignment(row: AssignmentRow): Assignment {
     lectureId: row.lecture_id,
     title: row.title,
     description: row.description,
+    ...(row.due_at ? { dueAt: row.due_at.toISOString() } : {}),
     orderIndex: row.order_index,
     status: row.status,
     createdBy: row.created_by,
@@ -278,7 +280,7 @@ export class PgContentRepository implements ContentRepository {
   async listAssignmentsForSubject(subjectId: string, isAdmin: boolean, pagination: PaginationParams) {
     const visibilityClause = isAdmin ? "" : "and status = 'published'";
     const rows = await this.pool.query<AssignmentRow>(
-      `select id, subject_id, lecture_id, title, description, order_index, status, created_by, created_at, updated_at
+      `select id, subject_id, lecture_id, title, description, due_at, order_index, status, created_by, created_at, updated_at
        from assignments
        where subject_id = $1 and deleted_at is null ${visibilityClause}
        order by order_index asc, title asc

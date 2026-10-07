@@ -3,6 +3,7 @@ import type { GuestTrainingSession, LearnerAnalytics, PaginatedResult, Subject, 
 import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState } from "@/components/ui/States";
+import { PersonalAnalytics } from "@/components/learning/PersonalAnalytics";
 import { LearnerAnalyticsSection } from "@/components/analytics/LearnerAnalyticsSection";
 import { ReferenceArtwork } from "@/components/ui/ReferenceArtwork";
 import { DashboardSubjectCard } from "@/components/content/DashboardSubjectCard";
@@ -32,15 +33,11 @@ export default async function DashboardPage() {
   }
 
   let analytics: LearnerAnalytics | null = null;
-  let analyticsErrorMessage: string | null = null;
-  if (!errorMessage && !guestSession) {
-    try {
-      analytics = (await apiGet<LearnerAnalytics>("/api/v1/analytics/me")).data;
-    } catch (err) {
-      analyticsErrorMessage = toSafeErrorMessage(err, "your learning analytics").message;
-    }
+  let analyticsError: string | null = null;
+  if (!errorMessage && profile && !guestSession) {
+    try { analytics = (await apiGet<LearnerAnalytics>("/api/v1/analytics/me")).data; }
+    catch { analyticsError = "تعذر تحميل تفاصيل الأداء. حاول مرة أخرى."; }
   }
-
   const welcomeName = profile?.displayName ?? guestSession?.displayName;
   const subjects = [...(subjectsResult?.data ?? [])].sort((a, b) => subjectThemes.indexOf(getSubjectTheme(a.title)) - subjectThemes.indexOf(getSubjectTheme(b.title)) || a.orderIndex - b.orderIndex);
   const content = !errorMessage ? await getDashboardContent(subjects) : null;
@@ -59,6 +56,7 @@ export default async function DashboardPage() {
       </div>
 
       {errorMessage ? <ErrorState message={errorMessage} retryHref="/dashboard" /> : null}
+      {!errorMessage ? <PersonalAnalytics /> : null}
 
       {!errorMessage && subjectsResult ? (
         <div className="dl-subject-section">
@@ -80,15 +78,7 @@ export default async function DashboardPage() {
       ) : null}
 
       {content ? <DashboardPanels content={content} /> : null}
-
-      {analytics ? (
-        <div className="dl-analytics-panel" id="learning-analytics">
-          <div className="dl-section-heading"><div><span>متابعة التعلم</span><h2>تقدمك الدراسي</h2></div></div>
-          <LearnerAnalyticsSection analytics={analytics} />
-        </div>
-      ) : analyticsErrorMessage ? (
-        <ErrorState message={analyticsErrorMessage} retryHref="/dashboard" />
-      ) : null}
+      {analytics || analyticsError ? <details className="dl-detailed-analytics"><summary>تفاصيل أداء الاختبارات والتقدم حسب المادة</summary>{analytics ? <LearnerAnalyticsSection analytics={analytics} /> : <ErrorState message={analyticsError!} retryHref="/dashboard" />}</details> : null}
     </section>
   );
 }

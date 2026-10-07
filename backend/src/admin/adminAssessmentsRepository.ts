@@ -214,7 +214,7 @@ export class AdminAssessmentsRepository {
 
   async listQuizzes(): Promise<Quiz[]> {
     const result = await this.pool.query(
-      `select id, subject_id, lecture_id, title, description, time_limit_seconds, status
+      `select id, subject_id, lecture_id, title, description, time_limit_seconds, due_at, status
        from quizzes where deleted_at is null order by title asc`,
     );
     return result.rows.map(toQuiz);
@@ -222,7 +222,7 @@ export class AdminAssessmentsRepository {
 
   async getQuiz(id: string): Promise<Quiz | null> {
     const result = await this.pool.query(
-      `select id, subject_id, lecture_id, title, description, time_limit_seconds, status
+      `select id, subject_id, lecture_id, title, description, time_limit_seconds, due_at, status
        from quizzes where id = $1 and deleted_at is null`,
       [id],
     );
@@ -235,29 +235,31 @@ export class AdminAssessmentsRepository {
     title: string;
     description: string | null;
     timeLimitSeconds: number | null;
+    dueAt?: string | null;
     createdBy: string;
   }): Promise<Quiz> {
     const result = await this.pool.query(
-      `insert into quizzes (subject_id, lecture_id, title, description, time_limit_seconds, created_by)
-       values ($1, $2, $3, $4, $5, $6)
-       returning id, subject_id, lecture_id, title, description, time_limit_seconds, status`,
-      [input.subjectId, input.lectureId, input.title, input.description, input.timeLimitSeconds, input.createdBy],
+      `insert into quizzes (subject_id, lecture_id, title, description, time_limit_seconds, created_by, due_at)
+       values ($1, $2, $3, $4, $5, $6, $7)
+       returning id, subject_id, lecture_id, title, description, time_limit_seconds, due_at, status`,
+      [input.subjectId, input.lectureId, input.title, input.description, input.timeLimitSeconds, input.createdBy, input.dueAt ?? null],
     );
     return toQuiz(result.rows[0]!);
   }
 
   async updateQuiz(
     id: string,
-    fields: { title?: string; description?: string | null; timeLimitSeconds?: number | null; status?: PublicationStatus },
+    fields: { title?: string; description?: string | null; timeLimitSeconds?: number | null; status?: PublicationStatus; dueAt?: string | null },
   ): Promise<Quiz | null> {
     const result = await this.pool.query(
       `update quizzes set
          title = coalesce($2, title),
          description = case when $3::boolean then $4 else description end,
          time_limit_seconds = case when $5::boolean then $6 else time_limit_seconds end,
-         status = coalesce($7, status)
+         status = coalesce($7, status),
+         due_at = case when $8::boolean then $9::timestamptz else due_at end
        where id = $1 and deleted_at is null
-       returning id, subject_id, lecture_id, title, description, time_limit_seconds, status`,
+       returning id, subject_id, lecture_id, title, description, time_limit_seconds, due_at, status`,
       [
         id,
         fields.title ?? null,
@@ -266,6 +268,8 @@ export class AdminAssessmentsRepository {
         fields.timeLimitSeconds !== undefined,
         fields.timeLimitSeconds ?? null,
         fields.status ?? null,
+        fields.dueAt !== undefined,
+        fields.dueAt ?? null,
       ],
     );
     return result.rows[0] ? toQuiz(result.rows[0]) : null;
@@ -339,6 +343,7 @@ interface QuizRow {
   title: string;
   description: string | null;
   time_limit_seconds: number | null;
+  due_at: Date | null;
   status: PublicationStatus;
 }
 
@@ -350,6 +355,7 @@ function toQuiz(row: QuizRow): Quiz {
     title: row.title,
     description: row.description,
     timeLimitSeconds: row.time_limit_seconds,
+    ...(row.due_at ? { dueAt: row.due_at.toISOString() } : {}),
     status: row.status,
   };
 }

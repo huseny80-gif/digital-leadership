@@ -8,7 +8,7 @@ vi.mock("next/navigation", () => ({ usePathname: () => route.pathname, useRouter
 vi.mock("next/link", () => ({ default: (props: ComponentProps<"a">) => <a data-client-link {...props} /> }));
 import { AppShell } from "@/components/layout/AppShell";
 
-beforeEach(() => { route.pathname = "/dashboard"; });
+beforeEach(() => { route.pathname = "/dashboard"; localStorage.clear(); });
 
 describe("reference application shell", () => {
   it.each([{ isAdmin: false, isInstructor: false, staff: false }, { isAdmin: true, isInstructor: false, staff: true }, { isAdmin: false, isInstructor: true, staff: true }])("shows feedback navigation for the current role: %o", props => {
@@ -55,11 +55,12 @@ describe("reference application shell", () => {
     expect(screen.queryByRole("link", { name: "آراء المشاركين" })).not.toBeInTheDocument();
   });
 
-  it("opens in the reference light theme and allows explicit dark mode", () => {
+  it("opens in dark mode and preserves an explicit light theme preference", () => {
     const { container } = render(<AppShell isAdmin={false} userEmail="learner@example.com"><p>Content</p></AppShell>);
-    expect(container.firstElementChild).toHaveAttribute("data-theme", "light");
-    fireEvent.click(screen.getByRole("button", { name: "تفعيل الوضع الداكن" }));
     expect(container.firstElementChild).toHaveAttribute("data-theme", "dark");
     expect(screen.getByRole("button", { name: "تفعيل الوضع الفاتح" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "تفعيل الوضع الفاتح" }));
+    expect(container.firstElementChild).toHaveAttribute("data-theme", "light");
+    expect(localStorage.getItem("digital-leadership-theme")).toBe("light");
   });
 });

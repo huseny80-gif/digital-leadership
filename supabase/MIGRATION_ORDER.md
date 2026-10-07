@@ -78,7 +78,7 @@ by the time migration 16 runs. Full corrected order:
 Current full order:
 
 ```
-1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 14 → 12 → 13 → 15 → 16 → 17 → 18 → 19 → 20
+1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 14 → 12 → 13 → 15 → 16 → 17 → 18 → 19 → 20 → 21
 ```
 
 19. `00000000000019_permanent_training_access.sql` — removes time limits
@@ -91,3 +91,8 @@ Current full order:
     inbox and the instructor role. Browser database roles have no access
     to feedback; the backend authorizes submission and staff management.
     Apply after migration 19. Backend startup applies it idempotently.
+
+21. `00000000000021_learning_dashboard.sql` — adds private assignment
+    completion and active learning time, plus optional assignment/quiz
+    deadlines. Apply after 20; it requires the assignments table from 13
+    and guest sessions from 16. Startup applies it before accepting requests.

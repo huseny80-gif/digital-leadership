@@ -17,13 +17,17 @@
   color-scheme: light;
 }
 .dl-workspace[data-theme="dark"] {
-  --color-bg: #0c212c;
-  --color-surface: #15303e;
-  --color-border: #294755;
-  --color-border-soft: #24404e;
-  --color-text: #e6f1f6;
-  --color-text-muted: #b3c8d2;
-  --color-primary: #56c7d2;
+  --color-bg: #070e1d;
+  --color-surface: #111d31;
+  --color-border: #34435c;
+  --color-border-soft: #27374d;
+  --color-text: #f4f7ff;
+  --color-text-muted: #bac9de;
+  --color-primary: #71deeb;
+  --color-primary-hover: #9aecf5;
+  --color-primary-contrast: #071924;
+  --color-danger: #ffb2ab;
+  --dl-ink: #f4f7ff;
   color-scheme: dark;
 }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }

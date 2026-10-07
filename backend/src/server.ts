@@ -10,6 +10,7 @@ import { ensurePermanentTrainingAccessSchema } from "./trainingAccess/schema.js"
 import { relocateIso27001Roadmap } from "./contentAutomation/relocateIso27001Roadmap.js";
 import { reviewAiAssessments } from "./contentAutomation/reviewAiAssessments.js";
 import { ensureParticipantFeedbackSchema } from "./feedback/schema.js";
+import { ensureLearningDashboardSchema } from "./learning/schema.js";
 
 initMonitoring();
 
@@ -23,6 +24,8 @@ if (env.DATABASE_URL) {
   logger.info("permanent_training_access_ready");
   await ensureParticipantFeedbackSchema(getPool());
   logger.info("participant_feedback_schema_ready");
+  await ensureLearningDashboardSchema(getPool());
+  logger.info("learning_dashboard_schema_ready");
 }
 
 if (env.NODE_ENV === "production" && env.DATABASE_URL) {

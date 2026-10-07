@@ -1,35 +1,12 @@
 import Link from "next/link";
-import type { Assignment, Subject } from "@shared/index";
+import type { Assignment, AssignmentProgress, Subject } from "@shared/index";
 import { apiGet, apiGetPaginated, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
-import { EmptyState, ErrorState, NotFoundState } from "@/components/ui/States";
+import { ErrorState, NotFoundState } from "@/components/ui/States";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { AssignmentCompleteToggle } from "@/components/learning/AssignmentCompleteToggle";
 
-/**
- * Assignment detail — Phase 21.4 — Assignment Experience Upgrade.
- *
- * There is no learner-facing `GET /assignments/:assignmentId` endpoint
- * anywhere in the backend (confirmed by auditing `contentRoutes.ts`,
- * `content/contentRepository.ts`, and `admin/adminRoutes.ts` — the only
- * by-id assignment routes are `PATCH`/`DELETE /admin/assignments/:id`,
- * admin-only and not read endpoints). Per rule 4 ("no backend API changes
- * unless a proven blocker exists"), this page does NOT add one: the
- * `Assignment` model (`shared/src/types/content.ts`) has no field beyond
- * what the existing `GET /subjects/:subjectId/assignments` list already
- * returns, so a by-id fetch would return identical data to what this page
- * already has available from that list — reusing it, rather than adding a
- * redundant endpoint, is the smaller and more honest change.
- *
- * This page therefore fetches the subject's full assignment list (already
- * ordered `order_index asc, title asc` server-side — same endpoint the
- * subject overview/assignments-list pages already use) and finds this
- * assignment by id within it, exactly the technique
- * `lectures/[lectureId]/page.tsx` (Phase 21.3) uses for its sibling
- * lecture list. If the id isn't present — wrong subject, unpublished, or
- * simply doesn't exist — this renders the same `NotFoundState` every
- * other resource in this app uses for that case (never a distinguishing
- * error, per SECURITY_ARCHITECTURE.md §13).
- */
+/** Published assignment details with private learner completion and trainer-defined reminders. */
 export default async function AssignmentDetailPage({
   params,
 }: {
@@ -74,50 +51,42 @@ export default async function AssignmentDetailPage({
 
   const previousAssignment = currentIndex > 0 ? assignments[currentIndex - 1] : null;
   const nextAssignment = currentIndex < assignments.length - 1 ? assignments[currentIndex + 1] : null;
+  let progress: AssignmentProgress | null = null;
+  let progressError = false;
+  if (assignment.status === "published" && subject?.status === "published") {
+    try { progress = (await apiGet<AssignmentProgress>(`/api/v1/learning/assignments/${assignmentId}/progress`)).data; }
+    catch { progressError = true; }
+  }
 
   return (
-    <section>
+    <section className="dl-assignment-detail" dir="rtl">
       <Breadcrumbs
         items={[
-          { label: "Subjects", href: "/subjects" },
+          { label: "المواد الدراسية", href: "/subjects" },
           { label: subject!.title, href: `/subjects/${subjectId}` },
-          { label: "Assignments", href: `/subjects/${subjectId}/assignments` },
+          { label: "الواجبات", href: `/subjects/${subjectId}/assignments` },
           { label: assignment.title },
         ]}
       />
 
       <h1 className="page-heading">{assignment.title}</h1>
       <p className="item-row-meta" style={{ marginBottom: "var(--space-2)" }}>
-        {subject!.title} · Assignment {currentIndex + 1} of {assignments.length}
+        {subject!.title} · الواجب {currentIndex + 1} من {assignments.length}
         {" · "}
-        <span className="badge">{assignment.status === "published" ? "Published" : "Draft"}</span>
+        <span className="badge">{assignment.status === "published" ? "منشور" : "مسودة"}</span>
       </p>
       {assignment.description ? <p className="page-subheading">{assignment.description}</p> : null}
+      {assignment.dueAt ? <p className="dl-detail-deadline">الموعد النهائي: <time dateTime={assignment.dueAt}>{new Intl.DateTimeFormat("ar",{dateStyle:"medium",timeStyle:"short",timeZone:"UTC"}).format(new Date(assignment.dueAt))} (UTC)</time></p> : null}
 
       <Link
         href={`/subjects/${subjectId}/assignments`}
         className="btn btn-secondary"
         style={{ marginBottom: "var(--space-5)", display: "inline-flex" }}
       >
-        Back to subject
+        العودة إلى واجبات المادة
       </Link>
 
-      {/* Phase 21.4 task 4 — future submission readiness. Informational
-       * placeholder only: no upload control, no fake submission status,
-       * no database row. Mirrors the existing wording
-       * `LectureItemCard` already uses for lecture-scoped assignment/
-       * exercise items ("Submitting … is not available yet."), so a
-       * learner sees one consistent message across the app rather than
-       * two different-sounding ones. */}
-      <div className="content-card">
-        <p className="content-card-title">Submission</p>
-        <div className="content-card-body">
-          <EmptyState
-            title="Not available yet"
-            message="Submitting your work for this assignment is not available yet."
-          />
-        </div>
-      </div>
+      {progress ? <div className="content-card"><h2 className="content-card-title">متابعة إنجاز الواجب</h2><AssignmentCompleteToggle assignmentId={assignmentId} initialCompleted={progress.completed} /></div> : progressError ? <p className="dl-learning-error" role="status">تعذر تحميل حالة الإنجاز. <a href={`/subjects/${subjectId}/assignments/${assignmentId}`}>إعادة المحاولة</a></p> : null}
 
       {previousAssignment || nextAssignment ? (
         <nav className="lecture-nav" aria-label="Assignment navigation">
