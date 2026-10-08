@@ -14,6 +14,7 @@ import { generateQuestions, type GeneratedQuestion } from "./questionGeneration.
 import { reviewedAiPdf } from "./aiAssessmentReviewCatalog.js";
 import { assertReadableSourceText } from "./sourceTextQuality.js";
 import { LEGAL_SUBJECT_ID, legalLectureNumber, legalLectureTitle, replaceLegalLabels } from "./legalLectureLabels.js";
+import { courseLabelsForSubject } from "./courseSourceLabels.js";
 
 type ImportRow = {
   id: string; created_by: string; source_hash: string; title: string; filename: string | null;
@@ -216,9 +217,15 @@ export class ContentImportService {
           job.lecture_item_id = null;
         }
       }
+      const courseLabels = subject ? courseLabelsForSubject(subject.id) : undefined;
+      if (courseLabels) {
+        job.title = courseLabels.label(job.title);
+        if (job.filename) job.filename = courseLabels.label(job.filename);
+      }
       const sections = (job.lecture_id || reviewed ? [{ title: job.title, number: null, text }] : splitLectures(text, job.title)).map(section => {
         const number = subject?.id === LEGAL_SUBJECT_ID ? legalLectureNumber(section.title) : null;
-        return number ? { ...section, title: legalLectureTitle(number), number } : section;
+        const courseNumber = courseLabels?.numberOf(section.title);
+        return number ? { ...section, title: legalLectureTitle(number), number } : courseNumber ? { ...section, title: courseLabels!.titleOf(courseNumber), number: courseNumber } : section;
       });
       await heartbeat("generating");
       const generated: Array<{ section: LectureSection; questions: GeneratedQuestion[]; method: "source" | "ai" }> = [];

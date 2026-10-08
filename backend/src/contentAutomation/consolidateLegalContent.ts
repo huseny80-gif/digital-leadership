@@ -1,7 +1,7 @@
 import type { Pool } from "pg";
 import type { ImportedLecture } from "@shared/index";
 import { normalizeText } from "./sourceAnalysis.js";
-import { manifest } from "../finquiz/catalog.js";
+import { manifest, type SourceSubject } from "../finquiz/catalog.js";
 import { finquizRecordId, normalizeCatalogTitle } from "../finquiz/recordIdentity.js";
 import { LEGAL_SUBJECT_ID, legalLectureNumber, legalLectureTitle } from "./legalLectureLabels.js";
 
@@ -18,7 +18,24 @@ interface ImportRow {
 }
 interface PreviousLabel { table: string; id: string; title: string }
 const legacyNumber = (title: string) => /^legal[\s_-]*[1-6]$/.test(normalizeText(title).replace(/\.pdf$/i, "").trim()) ? legalLectureNumber(title) : null;
-const source = manifest.subjects.find(subject => subject.id === "legal-regulatory")!;
+export interface CourseConsolidationProfile {
+  subjectId: string;
+  source: SourceSubject;
+  numberOf: (title: string) => number | null;
+  titleOf: (number: number) => string;
+  legacyNumber: (title: string) => number | null;
+  labelsAuditAction: string;
+  auditAction: string;
+  lockKey: string;
+  preferredLectureIds?: Map<number, string>;
+}
+const legalProfile: CourseConsolidationProfile = {
+  subjectId: LEGAL_SUBJECT_ID,
+  source: manifest.subjects.find(subject => subject.id === "legal-regulatory")!,
+  numberOf: legalLectureNumber, titleOf: legalLectureTitle, legacyNumber,
+  labelsAuditAction: "legal_content.labels_normalized",
+  auditAction: "legal_content.consolidated", lockKey: "legal-canonical-content-v1",
+};
 const questionTypes: Record<string, string> = { mcq: "multiple_choice", tf: "true_false", fill: "fill", match: "match", order: "order", open: "open" };
 
 function sameItem(a: ItemRow, b: ItemRow): boolean {
@@ -34,7 +51,12 @@ function sameItem(a: ItemRow, b: ItemRow): boolean {
  * Reattach distinct content and assessment metadata; archive byte-identical
  * PDFs and identical summaries. No source bytes, questions, answer keys,
  * quiz memberships, attempts or grades are deleted or rewritten. */
-export async function consolidateLegalContent(pool: Pool) {
+export function consolidateLegalContent(pool: Pool) {
+  return consolidateCourseContent(pool, legalProfile);
+}
+
+export async function consolidateCourseContent(pool: Pool, profile: CourseConsolidationProfile) {
+  const { subjectId, source, numberOf, titleOf, legacyNumber } = profile;
   const client = await pool.connect();
   const changed = { lecturesArchived: 0, duplicateItemsArchived: 0, itemsRelinked: 0, questionsRelinked: 0, quizzesRelinked: 0, assignmentsRelinked: 0, importsRelinked: 0, completionsCarried: 0, itemsKeptPrivate: 0, quizzesKeptPrivate: 0, assignmentsKeptPrivate: 0 };
   const replacements = new Map<string, string>();
@@ -44,14 +66,14 @@ export async function consolidateLegalContent(pool: Pool) {
   try {
     await client.query("begin");
     await client.query("set local lock_timeout = '30s'");
-    await client.query("select pg_advisory_xact_lock(hashtext('legal-canonical-content-v1'))");
+    await client.query("select pg_advisory_xact_lock(hashtext($1))", [profile.lockKey]);
     // Match the import worker's lock order: import rows, then the subject.
-    const imports = (await client.query<ImportRow>("select id,lecture_id,lecture_item_id,result_lectures from content_imports where subject_id=$1 order by id for update", [LEGAL_SUBJECT_ID])).rows;
-    await client.query("select pg_advisory_xact_lock(hashtext($1))", [LEGAL_SUBJECT_ID]);
-    const subject = (await client.query<{ created_by: string }>("select created_by from subjects where id=$1 and deleted_at is null for update", [LEGAL_SUBJECT_ID])).rows[0];
+    const imports = (await client.query<ImportRow>("select id,lecture_id,lecture_item_id,result_lectures from content_imports where subject_id=$1 order by id for update", [subjectId])).rows;
+    await client.query("select pg_advisory_xact_lock(hashtext($1))", [subjectId]);
+    const subject = (await client.query<{ created_by: string }>("select created_by from subjects where id=$1 and deleted_at is null for update", [subjectId])).rows[0];
     if (!subject) { await client.query("commit"); return { changed, availableNumbers: [], duplicateNumbers: [], skippedNumbers, skippedReasons, remainingLegacyLabels: 0, contentCounts: null }; }
-    const lectures = (await client.query<LectureRow>("select id,title,description,status from lectures where subject_id=$1 and deleted_at is null order by created_at,id for update", [LEGAL_SUBJECT_ID])).rows;
-    const history = (await client.query<{ previous_labels: PreviousLabel[] }>("select metadata->'previousLabels' as previous_labels from audit_logs where action='legal_content.labels_normalized' and entity_type='subject' and entity_id=$1 order by created_at", [LEGAL_SUBJECT_ID])).rows;
+    const lectures = (await client.query<LectureRow>("select id,title,description,status from lectures where subject_id=$1 and deleted_at is null order by created_at,id for update", [subjectId])).rows;
+    const history = (await client.query<{ previous_labels: PreviousLabel[] }>("select metadata->'previousLabels' as previous_labels from audit_logs where action=$2 and entity_type='subject' and entity_id=$1 order by created_at", [subjectId, profile.labelsAuditAction])).rows;
     const legacyIds = new Set(history.flatMap(row => (row.previous_labels ?? []).filter(label => label.table === "lectures" && legacyNumber(label.title)).map(label => label.id)));
     for (const lecture of lectures) if (legacyNumber(lecture.title)) legacyIds.add(lecture.id);
     // Some earlier imports named both source and duplicate LegalN. Resolve
@@ -65,15 +87,16 @@ export async function consolidateLegalContent(pool: Pool) {
       from jsonb_to_recordset($2::jsonb) expected(number integer,prompt text,question_type text)
       join questions q on q.prompt=expected.prompt and q.question_type::text=expected.question_type and q.deleted_at is null
       join question_banks b on b.id=q.question_bank_id and b.subject_id=$1 and b.deleted_at is null
-      join lectures l on l.id=q.lecture_id and l.subject_id=$1 and l.deleted_at is null`, [LEGAL_SUBJECT_ID, JSON.stringify(expectedQuestions)])).rows;
+      join lectures l on l.id=q.lecture_id and l.subject_id=$1 and l.deleted_at is null`, [subjectId, JSON.stringify(expectedQuestions)])).rows;
     for (const number of [1, 2, 3, 4, 5, 6]) {
-      const group = lectures.filter(lecture => legalLectureNumber(lecture.title) === number);
+      const group = lectures.filter(lecture => numberOf(lecture.title) === number);
       const old = group.filter(lecture => legacyIds.has(lecture.id));
       let canonical = group.filter(lecture => !legacyIds.has(lecture.id));
       if (!canonical.length && group.length > 1) {
         const lectureSource = source.lectures.find(lecture => lecture.number === number);
         const parents = new Set(sourceLinks.filter(link => link.number === number && group.some(lecture => lecture.id === link.lecture_id)).map(link => link.lecture_id));
         const score = (lecture: LectureRow) => {
+          if (profile.preferredLectureIds?.get(number) === lecture.id) return 5;
           if (!lectureSource) return 0;
           if (lecture.id === finquizRecordId("lecture:" + lectureSource.id)) return 4;
           const topics = (lectureSource.legacyTitles ?? []).filter(title => !legacyNumber(title)).map(normalizeCatalogTitle);
@@ -98,7 +121,7 @@ export async function consolidateLegalContent(pool: Pool) {
         exists(select 1 from questions q join question_banks b on b.id=q.question_bank_id where q.lecture_id=any($2::uuid[]) and b.subject_id is distinct from $1::uuid)
         or exists(select 1 from quizzes where lecture_id=any($2::uuid[]) and subject_id<>$1)
         or exists(select 1 from assignments where lecture_id=any($2::uuid[]) and subject_id<>$1)
-        or exists(select 1 from content_imports i where i.subject_id is distinct from $1::uuid and (i.lecture_id=any($2::uuid[]) or i.lecture_item_id in (select id from lecture_items where lecture_id=any($2::uuid[])) or exists(select 1 from jsonb_array_elements(i.result_lectures) entry where entry->>'id'=any($2::text[]))))`, [LEGAL_SUBJECT_ID, oldIds]);
+        or exists(select 1 from content_imports i where i.subject_id is distinct from $1::uuid and (i.lecture_id=any($2::uuid[]) or i.lecture_item_id in (select id from lecture_items where lecture_id=any($2::uuid[])) or exists(select 1 from jsonb_array_elements(i.result_lectures) entry where entry->>'id'=any($2::text[]))))`, [subjectId, oldIds]);
       if (foreign.rowCount) throw new Error("legal_consolidation_foreign_content_link");
       for (const [oldId, canonicalId] of replacements) {
         // A draft container can safely be consolidated into a published
@@ -145,8 +168,8 @@ export async function consolidateLegalContent(pool: Pool) {
         const results = job.result_lectures.map(lecture => {
           const id = replacements.get(lecture.id);
           if (!id) return lecture;
-          const number = legalLectureNumber(lectures.find(row => row.id === id)!.title)!;
-          return { ...lecture, id, title: legalLectureTitle(number), number };
+          const number = numberOf(lectures.find(row => row.id === id)!.title)!;
+          return { ...lecture, id, title: titleOf(number), number };
         });
         if (lectureId === job.lecture_id && itemId === job.lecture_item_id && JSON.stringify(results) === JSON.stringify(job.result_lectures)) continue;
         await client.query("update content_imports set lecture_id=$2,lecture_item_id=$3,result_lectures=$4::jsonb,updated_at=now() where id=$1", [job.id, lectureId, itemId, JSON.stringify(results)]);
@@ -157,20 +180,20 @@ export async function consolidateLegalContent(pool: Pool) {
         or exists(select 1 from questions where lecture_id=any($1::uuid[]))
         or exists(select 1 from quizzes where lecture_id=any($1::uuid[]))
         or exists(select 1 from assignments where lecture_id=any($1::uuid[]))
-        or exists(select 1 from content_imports where subject_id=$2 and (lecture_id=any($1::uuid[]) or exists(select 1 from jsonb_array_elements(result_lectures) entry where entry->>'id'=any($1::text[]))))`, [oldIds, LEGAL_SUBJECT_ID]);
+        or exists(select 1 from content_imports where subject_id=$2 and (lecture_id=any($1::uuid[]) or exists(select 1 from jsonb_array_elements(result_lectures) entry where entry->>'id'=any($1::text[]))))`, [oldIds, subjectId]);
       if (stale.rowCount) throw new Error("legal_consolidation_stale_content_link");
     }
     const remaining = lectures.filter(lecture => !replacements.has(lecture.id));
-    const numbers = remaining.map(lecture => legalLectureNumber(lecture.title)).filter((number): number is number => number !== null);
+    const numbers = remaining.map(lecture => numberOf(lecture.title)).filter((number): number is number => number !== null);
     const availableNumbers = [...new Set(numbers)].sort((a, b) => a - b);
     const duplicateNumbers = availableNumbers.filter(number => numbers.filter(value => value === number).length > 1);
     const contentCounts = (await client.query<{ lectures: number; lectureItems: number; currentQuestions: number; currentQuizzes: number }>(`select
       (select count(*)::int from lectures where subject_id=$1 and deleted_at is null) as lectures,
       (select count(*)::int from lecture_items i join lectures l on l.id=i.lecture_id where l.subject_id=$1 and l.deleted_at is null and i.deleted_at is null) as "lectureItems",
       (select count(distinct q.id)::int from quiz_questions qq join questions q on q.id=qq.question_id join quizzes z on z.id=qq.quiz_id where z.subject_id=$1 and z.deleted_at is null and z.superseded_by is null and q.deleted_at is null) as "currentQuestions",
-      (select count(*)::int from quizzes where subject_id=$1 and deleted_at is null and superseded_by is null) as "currentQuizzes"`, [LEGAL_SUBJECT_ID])).rows[0]!;
+      (select count(*)::int from quizzes where subject_id=$1 and deleted_at is null and superseded_by is null) as "currentQuizzes"`, [subjectId])).rows[0]!;
     const result = { changed, availableNumbers, duplicateNumbers, skippedNumbers, skippedReasons, remainingLegacyLabels: remaining.filter(lecture => legacyNumber(lecture.title)).length, contentCounts };
-    if (oldIds.length) await client.query("insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'legal_content.consolidated','subject',$2,$3::jsonb)", [subject.created_by, LEGAL_SUBJECT_ID, JSON.stringify({ ...result, lectureReplacements: Object.fromEntries(replacements), itemReplacements: Object.fromEntries(itemReplacements) })]);
+    if (oldIds.length) await client.query("insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,$4,'subject',$2,$3::jsonb)", [subject.created_by, subjectId, JSON.stringify({ ...result, lectureReplacements: Object.fromEntries(replacements), itemReplacements: Object.fromEntries(itemReplacements) }), profile.auditAction]);
     await client.query("commit");
     return result;
   } catch (error) { await client.query("rollback"); throw error; }

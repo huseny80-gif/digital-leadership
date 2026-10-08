@@ -16,6 +16,7 @@ import { reviewLegalQuote } from "./contentAutomation/reviewLegalQuote.js";
 import { consolidateLegalContent } from "./contentAutomation/consolidateLegalContent.js";
 import { separateLegalSixthLecture } from "./contentAutomation/separateLegalSixthLecture.js";
 import { LEGAL_SUBJECT_ID, legalLectureTitle } from "./contentAutomation/legalLectureLabels.js";
+import { refreshStudyCourses } from "./contentAutomation/refreshStudyCourses.js";
 
 initMonitoring();
 
@@ -47,6 +48,7 @@ if (env.NODE_ENV === "production" && env.DATABASE_URL) {
   const { generationSources, ...sixth } = await separateLegalSixthLecture(getPool());
   for (const source of generationSources) await getContentImportService().submitText({ actorId: source.actorId, text: source.text, title: legalLectureTitle(6), subjectId: LEGAL_SUBJECT_ID, lectureId: sixth.lectureId!, itemId: source.itemId });
   logger.info({ ...sixth, sourcesQueued: generationSources.length }, "legal_sixth_lecture_separated");
+  logger.info({ courses: await refreshStudyCourses(getPool()) }, "study_courses_content_refreshed");
 }
 
 // Bind explicitly to 0.0.0.0 — Railway's healthcheck prober connects over
