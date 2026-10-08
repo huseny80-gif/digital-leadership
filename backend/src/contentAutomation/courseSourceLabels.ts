@@ -40,8 +40,10 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
   // These reviewed uploads already exist in the deployed AI course. They are
   // matching aliases, not new manifest records or fabricated source files.
   const source = { ...original, lectures: [...original.lectures] };
-  if (slug === "ai-data") for (const number of [3, 4]) source.lectures.push({ id: `ai-reviewed-${number}`, number, title: titleOf(number), legacyTitles: [`مقرر الذكاء الاصطناعي${number}`, `Lecture ${number}`] });
-  const aliases = new Map(source.lectures.flatMap(lecture => [lecture.title, ...(lecture.legacyTitles ?? [])].map(title => [normalizeText(title), lecture.number] as const)));
+  if (slug === "ai-data") for (const number of [3, 4]) {
+    if (!source.lectures.some(lecture => lecture.number === number)) source.lectures.push({ id: `ai-reviewed-${number}`, number, title: titleOf(number), legacyTitles: [`مقرر الذكاء الاصطناعي${number}`, `Lecture ${number}`] });
+  }
+  const aliases = new Map(source.lectures.filter(lecture => lecture.id !== "cs-iso-roadmap").flatMap(lecture => [lecture.title, ...(lecture.legacyTitles ?? [])].map(title => [normalizeText(title), lecture.number] as const)));
   const legacyNumber = (value: string) => {
     const text = normalizeText(value).replace(/\.(?:pdf|pptx)$/i, "").trim();
     const expression = slug === "ai-data" ? /^(?:ai|lecture|مقرر\s*الذكاء الاصطناعي|الذكاء الاصطناعي)[\s_-]*([1-9]|10)$/ : /^(?:cybersecurity|cyber\s*security|مقرر\s*(?:حوكمة\s*)?الامن السيبراني|(?:حوكمة\s*)?الامن السيبراني)[\s_-]*([1-9]|10)$/;

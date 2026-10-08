@@ -127,15 +127,15 @@ export default async function LectureDetailPage({
         Back to subject
       </Link>
 
-      {items.length === 0 ? (
+      {items.length === 0 && libraryEntries.length === 0 ? (
         <EmptyState title="No content yet" message="Content for this lecture will appear here once published." />
-      ) : (
+      ) : items.length > 0 ? (
         <ul className="item-list" style={{ listStyle: "none", padding: 0 }}>
           {items.map((item) => (
             <LectureItemCard key={item.id} item={item} />
           ))}
         </ul>
-      )}
+      ) : null}
 
       {previousLecture || nextLecture ? (
         <nav className="lecture-nav" aria-label="Lecture navigation">

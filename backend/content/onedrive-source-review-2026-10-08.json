@@ -1,0 +1,327 @@
+{
+  "key": "onedrive-source-review-2026-10-08-v1",
+  "date": "2026-10-08",
+  "origin": "https://1drv.ms/f/c/b53e25cfecf532b0/IgDopCDdE72cR4Ptnd7QDTLLAeJpa8F0cybegGXVHKqdwzA",
+  "files": [
+    {
+      "slug": "ai-data",
+      "assetId": "93d77e903296e1d6d769dc0e",
+      "filename": "Ai_lacture1.pdf",
+      "canonicalFilename": "دليل الحلول والتعليل للمحاضرات الأربع في الذكاء الاصطناعي.pdf",
+      "sha256": "64de848e205a4b73ad9473bcd25a42963f8c0ee7f6921a18c80e3a0ab51c0575",
+      "bytes": 1402936,
+      "pages": 12,
+      "number": null,
+      "resource": true
+    },
+    {
+      "slug": "ai-data",
+      "assetId": "aea44816c87b86f1a4c73888",
+      "filename": "Ai_lacture2.pdf",
+      "canonicalFilename": "المحاضرة الثانية في الذكاء الاصطناعي.pdf",
+      "sha256": "99339d60fce911b1326130020c36a0ed3d9633e575fdc066f3d765a67d240f1e",
+      "bytes": 3130256,
+      "pages": 20,
+      "number": 2,
+      "resource": false
+    },
+    {
+      "slug": "ai-data",
+      "assetId": "557a6e404fcd4ce161213ded",
+      "filename": "Ai_solutions1-4.pdf",
+      "canonicalFilename": "المحاضرة الأولى في الذكاء الاصطناعي.pdf",
+      "sha256": "a5a1cbd077be245238eb8673bdd75cef45644867cb2853f0de38b1abe2e4598f",
+      "bytes": 2174788,
+      "pages": 7,
+      "number": 1,
+      "resource": false
+    },
+    {
+      "slug": "ai-data",
+      "assetId": "c35bf2365ef831ebbfcd124e",
+      "filename": "Ai_lacture3.pdf",
+      "canonicalFilename": "المحاضرة الثالثة في الذكاء الاصطناعي.pdf",
+      "sha256": "c2c10579067f939d928903315ee2d89997e8fcb740abe96eb83c5c350d07110f",
+      "bytes": 2960907,
+      "pages": 26,
+      "number": 3,
+      "resource": false
+    },
+    {
+      "slug": "ai-data",
+      "assetId": "f06ecaf5b59c76220ad3af4a",
+      "filename": "Ai_lacture6.pdf",
+      "canonicalFilename": "المحاضرة السادسة في الذكاء الاصطناعي.pdf",
+      "sha256": "aa900f78d33bbf6177a58d1cb013ca194f1323ad08670f26142a3bfa0ff4f993",
+      "bytes": 461095,
+      "pages": 10,
+      "number": 6,
+      "resource": false
+    },
+    {
+      "slug": "ai-data",
+      "assetId": "01e397e5879b6ce3898d59d3",
+      "filename": "Ai_lacture4.pdf",
+      "canonicalFilename": "المحاضرة الرابعة في الذكاء الاصطناعي.pdf",
+      "sha256": "41db58597769ec8a30c2c9dc12ab2dece450dad9c37838ff6fcee68b999a1bf5",
+      "bytes": 2636400,
+      "pages": 12,
+      "number": 4,
+      "resource": false
+    },
+    {
+      "slug": "ai-data",
+      "assetId": "3a55435aa06ebc0acab36dda",
+      "filename": "Ai_lacture5.pdf",
+      "canonicalFilename": "المحاضرة الخامسة في الذكاء الاصطناعي.pdf",
+      "sha256": "e787492f7ae801026a4c87da1bfd787c016b53aa05c04f71d57ac82a1b18d9fa",
+      "bytes": 872837,
+      "pages": 17,
+      "number": 5,
+      "resource": false
+    },
+    {
+      "slug": "cybersecurity-governance",
+      "assetId": "8e2d7d52a6b5596d7f6902f1",
+      "filename": "‎⁨خارطة الطريق للحصول على الشهادة الدولية ISO 27001⁩.pdf",
+      "canonicalFilename": "خارطة الطريق للحصول على الشهادة الدولية ISO 27001.pdf",
+      "sha256": "71e68863275b8b5bee0fb43e602edf37c9f83ab8e6b9023a6f0d26fe897bb7bf",
+      "bytes": 261934,
+      "pages": 5,
+      "number": null,
+      "resource": true
+    },
+    {
+      "slug": "cybersecurity-governance",
+      "assetId": "c71268af93d9b8497abc489d",
+      "filename": "Cybersecurity1&2.pdf",
+      "canonicalFilename": "المحاضرة الأولى في حوكمة الأمن السيبراني.pdf",
+      "sha256": "f9d4c4665e3b3ed6084ead681d222c9397063600fd92e74735ee09b091e418ae",
+      "bytes": 342489,
+      "pages": 31,
+      "number": 1,
+      "resource": false
+    },
+    {
+      "slug": "cybersecurity-governance",
+      "assetId": "2dfee85271553f9f492f86eb",
+      "filename": "cybersecurety5.pdf",
+      "canonicalFilename": "المحاضرة الخامسة في حوكمة الأمن السيبراني.pdf",
+      "sha256": "ffd344cb81930393fa4c7622b79c4cd6add69cb8efa9f392e641b8036517e6ef",
+      "bytes": 619279,
+      "pages": 14,
+      "number": 5,
+      "resource": false
+    },
+    {
+      "slug": "cybersecurity-governance",
+      "assetId": "cd732cc944d300fd90c2dcef",
+      "filename": "Cybersecurity4.pdf",
+      "canonicalFilename": "المحاضرة الرابعة في حوكمة الأمن السيبراني.pdf",
+      "sha256": "b2c10f2ccae2d4102ff73a0a7cfcfcaad5511a0cecac42e04ffff9f5cd6b15bd",
+      "bytes": 698369,
+      "pages": 12,
+      "number": 4,
+      "resource": false
+    },
+    {
+      "slug": "cybersecurity-governance",
+      "assetId": "df0946f8b2c16118ff75b278",
+      "filename": "Cybersecurity3.pdf",
+      "canonicalFilename": "المحاضرة الثالثة في حوكمة الأمن السيبراني.pdf",
+      "sha256": "0c91653e8afe2aa80f910c9040c5a994f59d3bed6f9ae16184915fc654ab1828",
+      "bytes": 738427,
+      "pages": 20,
+      "number": 3,
+      "resource": false
+    },
+    {
+      "slug": "innovation-project-management",
+      "assetId": "b1c2cc21669185e438746c07",
+      "filename": "Lecture 3.pdf",
+      "canonicalFilename": "المحاضرة الثالثة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "b51002203f61a96ef1e24ef9e17e026ba800de7627d4018ac0cd8859cec99d13",
+      "bytes": 611033,
+      "pages": 7,
+      "number": 3,
+      "resource": false
+    },
+    {
+      "slug": "innovation-project-management",
+      "assetId": "484c6f6d4483112946ebd69e",
+      "filename": "Lecture 2.pdf",
+      "canonicalFilename": "المحاضرة الثانية في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "4e5dc50d3aba76aa941f431b384d5246a9e4ebf7346d150b9fe39e6b5f5998db",
+      "bytes": 327780,
+      "pages": 3,
+      "number": 2,
+      "resource": false
+    },
+    {
+      "slug": "innovation-project-management",
+      "assetId": "a624fbabd29bd6a74a1e935f",
+      "filename": "Lecture 1.pdf",
+      "canonicalFilename": "المحاضرة الأولى في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "1e265fd185ba2a5dc34f83589128f773f41a728d2e0ed3988beed2a55545e45e",
+      "bytes": 11624010,
+      "pages": 11,
+      "number": 1,
+      "resource": false
+    },
+    {
+      "slug": "legal-regulatory",
+      "assetId": "c7d1c6fe4eda35e1d2ce8e26",
+      "filename": "المحاضرة السادسة قانونية .pdf",
+      "canonicalFilename": "المحاضرة السادسة قانونية.pdf",
+      "sha256": "c82ca3cfd8e1bcd9a788f30e75a4ddb76d7bdac6153e98c43849a19ec1626fe7",
+      "bytes": 10520085,
+      "pages": 9,
+      "number": 6,
+      "resource": false
+    },
+    {
+      "slug": "legal-regulatory",
+      "assetId": "1456a88cd727ffc413c645aa",
+      "filename": "المحاضرة الأولى قانونية .pdf",
+      "canonicalFilename": "المحاضرة الأولى قانونية.pdf",
+      "sha256": "da41ca3230a60d9457fd824aafa430a8cae50cfa4254b54d463dfe6f925f6525",
+      "bytes": 2309929,
+      "pages": 11,
+      "number": 1,
+      "resource": false
+    },
+    {
+      "slug": "legal-regulatory",
+      "assetId": "c2f47ec82523116f7819477e",
+      "filename": "المحاضرة الثالثة قانونية .pdf",
+      "canonicalFilename": "المحاضرة الثالثة قانونية.pdf",
+      "sha256": "4eab73b57ce72e440204ff2f03e72ebce455da0dc6279e788260fc270553b3e3",
+      "bytes": 10153886,
+      "pages": 12,
+      "number": 3,
+      "resource": false
+    },
+    {
+      "slug": "legal-regulatory",
+      "assetId": "99c09ae430aab72382139a4d",
+      "filename": "المحاضرة الخامسة قانونية .pdf",
+      "canonicalFilename": "المحاضرة الخامسة قانونية.pdf",
+      "sha256": "50fc2a6268300608e0a432e92f3d802be6cca53793d602a49422a8df11a4b793",
+      "bytes": 13354187,
+      "pages": 15,
+      "number": 5,
+      "resource": false
+    },
+    {
+      "slug": "legal-regulatory",
+      "assetId": "5ab63552fd79facf68dee57e",
+      "filename": "المحاضرة الثانية قانونية .pdf",
+      "canonicalFilename": "المحاضرة الثانية قانونية.pdf",
+      "sha256": "39071aab222754463ca122e0b7569f83cb4465c17e25695d5f66f545cdb4805d",
+      "bytes": 4080306,
+      "pages": 17,
+      "number": 2,
+      "resource": false
+    },
+    {
+      "slug": "legal-regulatory",
+      "assetId": "1cb74939aacb16a36bcb2b89",
+      "filename": "المحاضرة الرابعة قانونية .pdf",
+      "canonicalFilename": "المحاضرة الرابعة قانونية.pdf",
+      "sha256": "5dd095f391eead84c648efbe328c21d4e4cd0dee381de206eb60b1ab2dc721a4",
+      "bytes": 1082556,
+      "pages": 14,
+      "number": 4,
+      "resource": false
+    },
+    {
+      "slug": "risk-management",
+      "assetId": "e46bb191dbde187f6b413242",
+      "filename": "Risk 1.pdf",
+      "canonicalFilename": "المحاضرة الأولى في إدارة المخاطر واتخاذ القرار.pdf",
+      "sha256": "f567de9bd8df8d0bbd6606bed669499854d539a0da55cfeafb526383f7b8f7ec",
+      "bytes": 369999,
+      "pages": 12,
+      "number": 1,
+      "resource": false
+    },
+    {
+      "slug": "risk-management",
+      "assetId": "26478f3055fb003aa26150e9",
+      "filename": "Risk 3.pdf",
+      "canonicalFilename": "المحاضرة الثالثة في إدارة المخاطر واتخاذ القرار.pdf",
+      "sha256": "ea9b8f2a66c5a50627529720e4b81788cbdd8bba3b4e62d6053efa6072635af9",
+      "bytes": 226467,
+      "pages": 11,
+      "number": 3,
+      "resource": false
+    },
+    {
+      "slug": "risk-management",
+      "assetId": "3a44c117f0a2b82d4e092537",
+      "filename": "Risk 2.pdf",
+      "canonicalFilename": "المحاضرة الثانية في إدارة المخاطر واتخاذ القرار.pdf",
+      "sha256": "55341ea2a940428c8fc3212ac6b9c57bf991daf1987f9f4c0766e98befba19f2",
+      "bytes": 241846,
+      "pages": 13,
+      "number": 2,
+      "resource": false
+    }
+  ],
+  "quizzes": [
+    {
+      "slug": "ai-data",
+      "quizId": "source-20261008-ai-l5",
+      "lectureId": "ai-l5",
+      "assetId": "3a55435aa06ebc0acab36dda",
+      "sourceSha256": "e787492f7ae801026a4c87da1bfd787c016b53aa05c04f71d57ac82a1b18d9fa",
+      "questionDigest": "0557c55b2f461bb7784ee7b157faa1ed5dd5600dc78cfe3dc521b0115a392f63"
+    },
+    {
+      "slug": "ai-data",
+      "quizId": "source-20261008-ai-l6",
+      "lectureId": "ai-l6",
+      "assetId": "f06ecaf5b59c76220ad3af4a",
+      "sourceSha256": "aa900f78d33bbf6177a58d1cb013ca194f1323ad08670f26142a3bfa0ff4f993",
+      "questionDigest": "fd3df4f53849abfa296ee0e631ac30224f0981e4ee78e146f95cebc42200874d"
+    },
+    {
+      "slug": "legal-regulatory",
+      "quizId": "source-20261008-lg-l5",
+      "lectureId": "lg-l5",
+      "assetId": "99c09ae430aab72382139a4d",
+      "sourceSha256": "50fc2a6268300608e0a432e92f3d802be6cca53793d602a49422a8df11a4b793",
+      "questionDigest": "4bc12dde58bb5e7f996c7e7183920a774eb77c02237b13f52df9f982091c10b4"
+    },
+    {
+      "slug": "legal-regulatory",
+      "quizId": "source-20261008-lg-l6",
+      "lectureId": "lg-l6",
+      "assetId": "c7d1c6fe4eda35e1d2ce8e26",
+      "sourceSha256": "c82ca3cfd8e1bcd9a788f30e75a4ddb76d7bdac6153e98c43849a19ec1626fe7",
+      "questionDigest": "2ce98e5f1298a05372bd0f84e711f1108c86d3f310a1cfd9212ac35e23cf1edf"
+    },
+    {
+      "slug": "cybersecurity-governance",
+      "quizId": "source-20261008-cs-l5",
+      "lectureId": "cs-l5",
+      "assetId": "2dfee85271553f9f492f86eb",
+      "sourceSha256": "ffd344cb81930393fa4c7622b79c4cd6add69cb8efa9f392e641b8036517e6ef",
+      "questionDigest": "a3b6ec0ccdff26b59c0e6e7ca3ee77e57f0177757b8b31c535927c41ba22e6d8"
+    },
+    {
+      "slug": "cybersecurity-governance",
+      "quizId": "source-20261008-cs-iso-roadmap",
+      "lectureId": "cs-iso-roadmap",
+      "assetId": "8e2d7d52a6b5596d7f6902f1",
+      "sourceSha256": "71e68863275b8b5bee0fb43e602edf37c9f83ab8e6b9023a6f0d26fe897bb7bf",
+      "questionDigest": "28f0df95823cd581a691090c5b33a0793190127672b036f7c8e8173f7f9c84ef"
+    }
+  ],
+  "notes": [
+    "All 24 PDFs downloaded anonymously through the OneDrive browser UI; archives passed CRC validation.",
+    "The incoming AI lecture-one filename contains the solutions guide; the incoming solutions filename contains the actual first lecture. Classification follows visible source headings and exact hashes.",
+    "Innovation source three is byte-identical to the former source-four asset. Its stable asset and lecture identities are retained.",
+    "Previously reviewed AI question content and answer keys are unchanged. New source questions use page references and clean Arabic educational wording."
+  ]
+}

@@ -1,5 +1,7 @@
 # AI and cybersecurity course refresh — 2026-10-08
 
+Follow-up: the shared folder has since been downloaded through OneDrive's public browser interface. All five courses and 24 original PDFs are covered by [the source review](onedrive-source-review-2026-10-08.md); the access failure below describes the earlier refresh only.
+
 The two courses now use Arabic lecture, PDF and presentation names, with separate lecture navigation and current quiz editions that include all available questions for each lecture. Existing lecture IDs, original files, reviewed questions, answer keys, grades and unfinished attempts are preserved. Duplicate legacy containers are archived only when their source identity is unambiguous; different source files remain available under the selected lecture.
 
 ## Sources and scope

@@ -6,7 +6,7 @@ import { normalizeAnswerRubric } from "../../src/assessments/assessmentsReposito
 
 const types: Record<string, QuestionType> = { mcq: "multiple_choice", tf: "true_false", fill: "fill", match: "match", order: "order", open: "open" };
 describe("Finquiz presentation metadata", () => {
-  it("restores lecture/difficulty/kind for all 187 questions without copying answers, explanations or rubrics", () => {
+  it("restores lecture/difficulty/kind for all 259 source questions without copying answers, explanations or rubrics", () => {
     let count = 0;
     for (const subject of manifest.subjects) for (const source of subject.quizzes) {
       const quiz: Quiz = { id: "quiz", subjectId: subjectMapping[subject.id]!, lectureId: null, title: source.title, description: null, timeLimitSeconds: null, status: "published" };
@@ -21,7 +21,7 @@ describe("Finquiz presentation metadata", () => {
       expect(JSON.stringify(enriched)).not.toMatch(/"(answer|rubric|explanation|isCorrect|answerReview)"\s*:/);
       count += enriched.length;
     }
-    expect(count).toBe(187);
+    expect(count).toBe(259);
   });
   it("preserves edited or unrelated questions instead of replacing database content", () => {
     const subject = manifest.subjects[0]!;

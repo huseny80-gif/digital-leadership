@@ -33,6 +33,8 @@ export async function synchronizeFinquizCore(pool: Pool) {
         inserted.assignments++;
       }
       for (const quiz of source.quizzes) {
+        // Reviewed source editions have their own history-preserving writer.
+        if (quiz.sourceReview) continue;
         const existingQuiz = await client.query<{ id: string }>("select id from quizzes where subject_id = $1 and title = $2 and deleted_at is null limit 1", [subjectId, quiz.title]);
         const quizId = existingQuiz.rows[0]?.id ?? id("quiz:" + quiz.id);
         if (!existingQuiz.rows.length) {
