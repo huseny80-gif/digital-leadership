@@ -23,6 +23,7 @@ type ImportRow = {
   status: ContentImport["status"]; stage: string; lease_token: string | null;
   result_lectures: ImportedLecture[]; question_count: number; generation_method: "source" | "ai" | null;
   error_message: string | null; created_at: Date; updated_at: Date;
+  legal_separation?: { sourceItemId: string | null; sourceItemNumber: number; parentId: string; parentStatus: string };
 };
 type Context = { subjectId?: string | null; lectureId?: string | null; itemId?: string | null; replacesFileId?: string | null };
 type Dependencies = { extract?: typeof extractPdfText; generate?: typeof generateQuestions };
@@ -192,8 +193,9 @@ export class ContentImportService {
       const text = cleanSourceText(reviewed?.text ?? job.source_text ?? await (this.dependencies.extract ?? extractPdfText)(bytes!, () => heartbeat()));
       assertReadableSourceText(text);
       await heartbeat("classifying");
+      let parent: { id: string; subject_id: string; title: string; status: string } | undefined;
       if (job.lecture_id) {
-        const parent = (await this.pool.query<{ subject_id: string }>("select subject_id from lectures where id=$1 and deleted_at is null", [job.lecture_id])).rows[0];
+        parent = (await this.pool.query<{ id: string; subject_id: string; title: string; status: string }>("select id,subject_id,title,status from lectures where id=$1 and deleted_at is null", [job.lecture_id])).rows[0];
         if (!parent || (job.subject_id && parent.subject_id !== job.subject_id)) throw new Error("source_unavailable");
         job.subject_id = parent.subject_id;
       }
@@ -204,9 +206,15 @@ export class ContentImportService {
       // Normalize only after the destination subject has been established.
       // Filename/context hashes and the original document remain unchanged.
       if (subject?.id === LEGAL_SUBJECT_ID) {
-        const number = legalLectureNumber(job.title);
+        const number = legalLectureNumber(job.filename ?? "") === 6 ? 6 : legalLectureNumber(job.title);
         if (number) job.title = legalLectureTitle(number);
         if (job.filename) job.filename = replaceLegalLabels(job.filename);
+        const parts = splitLectures(text, job.title);
+        if (parent && legalLectureNumber(parent.title) === 5 && parts.some(part => part.number === 6) && parts.every(part => part.number === 5 || part.number === 6)) {
+          job.legal_separation = { sourceItemId: job.lecture_item_id, sourceItemNumber: parts.some(part => part.number === 5) ? 5 : 6, parentId: parent.id, parentStatus: parent.status };
+          job.lecture_id = null;
+          job.lecture_item_id = null;
+        }
       }
       const sections = (job.lecture_id || reviewed ? [{ title: job.title, number: null, text }] : splitLectures(text, job.title)).map(section => {
         const number = subject?.id === LEGAL_SUBJECT_ID ? legalLectureNumber(section.title) : null;
@@ -286,21 +294,29 @@ export class ContentImportService {
           await this.storage.upload(finalKey, bytes, "application/pdf");
           await client.query("insert into files(id,storage_key,original_filename,mime_type,size_bytes,checksum,uploaded_by) values($1,$2,$3,'application/pdf',$4,$5,$6)", [fileId, finalKey, job.filename, bytes.length, createHash("sha256").update(bytes).digest("hex"), job.created_by]);
         }
-        if (!job.lecture_item_id) {
+        const routedSource = job.legal_separation?.sourceItemId && entry.section.number === job.legal_separation.sourceItemNumber ? job.legal_separation.sourceItemId : null;
+        const status = job.legal_separation?.parentStatus === "draft" ? "draft" : lecture.status;
+        if (routedSource) {
+          const moved = await client.query("update lecture_items set lecture_id=$2,title=$3,body_text=$4,status=case when $5='draft' then 'draft' else status end where id=$1 and lecture_id=$6 and deleted_at is null returning id", [routedSource, lecture.id, entry.section.title, entry.section.text, status, job.legal_separation!.parentId]);
+          if (!moved.rowCount) throw new Error("source_unavailable");
+        } else if (!job.lecture_item_id) {
           const existing = fileId ? await client.query("select id from lecture_items where file_id=$1 and lecture_id=$2 and deleted_at is null", [fileId, lecture.id]) : null;
-          if (!existing?.rowCount) await client.query("insert into lecture_items(lecture_id,item_type,title,body_text,file_id,status,created_by,order_index) values($1,$2,$3,$4,$5,$6,$7,(select coalesce(max(order_index),0)+1 from lecture_items where lecture_id=$1))", [lecture.id, fileId ? "pdf" : "summary", entry.section.title.slice(0, 200), entry.section.text, fileId, lecture.status, job.created_by]);
+          if (existing?.rowCount && job.legal_separation) await client.query("update lecture_items set title=$2,body_text=$3 where id=$1", [existing.rows[0].id, entry.section.title, entry.section.text]);
+          if (!existing?.rowCount) await client.query("insert into lecture_items(lecture_id,item_type,title,body_text,file_id,status,created_by,order_index) values($1,$2,$3,$4,$5,$6,$7,(select coalesce(max(order_index),0)+1 from lecture_items where lecture_id=$1))", [lecture.id, fileId ? "pdf" : "summary", entry.section.title.slice(0, 200), entry.section.text, fileId, status, job.created_by]);
         } else {
           const sourceItem = await client.query("select id from lecture_items where id=$1 and lecture_id=$2 and deleted_at is null", [job.lecture_item_id, lecture.id]);
           if (!sourceItem.rowCount) throw new Error("source_unavailable");
         }
         const ids: string[] = [];
         for (const question of entry.questions) ids.push(await this.insertQuestion(client, bank, lecture.id, job, question));
-        if (lecture.status === "published") aggregateQuestions.push(...ids);
-        const quizId = await this.newQuizEdition(client, subject.id, lecture.id, lecture.status, job, ids, `اختبار ${lecture.title}`);
+        if (status === "published") aggregateQuestions.push(...ids);
+        const quizId = await this.newQuizEdition(client, subject.id, lecture.id, status, job, ids, `اختبار ${lecture.title}`);
         resultLectures.push({ id: lecture.id, title: lecture.title, number: lecture.order_index, questionCount: ids.length, quizId });
       }
       if (aggregateQuestions.length) await this.newQuizEdition(client, subject.id, null, subjectStatus.status, job, aggregateQuestions, `الاختبار التفاعلي: ${subject.title}`);
-      await client.query("update content_imports set status='completed',stage='completed',subject_id=$3,file_id=$4,result_lectures=$5::jsonb,question_count=$6,generation_method=$7,title=$8,filename=$9,storage_key=null,lease_token=null,lease_until=null,error_message=null,updated_at=now() where id=$1 and lease_token=$2", [job.id, job.lease_token, subject.id, fileId, JSON.stringify(resultLectures), resultLectures.reduce((n, l) => n + l.questionCount, 0), generated.every(entry => entry.method === "ai") ? "ai" : "source", job.title, job.filename]);
+      const destination = job.legal_separation ? resultLectures.length === 1 ? resultLectures[0]!.id : null : job.lecture_id;
+      const destinationItem = job.legal_separation ? resultLectures.length === 1 ? job.legal_separation.sourceItemId : null : job.lecture_item_id;
+      await client.query("update content_imports set status='completed',stage='completed',subject_id=$3,file_id=$4,result_lectures=$5::jsonb,question_count=$6,generation_method=$7,title=$8,filename=$9,lecture_id=$10,lecture_item_id=$11,storage_key=null,lease_token=null,lease_until=null,error_message=null,updated_at=now() where id=$1 and lease_token=$2", [job.id, job.lease_token, subject.id, fileId, JSON.stringify(resultLectures), resultLectures.reduce((n, l) => n + l.questionCount, 0), generated.every(entry => entry.method === "ai") ? "ai" : "source", job.title, job.filename, destination, destinationItem]);
       await client.query("commit");
     } catch (error) {
       await client.query("rollback");

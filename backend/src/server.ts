@@ -5,7 +5,7 @@ import { initMonitoring } from "./lib/monitoring.js";
 import { synchronizeFinquizCore } from "./finquiz/synchronizeCore.js";
 import { getPool } from "./lib/db.js";
 import { ensureContentAutomationSchema } from "./contentAutomation/schema.js";
-import { startContentImportWorker } from "./contentAutomation/runtime.js";
+import { getContentImportService, startContentImportWorker } from "./contentAutomation/runtime.js";
 import { ensurePermanentTrainingAccessSchema } from "./trainingAccess/schema.js";
 import { relocateIso27001Roadmap } from "./contentAutomation/relocateIso27001Roadmap.js";
 import { reviewAiAssessments } from "./contentAutomation/reviewAiAssessments.js";
@@ -14,6 +14,8 @@ import { ensureLearningDashboardSchema } from "./learning/schema.js";
 import { normalizeLegalContent } from "./contentAutomation/normalizeLegalContent.js";
 import { reviewLegalQuote } from "./contentAutomation/reviewLegalQuote.js";
 import { consolidateLegalContent } from "./contentAutomation/consolidateLegalContent.js";
+import { separateLegalSixthLecture } from "./contentAutomation/separateLegalSixthLecture.js";
+import { LEGAL_SUBJECT_ID, legalLectureTitle } from "./contentAutomation/legalLectureLabels.js";
 
 initMonitoring();
 
@@ -42,6 +44,9 @@ if (env.NODE_ENV === "production" && env.DATABASE_URL) {
   logger.info(legal, "legal_content_labels_normalized");
   logger.info(await reviewLegalQuote(getPool()), "legal_content_source_quote_reviewed");
   logger.info(await consolidateLegalContent(getPool()), "legal_content_consolidated");
+  const { generationSources, ...sixth } = await separateLegalSixthLecture(getPool());
+  for (const source of generationSources) await getContentImportService().submitText({ actorId: source.actorId, text: source.text, title: legalLectureTitle(6), subjectId: LEGAL_SUBJECT_ID, lectureId: sixth.lectureId!, itemId: source.itemId });
+  logger.info({ ...sixth, sourcesQueued: generationSources.length }, "legal_sixth_lecture_separated");
 }
 
 // Bind explicitly to 0.0.0.0 — Railway's healthcheck prober connects over
