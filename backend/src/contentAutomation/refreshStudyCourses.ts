@@ -4,6 +4,7 @@ import { finquizRecordId, findSourceLecture } from "../finquiz/recordIdentity.js
 import { aiAssessmentReview, aiReviewId } from "./aiAssessmentReviewCatalog.js";
 import { consolidateCourseContent } from "./consolidateLegalContent.js";
 import { correctCoursePresentation, refreshedCourseLabels, type CourseSourceLabels } from "./courseSourceLabels.js";
+import { reconcileAiSourceCopies } from "./reconcileAiSourceCopies.js";
 
 const questionTypes: Record<string, string> = { mcq: "multiple_choice", tf: "true_false", multiple_choice: "multiple_choice", true_false: "true_false", fill: "fill", match: "match", order: "order", open: "open" };
 const key = "cyber-ai-source-refresh-2026-10-08";
@@ -16,6 +17,7 @@ interface JobRow { id: string; title: string; filename: string | null; result_le
 export async function refreshStudyCourses(pool: Pool) {
   const result = [];
   for (const profile of refreshedCourseLabels) {
+    const sourceCopies = profile.slug === "ai-data" ? await reconcileAiSourceCopies(pool) : null;
     const normalization = await normalizeCourse(pool, profile);
     const consolidation = await consolidateCourseContent(pool, {
       ...profile, preferredLectureIds: normalization.preferredLectureIds,
@@ -23,7 +25,7 @@ export async function refreshStudyCourses(pool: Pool) {
       auditAction: "course_content.consolidated", lockKey: key + ":consolidate:" + profile.slug,
     });
     const assessments = await refreshLectureQuizzes(pool, profile, normalization.hiddenDemoIds);
-    result.push({ subjectId: profile.subjectId, slug: profile.slug, normalization: normalization.changed, consolidation, ...assessments });
+    result.push({ subjectId: profile.subjectId, slug: profile.slug, sourceCopies, normalization: normalization.changed, consolidation, ...assessments });
   }
   return result;
 }
@@ -122,12 +124,14 @@ async function normalizeCourse(pool: Pool, profile: CourseSourceLabels) {
       await client.query("update content_imports set title=$2,filename=$3,result_lectures=$4::jsonb,updated_at=now() where id=$1", [job.id, title, filename, JSON.stringify(results)]);
       changed.imports++;
     }
-    const metadata = profile.source.quizzes.flatMap(quiz => quiz.questions.map(question => ({ id: finquizRecordId("question:" + question.id), prompt: String(question.prompt), type: questionTypes[String(question.type)], lecture: profile.source.lectures.find(lecture => lecture.id === question.lectureId) })));
-    if (profile.slug === "ai-data") for (const reviewed of aiAssessmentReview.groups[0]!.questions) metadata.push({ id: aiReviewId("question:" + reviewed.originalId), prompt: reviewed.question.prompt, type: reviewed.question.type, lecture: profile.source.lectures.find(lecture => lecture.id === reviewed.lectureId) });
+    const metadata = profile.source.quizzes.flatMap(quiz => quiz.questions.map(question => ({ id: finquizRecordId("question:" + question.id), quizTitle: quiz.title, prompt: String(question.prompt), type: questionTypes[String(question.type)], lecture: profile.source.lectures.find(lecture => lecture.id === question.lectureId) })));
+    if (profile.slug === "ai-data") for (const reviewed of aiAssessmentReview.groups[0]!.questions) metadata.push({ id: aiReviewId("question:" + reviewed.originalId), quizTitle: "", prompt: reviewed.question.prompt, type: reviewed.question.type, lecture: profile.source.lectures.find(lecture => lecture.id === reviewed.lectureId) });
     for (const row of metadata) {
       const parent = row.lecture ? findSourceLecture(row.lecture, lectures) : undefined;
       if (!parent) continue;
-      changed.questionLectureLinks += (await client.query(`update questions q set lecture_id=$2 from question_banks b where q.id=$1 and q.question_bank_id=b.id and b.subject_id=$3 and q.deleted_at is null and q.lecture_id is null and q.prompt=$4 and q.question_type=$5`, [row.id, parent.id, profile.subjectId, row.prompt, row.type])).rowCount ?? 0;
+      changed.questionLectureLinks += (await client.query(`update questions q set lecture_id=$2 from question_banks b where q.question_bank_id=b.id and b.subject_id=$3 and b.deleted_at is null and q.deleted_at is null and q.lecture_id is null and q.prompt=$4 and q.question_type=$5
+        and (q.id=$1 or (q.source_import_id is null and exists(select 1 from quiz_questions qq join quizzes z on z.id=qq.quiz_id
+          where qq.question_id=q.id and z.subject_id=$3 and z.title=$6 and z.status='published' and z.deleted_at is null and z.superseded_by is null)))`, [row.id, parent.id, profile.subjectId, row.prompt, row.type, row.quizTitle])).rowCount ?? 0;
     }
     if (Object.values(changed).some(count => count > 0)) await client.query("insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'course_content.labels_normalized','subject',$2,$3::jsonb)", [subject.created_by, profile.subjectId, JSON.stringify({ key, changed, previousLabels })]);
     await client.query("commit");
@@ -174,16 +178,18 @@ async function refreshLectureQuizzes(pool: Pool, profile: CourseSourceLabels, hi
       for (const previousId of previousIds) await redirectImportQuiz(client, profile.subjectId, previousId, quizId);
       lectureQuizzesCreated++;
     }
-    const audit = (await client.query<{ publishedLectures: number; currentQuestions: number; currentQuizzes: number; incorrectSubjectLinks: number; emptyPublishedQuizzes: number; failedImports: number }>(`select
+    const audit = (await client.query<{ publishedLectures: number; currentQuestions: number; currentQuizzes: number; incorrectSubjectLinks: number; emptyPublishedQuizzes: number; unmappedCurrentQuestions: number; failedImports: number }>(`select
       (select count(*)::int from lectures where subject_id=$1 and status='published' and deleted_at is null) as "publishedLectures",
       (select count(distinct q.id)::int from questions q join quiz_questions qq on qq.question_id=q.id join quizzes z on z.id=qq.quiz_id where z.subject_id=$1 and z.status='published' and z.deleted_at is null and z.superseded_by is null and q.deleted_at is null) as "currentQuestions",
       (select count(*)::int from quizzes where subject_id=$1 and status='published' and deleted_at is null and superseded_by is null) as "currentQuizzes",
       (select count(*)::int from questions q join question_banks b on b.id=q.question_bank_id join lectures l on l.id=q.lecture_id where b.subject_id=$1 and q.deleted_at is null and l.subject_id<>$1) as "incorrectSubjectLinks",
       (select count(*)::int from quizzes z where z.subject_id=$1 and z.status='published' and z.deleted_at is null and z.superseded_by is null and not exists(select 1 from quiz_questions qq join questions q on q.id=qq.question_id where qq.quiz_id=z.id and q.deleted_at is null)) as "emptyPublishedQuizzes",
+      (select count(distinct q.id)::int from questions q join quiz_questions qq on qq.question_id=q.id join quizzes z on z.id=qq.quiz_id where z.subject_id=$1 and z.status='published' and z.deleted_at is null and z.superseded_by is null and q.deleted_at is null and q.lecture_id is null) as "unmappedCurrentQuestions",
       (select count(*)::int from content_imports where subject_id=$1 and status='failed') as "failedImports"`, [profile.subjectId])).rows[0]!;
     if (lectureQuizzesCreated || visibilityEditions) await client.query("insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'course_content.quizzes_refreshed','subject',$2,$3::jsonb)", [subject.created_by, profile.subjectId, JSON.stringify({ key, lectureQuizzesCreated, visibilityEditions, audit })]);
     await client.query("commit");
-    return { lectureQuizzesCreated, visibilityEditions, audit };
+    const pendingSources = (await client.query<{ id: string; filename: string | null; fileId: string | null; checksum: string | null }>(`select i.id,i.filename,i.file_id as "fileId",f.checksum from content_imports i left join files f on f.id=i.file_id where i.subject_id=$1 and i.status='failed' order by i.created_at limit 5`, [profile.subjectId])).rows;
+    return { lectureQuizzesCreated, visibilityEditions, audit, pendingSources };
   } catch (error) { await client.query("rollback"); throw error; }
   finally { client.release(); }
 }
