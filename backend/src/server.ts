@@ -13,6 +13,7 @@ import { ensureParticipantFeedbackSchema } from "./feedback/schema.js";
 import { ensureLearningDashboardSchema } from "./learning/schema.js";
 import { normalizeLegalContent } from "./contentAutomation/normalizeLegalContent.js";
 import { reviewLegalQuote } from "./contentAutomation/reviewLegalQuote.js";
+import { consolidateLegalContent } from "./contentAutomation/consolidateLegalContent.js";
 
 initMonitoring();
 
@@ -40,6 +41,7 @@ if (env.NODE_ENV === "production" && env.DATABASE_URL) {
   const legal = await normalizeLegalContent(getPool());
   logger.info(legal, "legal_content_labels_normalized");
   logger.info(await reviewLegalQuote(getPool()), "legal_content_source_quote_reviewed");
+  logger.info(await consolidateLegalContent(getPool()), "legal_content_consolidated");
 }
 
 // Bind explicitly to 0.0.0.0 — Railway's healthcheck prober connects over

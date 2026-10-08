@@ -3594,7 +3594,7 @@
             {
               "type": "pdf",
               "label": "ملف المحاضرة (PDF)",
-              "url": "files/legal-regulatory/Legal1.pdf"
+              "url": "files/legal-regulatory/المحاضرة الأولى قانونية.pdf"
             },
             {
               "type": "link",
@@ -3637,7 +3637,7 @@
             {
               "type": "pdf",
               "label": "ملف المحاضرة (PDF)",
-              "url": "files/legal-regulatory/Legal2.pdf"
+              "url": "files/legal-regulatory/المحاضرة الثانية قانونية.pdf"
             },
             {
               "type": "link",
@@ -3671,7 +3671,7 @@
             {
               "type": "pdf",
               "label": "ملف المحاضرة (PDF)",
-              "url": "files/legal-regulatory/Legal3.pdf"
+              "url": "files/legal-regulatory/المحاضرة الثالثة قانونية.pdf"
             },
             {
               "type": "link",
@@ -3703,7 +3703,7 @@
             {
               "type": "pdf",
               "label": "ملف المحاضرة (PDF)",
-              "url": "files/legal-regulatory/Legal4.pdf"
+              "url": "files/legal-regulatory/المحاضرة الرابعة قانونية.pdf"
             }
           ],
           "legacyTitles": [
@@ -3804,7 +3804,7 @@
             {
               "type": "pdf",
               "label": "ملف المحاضرة (PDF)",
-              "url": "files/legal-regulatory/Legal4.pdf"
+              "url": "files/legal-regulatory/المحاضرة الرابعة قانونية.pdf"
             }
           ]
         },
@@ -5629,7 +5629,7 @@
         {
           "id": "lg-r1",
           "type": "website",
-          "status": "published",
+          "status": "draft",
           "demo": true,
           "title": "الموقع الرسمي للتشريعات المعتمدة — يُستكمل لاحقاً",
           "author": null,
@@ -5641,7 +5641,7 @@
         {
           "id": "lg-r2",
           "type": "book",
-          "status": "published",
+          "status": "draft",
           "demo": true,
           "title": "مرجع المادة المعتمد",
           "author": null,
@@ -5657,7 +5657,7 @@
           "type": "pdf",
           "title": "المحاضرة الأولى قانونية",
           "date": "2026-09-01",
-          "url": "files/legal-regulatory/Legal1.pdf",
+          "url": "files/legal-regulatory/المحاضرة الأولى قانونية.pdf",
           "status": "published",
           "lectureId": "lg-l1"
         },
@@ -5667,7 +5667,8 @@
           "title": "الملخص التفاعلي للمحاضرة الأولى",
           "date": "2026-09-01",
           "url": "files/legal-regulatory/summary-01.html",
-          "status": "published"
+          "status": "published",
+          "lectureId": "lg-l1"
         },
         {
           "id": "lg-f2",
@@ -5675,7 +5676,7 @@
           "title": "ورقة الحالة للتمرين",
           "date": "2026-08-14",
           "url": null,
-          "status": "published",
+          "status": "draft",
           "demo": true
         },
         {
@@ -5683,7 +5684,7 @@
           "type": "pdf",
           "title": "المحاضرة الثانية قانونية",
           "date": "2026-09-02",
-          "url": "files/legal-regulatory/Legal2.pdf",
+          "url": "files/legal-regulatory/المحاضرة الثانية قانونية.pdf",
           "status": "published",
           "lectureId": "lg-l3"
         },
@@ -5692,7 +5693,7 @@
           "type": "pdf",
           "title": "المحاضرة الثالثة قانونية",
           "date": "2026-09-09",
-          "url": "files/legal-regulatory/Legal3.pdf",
+          "url": "files/legal-regulatory/المحاضرة الثالثة قانونية.pdf",
           "status": "published",
           "lectureId": "lg-l4"
         },
@@ -5702,7 +5703,8 @@
           "title": "أقسام المحاضرة الثالثة الكاملة ومسرد المصطلحات",
           "date": "2026-09-09",
           "url": "files/legal-regulatory/lecture-03-content.html",
-          "status": "published"
+          "status": "published",
+          "lectureId": "lg-l4"
         }
       ],
       "updates": [
@@ -6701,7 +6703,7 @@
     },
     "1456a88cd727ffc413c645aa": {
       "id": "1456a88cd727ffc413c645aa",
-      "path": "files/legal-regulatory/Legal1.pdf",
+      "path": "files/legal-regulatory/المحاضرة الأولى قانونية.pdf",
       "subjectSlug": "legal-regulatory",
       "filename": "المحاضرة الأولى قانونية.pdf",
       "sizeBytes": 2309929,
@@ -6709,7 +6711,7 @@
     },
     "5ab63552fd79facf68dee57e": {
       "id": "5ab63552fd79facf68dee57e",
-      "path": "files/legal-regulatory/Legal2.pdf",
+      "path": "files/legal-regulatory/المحاضرة الثانية قانونية.pdf",
       "subjectSlug": "legal-regulatory",
       "filename": "المحاضرة الثانية قانونية.pdf",
       "sizeBytes": 4080306,
@@ -6717,7 +6719,7 @@
     },
     "c2f47ec82523116f7819477e": {
       "id": "c2f47ec82523116f7819477e",
-      "path": "files/legal-regulatory/Legal3.pdf",
+      "path": "files/legal-regulatory/المحاضرة الثالثة قانونية.pdf",
       "subjectSlug": "legal-regulatory",
       "filename": "المحاضرة الثالثة قانونية.pdf",
       "sizeBytes": 10153886,
@@ -6725,7 +6727,7 @@
     },
     "1cb74939aacb16a36bcb2b89": {
       "id": "1cb74939aacb16a36bcb2b89",
-      "path": "files/legal-regulatory/Legal4.pdf",
+      "path": "files/legal-regulatory/المحاضرة الرابعة قانونية.pdf",
       "subjectSlug": "legal-regulatory",
       "filename": "المحاضرة الرابعة قانونية.pdf",
       "sizeBytes": 1082556,

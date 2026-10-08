@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import express from "express";
 import request from "supertest";
+import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { LibraryService, manifest, subjectMapping } from "../../src/finquiz/catalog.js";
 import { libraryRoutes } from "../../src/finquiz/libraryRoutes.js";
 import { ContentService } from "../../src/content/contentService.js";
@@ -21,7 +23,7 @@ describe("Finquiz educational library", () => {
     expect(manifest.counts).toEqual({ lectures: 17, summaries: 25, assignments: 52, quizzes: 5, references: 10, resources: 27, updates: 31, questions: 187 });
     for (const source of manifest.subjects) {
       const library = await new LibraryService(contentFor(source.id) as unknown as ContentService).get(subjectMapping[source.id]!, false);
-      for (const section of ["lectures", "summaries", "assignments", "references", "updates"] as const) expect(library.entries.filter(e => e.section === section)).toHaveLength(source[section].length);
+      for (const section of ["lectures", "summaries", "assignments", "references", "updates"] as const) expect(library.entries.filter(e => e.section === section)).toHaveLength(source[section].filter(row => row.status === "published").length);
       expect(JSON.stringify(library)).not.toMatch(/"(answer|rubric|is_correct|question_options)"/);
       for (const entry of library.entries) for (const file of entry.files) if (file.bodyHtml) expect(file.bodyHtml).not.toMatch(/<script|<style|\son\w+=|\sstyle=|\sclass=|javascript:/i);
     }
@@ -46,7 +48,24 @@ describe("Finquiz educational library", () => {
     expect(fourth.files[0]!.filename).toBe("المحاضرة الرابعة قانونية.pdf");
     const download = await service.file(subjectMapping["legal-regulatory"]!, fourth.files[0]!.id, false);
     expect(download.filename).toBe("المحاضرة الرابعة قانونية.pdf");
-    expect(download.absolutePath).toMatch(/Legal4\.pdf$/);
+    expect(download.absolutePath).toMatch(/المحاضرة الرابعة قانونية\.pdf$/);
+  });
+
+  it("renames actual legal PDFs while keeping permanent download IDs, bytes and hidden-lecture protection", async () => {
+    const service = new LibraryService(contentFor("legal-regulatory") as unknown as ContentService);
+    const library = await service.get(subjectMapping["legal-regulatory"]!, false);
+    for (const id of ["1456a88cd727ffc413c645aa", "5ab63552fd79facf68dee57e", "c2f47ec82523116f7819477e", "1cb74939aacb16a36bcb2b89"]) {
+      const file = await service.file(subjectMapping["legal-regulatory"]!, id, false);
+      const bytes = await readFile(file.absolutePath);
+      expect(createHash("sha256").update(bytes).digest("hex")).toBe(manifest.assets[id]!.sha256);
+      expect(file.absolutePath).toContain(file.filename);
+      expect(library.entries.some(entry => entry.id === "asset-" + id)).toBe(false);
+    }
+    expect(library.entries.some(entry => ["lg-r1", "lg-r2", "lg-f2"].includes(entry.id))).toBe(false);
+    const adminLibrary = await service.get(subjectMapping["legal-regulatory"]!, true);
+    expect(adminLibrary.entries.filter(entry => ["lg-r1", "lg-r2", "lg-f2"].includes(entry.id))).toHaveLength(3);
+    const hidden = new LibraryService(contentFor("legal-regulatory", "lg-l2") as unknown as ContentService);
+    await expect(hidden.file(subjectMapping["legal-regulatory"]!, "1cb74939aacb16a36bcb2b89", false)).rejects.toMatchObject({ status: 404 });
   });
 
   it("accepts legacy titles with existing IDs and hides a legal PDF if its lecture is hidden", async () => {
