@@ -7,6 +7,7 @@ import { LectureItemCard } from "@/components/content/LectureItemCard";
 import { getLectureLibraryEntries, LibraryEntryContent } from "@/components/content/LibraryContent";
 import { LectureCompleteToggle } from "@/components/content/LectureCompleteToggle";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { LectureTabs } from "@/components/content/LectureTabs";
 
 /**
  * Lecture detail (API_V1.md `GET /lectures/:lectureId`,
@@ -112,6 +113,7 @@ export default async function LectureDetailPage({
       />
 
       <h1 className="page-heading">{lecture!.title}</h1>
+      <LectureTabs subjectId={lecture!.subjectId} lectures={siblingLectures} activeId={lecture!.id} />
       <div className="dl-library-list">{libraryEntries.map(entry => <LibraryEntryContent key={entry.id} subjectId={lecture!.subjectId} entry={entry} />)}</div>
       <p className="item-row-meta" style={{ marginBottom: "var(--space-2)" }}>
         {subjectTitle}

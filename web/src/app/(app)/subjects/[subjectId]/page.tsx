@@ -7,6 +7,7 @@ import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { SubjectTabs } from "@/components/content/SubjectTabs";
 import { subjectTabs } from "@/components/content/subjectTabs.config";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { LectureTabs } from "@/components/content/LectureTabs";
 
 /**
  * Subject detail (API_V1.md `GET /subjects/:subjectId`,
@@ -102,6 +103,8 @@ export default async function SubjectDetailPage({
           assessments: quizzes.length,
         })}
       />
+
+      <LectureTabs subjectId={subjectId} lectures={lectures} />
 
       <div className="fq-content-heading"><div><span className="fq-content-icon">📖</span><div><small>المحتوى المنشور</small><h2>المحاضرات</h2></div></div><span>{lectures.length} محاضرة</span></div>\n\n      {lectures.length === 0 ? (
         <EmptyState title="لا توجد محاضرات بعد" message="ستظهر محاضرات هذه المادة هنا فور نشرها." />
