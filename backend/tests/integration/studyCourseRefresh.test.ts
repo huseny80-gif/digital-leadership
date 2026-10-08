@@ -3,6 +3,9 @@ import { Pool } from "pg";
 import { refreshStudyCourses } from "../../src/contentAutomation/refreshStudyCourses.js";
 import { refreshedCourseLabels } from "../../src/contentAutomation/courseSourceLabels.js";
 import { aiAssessmentReview } from "../../src/contentAutomation/aiAssessmentReviewCatalog.js";
+import { questionContentHash, aiReviewId } from "../../src/contentAutomation/aiAssessmentReviewCatalog.js";
+import { reconcileAiSourceCopies } from "../../src/contentAutomation/reconcileAiSourceCopies.js";
+import { reviewAiAssessments } from "../../src/contentAutomation/reviewAiAssessments.js";
 import { synchronizeFinquizCore } from "../../src/finquiz/synchronizeCore.js";
 import { manifest, subjectMapping } from "../../src/finquiz/catalog.js";
 import { PgAssessmentsRepository } from "../../src/assessments/assessmentsRepository.js";
@@ -40,6 +43,14 @@ async function snapshotAnswers() {
 describe("source-based AI and cybersecurity course refresh", () => {
   it("consolidates legacy records, builds complete lecture editions and preserves grading, originals and progress", async () => {
     const { actor, masters } = await seed();
+    // Older installations use arbitrary question UUIDs. Keep their exact
+    // source content/keys, changing fixture identity before taking snapshots.
+    const sourceQuestions = (await pool.query("select q.id from questions q join question_banks b on b.id=q.question_bank_id where b.subject_id=$1", [cyber.subjectId])).rows;
+    for (const original of sourceQuestions) {
+      const copy = (await pool.query(`insert into questions(question_bank_id,question_type,prompt,points,explanation,rubric,created_by) select question_bank_id,question_type,prompt,points,explanation,rubric,created_by from questions where id=$1 returning id`, [original.id])).rows[0]!.id;
+      for (const table of ["quiz_questions", "question_options", "question_accepted_answers", "question_pairs", "question_items"]) await pool.query(`update ${table} set question_id=$2 where question_id=$1`, [original.id, copy]);
+      await pool.query("delete from questions where id=$1", [original.id]);
+    }
     const master = masters.get("ai-l1")!;
     const old = await createLecture(pool, { subjectId: ai.subjectId, title: "AI1", orderIndex: 1, status: "published", createdBy: actor });
     const file = await createFile(pool, { storageKey: "refresh/AI1.pdf", uploadedBy: actor });
@@ -61,6 +72,10 @@ describe("source-based AI and cybersecurity course refresh", () => {
     const result = await refreshStudyCourses(pool);
     expect(result[0]!.consolidation).toMatchObject({ changed: { lecturesArchived: 1, completionsCarried: 1 }, duplicateNumbers: [], skippedNumbers: [] });
     expect(result[1]!.normalization.emptyTemplatesHidden).toBe(1);
+    expect(result[1]!.normalization.questionLectureLinks).toBe(29);
+    expect(result[1]!.visibilityEditions).toBe(1);
+    expect(result[1]!.lectureQuizzesCreated).toBe(3);
+    expect(result[1]!.audit).toMatchObject({ currentQuestions: 27, unmappedCurrentQuestions: 0 });
     expect(result.every(course => course.audit?.incorrectSubjectLinks === 0 && course.audit?.emptyPublishedQuizzes === 0)).toBe(true);
     expect((await pool.query("select order_index,title from lectures where id=$1", [masters.get("cs-l3")])).rows[0]).toEqual({ order_index: 3, title: cyber.titleOf(3) });
     expect((await pool.query("select status from lectures where id=$1", [masters.get("cs-l2")])).rows[0]!.status).toBe("draft");
@@ -83,6 +98,45 @@ describe("source-based AI and cybersecurity course refresh", () => {
     expect(second.every(course => Object.values(course.normalization).every(count => count === 0) && course.lectureQuizzesCreated === 0 && course.visibilityEditions === 0)).toBe(true);
     expect((await pool.query("select (select count(*) from questions) questions,(select count(*) from quizzes) quizzes")).rows).toEqual(counts);
     expect((await synchronizeFinquizCore(pool)).inserted).toEqual({ lectures: 0, assignments: 0, quizzes: 0, questions: 0 });
+  });
+
+  it("reuses an approved AI review for an exact imported source copy without reviving its old wording or changing attempts", async () => {
+    const { actor } = await seed();
+    const copy = (await pool.query("select q.* from questions q join question_banks b on b.id=q.question_bank_id where b.subject_id=$1 and q.question_type='multiple_choice' order by q.created_at,q.id limit 1", [ai.subjectId])).rows[0]!;
+    const original = (await pool.query(`insert into questions(question_bank_id,question_type,prompt,points,explanation,rubric,created_by) select question_bank_id,question_type,prompt,points,explanation,rubric,created_by from questions where id=$1 returning id`, [copy.id])).rows[0]!.id;
+    await pool.query("insert into question_options(question_id,option_text,is_correct,order_index) select $2,option_text,is_correct,order_index from question_options where question_id=$1", [copy.id, original]);
+    const oldQuiz = await createQuiz(pool, { subjectId: ai.subjectId, title: "اختبار المصدر السابق", status: "published", createdBy: actor });
+    await addQuestionToQuiz(pool, { quizId: oldQuiz, questionId: original });
+    const sourceQuiz = (await pool.query("select quiz_id from quiz_questions where question_id=$1 limit 1", [copy.id])).rows[0]!.quiz_id;
+    const attempt = (await pool.query("insert into quiz_attempts(quiz_id,user_id,status,score) values($1,$2,'graded',1) returning *", [sourceQuiz, actor])).rows[0]!;
+    const row = structuredClone(aiAssessmentReview.groups[0]!.questions[0]!);
+    row.originalId = original;
+    const fields = (await pool.query("select question_type,prompt,points,explanation,rubric,lecture_id,difficulty,kind,source_import_id,source_excerpt from questions where id=$1", [original])).rows[0]!;
+    const options = (await pool.query("select option_text,is_correct,order_index from question_options where question_id=$1 order by order_index", [original])).rows.map(option => [option.option_text, option.is_correct, option.order_index]);
+    row.originalSha256 = questionContentHash({ ...fields, options, answers: [], pairs: [], items: [] });
+    const sourceKey = row.citations[0]!.sourceKey;
+    const source = aiAssessmentReview.sources[sourceKey]!;
+    await pool.query("insert into files(id,storage_key,original_filename,mime_type,size_bytes,checksum,uploaded_by) values($1,'review-fixture.pdf',$2,'application/pdf',100,$3,$4)", [source.fileId, source.filename, source.sha256, actor]);
+    const catalog = { key: "copy-review-fixture", subjectId: ai.subjectId, sources: { [sourceKey]: source }, groups: [{ sourceKey: null, importId: null, questions: [row] }] };
+    await reviewAiAssessments(pool, catalog);
+    const correctOption = (await pool.query("select id,option_text from question_options where question_id=$1 and is_correct", [copy.id])).rows[0]!;
+    await pool.query("update question_options set option_text='تعديل لاحق من المدرّب' where id=$1", [correctOption.id]);
+    expect((await reconcileAiSourceCopies(pool, catalog)).quizEditions).toBe(0);
+    await pool.query("update question_options set option_text=$2 where id=$1", [correctOption.id, correctOption.option_text]);
+    await pool.query("update files set checksum=$2 where id=$1", [source.fileId, "0".repeat(64)]);
+    expect((await reconcileAiSourceCopies(pool, catalog)).quizEditions).toBe(0);
+    await pool.query("update files set checksum=$2 where id=$1", [source.fileId, source.sha256]);
+    const before = await snapshotAnswers();
+    const result = await reconcileAiSourceCopies(pool, catalog);
+    expect(result).toMatchObject({ sourceCopiesReplaced: 1, quizEditions: 1 });
+    const current = (await pool.query("select superseded_by from quizzes where id=$1", [sourceQuiz])).rows[0]!.superseded_by;
+    const ids = (await pool.query("select question_id from quiz_questions where quiz_id=$1", [current])).rows.map(row => row.question_id);
+    expect(ids).not.toContain(copy.id);
+    expect(ids).toContain(aiReviewId("question:" + original, catalog.key));
+    expect((await pool.query("select * from quiz_attempts where id=$1", [attempt.id])).rows[0]).toEqual(attempt);
+    expect((await pool.query("select question_id from quiz_questions where quiz_id=$1", [sourceQuiz])).rows.map(row => row.question_id)).toContain(copy.id);
+    expect(await snapshotAnswers()).toEqual(before);
+    expect((await reconcileAiSourceCopies(pool, catalog)).quizEditions).toBe(0);
   });
 
   it("keeps distinct reviewed fourth-lecture files and the ISO roadmap while accepting a real second cyber lecture", async () => {
