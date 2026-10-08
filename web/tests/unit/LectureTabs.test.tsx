@@ -19,7 +19,19 @@ describe("independent legal lecture navigation", () => {
     expect(links[0]).not.toHaveAttribute("aria-current");
   });
 
-  it("does not add legal lecture navigation to other subjects", () => {
+  it.each(["2d6c0980-e4d2-4687-9027-cf090b3d1a67", "bc861a76-620d-4646-81ca-c49d24665b75"])("offers independent lecture routes in updated course %s", id => {
+    render(<LectureTabs subjectId={id} lectures={[
+      { id: "four", title: "المحاضرة الرابعة", orderIndex: 4 },
+      { id: "three", title: "المحاضرة الثالثة", orderIndex: 3 },
+      { id: "roadmap", title: "خارطة الطريق للحصول على الشهادة الدولية ISO 27001", orderIndex: 7 },
+    ]} activeId="three" />);
+    expect(screen.getByRole("navigation", { name: "اختيار المحاضرة" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "المحاضرة الثالثة" })).toHaveAttribute("href", `/subjects/${id}/lectures/three`);
+    expect(screen.getByRole("link", { name: "المحاضرة الرابعة" })).toHaveAttribute("href", `/subjects/${id}/lectures/four`);
+    expect(screen.getByRole("link", { name: /خارطة الطريق/ })).toHaveAttribute("href", `/subjects/${id}/lectures/roadmap`);
+  });
+
+  it("does not add course lecture navigation to unsupported subjects", () => {
     render(<LectureTabs subjectId="another-subject" lectures={lectures} />);
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
   });

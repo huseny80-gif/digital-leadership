@@ -77,6 +77,24 @@ describe("Finquiz educational library", () => {
     expect(library.entries.some(e => e.id === "lg-l3" || e.id === "lg-s7" || e.id === "lg-f4")).toBe(false);
   });
 
+  it("serves the renamed AI and cyber sources with their permanent IDs and original checksums", async () => {
+    for (const [slug, ids] of [
+      ["ai-data", ["cae05b9640b56a01c8bf42c9"]],
+      ["cybersecurity-governance", ["c71268af93d9b8497abc489d", "df0946f8b2c16118ff75b278", "5c9e9cdbc978ce812679b0b3", "cd732cc944d300fd90c2dcef"]],
+    ] as const) {
+      const service = new LibraryService(contentFor(slug) as unknown as ContentService);
+      for (const id of ids) {
+        const file = await service.file(subjectMapping[slug]!, id, false);
+        expect(file.filename).toMatch(/^المحاضر/);
+        expect(createHash("sha256").update(await readFile(file.absolutePath)).digest("hex")).toBe(manifest.assets[id]!.sha256);
+      }
+    }
+    const hidden = new LibraryService(contentFor("cybersecurity-governance", "cs-l3") as unknown as ContentService);
+    const library = await hidden.get(subjectMapping["cybersecurity-governance"]!, false);
+    expect(library.entries.some(entry => ["cs-l3", "cs-s3", "cs-f6", "cs-f7", "cs-f8"].includes(entry.id))).toBe(false);
+    for (const id of ["df0946f8b2c16118ff75b278", "5c9e9cdbc978ce812679b0b3"]) await expect(hidden.file(subjectMapping["cybersecurity-governance"]!, id, false)).rejects.toMatchObject({ status: 404 });
+  });
+
   it("does not expose a hidden lecture, its summaries or its files through orphan resources", async () => {
     const service = new LibraryService(contentFor("ai-data", "ai-l1") as unknown as ContentService);
     const library = await service.get(subjectMapping["ai-data"]!, false);

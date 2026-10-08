@@ -2,6 +2,7 @@ import type { Pool } from "pg";
 import { manifest } from "../finquiz/catalog.js";
 import { aiAssessmentReview, aiReviewId, questionContentHash, type AiReviewCatalog } from "./aiAssessmentReviewCatalog.js";
 import { assertReadableSourceText } from "./sourceTextQuality.js";
+import { findSourceLecture } from "../finquiz/recordIdentity.js";
 
 interface QuestionRow {
   id: string; question_bank_id: string; created_by: string;
@@ -79,7 +80,7 @@ export async function reviewAiAssessments(pool: Pool, catalog: AiReviewCatalog =
       assertReadableSourceText(JSON.stringify(q));
       if (!row.citations.length || q.excerpt !== row.citations.map(citation => citation.quote).join("\n")) throw new Error("ai_review_citation_missing");
       const sourceLecture = row.lectureId ? sourceLectures.find(lecture => lecture.id === row.lectureId) : undefined;
-      const lectureId = old.lecture_id ?? (sourceLecture ? lectures.find(lecture => lecture.title === sourceLecture.title)?.id : null);
+      const lectureId = old.lecture_id ?? (sourceLecture ? findSourceLecture(sourceLecture, lectures)?.id : null);
       if (row.lectureId && !lectureId) throw new Error("ai_review_lecture_missing");
       const id = reviewId(`question:${old.id}`);
       replacementIds.set(old.id, id);
