@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { LibraryAsset, LibraryEntry, LibrarySection, SubjectLibrary } from "@shared/index";
 import type { ContentService } from "../content/contentService.js";
@@ -36,7 +35,9 @@ export const subjectMapping: Record<string, string> = {
 };
 const sections: LibrarySection[] = ["lectures", "summaries", "assignments", "references", "resources", "updates"];
 const normalize = (s: string) => s.normalize("NFKC").replace(/[\u064B-\u065F\u0670]/g, "").replace(/[أإآ]/g, "ا");
-const assetId = (path: string) => createHash("sha256").update(path).digest("hex").slice(0, 24);
+// Asset IDs are permanent download identities, independent of display names
+// and physical paths. Arabic renames keep existing bookmarked downloads valid.
+const assetsByPath = new Map(Object.values(manifest.assets).map(asset => [asset.path, asset]));
 const safeUrl = (url?: string | null) => url && /^https?:\/\//i.test(url) ? url : null;
 
 export class LibraryService {
@@ -54,8 +55,8 @@ export class LibraryService {
     const lectureIds = new Map(source.lectures.map(row => [row.id, findSourceLecture(row, lectures.items)?.id]));
     const entries: LibraryEntry[] = [];
     const referenced = new Set(sections.flatMap(section => source[section].flatMap(row => [
-      ...(row.files ?? []).flatMap(file => file.url ? [assetId(file.url)] : []),
-      ...(row.url?.startsWith("files/") ? [assetId(row.url)] : []),
+      ...(row.files ?? []).flatMap(file => file.url && assetsByPath.has(file.url) ? [assetsByPath.get(file.url)!.id] : []),
+      ...(row.url?.startsWith("files/") && assetsByPath.has(row.url) ? [assetsByPath.get(row.url)!.id] : []),
     ])));
     for (const section of sections) {
       for (const row of source[section]) {
@@ -71,7 +72,7 @@ export class LibraryService {
         const refs = [...(row.files ?? [])];
         if (row.url?.startsWith("files/")) refs.push({ type: "file", url: row.url, label: row.title });
         for (const ref of refs) {
-          const asset = ref.url ? manifest.assets[assetId(ref.url)] : undefined;
+          const asset = ref.url ? assetsByPath.get(ref.url) : undefined;
           if (asset && asset.subjectSlug === source.id) {
             files.push({ id: asset.id, filename: asset.filename, label: ref.label ?? asset.filename, sizeBytes: asset.sizeBytes, ...(asset.bodyHtml ? { bodyHtml: asset.bodyHtml } : {}) });
           } else unavailableFiles.push(ref.label ?? ref.type);

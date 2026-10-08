@@ -9,7 +9,7 @@ const reviewKey = "legal-source-quote-review-v1";
 const source = manifest.subjects.find(subject => subject.id === "legal-regulatory")!;
 const question = source.quizzes.flatMap(quiz => quiz.questions).find(q => q.id === "lg-q1-56")!;
 const originalPrompt = String((question.legacyPrompts as string[])[0]);
-const sourcePath = "files/legal-regulatory/Legal2.pdf";
+const sourcePath = "files/legal-regulatory/المحاضرة الثانية قانونية.pdf";
 const sourceSha256 = "39071aab222754463ca122e0b7569f83cb4465c17e25695d5f66f545cdb4805d";
 const sourceQuote = "التكنولوجيا تغير وسيلة ممارسة الإدارة لا خضوع الإدارة للقانون";
 
