@@ -4,9 +4,10 @@ import { fileURLToPath } from "node:url";
 import type { LibraryAsset, LibraryEntry, LibrarySection, SubjectLibrary } from "@shared/index";
 import type { ContentService } from "../content/contentService.js";
 import { notFound } from "../lib/httpError.js";
+import { findSourceLecture } from "./recordIdentity.js";
 
 interface SourceRow {
-  id: string; title: string; status?: string; lectureId?: string;
+  id: string; title: string; legacyTitles?: string[]; status?: string; lectureId?: string;
   description?: string; body?: string; date?: string; due?: string | null;
   difficulty?: string; demo?: boolean; objectives?: string[]; keyPoints?: string[];
   concepts?: Array<{ term: string; definition: string }>; terms?: string[];
@@ -50,7 +51,7 @@ export class LibraryService {
       this.content.listLecturesForSubjectOrThrow(subjectId, isAdmin, page),
       this.content.listAssignmentsForSubjectOrThrow(subjectId, isAdmin, page),
     ]);
-    const lectureIds = new Map(source.lectures.map(row => [row.id, lectures.items.find(l => normalize(l.title) === normalize(row.title))?.id]));
+    const lectureIds = new Map(source.lectures.map(row => [row.id, findSourceLecture(row, lectures.items)?.id]));
     const entries: LibraryEntry[] = [];
     const referenced = new Set(sections.flatMap(section => source[section].flatMap(row => [
       ...(row.files ?? []).flatMap(file => file.url ? [assetId(file.url)] : []),

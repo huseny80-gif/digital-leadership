@@ -5,6 +5,7 @@ import { LibraryService, manifest, subjectMapping } from "../../src/finquiz/cata
 import { libraryRoutes } from "../../src/finquiz/libraryRoutes.js";
 import { ContentService } from "../../src/content/contentService.js";
 import { HttpError } from "../../src/lib/httpError.js";
+import { finquizRecordId } from "../../src/finquiz/recordIdentity.js";
 
 function contentFor(slug: string, hiddenLecture = "") {
   const source = manifest.subjects.find(s => s.id === slug)!;
@@ -31,6 +32,30 @@ describe("Finquiz educational library", () => {
     content.getSubjectOrThrow.mockRejectedValue(new HttpError(404, "not_found", "Subject not found"));
     await expect(new LibraryService(content as unknown as ContentService).get(subjectMapping["ai-data"]!, false)).rejects.toMatchObject({ status: 404 });
     expect(content.listLecturesForSubjectOrThrow).not.toHaveBeenCalled();
+  });
+
+  it("keeps summaries and downloads available when the stable lecture ID has a renamed title", async () => {
+    const content = contentFor("legal-regulatory");
+    const source = manifest.subjects.find(s => s.id === "legal-regulatory")!;
+    content.listLecturesForSubjectOrThrow.mockResolvedValue({ items: source.lectures.map(l => ({ id: finquizRecordId("lecture:" + l.id), title: "عنوان عدّله المدرّب" })) });
+    const service = new LibraryService(content as unknown as ContentService);
+    const library = await service.get(subjectMapping["legal-regulatory"]!, false);
+    expect(library.entries.filter(e => e.section === "summaries")).toHaveLength(8);
+    const fourth = library.entries.find(e => e.id === "lg-s2")!;
+    expect(fourth.lectureId).toBe(finquizRecordId("lecture:lg-l2"));
+    expect(fourth.files[0]!.filename).toBe("المحاضرة الرابعة قانونية.pdf");
+    const download = await service.file(subjectMapping["legal-regulatory"]!, fourth.files[0]!.id, false);
+    expect(download.filename).toBe("المحاضرة الرابعة قانونية.pdf");
+    expect(download.absolutePath).toMatch(/Legal4\.pdf$/);
+  });
+
+  it("accepts legacy titles with existing IDs and hides a legal PDF if its lecture is hidden", async () => {
+    const content = contentFor("legal-regulatory", "lg-l3");
+    const source = manifest.subjects.find(s => s.id === "legal-regulatory")!;
+    content.listLecturesForSubjectOrThrow.mockResolvedValue({ items: source.lectures.filter(l => l.id !== "lg-l3").map(l => ({ id: l.id, title: l.legacyTitles![0]! })) });
+    const library = await new LibraryService(content as unknown as ContentService).get(subjectMapping["legal-regulatory"]!, false);
+    expect(library.entries.find(e => e.id === "lg-s1")!.lectureId).toBe("lg-l1");
+    expect(library.entries.some(e => e.id === "lg-l3" || e.id === "lg-s7" || e.id === "lg-f4")).toBe(false);
   });
 
   it("does not expose a hidden lecture, its summaries or its files through orphan resources", async () => {

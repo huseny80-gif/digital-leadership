@@ -1,12 +1,8 @@
-import { createHash } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 import { manifest, subjectMapping } from "./catalog.js";
+import { finquizRecordId as id, findSourceLecture } from "./recordIdentity.js";
 
 const types: Record<string, string> = { mcq: "multiple_choice", tf: "true_false", fill: "fill", match: "match", order: "order", open: "open" };
-function id(key: string) {
-  const hash = createHash("sha256").update("digital-leadership:finquiz:" + key).digest("hex");
-  return hash.slice(0, 8) + "-" + hash.slice(8, 12) + "-5" + hash.slice(13, 16) + "-a" + hash.slice(17, 20) + "-" + hash.slice(20, 32);
-}
 const normalized = (value: string) => value.normalize("NFKC").replace(/[\u064B-\u065F\u0670]/g, "").replace(/[أإآ]/g, "ا");
 
 /** Add only missing source records. Existing IDs, edits, attempts, answers,
@@ -23,12 +19,11 @@ export async function synchronizeFinquizCore(pool: Pool) {
       const subject = await client.query<{ created_by: string }>("select created_by from subjects where id = $1 and deleted_at is null", [subjectId]);
       const owner = subject.rows[0]?.created_by;
       if (!owner) throw new Error("Approved subject is missing: " + source.id);
-      const lectures = await client.query<{ title: string }>("select title from lectures where subject_id = $1 and deleted_at is null", [subjectId]);
-      const lectureTitles = new Set(lectures.rows.map(l => normalized(l.title)));
+      const lectures = await client.query<{ id: string; title: string }>("select id,title from lectures where subject_id = $1 and deleted_at is null", [subjectId]);
       for (const lecture of source.lectures) {
-        if (lectureTitles.has(normalized(lecture.title))) continue;
-        await client.query("insert into lectures (id, subject_id, title, description, order_index, status, created_by) values ($1,$2,$3,$4,$5,$6,$7) on conflict (id) do nothing", [id("lecture:" + lecture.id), subjectId, lecture.title, lecture.description ?? null, lecture.number, lecture.status ?? "draft", owner]);
-        inserted.lectures++;
+        if (findSourceLecture(lecture, lectures.rows)) continue;
+        const result = await client.query("insert into lectures (id, subject_id, title, description, order_index, status, created_by) values ($1,$2,$3,$4,$5,$6,$7) on conflict (id) do nothing", [id("lecture:" + lecture.id), subjectId, lecture.title, lecture.description ?? null, lecture.number, lecture.status ?? "draft", owner]);
+        inserted.lectures += result.rowCount ?? 0;
       }
       const assignments = await client.query<{ title: string }>("select title from assignments where subject_id = $1 and deleted_at is null", [subjectId]);
       const assignmentTitles = new Set(assignments.rows.map(a => normalized(a.title)));
@@ -47,7 +42,7 @@ export async function synchronizeFinquizCore(pool: Pool) {
         const questions = await client.query<{ id: string; prompt: string; question_type: string }>("select q.id, q.prompt, q.question_type from questions q join quiz_questions qq on qq.question_id = q.id where qq.quiz_id = $1 and q.deleted_at is null", [quizId]);
         const available = new Set(questions.rows.map(q => q.question_type + ":" + normalized(q.prompt)));
         const existingIds = new Set(questions.rows.map(q => q.id));
-        const missing = quiz.questions.filter(q => !existingIds.has(id("question:" + q.id)) && !available.has(types[String(q.type)] + ":" + normalized(String(q.prompt))));
+        const missing = quiz.questions.filter(q => !existingIds.has(id("question:" + q.id)) && ![q.prompt, ...(Array.isArray(q.legacyPrompts) ? q.legacyPrompts : [])].some(prompt => available.has(types[String(q.type)] + ":" + normalized(String(prompt)))));
         if (!missing.length) continue;
         const bank = await client.query<{ id: string }>("select id from question_banks where subject_id = $1 and title = $2 and deleted_at is null limit 1", [subjectId, quiz.title]);
         const bankId = bank.rows[0]?.id ?? id("bank:" + quiz.id);
