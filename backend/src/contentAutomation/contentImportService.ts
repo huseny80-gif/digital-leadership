@@ -13,6 +13,7 @@ import { cleanSourceText } from "./sourceText.js";
 import { generateQuestions, type GeneratedQuestion } from "./questionGeneration.js";
 import { reviewedAiPdf } from "./aiAssessmentReviewCatalog.js";
 import { assertReadableSourceText } from "./sourceTextQuality.js";
+import { LEGAL_SUBJECT_ID, legalLectureNumber, legalLectureTitle, replaceLegalLabels } from "./legalLectureLabels.js";
 
 type ImportRow = {
   id: string; created_by: string; source_hash: string; title: string; filename: string | null;
@@ -200,7 +201,17 @@ export class ContentImportService {
       const specified = job.subject_id ? candidates.find(s => s.id === job.subject_id) : null;
       if (job.subject_id && !specified) throw new Error("source_unavailable");
       const subject = specified ?? (reviewed ? candidates.find(candidate => candidate.id === reviewed.subjectId) : null) ?? classifySubject(candidates, text, `${job.title} ${job.filename ?? ""}`);
-      const sections = job.lecture_id || reviewed ? [{ title: job.title, number: null, text }] : splitLectures(text, job.title);
+      // Normalize only after the destination subject has been established.
+      // Filename/context hashes and the original document remain unchanged.
+      if (subject?.id === LEGAL_SUBJECT_ID) {
+        const number = legalLectureNumber(job.title);
+        if (number) job.title = legalLectureTitle(number);
+        if (job.filename) job.filename = replaceLegalLabels(job.filename);
+      }
+      const sections = (job.lecture_id || reviewed ? [{ title: job.title, number: null, text }] : splitLectures(text, job.title)).map(section => {
+        const number = subject?.id === LEGAL_SUBJECT_ID ? legalLectureNumber(section.title) : null;
+        return number ? { ...section, title: legalLectureTitle(number), number } : section;
+      });
       await heartbeat("generating");
       const generated: Array<{ section: LectureSection; questions: GeneratedQuestion[]; method: "source" | "ai" }> = [];
       for (const section of sections) {
@@ -260,6 +271,11 @@ export class ContentImportService {
         if (job.lecture_id) lecture = (await client.query<{ id: string; title: string; order_index: number; status: string }>("select id,title,order_index,status from lectures where id=$1 and subject_id=$2 and deleted_at is null for update", [job.lecture_id, subject.id])).rows[0];
         else if (entry.section.number) lecture = (await client.query<{ id: string; title: string; order_index: number; status: string }>("select id,title,order_index,status from lectures where subject_id=$1 and order_index=$2 and deleted_at is null order by created_at limit 1 for update", [subject.id, entry.section.number])).rows[0];
         if (job.lecture_id && !lecture) throw new Error("source_unavailable");
+        if (lecture && subject.id === LEGAL_SUBJECT_ID && legalLectureNumber(lecture.title)) {
+          const title = legalLectureTitle(legalLectureNumber(lecture.title)!);
+          if (lecture.title !== title) await client.query("update lectures set title=$2 where id=$1", [lecture.id, title]);
+          lecture.title = title;
+        }
         if (!lecture) {
           const next = entry.section.number ?? Number((await client.query<{ n: number }>("select coalesce(max(order_index),0)+1 as n from lectures where subject_id=$1 and deleted_at is null", [subject.id])).rows[0]!.n);
           lecture = (await client.query<{ id: string; title: string; order_index: number; status: string }>("insert into lectures(subject_id,title,description,order_index,status,created_by) values($1,$2,$3,$4,$5,$6) returning id,title,order_index,status", [subject.id, entry.section.title.slice(0, 200), "محاضرة مضافة تلقائيًا من المحتوى الدراسي.", next, subjectStatus.status, job.created_by])).rows[0]!;
@@ -284,7 +300,7 @@ export class ContentImportService {
         resultLectures.push({ id: lecture.id, title: lecture.title, number: lecture.order_index, questionCount: ids.length, quizId });
       }
       if (aggregateQuestions.length) await this.newQuizEdition(client, subject.id, null, subjectStatus.status, job, aggregateQuestions, `الاختبار التفاعلي: ${subject.title}`);
-      await client.query("update content_imports set status='completed',stage='completed',subject_id=$3,file_id=$4,result_lectures=$5::jsonb,question_count=$6,generation_method=$7,storage_key=null,lease_token=null,lease_until=null,error_message=null,updated_at=now() where id=$1 and lease_token=$2", [job.id, job.lease_token, subject.id, fileId, JSON.stringify(resultLectures), resultLectures.reduce((n, l) => n + l.questionCount, 0), generated.every(entry => entry.method === "ai") ? "ai" : "source"]);
+      await client.query("update content_imports set status='completed',stage='completed',subject_id=$3,file_id=$4,result_lectures=$5::jsonb,question_count=$6,generation_method=$7,title=$8,filename=$9,storage_key=null,lease_token=null,lease_until=null,error_message=null,updated_at=now() where id=$1 and lease_token=$2", [job.id, job.lease_token, subject.id, fileId, JSON.stringify(resultLectures), resultLectures.reduce((n, l) => n + l.questionCount, 0), generated.every(entry => entry.method === "ai") ? "ai" : "source", job.title, job.filename]);
       await client.query("commit");
     } catch (error) {
       await client.query("rollback");

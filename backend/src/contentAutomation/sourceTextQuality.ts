@@ -9,6 +9,11 @@ export function hasBrokenSourceEncoding(text: string): boolean {
   const clean = text.normalize("NFKC").replace(/[\u064B-\u065F\u0670]/g, "");
   const letters = clean.match(/[\u0621-\u064A\u066E\u066F\u06A1\u06BA\u06D5\u06CC]/g) ?? [];
   if (letters.length < 40) return false;
+  // The legal privacy PDF maps و/ن/ي to historical Kurdish letter codes
+  // (e.g. القانؽنية and السؾاطشيؽ). These are not readable Arabic words.
+  // Require repeated occurrences to avoid rejecting a quoted foreign name.
+  const fontMapGlyphs = clean.match(/[\u063B-\u063F]/g)?.length ?? 0;
+  if (fontMapGlyphs >= 3 && fontMapGlyphs / letters.length > 0.01) return true;
   if ((clean.match(/[\u066E\u066F\u06A1\u06BA\u06D5]/g)?.length ?? 0) / letters.length > 0.02) return true;
   const runs = clean.match(/[\u0621-\u064A]+/g) ?? [];
   const total = runs.reduce((sum, run) => sum + run.length, 0);

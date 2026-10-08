@@ -11,6 +11,8 @@ import { relocateIso27001Roadmap } from "./contentAutomation/relocateIso27001Roa
 import { reviewAiAssessments } from "./contentAutomation/reviewAiAssessments.js";
 import { ensureParticipantFeedbackSchema } from "./feedback/schema.js";
 import { ensureLearningDashboardSchema } from "./learning/schema.js";
+import { normalizeLegalContent } from "./contentAutomation/normalizeLegalContent.js";
+import { reviewLegalQuote } from "./contentAutomation/reviewLegalQuote.js";
 
 initMonitoring();
 
@@ -35,6 +37,9 @@ if (env.NODE_ENV === "production" && env.DATABASE_URL) {
   logger.info({ moved }, "iso27001_roadmap_relocated");
   const reviewed = await reviewAiAssessments(getPool());
   logger.info(reviewed, "ai_assessments_language_reviewed");
+  const legal = await normalizeLegalContent(getPool());
+  logger.info(legal, "legal_content_labels_normalized");
+  logger.info(await reviewLegalQuote(getPool()), "legal_content_source_quote_reviewed");
 }
 
 // Bind explicitly to 0.0.0.0 — Railway's healthcheck prober connects over
