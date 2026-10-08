@@ -27,7 +27,7 @@ async function seed() {
   const masters = new Map<string, string>();
   for (const profile of [ai, cyber]) for (const source of profile.source.lectures.filter(lecture => !lecture.id.startsWith("ai-reviewed-"))) {
     // Preserve arbitrary deployed IDs and the former wrong NIST order.
-    const lecture = await createLecture(pool, { subjectId: profile.subjectId, title: source.legacyTitles![0]!, orderIndex: source.id === "cs-l3" ? 2 : source.number, status: "published", createdBy: actor });
+    const lecture = await createLecture(pool, { subjectId: profile.subjectId, title: source.legacyTitles?.[0] ?? source.title, orderIndex: source.id === "cs-l3" ? 2 : source.number, status: "published", createdBy: actor });
     masters.set(source.id, lecture);
   }
   await synchronizeFinquizCore(pool);
@@ -159,7 +159,9 @@ describe("source-based AI and cybersecurity course refresh", () => {
     const roadmapTitle = "خارطة الطريق للحصول على الشهادة الدولية ISO 27001";
     const roadmap = await createLecture(pool, { subjectId: cyber.subjectId, title: roadmapTitle, orderIndex: 7, status: "published", createdBy: actor });
     const result = await refreshStudyCourses(pool);
-    expect(result[0]!.consolidation).toMatchObject({ changed: { lecturesArchived: 1 }, duplicateNumbers: [], skippedNumbers: [] });
+    // The checked source now also supplies a fourth-lecture container. Both
+    // it and the alternate merge into the inspected main source UUID.
+    expect(result[0]!.consolidation).toMatchObject({ changed: { lecturesArchived: 2 }, duplicateNumbers: [], skippedNumbers: [] });
     expect((await pool.query("select file_id from lecture_items where lecture_id=$1 and deleted_at is null", [main])).rows.map(row => row.file_id).sort()).toEqual(files.sort());
     expect((await pool.query("select checksum from files where id=any($1::uuid[])", [files])).rows.map(row => row.checksum).sort()).toEqual([source.sha256, "b".repeat(64)].sort());
     const quiz = (await pool.query("select id from quizzes where lecture_id=$1 and deleted_at is null and superseded_by is null", [main])).rows[0]!.id;

@@ -15,7 +15,7 @@ describe("complete, repeatable source content import", () => {
     const owner = await createUser(pool, { email: "finquiz-import-fixture@example.test", roleName: "admin", providerSubject: "finquiz-import-fixture" });
     for (const source of manifest.subjects) await pool.query("insert into subjects (id,title,status,created_by) values ($1,$2,'published',$3)", [subjectMapping[source.id], source.title, owner]);
     const first = await synchronizeFinquizCore(pool);
-    expect(first.inserted).toEqual({ lectures: 17, assignments: 52, quizzes: 5, questions: 187 });
+    expect(first.inserted).toEqual({ lectures: 25, assignments: 52, quizzes: 5, questions: 187 });
     const types = await pool.query("select distinct question_type from questions q join question_banks b on b.id = q.question_bank_id where b.subject_id = any($1::uuid[])", [Object.values(subjectMapping)]);
     expect(types.rows.map(r => r.question_type).sort()).toEqual(["fill", "match", "multiple_choice", "open", "order", "true_false"]);
     const question = (await pool.query("select q.id from questions q join question_banks b on b.id=q.question_bank_id where b.subject_id=$1 limit 1", [subjectMapping["ai-data"]])).rows[0];

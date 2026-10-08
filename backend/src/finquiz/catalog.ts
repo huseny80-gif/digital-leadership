@@ -4,6 +4,7 @@ import type { LibraryAsset, LibraryEntry, LibrarySection, SubjectLibrary } from 
 import type { ContentService } from "../content/contentService.js";
 import { notFound } from "../lib/httpError.js";
 import { findSourceLecture } from "./recordIdentity.js";
+import { assetPaths } from "./assetFiles.js";
 
 interface SourceRow {
   id: string; title: string; legacyTitles?: string[]; status?: string; lectureId?: string;
@@ -13,13 +14,13 @@ interface SourceRow {
   author?: string; publisher?: string; year?: string | number; note?: string; url?: string | null;
   files?: Array<{ url: string | null; label?: string; type: string }>;
 }
-interface SourceAsset { id: string; path: string; subjectSlug: string; filename: string; sizeBytes: number; sha256: string; bodyHtml?: string }
+export interface SourceAsset { id: string; path: string; parts?: string[]; subjectSlug: string; filename: string; sizeBytes: number; sha256: string; bodyHtml?: string }
 export interface SourceSubject {
   id: string; title: string; description?: string; order: number; status: string;
   lectures: Array<SourceRow & { number: number }>;
   summaries: SourceRow[]; assignments: SourceRow[]; references: SourceRow[];
   resources: SourceRow[]; updates: SourceRow[];
-  quizzes: Array<{ id: string; title: string; status: string; description?: string; questions: Array<Record<string, unknown>> }>;
+  quizzes: Array<{ id: string; title: string; status: string; description?: string; sourceReview?: string; lectureId?: string; questions: Array<Record<string, unknown>> }>;
 }
 export interface CatalogManifest { sourceCommit: string; counts: Record<string, number>; subjects: SourceSubject[]; assets: Record<string, SourceAsset> }
 export const catalogRoot = new URL("../../content/finquiz/", import.meta.url);
@@ -103,6 +104,6 @@ export class LibraryService {
     if (!library.entries.some(e => e.files.some(f => f.id === id && !f.bodyHtml))) throw notFound("File not found.");
     const asset = manifest.assets[id];
     if (!asset || asset.bodyHtml) throw notFound("File not found.");
-    return { filename: asset.filename, absolutePath: fileURLToPath(new URL(asset.path, catalogRoot)) };
+    return { filename: asset.filename, absolutePath: fileURLToPath(new URL(asset.parts?.[0] ?? asset.path, catalogRoot)), absolutePaths: assetPaths(asset, catalogRoot), sizeBytes: asset.sizeBytes };
   }
 }

@@ -20,7 +20,7 @@ function contentFor(slug: string, hiddenLecture = "") {
 
 describe("Finquiz educational library", () => {
   it("carries the entire source inventory without delivering quiz answers or source styling", async () => {
-    expect(manifest.counts).toEqual({ lectures: 17, summaries: 25, assignments: 52, quizzes: 5, references: 10, resources: 27, updates: 31, questions: 187 });
+    expect(manifest.counts).toEqual({ lectures: 25, summaries: 31, assignments: 52, quizzes: 11, references: 10, resources: 30, updates: 31, questions: 259 });
     for (const source of manifest.subjects) {
       const library = await new LibraryService(contentFor(source.id) as unknown as ContentService).get(subjectMapping[source.id]!, false);
       for (const section of ["lectures", "summaries", "assignments", "references", "updates"] as const) expect(library.entries.filter(e => e.section === section)).toHaveLength(source[section].filter(row => row.status === "published").length);
@@ -42,7 +42,7 @@ describe("Finquiz educational library", () => {
     content.listLecturesForSubjectOrThrow.mockResolvedValue({ items: source.lectures.map(l => ({ id: finquizRecordId("lecture:" + l.id), title: "عنوان عدّله المدرّب" })) });
     const service = new LibraryService(content as unknown as ContentService);
     const library = await service.get(subjectMapping["legal-regulatory"]!, false);
-    expect(library.entries.filter(e => e.section === "summaries")).toHaveLength(8);
+    expect(library.entries.filter(e => e.section === "summaries")).toHaveLength(10);
     const fourth = library.entries.find(e => e.id === "lg-s2")!;
     expect(fourth.lectureId).toBe(finquizRecordId("lecture:lg-l2"));
     expect(fourth.files[0]!.filename).toBe("المحاضرة الرابعة قانونية.pdf");
@@ -71,7 +71,7 @@ describe("Finquiz educational library", () => {
   it("accepts legacy titles with existing IDs and hides a legal PDF if its lecture is hidden", async () => {
     const content = contentFor("legal-regulatory", "lg-l3");
     const source = manifest.subjects.find(s => s.id === "legal-regulatory")!;
-    content.listLecturesForSubjectOrThrow.mockResolvedValue({ items: source.lectures.filter(l => l.id !== "lg-l3").map(l => ({ id: l.id, title: l.legacyTitles![0]! })) });
+    content.listLecturesForSubjectOrThrow.mockResolvedValue({ items: source.lectures.filter(l => l.id !== "lg-l3").map(l => ({ id: l.id, title: l.legacyTitles?.[0] ?? l.title })) });
     const library = await new LibraryService(content as unknown as ContentService).get(subjectMapping["legal-regulatory"]!, false);
     expect(library.entries.find(e => e.id === "lg-s1")!.lectureId).toBe("lg-l1");
     expect(library.entries.some(e => e.id === "lg-l3" || e.id === "lg-s7" || e.id === "lg-f4")).toBe(false);

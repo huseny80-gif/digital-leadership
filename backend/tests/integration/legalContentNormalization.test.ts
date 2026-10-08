@@ -67,7 +67,7 @@ describe("in-place legal content normalization", () => {
     await pool.query("update questions set lecture_id=$2 where id=$1", [overridden, overrideLecture]);
     const result = await normalizeLegalContent(pool);
     expect(result.changed.questionLectureLinks).toBe(69);
-    expect(result.availableNumbers).toEqual([1, 2, 3, 4]);
+    expect(result.availableNumbers).toEqual([1, 2, 3, 4, 5, 6]);
     expect(result.audit).toMatchObject({ questionCount: 70, invalidAnswerStructures: 0, incorrectSubjectLinks: 0, emptyCurrentQuizzes: 0 });
     expect((await pool.query("select lecture_id from questions where id=$1", [overridden])).rows[0].lecture_id).toBe(overrideLecture);
     const fourth = manifest.subjects.find(s => s.id === "legal-regulatory")!.quizzes[0]!.questions.find(q => q.lectureId === "lg-l2")!;
