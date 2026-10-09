@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer, QuizAttempt } from "@shared/index";
 import { QuizNavigation } from "./QuizNavigation";
@@ -56,7 +56,7 @@ export function QuizAttemptRunner({
   quiz, questions, attemptId, initialAnswers = [], initialFeedback = [], startedAt,
   apiBasePath = "/api", routeBasePath = "/quizzes", reviewMode = false,
   initialDifficulty = "all", initialLecture = "all",
-  backHref, onFinished, onRestart,
+  backHref, onFinished, onRestart, displayTitle,
 }: {
   quiz: Quiz;
   questions: QuestionForAttempt[];
@@ -72,6 +72,7 @@ export function QuizAttemptRunner({
   backHref?: string;
   onFinished?: (attemptId: string) => Promise<void> | void;
   onRestart?: (attempt: QuizAttempt) => Promise<void> | void;
+  displayTitle?: ReactNode;
 }) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -278,7 +279,7 @@ export function QuizAttemptRunner({
     <section className="finquiz-training" aria-label={reviewMode ? "مراجعة الإجابات" : "الاختبار التفاعلي"}>
       <QuizNavigation quiz={quiz} backHref={backHref ?? `${routeBasePath}/${quiz.id}`} />
       <div className="quiz-head">
-        {reviewMode ? <h2>مراجعة الإجابات — {quiz.title}</h2> : <h1>{quiz.title}</h1>}
+        {reviewMode ? <h2>مراجعة الإجابات — {displayTitle ?? quiz.title}</h2> : <h1>{displayTitle ?? quiz.title}</h1>}
         {quiz.description ? <p>{quiz.description}</p> : null}
         {remainingSeconds !== null ? <p role="timer" aria-live={remainingSeconds <= 60 ? "polite" : "off"}>الوقت المتبقي: {Math.floor(remainingSeconds / 60)}:{String(remainingSeconds % 60).padStart(2, "0")}</p> : null}
       </div>

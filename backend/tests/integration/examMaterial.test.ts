@@ -200,6 +200,9 @@ describe("independent exam material archives", () => {
     const client = await pool.connect();
     try {
       await client.query("begin"); await client.query("set local role authenticated");
+      await client.query("select set_config('request.jwt.claim.sub',$1,true)", [s.bob]);
+      expect((await client.query("select id from quizzes where purpose='exam_material'")).rows).toHaveLength(0);
+      expect((await client.query("select id from quizzes where id=$1", [s.courseQuiz])).rows).toHaveLength(1);
       await expect(client.query("select * from exam_material_groups")).rejects.toMatchObject({ code: "42501" });
       await client.query("rollback");
     } finally { await client.query("rollback"); client.release(); }

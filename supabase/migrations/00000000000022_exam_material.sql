@@ -2,6 +2,12 @@
 alter table public.quizzes add column if not exists purpose text not null default 'course'
   check (purpose in ('course','exam_material'));
 
+-- Learners access exam quiz metadata through the backend, which checks every
+-- selected source. A direct database session cannot bypass those checks via
+-- the legacy published-quiz metadata policy. Admin archive access is retained.
+alter policy quizzes_select_published_or_admin on public.quizzes
+  using ((auth.uid() is not null and status='published' and purpose='course') or is_admin());
+
 create table if not exists public.exam_material_groups (
   id uuid primary key default gen_random_uuid(),
   subject_id uuid not null references public.subjects(id) on delete restrict,

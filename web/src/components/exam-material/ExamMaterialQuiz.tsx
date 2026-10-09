@@ -6,6 +6,7 @@ import type { ExamMaterialAttempt, ExamMaterialDetail, QuizAttempt } from "@shar
 import { QuizAttemptRunner } from "@/components/quiz/QuizAttemptRunner";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import { examHref, examRequest } from "./request";
+import { ExamGroupTitle } from "./ExamGroupTitle";
 import styles from "./examMaterial.module.css";
 
 export function ExamMaterialQuiz({ group }: { group: ExamMaterialDetail }) {
@@ -65,6 +66,6 @@ export function ExamMaterialQuiz({ group }: { group: ExamMaterialDetail }) {
       <div className={styles.score}>{Math.round(current.result.percentage)}<small>%</small></div>
       <div><h3>نتيجة الاختبار</h3><p>الإجابات الصحيحة: {current.result.correctAnswers} من {current.result.totalQuestions}</p><p>الأسئلة المجاب عنها: {current.result.answeredQuestions} — الدرجة: {current.result.score}</p></div>
     </div> : null}
-    <QuizAttemptRunner key={`${current.attempt.id}:${current.attempt.status}`} quiz={current.quiz} questions={current.questions} attemptId={current.attempt.id} initialAnswers={current.answers} initialFeedback={current.feedback} startedAt={current.attempt.startedAt} reviewMode={current.attempt.status !== "in_progress"} backHref={examHref(group.subjectId, group.id, "summary")} onFinished={refreshResult} onRestart={restarted} />
+    <QuizAttemptRunner key={`${current.attempt.id}:${current.attempt.status}`} quiz={current.quiz} displayTitle={<ExamGroupTitle title={current.quiz.title} />} questions={current.questions} attemptId={current.attempt.id} initialAnswers={current.answers} initialFeedback={current.feedback} startedAt={current.attempt.startedAt} reviewMode={current.attempt.status !== "in_progress"} backHref={examHref(group.subjectId, group.id, "summary")} onFinished={refreshResult} onRestart={restarted} />
   </div>;
 }
