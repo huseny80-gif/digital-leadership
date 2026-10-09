@@ -128,7 +128,7 @@ describe("independent exam material archives", () => {
     const file = await createFile(pool, { storageKey: `full-source/${randomUUID()}.pdf`, uploadedBy: s.admin });
     await createLectureItem(pool, { lectureId: s.lectures[0]!, itemType: "pdf", title: "النص الكامل", fileId: file, status: "published", createdBy: s.admin, bodyText: `## تطبيقات إدارة المخاطر\n${full.join("\n")}\n## التصعيد وحدود الصلاحية\n${lateTopic}` });
     const group = await s.generate([s.lectures[0]!]);
-    expect(group.summary.version).toBe(2);
+    expect(group.summary.version).toBe(3);
     const section = group.summary.sections[0]!;
     expect(group.summary.sections).toHaveLength(1);
     for (const paragraph of full) expect(section.text).toContain(paragraph);
@@ -144,6 +144,44 @@ describe("independent exam material archives", () => {
     expect(second.id).toBe(first.id);
     expect((await pool.query("select count(*)::int as n from exam_material_groups")).rows[0].n).toBe(1);
     await request(s.app).post(`/api/v1/admin/subjects/${s.subject}/exam-material`).set("Authorization", `Bearer ${s.tokens[0]}`).send({ lectureIds: [s.lectures[0]], requestId: id }).expect(409);
+  });
+
+  it("keeps scientific content separate from question appendices and also cleans bookmarked historical summaries", async () => {
+    const s = await seed();
+    const scientific = "يجب توثيق محفز التصعيد وجهة الإبلاغ ومهلته عند تجاوز صلاحية مالك الخطر، ثم متابعة تنفيذ القرار والتحقق من أثر الاستجابة.";
+    const file = await createFile(pool, { storageKey: `study-only/${randomUUID()}.pdf`, uploadedBy: s.admin });
+    await createLectureItem(pool, { lectureId: s.lectures[0]!, itemType: "pdf", title: "محتوى المحاضرة", fileId: file, status: "published", createdBy: s.admin,
+      bodyText: `<h2>التصعيد والمتابعة</h2><p>${scientific}</p><h3>التمرين التفاعلي — اختبار ذاتي موثّق بالمرجع</h3><p>بنك أسئلة المحاضرة</p><p>QUESTION_APPENDIX_ONLY</p><h4>الإجابة النموذجية والتعليل</h4><p>ANSWER_APPENDIX_ONLY</p>` });
+    await createLectureItem(pool, { lectureId: s.lectures[0]!, itemType: "summary", title: "دليل الحلول والتعليل", status: "published", createdBy: s.admin,
+      bodyText: "ANSWER_FILE_ONLY يتضمن هذا الملف إجابات الأسئلة وتفصيل التعاليل، وهو ملحق مستقل وليس من المحتوى العلمي للمحاضرة." });
+    const keys = (await pool.query("select * from question_options where question_id=any($1::uuid[]) order by id", [s.originals])).rows;
+    const group = await s.generate([s.lectures[0]!]);
+    expect(group.summary.sections[0]!.text).toContain(scientific);
+    expect(JSON.stringify(group.summary)).not.toMatch(/QUESTION_APPENDIX_ONLY|ANSWER_APPENDIX_ONLY|ANSWER_FILE_ONLY|التمرين التفاعلي/);
+    expect(group.questionCount).toBe(2);
+    const saved = structuredClone(group.summary);
+    saved.version = 2;
+    saved.sections[0]!.topics!.push({ title: "الإجابات النموذجية والتعاليل", text: "SAVED_ANSWER_APPENDIX" });
+    saved.sections[0]!.keyPoints.push("بنك أسئلة المحاضرة: SAVED_ANSWER_APPENDIX");
+    await pool.query("update exam_material_groups set summary=$1::jsonb where id=$2", [JSON.stringify(saved), group.id]);
+    const stored = (await pool.query("select * from exam_material_groups where id=$1", [group.id])).rows[0];
+    const attempt = (await pool.query("insert into quiz_attempts(quiz_id,user_id,status,score) values($1,$2,'graded',1) returning *", [group.quizId, s.bob])).rows[0];
+    const historical = (await request(s.app).get(`${s.path}/${group.id}`).set("Cookie", s.cookie).expect(200)).body.data as ExamMaterialDetail;
+    expect(historical.quizId).toBe(group.quizId);
+    expect(historical.summary.sections[0]!.text).toContain(scientific);
+    expect(JSON.stringify(historical.summary)).not.toContain("SAVED_ANSWER_APPENDIX");
+    expect((await pool.query("select * from exam_material_groups where id=$1", [group.id])).rows[0]).toEqual(stored);
+    expect((await pool.query("select * from quiz_attempts where id=$1", [attempt.id])).rows[0]).toEqual(attempt);
+    expect((await pool.query("select * from question_options where question_id=any($1::uuid[]) order by id", [s.originals])).rows).toEqual(keys);
+  });
+
+  it("does not substitute an answer-only document for missing scientific lecture content", async () => {
+    const s = await seed();
+    await pool.query("delete from lecture_items where lecture_id=$1", [s.lectures[3]]);
+    await createLectureItem(pool, { lectureId: s.lectures[3]!, itemType: "summary", title: "دليل الحلول والتعليل", status: "published", createdBy: s.admin,
+      bodyText: "ANSWER_FILE_ONLY يتضمن هذا الملف إجابات الأسئلة وتفصيل التعاليل، وهو ملحق مستقل وليس من المحتوى العلمي للمحاضرة." });
+    await request(s.app).post(`/api/v1/admin/subjects/${s.subject}/exam-material`).set("Authorization", `Bearer ${s.tokens[0]}`).send({ lectureIds: [s.lectures[3]], requestId: randomUUID() }).expect(400);
+    expect((await pool.query("select count(*)::int n from exam_material_groups")).rows[0].n).toBe(0);
   });
 
   it("generates grounded automatic questions for a new lecture and rejects unreadable or missing content atomically", async () => {
@@ -286,6 +324,7 @@ describe("independent exam material archives", () => {
       expect(response.status, JSON.stringify({ subject: sourceSubject.id, error: response.body.error })).toBe(201);
       const archive = response.body.data as ExamMaterialDetail;
       expect(archive.summary.sections).toHaveLength(lectures.length);
+      expect(JSON.stringify(archive.summary), sourceSubject.id).not.toMatch(/التمرين التفاعلي|اختبار ذاتي موث|بنك أسئلة|عدد الأسئلة|نوع الأسئلة|ابدأ الاختبار|نص السؤال|الإجابة النموذجية/);
       expect(archive.questionCount).toBeGreaterThanOrEqual(lectures.length);
       archives.push(archive);
     }
@@ -295,5 +334,5 @@ describe("independent exam material archives", () => {
     expect(leaks.rows[0].n).toBe(0);
     expect((await pool.query("select count(*)::int as n from quizzes where purpose='exam_material' and superseded_by is not null")).rows[0].n).toBe(0);
     for (const group of archives) expect((await request(s.app).get(`/api/v1/subjects/${group.subjectId}/exam-material/${group.id}`).set("Cookie", s.cookie).expect(200)).body.data.summary).toEqual(group.summary);
-  });
+  }, 30000); // Imports/reviews all five real catalogs in a cold database.
 });
