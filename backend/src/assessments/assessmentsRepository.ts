@@ -13,6 +13,7 @@ import type {
 } from "@shared/index";
 import { fillAnswerMatches } from "./fillNormalization.js";
 import { ValidationError } from "../lib/validation.js";
+import { examQuizVisible } from "../examMaterials/visibility.js";
 
 /** Source rubrics contain {text, keywords}; never display them through
  * String(object), JSON or heuristic grading. Plain legacy text is also supported. */
@@ -195,7 +196,7 @@ const QUIZ_VISIBILITY_JOIN = `
 
 function quizVisibilityClause(isAdmin: boolean): string {
   if (isAdmin) return "";
-  return `and q.status = 'published' and s.status = 'published' and (q.lecture_id is null or l.status = 'published')`;
+  return `and q.status = 'published' and s.status = 'published' and (q.lecture_id is null or (l.status = 'published' and l.deleted_at is null and l.subject_id=q.subject_id)) and ${examQuizVisible}`;
 }
 
 export class PgAssessmentsRepository implements AssessmentsRepository {

@@ -8,6 +8,7 @@ import {
 import { LibraryService } from "../finquiz/catalog.js";
 import { ContentService } from "../content/contentService.js";
 import { PgContentRepository } from "../content/contentRepository.js";
+import { examQuizVisible } from "../examMaterials/visibility.js";
 
 const sqlNormalize = (expression: string) =>
   `regexp_replace(translate(lower(normalize(${expression}, NFKC)), 'أإآى', 'اااي'), '[ً-ٰٟـ]', '', 'g')`;
@@ -41,6 +42,7 @@ export class SearchService {
         select q.id::text,'quiz',q.title,s.title,'/quizzes/'||q.id,concat_ws(' ',q.title,q.description,s.title)
         from quizzes q join subjects s on s.id=q.subject_id left join lectures l on l.id=q.lecture_id
         where q.status='published' and q.deleted_at is null and q.superseded_by is null
+          and ${examQuizVisible}
           and s.status='published' and s.deleted_at is null
           and (q.lecture_id is null or (l.subject_id=q.subject_id and l.status='published' and l.deleted_at is null))
       ), matched as (

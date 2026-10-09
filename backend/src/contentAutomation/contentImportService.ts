@@ -343,7 +343,7 @@ export class ContentImportService {
   }
 
   private async newQuizEdition(client: PoolClient, subjectId: string, lectureId: string | null, status: string, job: ImportRow, ids: string[], fallbackTitle: string): Promise<string> {
-    const previous = (await client.query<{ id: string; title: string; description: string | null; time_limit_seconds: number | null }>("select id,title,description,time_limit_seconds from quizzes where subject_id=$1 and lecture_id is not distinct from $2::uuid and deleted_at is null and superseded_by is null order by created_at,id limit 1 for update", [subjectId, lectureId])).rows[0];
+    const previous = (await client.query<{ id: string; title: string; description: string | null; time_limit_seconds: number | null }>("select id,title,description,time_limit_seconds from quizzes where purpose='course' and subject_id=$1 and lecture_id is not distinct from $2::uuid and deleted_at is null and superseded_by is null order by created_at,id limit 1 for update", [subjectId, lectureId])).rows[0];
     const id = randomUUID();
     await client.query("insert into quizzes(id,subject_id,lecture_id,title,description,time_limit_seconds,status,created_by) values($1,$2,$3,$4,$5,$6,$7,$8)", [id, subjectId, lectureId, previous?.title ?? fallbackTitle.slice(0, 200), previous?.description ?? "اختبار يتحدث تلقائيًا عند إضافة محتوى دراسي، مع أسئلة موزعة حسب المحاضرات.", previous?.time_limit_seconds ?? null, status, job.created_by]);
     if (previous) {

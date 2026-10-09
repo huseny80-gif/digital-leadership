@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer, QuizAttempt } from "@shared/index";
 import { QuizNavigation } from "./QuizNavigation";
@@ -56,6 +56,7 @@ export function QuizAttemptRunner({
   quiz, questions, attemptId, initialAnswers = [], initialFeedback = [], startedAt,
   apiBasePath = "/api", routeBasePath = "/quizzes", reviewMode = false,
   initialDifficulty = "all", initialLecture = "all",
+  backHref, onFinished, onRestart, displayTitle,
 }: {
   quiz: Quiz;
   questions: QuestionForAttempt[];
@@ -68,6 +69,10 @@ export function QuizAttemptRunner({
   reviewMode?: boolean;
   initialDifficulty?: string;
   initialLecture?: string;
+  backHref?: string;
+  onFinished?: (attemptId: string) => Promise<void> | void;
+  onRestart?: (attempt: QuizAttempt) => Promise<void> | void;
+  displayTitle?: ReactNode;
 }) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -166,7 +171,8 @@ export function QuizAttemptRunner({
       });
       const body = await response.json() as { data?: SubmitAnswerAck };
       if (response.status === 409) {
-        router.push(`${routeBasePath}/${quiz.id}/result/${attemptId}`);
+        if (onFinished) await onFinished(attemptId);
+        else router.push(`${routeBasePath}/${quiz.id}/result/${attemptId}`);
         return null;
       }
       if (!response.ok || !body.data?.recorded || body.data.questionId !== questionId) throw new Error("Answer not recorded");
@@ -229,11 +235,12 @@ export function QuizAttemptRunner({
       await response.json();
       if (!response.ok && response.status !== 409) throw new Error("Submit failed");
       notifyLearningProgress();
-      finished = true;
       const filters = new URLSearchParams();
       if (difficulty !== "all") filters.set("difficulty", difficulty);
       if (lecture !== "all") filters.set("lecture", lecture);
-      router.push(`${routeBasePath}/${quiz.id}/result/${attemptId}${filters.size ? `?${filters}` : ""}`);
+      if (onFinished) await onFinished(attemptId);
+      else router.push(`${routeBasePath}/${quiz.id}/result/${attemptId}${filters.size ? `?${filters}` : ""}`);
+      finished = true;
     } catch {
       setSubmitError("تعذر إنهاء الاختبار. إجاباتك المحفوظة متاحة؛ حاول مرة أخرى.");
     } finally {
@@ -256,8 +263,9 @@ export function QuizAttemptRunner({
       const response = await fetch(`${apiBasePath}/quizzes/${quiz.id}/attempts`, { method: "POST" });
       const body = await response.json() as { data?: QuizAttempt };
       if (!response.ok || !body.data?.id) throw new Error("Restart failed");
+      if (onRestart) await onRestart(body.data);
+      else router.push(`${routeBasePath}/${quiz.id}/attempt/${body.data.id}`);
       navigated = true;
-      router.push(`${routeBasePath}/${quiz.id}/attempt/${body.data.id}`);
     } catch {
       setSubmitError("تعذر بدء محاولة جديدة. حاول مرة أخرى.");
     } finally {
@@ -265,13 +273,13 @@ export function QuizAttemptRunner({
     }
   }
 
-  if (questions.length === 0) return <section><QuizNavigation quiz={quiz} backHref={`${routeBasePath}/${quiz.id}`} /><div className="state-block"><p className="state-title">لا توجد أسئلة في هذا الاختبار</p></div></section>;
+  if (questions.length === 0) return <section><QuizNavigation quiz={quiz} backHref={backHref ?? `${routeBasePath}/${quiz.id}`} /><div className="state-block"><p className="state-title">لا توجد أسئلة في هذا الاختبار</p></div></section>;
 
   return (
     <section className="finquiz-training" aria-label={reviewMode ? "مراجعة الإجابات" : "الاختبار التفاعلي"}>
-      <QuizNavigation quiz={quiz} backHref={`${routeBasePath}/${quiz.id}`} />
+      <QuizNavigation quiz={quiz} backHref={backHref ?? `${routeBasePath}/${quiz.id}`} />
       <div className="quiz-head">
-        {reviewMode ? <h2>مراجعة الإجابات — {quiz.title}</h2> : <h1>{quiz.title}</h1>}
+        {reviewMode ? <h2>مراجعة الإجابات — {displayTitle ?? quiz.title}</h2> : <h1>{displayTitle ?? quiz.title}</h1>}
         {quiz.description ? <p>{quiz.description}</p> : null}
         {remainingSeconds !== null ? <p role="timer" aria-live={remainingSeconds <= 60 ? "polite" : "off"}>الوقت المتبقي: {Math.floor(remainingSeconds / 60)}:{String(remainingSeconds % 60).padStart(2, "0")}</p> : null}
       </div>

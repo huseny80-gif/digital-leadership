@@ -13,6 +13,7 @@ import { requireAuthenticated } from "../middleware/authInstance.js";
 import { contentImportRoutes } from "../contentAutomation/contentImportRoutes.js";
 import { feedbackRoutes } from "../feedback/feedbackRoutes.js";
 import { learningRoutes } from "../learning/learningRoutes.js";
+import { examMaterialRoutes } from "../examMaterials/examMaterialRoutes.js";
 
 /**
  * Assembles the versioned API surface under `/api/v1` (API_V1.md,
@@ -32,6 +33,7 @@ export function apiV1Router(): Router {
   router.use("/", assessmentsRoutes());
   router.use("/", feedbackRoutes());
   router.use("/", learningRoutes());
+  router.use("/", examMaterialRoutes());
   router.use("/analytics", analyticsRoutes());
   router.use("/admin/content-imports", contentImportRoutes());
   router.use("/admin", adminRoutes());

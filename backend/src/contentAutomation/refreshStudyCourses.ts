@@ -75,7 +75,7 @@ async function normalizeCourse(pool: Pool, profile: CourseSourceLabels) {
     }
     for (const target of [
       { table: "lecture_items", key: "items" as const, sql: "select i.id,i.title from lecture_items i join lectures l on l.id=i.lecture_id where l.subject_id=$1 and i.deleted_at is null order by i.id for update of i" },
-      { table: "quizzes", key: "quizzes" as const, sql: "select id,title from quizzes where subject_id=$1 and deleted_at is null order by id for update" },
+      { table: "quizzes", key: "quizzes" as const, sql: "select id,title from quizzes where purpose='course' and subject_id=$1 and deleted_at is null order by id for update" },
       { table: "question_banks", key: "banks" as const, sql: "select id,title from question_banks where subject_id=$1 and deleted_at is null order by id for update" },
     ]) for (const row of (await client.query<{ id: string; title: string }>(target.sql, [profile.subjectId])).rows) {
       let title = profile.label(row.title);
@@ -158,12 +158,12 @@ async function refreshLectureQuizzes(pool: Pool, profile: CourseSourceLabels, hi
     for (const lecture of lectures) {
       if (!profile.numberOf(lecture.title)) continue;
       const title = "اختبار " + lecture.title;
-      const previous = (await client.query<{ id: string; description: string | null; time_limit_seconds: number | null; created_by: string; due_at: Date | null }>("select id,description,time_limit_seconds,created_by,due_at from quizzes where subject_id=$1 and lecture_id=$2 and title=$3 and status='published' and deleted_at is null and superseded_by is null order by created_at,id for update", [profile.subjectId, lecture.id, title])).rows;
+      const previous = (await client.query<{ id: string; description: string | null; time_limit_seconds: number | null; created_by: string; due_at: Date | null }>("select id,description,time_limit_seconds,created_by,due_at from quizzes where purpose='course' and subject_id=$1 and lecture_id=$2 and title=$3 and status='published' and deleted_at is null and superseded_by is null order by created_at,id for update", [profile.subjectId, lecture.id, title])).rows;
       const previousIds = previous.map(quiz => quiz.id);
       if (previous.length > 1 && previous.some(quiz => quiz.time_limit_seconds !== previous[0]!.time_limit_seconds || quiz.due_at?.getTime() !== previous[0]!.due_at?.getTime())) continue;
       const questions = (await client.query<{ question_id: string; order_index: number; points_override: number | null }>(`select distinct on(q.id) q.id as question_id,qq.order_index,qq.points_override
         from questions q join question_banks b on b.id=q.question_bank_id join quiz_questions qq on qq.question_id=q.id join quizzes z on z.id=qq.quiz_id
-        where b.subject_id=$1 and q.lecture_id=$2 and q.deleted_at is null and z.subject_id=$1 and z.status='published' and z.deleted_at is null and z.superseded_by is null order by q.id,(z.id=any($3::uuid[])) desc,z.created_at,z.id,qq.order_index`, [profile.subjectId, lecture.id, previousIds])).rows.sort((a, b) => a.order_index - b.order_index);
+        where b.subject_id=$1 and q.lecture_id=$2 and q.deleted_at is null and z.purpose='course' and z.subject_id=$1 and z.status='published' and z.deleted_at is null and z.superseded_by is null order by q.id,(z.id=any($3::uuid[])) desc,z.created_at,z.id,qq.order_index`, [profile.subjectId, lecture.id, previousIds])).rows.sort((a, b) => a.order_index - b.order_index);
       if (!questions.length) continue;
       if (previous.length === 1) {
         const linked = (await client.query<{ question_id: string }>("select question_id from quiz_questions where quiz_id=$1", [previous[0]!.id])).rows;
@@ -195,7 +195,7 @@ async function refreshLectureQuizzes(pool: Pool, profile: CourseSourceLabels, hi
 }
 
 async function hideEmptyTemplateQuestions(client: PoolClient, subjectId: string, hidden: string[]) {
-  const quizzes = (await client.query<{ id: string }>(`select z.id from quizzes z where z.subject_id=$1 and z.deleted_at is null and z.superseded_by is null
+  const quizzes = (await client.query<{ id: string }>(`select z.id from quizzes z where z.purpose='course' and z.subject_id=$1 and z.deleted_at is null and z.superseded_by is null
     and exists(select 1 from quiz_questions qq join questions q on q.id=qq.question_id where qq.quiz_id=z.id and q.lecture_id=any($2::uuid[]) and q.source_import_id is null) order by z.id for update`, [subjectId, hidden])).rows;
   for (const previous of quizzes) {
     const id = finquizRecordId(key + ":visible-quiz:" + previous.id);
