@@ -14,6 +14,14 @@ export function plainStudyText(value: string): string {
     .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"'));
 }
 
+/** Evaluate each published source independently. A failed PDF transcription
+ * must not invalidate a readable summary or another approved source. Reject
+ * the entire damaged fragment rather than guessing how to repair its words. */
+export function readableStudyText(fragments: string[]): string {
+  const readable = fragments.map(fragment => plainStudyText(fragment).trim()).filter(text => text.length > 30 && !hasBrokenSourceEncoding(text));
+  return [...new Set(readable)].join("\n\n");
+}
+
 export function lectureSelectionLabel(numbers: number[]): string {
   const sorted = [...new Set(numbers)].sort((a, b) => a - b);
   return sorted.length > 1 && sorted.every((value, index) => index === 0 || value === sorted[index - 1]! + 1)

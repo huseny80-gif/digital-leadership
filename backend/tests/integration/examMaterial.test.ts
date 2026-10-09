@@ -7,7 +7,7 @@ import { createApp } from "../../src/app.js";
 import { ensureExamMaterialSchema } from "../../src/examMaterials/schema.js";
 import { ContentImportService } from "../../src/contentAutomation/contentImportService.js";
 import { generateSourceQuestions } from "../../src/contentAutomation/questionGeneration.js";
-import { createUser, createSubject, createLecture, createLectureItem, createQuiz, createEmptyQuestionBank, createFillQuestion, createMatchQuestion, createOrderQuestion, addQuestionToQuiz } from "../helpers/seedFixtures.js";
+import { createUser, createSubject, createLecture, createLectureItem, createFile, createQuiz, createEmptyQuestionBank, createFillQuestion, createMatchQuestion, createOrderQuestion, addQuestionToQuiz } from "../helpers/seedFixtures.js";
 import { signFakeSupabaseToken } from "../helpers/fakeSupabaseToken.js";
 import { hashToken } from "../../src/trainingAccess/token.js";
 import { signGuestSessionCookieValue } from "../../src/trainingAccess/guestSessionCookie.js";
@@ -17,6 +17,7 @@ import { normalizeLegalContent } from "../../src/contentAutomation/normalizeLega
 import { refreshStudyCourses } from "../../src/contentAutomation/refreshStudyCourses.js";
 import { reviewOneDriveSources } from "../../src/contentAutomation/reviewOneDriveSources.js";
 import { reviewAiAssessments } from "../../src/contentAutomation/reviewAiAssessments.js";
+import { hasBrokenSourceEncoding } from "../../src/contentAutomation/sourceTextQuality.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const source = "تتضمن إدارة المخاطر تحديد الأحداث المحتملة وتحليل الاحتمالية والأثر قبل اختيار خطة الاستجابة المناسبة لحماية أهداف المؤسسة.\nتساعد مصفوفة المخاطر على ترتيب الأولويات وتوجيه الموارد نحو المخاطر ذات التأثير المرتفع بصورة منتظمة داخل المؤسسة.\nيجب توثيق الإجراءات ومراجعة النتائج مع فريق العمل لتحديث خطة المخاطر ومتابعة فعالية الاستجابة والتحسين المستمر.";
@@ -137,6 +138,48 @@ describe("independent exam material archives", () => {
     await createLectureItem(pool, { lectureId: empty, itemType: "summary", title: "نص تالف", status: "published", createdBy: s.admin, bodyText: "نص غير قابل للقراءة �".repeat(15) });
     await request(s.app).post(url).set("Authorization", `Bearer ${s.tokens[0]}`).send({ lectureIds: [empty], requestId: randomUUID() }).expect(400);
     expect((await pool.query("select count(*)::int as n from exam_material_groups")).rows[0].n).toBe(1);
+  });
+
+  it("generates AI lectures 1–3 from readable published sources despite corrupt legacy PDF and summary extracts", async () => {
+    const s = await seed();
+    const sourceSubject = manifest.subjects.find(subject => subject.id === "ai-data")!;
+    const subjectId = subjectMapping[sourceSubject.id]!;
+    await pool.query("insert into subjects(id,title,status,created_by) values($1,$2,'published',$3)", [subjectId, sourceSubject.title, s.admin]);
+    // Live lecture IDs can predate the catalog import. Resolve their exact
+    // canonical titles instead of requiring the deterministic catalog IDs.
+    const lectures: string[] = [];
+    for (const row of sourceSubject.lectures.slice(0, 3)) lectures.push(await createLecture(pool, { subjectId, title: row.title, orderIndex: row.number, status: "published", createdBy: s.admin }));
+    const corrupt = [
+      { id: lectures[0]!, type: "summary" as const, text: "استخلاص قديم غير مقروء �".repeat(30) },
+      { id: lectures[1]!, type: "pdf" as const, text: "نص قديم القانؽنية السؾاطشيؽ القانؽنية السؾاطشيؽ".repeat(30) },
+      { id: lectures[2]!, type: "pdf" as const, text: "ملف قديم غير مقروء �".repeat(30) },
+    ];
+    const itemIds: string[] = [];
+    for (const row of corrupt) {
+      const fileId = row.type === "pdf" ? await createFile(pool, { storageKey: `legacy/${randomUUID()}.pdf`, uploadedBy: s.admin }) : undefined;
+      itemIds.push(await createLectureItem(pool, { lectureId: row.id, itemType: row.type, title: "استخلاص قديم", bodyText: row.text, ...(fileId ? { fileId } : {}), status: "published", createdBy: s.admin }));
+    }
+    const before = (await pool.query("select id,body_text from lecture_items where id=any($1::uuid[]) order by id", [itemIds])).rows;
+    const response = await request(s.app).post(`/api/v1/admin/subjects/${subjectId}/exam-material`).set("Authorization", `Bearer ${s.tokens[0]}`).send({ lectureIds: lectures, requestId: randomUUID() });
+    expect(response.status, JSON.stringify(response.body.error)).toBe(201);
+    const group = response.body.data as ExamMaterialDetail;
+    expect(group.lectures.map(lecture => lecture.number)).toEqual([1, 2, 3]);
+    expect(group.summary.sections).toHaveLength(3);
+    expect(group.summary.sections.every(section => !hasBrokenSourceEncoding(section.text))).toBe(true);
+    expect(group.summary.sections[0]!.text).toContain("Claude");
+    expect(group.summary.sections[2]!.text.length).toBeGreaterThan(70);
+    expect(group.questionCount).toBeGreaterThanOrEqual(3);
+    expect((await pool.query("select id,body_text from lecture_items where id=any($1::uuid[]) order by id", [itemIds])).rows).toEqual(before);
+  });
+
+  it("falls back to readable approved excerpts when all stored lecture text is damaged", async () => {
+    const s = await seed();
+    await pool.query("update lecture_items set body_text=$1 where lecture_id=$2", ["�".repeat(150), s.lectures[0]]);
+    await pool.query("update questions set source_excerpt=$1 where id=$2", ["�".repeat(150), s.originals[0]]);
+    const group = await s.generate([s.lectures[0]!]);
+    expect(group.summary.sections[0]!.text.split(/\n+/)).toEqual(source.split("\n"));
+    expect(group.questionCount).toBe(1);
+    expect((await pool.query("select question_type from questions q join quiz_questions qq on qq.question_id=q.id where qq.quiz_id=$1", [group.quizId])).rows).toEqual([{ question_type: "fill" }]);
   });
 
   it("grades all automatic formats for a permanent guest, restores only earned feedback, and protects attempt ownership", async () => {
