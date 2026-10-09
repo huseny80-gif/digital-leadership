@@ -32,7 +32,7 @@ async function seed() {
 describe("learner study tools", () => {
   it("requires a verified principal and exposes only published source metadata", async () => {
     const s = await seed();
-    for (const path of ["catalog", "chat", "report", "export?format=pdf"]) {
+    for (const path of ["catalog", "chat", "report", "export?format=pdf", "print"]) {
       const call = path === "catalog" ? request(s.app).get(`/api/v1/study-tools/${path}`) : request(s.app).post(`/api/v1/study-tools/${path}`).send({});
       await call.expect(401);
     }
@@ -76,5 +76,20 @@ describe("learner study tools", () => {
     await request(s.app).post("/api/v1/study-tools/export?format=pdf").set("Cookie", s.cookie).send({ ...input, digest: report.digest }).expect(409);
     await pool.query("update lectures set status='draft' where id=$1", [s.lecture]);
     await request(s.app).post("/api/v1/study-tools/export?format=pdf").set("Cookie", s.cookie).send({ ...input, digest: report.digest }).expect(404);
+  });
+  it("prints visible text as a private PDF for guests and users, validates bounds, and preserves content and attempts", async () => {
+    const s = await seed(), path = "/api/v1/study-tools/print";
+    const body = { kind: "questions", title: "أسئلة المراجعة", subtitle: "منصة القيادة الرقمية", blocks: [{ text: "السؤال الأول", heading: true }, { text: "كيف تساعد مصفوفة المخاطر المؤسسة؟" }, { text: "أ) ترتيب الأولويات وتوجيه الموارد" }] };
+    for (const auth of [{ Cookie: s.cookie }, { Authorization: `Bearer ${s.token}` }]) {
+      const response = await request(s.app).post(path).set(auth).send(body).expect(200);
+      expect(response.headers["content-type"]).toContain("application/pdf"); expect(response.headers["cache-control"]).toBe("private, no-store"); expect(response.headers["content-disposition"]).toContain("questions.pdf");
+      expect(response.body.subarray(0, 5).toString()).toBe("%PDF-");
+    }
+    await request(s.app).post(path).set("Cookie", s.cookie).send({ ...body, blocks: [] }).expect(400);
+    await request(s.app).post(path).set("Cookie", s.cookie).send({ ...body, blocks: [{ text: "a".repeat(20001) }] }).expect(400);
+    await request(s.app).post(path).set("Cookie", s.cookie).send({ ...body, role: "admin" }).expect(400);
+    await request(s.app).post(path).set("Cookie", s.cookie).send({ ...body, blocks: Array.from({ length: 26 }, () => ({ text: "a".repeat(10000) })) }).expect(400);
+    expect((await pool.query("select count(*)::int as count from quiz_attempts")).rows[0].count).toBe(0);
+    expect((await pool.query("select body_text from lecture_items where id=$1", [s.summary])).rows[0].body_text).toContain(text);
   });
 });

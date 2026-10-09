@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import PDFDocument from "pdfkit";
 import type { Bidi } from "bidi-js";
 import { AlignmentType, Document, Header, HeadingLevel, PageNumber, Packer, Paragraph, TextRun } from "docx";
-import type { StudyReport } from "@shared/index";
+import type { StudyReport, StudyPrintDocument } from "@shared/index";
 
 const bidi = (createRequire(import.meta.url)("bidi-js") as () => Bidi)();
 const font = (weight: "Regular" | "Bold") => fileURLToPath(new URL(`../../content/report-fonts/Amiri-${weight}.ttf`, import.meta.url));
@@ -50,14 +50,36 @@ function visualRuns(text: string): string[] {
   return runs.sort((a, b) => a.visual - b.visual).map(run => text.slice(run.start, run.end).split("").map((character, offset) => mirrors.get(run.start + offset) ?? character).join(""));
 }
 export function reportPdf(report: StudyReport): Promise<Buffer> {
+  return studyPdf({ kind: "summary", title: report.title, subtitle: report.author, blocks: [
+    { text: "مقدمة", heading: true }, { text: report.introduction },
+    ...report.sections.flatMap(section => [
+      { text: section.title, heading: true },
+      ...(section.kind === "assignment" ? [{ text: "إرشادات الواجب المختار" }] : []),
+      ...section.paragraphs.map(text => ({ text })), { text: section.citation },
+    ]),
+    ...(report.notes ? [{ text: "ملاحظات معدّ التقرير", heading: true }, { text: report.notes }] : []),
+    { text: "المراجع — APA7", heading: true }, ...report.references.map(reference => ({ text: reference.formatted })),
+  ] }, report.author || "Digital Leadership");
+}
+
+/** Reuses the report renderer's embedded Arabic fonts and bidirectional shaping. */
+export function studyPdf(input: StudyPrintDocument, author = "Digital Leadership"): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const document = new PDFDocument({ size: "A4", margins: { top: 72, bottom: 72, left: 72, right: 72 }, bufferPages: true, info: { Title: report.title, Author: report.author || "Digital Leadership" } });
+    const document = new PDFDocument({ size: "A4", margins: { top: 72, bottom: 72, left: 72, right: 72 }, bufferPages: true, info: { Title: input.title, Author: author } });
     const chunks: Buffer[] = [];
     document.on("data", chunk => chunks.push(chunk)); document.on("error", reject); document.on("end", () => resolve(Buffer.concat(chunks)));
     document.registerFont("Arabic", font("Regular")); document.registerFont("ArabicBold", font("Bold"));
     const width = document.page.width - 144;
     const features: NonNullable<PDFKit.Mixins.TextOptions["features"]> = [];
-    const measure = (text: string) => document.widthOfString(text, { features });
+    // Cache widths per font style without enabling PDFKit's word layout cache,
+    // which would change the visual order of Arabic glyphs.
+    const widths = new Map<string, number>();
+    let measureStyle = "body";
+    const measure = (text: string) => {
+      const key = `${measureStyle}:${text}`, cached = widths.get(key);
+      if (cached !== undefined) return cached;
+      const value = document.widthOfString(text, { features }); widths.set(key, value); return value;
+    };
     let y = 90;
     const line = (text: string, size: number) => {
       const runs = visualRuns(text);
@@ -67,6 +89,7 @@ export function reportPdf(report: StudyReport): Promise<Buffer> {
       y += size * 2;
     };
     const write = (text: string, heading = false) => {
+      measureStyle = heading ? "heading" : "body";
       const size = heading ? 14 : 12; document.font(heading ? "ArabicBold" : "Arabic").fontSize(size).fillColor("#111111");
       const writeLine = (value: string) => { if (y + size * 2 > document.page.height - 72) { document.addPage(); y = 80; } line(value, size); };
       for (const paragraph of text.split(/\n+/)) {
@@ -86,15 +109,8 @@ export function reportPdf(report: StudyReport): Promise<Buffer> {
       }
       y += heading ? 8 : 12;
     };
-    write(report.title, true); if (report.author) write(report.author);
-    write("مقدمة", true); write(report.introduction);
-    for (const section of report.sections) {
-      write(section.title, true); if (section.kind === "assignment") write("إرشادات الواجب المختار");
-      for (const paragraph of section.paragraphs) write(paragraph);
-      write(section.citation);
-    }
-    if (report.notes) { write("ملاحظات معدّ التقرير", true); write(report.notes); }
-    write("المراجع — APA7", true); for (const reference of report.references) write(reference.formatted);
+    write(input.title, true); if (input.subtitle) write(input.subtitle);
+    for (const block of input.blocks) write(block.text, block.heading);
     const range = document.bufferedPageRange();
     for (let page = range.start; page < range.start + range.count; page++) {
       document.switchToPage(page); document.font("Arabic").fontSize(12).text(String(page + 1), 72, 36, { width, align: "right", lineBreak: false });

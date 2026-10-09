@@ -3,7 +3,7 @@ import JSZip from "jszip";
 import { PDFParse } from "pdf-parse";
 import { StudyAssistant } from "../../src/studyTools/studyAssistant.js";
 import { StudyReports, referenceFor } from "../../src/studyTools/studyReport.js";
-import { reportDocx, reportPdf } from "../../src/studyTools/reportExport.js";
+import { reportDocx, reportPdf, studyPdf } from "../../src/studyTools/reportExport.js";
 import type { StudySource } from "../../src/studyTools/studySources.js";
 
 const source: StudySource = {
@@ -72,5 +72,21 @@ describe("academic report sources and real export formats", () => {
       expect(text).toContain("ISO 27001"); expect(text).toContain("المخاطر"); expect(text).toContain("APA7");
       expect(text).toContain("تتضمن إدارة المخاطر");
     } finally { await parser.destroy(); }
+  });
+  it("prints complete multi-page Arabic question and summary documents without adding report material", async () => {
+    for (const kind of ["questions", "summary"] as const) {
+      const pdf = await studyPdf({ kind, title: "مراجعة إدارة المخاطر", subtitle: "منصة القيادة الرقمية — ISO 27001 (1-3)", blocks: [
+        { text: "مصفوفة المخاطر", heading: true },
+        ...Array.from({ length: 20 }, () => ({ text: source.text })),
+        { text: "آخر محتوى المحاضرة محفوظ بالكامل.", heading: true },
+      ] });
+      const parser = new PDFParse({ data: pdf });
+      try {
+        const parsed = await parser.getText(), text = parsed.text.normalize("NFKC");
+        expect(parsed.pages.length).toBeGreaterThan(1);
+        expect(text).toContain("ISO 27001"); expect(text).toContain("مصفوفة المخاطر"); expect(text).toContain("آخر محتوى المحاضرة محفوظ بالكامل.");
+        expect(text).not.toContain("APA7"); expect(text).not.toContain("ملاحظات معدّ التقرير");
+      } finally { await parser.destroy(); }
+    }
   });
 });

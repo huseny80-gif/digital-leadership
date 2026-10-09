@@ -22,6 +22,14 @@ The preview has content and APA7 reference tabs. Any selection or input change r
 
 Word is a real DOCX archive with RTL paragraphs, 12-point Times New Roman, double spacing, page numbers, one-inch A4 margins and hanging reference indents. PDF uses embedded OFL-licensed Amiri fonts, searchable Unicode text, double-spaced body text, page numbers, Unicode bidirectional ordering and native Arabic shaping. Both formats contain the previewed sections, citations and references; reference accuracy depends on the source metadata. APA formatting is adapted to Arabic course materials.
 
+## Floating PDF printing
+
+Quiz runners, exam-material academic summaries, the subject's summaries library and lecture summary pages show a floating **طباعة PDF** glass button. It sits above the study assistant and mobile navigation. Question downloads include every question in the current lecture/difficulty filters, preserve delivered option/item order, and contain only public prompts and choices. Answer keys, feedback, rubrics, attempt IDs and learner inputs are not included; printing neither starts nor submits an attempt.
+
+Summary downloads include the displayed scientific text, objectives, concepts, key points, folded topic details, HTML lists and table values. Text is not re-summarized or invented. Long paragraphs are split without dropping their tail. Attached original PDFs can be opened through their existing authorized library route for native printing. The options panel supports keyboard focus, Escape and outside-click closure, and scrolls within short screens.
+
+`POST /print` accepts a strict `StudyPrintDocument` (kind, title, subtitle, text/heading blocks) from the authorized view and reuses the embedded-font Arabic PDF renderer. It reads no source or answer tables and stores no export. Payloads are limited to 2,000 blocks, 20,000 characters per block, 250,000 total text characters and a route-scoped 1 MB JSON body. Existing learner/guest authentication and per-principal throttling apply. Downloads are private/uncached; clients reject non-PDF responses and abort requests on unmount.
+
 ## Integration routes
 
 All routes are under `/api/v1/study-tools` and use the existing learner/guest principal middleware:
@@ -32,6 +40,7 @@ All routes are under `/api/v1/study-tools` and use the existing learner/guest pr
 | POST | `/chat` | message, mode, optional subjectId/text/history |
 | POST | `/report` | title, author, optional notes, source references (id, subjectId, kind) |
 | POST | `/export?format=docx` or `pdf` | Same report input plus preview digest |
+| POST | `/print` | kind (questions/summary), title, subtitle, text/heading blocks |
 
 Next route handlers under `/api/study-tools/[action]` whitelist action/query paths, forward the verified token or guest cookie, and stream binary downloads. Error responses remain safe and JSON-shaped. There is no new database migration or production-data cleanup.
 
