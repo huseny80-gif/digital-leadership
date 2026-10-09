@@ -44,6 +44,7 @@ export function subjectTabs(
       icon: "📋",
       count: counts.assignments,
     },
+    { key: "exam-material", href: `/subjects/${subjectId}/exam-material`, label: "المادة الامتحانية", icon: "📑" },
     { key: "summaries", href: `/subjects/${subjectId}/library?section=summaries`, label: "الملخصات", icon: "📄" },
     { key: "references", href: `/subjects/${subjectId}/library?section=references`, label: "المراجع", icon: "📚" },
     { key: "resources", href: `/subjects/${subjectId}/library?section=resources`, label: "الموارد", icon: "📁" },

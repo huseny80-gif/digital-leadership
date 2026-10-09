@@ -10,6 +10,7 @@ export * from "./types/analytics.js";
 export * from "./types/trainingAccess.js";
 export * from "./types/feedback.js";
 export * from "./types/learning.js";
+export * from "./types/examMaterial.js";
 export * from "./search.js";
 export * from "./constants/guestSession.js";
 export * from "./contracts/api.js";

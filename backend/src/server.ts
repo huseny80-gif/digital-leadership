@@ -18,6 +18,7 @@ import { separateLegalSixthLecture } from "./contentAutomation/separateLegalSixt
 import { LEGAL_SUBJECT_ID, legalLectureTitle } from "./contentAutomation/legalLectureLabels.js";
 import { refreshStudyCourses } from "./contentAutomation/refreshStudyCourses.js";
 import { reviewOneDriveSources } from "./contentAutomation/reviewOneDriveSources.js";
+import { ensureExamMaterialSchema } from "./examMaterials/schema.js";
 
 initMonitoring();
 
@@ -33,6 +34,8 @@ if (env.DATABASE_URL) {
   logger.info("participant_feedback_schema_ready");
   await ensureLearningDashboardSchema(getPool());
   logger.info("learning_dashboard_schema_ready");
+  await ensureExamMaterialSchema(getPool());
+  logger.info("exam_material_schema_ready");
 }
 
 if (env.NODE_ENV === "production" && env.DATABASE_URL) {

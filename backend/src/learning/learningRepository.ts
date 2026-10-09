@@ -6,6 +6,7 @@ import type {
   LearningOverview,
 } from "@shared/index";
 import { notFound } from "../lib/httpError.js";
+import { examQuizVisible } from "../examMaterials/visibility.js";
 
 function owner(principal: AssessmentPrincipal) {
   return principal.kind === "user"
@@ -28,6 +29,7 @@ const visibleContent = `
   visible_quizzes as (
     select q.*,s.title as subject_title from quizzes q join visible_subjects s on s.id=q.subject_id
     where q.status='published' and q.deleted_at is null and q.superseded_by is null
+      and ${examQuizVisible}
       and (q.lecture_id is null or exists(select 1 from visible_lectures l where l.id=q.lecture_id and l.subject_id=q.subject_id))
   )`;
 
