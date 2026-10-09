@@ -12,7 +12,7 @@ import { ValidationError, type PaginationParams } from "../lib/validation.js";
 import { generateSourceQuestions, type GeneratedQuestion } from "../contentAutomation/questionGeneration.js";
 import { hasBrokenSourceEncoding } from "../contentAutomation/sourceTextQuality.js";
 import { aiAssessmentReview, reviewedAiPdf } from "../contentAutomation/aiAssessmentReviewCatalog.js";
-import { compileExamSummary, lectureSelectionLabel, plainStudyText, readableStudyText } from "./summary.js";
+import { compileExamSummary, isAssessmentAppendixTitle, lectureSelectionLabel, plainStudyText, readableStudyText, studyOnlyExamSummary } from "./summary.js";
 import { examGroupVisible } from "./visibility.js";
 
 interface GroupRow {
@@ -102,7 +102,7 @@ export class ExamMaterialService {
   async detail(subjectId: string, groupId: string, isAdmin: boolean): Promise<ExamMaterialDetail> {
     const row = (await this.pool.query<GroupRow>(`select g.* ${groupJoin} where g.subject_id=$1 and g.id=$2 and ${groupWhere(isAdmin)}`, [subjectId, groupId])).rows[0];
     if (!row) throw notFound("Exam material");
-    return { ...groupMetadata(row), summary: row.summary, quiz: await this.assessments.getQuizOrThrow(row.quiz_id, isAdmin) };
+    return { ...groupMetadata(row), summary: studyOnlyExamSummary(row.summary), quiz: await this.assessments.getQuizOrThrow(row.quiz_id, isAdmin) };
   }
 
   async attempt(subjectId: string, groupId: string, attemptId: string, principal: AssessmentPrincipal, isAdmin: boolean): Promise<ExamMaterialAttempt> {
@@ -148,7 +148,7 @@ export class ExamMaterialService {
       const items = (await client.query<{ lecture_id: string; title: string; item_type: string; body_text: string }>("select lecture_id,title,item_type,body_text from lecture_items where lecture_id=any($1::uuid[]) and item_type in ('summary','pdf') and status='published' and deleted_at is null and body_text is not null order by lecture_id,item_type desc,order_index,created_at", [lectureIds])).rows;
       const reviewedQuestions: SourceQuestion[] = [];
       const sections = await Promise.all(selected.map(async (lecture, position) => {
-        const entries = library.entries.filter(e => e.lectureId === lecture.id && ["summaries", "lectures"].includes(e.section));
+        const entries = library.entries.filter(e => e.lectureId === lecture.id && ["summaries", "lectures"].includes(e.section) && !isAssessmentAppendixTitle(e.title));
         const heading = (title: string, fragments: string[]) => {
           const body = readableStudyText(fragments);
           return body ? `## ${title}\n\n${body}` : "";
@@ -159,9 +159,9 @@ export class ExamMaterialService {
         const entryText = entries.flatMap(entry => [
           heading(entry.section === "summaries" ? "الخلاصة الأكاديمية" : "السياق العام للمحاضرة", [entry.description ?? ""]),
           heading("محاور المحاضرة", entry.keyPoints ?? []),
-          ...entry.files.map(file => file.bodyHtml ?? ""),
+          ...entry.files.filter(file => !isAssessmentAppendixTitle(file.filename) && !isAssessmentAppendixTitle(file.label)).map(file => file.bodyHtml ?? ""),
         ]);
-        const itemText = items.filter(item => item.lecture_id === lecture.id).map(item => heading(item.item_type === "pdf" ? "محتوى المحاضرة وتفاصيلها" : "الشرح والمراجعة", [item.body_text]));
+        const itemText = items.filter(item => item.lecture_id === lecture.id && !isAssessmentAppendixTitle(item.title)).map(item => heading(item.item_type === "pdf" ? "محتوى المحاضرة وتفاصيلها" : "الشرح والمراجعة", [item.body_text]));
         // Approved exact-PDF passages supplement the published lecture bodies,
         // even when a brief summary already exists. No filename inference.
         const reviewed = await this.publishedPdfReview(subjectId, entries);
@@ -226,7 +226,7 @@ export class ExamMaterialService {
       const file = await this.library.file(subjectId, asset.id, false);
       const bytes = Buffer.concat(await Promise.all(file.absolutePaths.map(path => readFile(path))));
       const reviewed = reviewedAiPdf(bytes);
-      if (reviewed) return reviewed;
+      if (reviewed) return { ...reviewed, text: isAssessmentAppendixTitle(asset.filename) || isAssessmentAppendixTitle(asset.label) ? "" : reviewed.text };
     }
     return null;
   }
