@@ -63,6 +63,7 @@ export async function ContentHub({ subjects, view, query = "" }: { subjects: Sub
   const results = entries.filter((entry) => !query || normalize(`${entry.title} ${entry.subjectTitle} ${entry.keywords ?? ""}`).includes(normalize(query))).sort((a, b) => a.subjectTitle.localeCompare(b.subjectTitle, "ar") || a.title.localeCompare(b.title, "ar"));
   return <section>
     <h1 className="page-heading">{contentViews[view]}</h1>
+    {view === "files" ? <p><Link href="/subjects/reports" className="button button-primary">إعداد تقرير أكاديمي وتصديره</Link></p> : null}
     {query ? <p className="page-subheading">نتائج البحث عن «{query}»</p> : null}
     {failed ? <ErrorState message="تعذّر تحميل بعض المحتوى. يرجى المحاولة مرة أخرى." retryHref={`/subjects?view=${view}${query ? `&q=${encodeURIComponent(query)}` : ""}`} /> : null}
     {results.length ? <div className="dl-content-hub">{results.map((entry) => <Link href={entry.href} className="dl-hub-row" key={entry.id}><PlatformIcon name={entry.icon} /><span><strong>{entry.title}</strong><small>{entry.subjectTitle}</small></span></Link>)}</div> : !failed ? <EmptyState title="لا توجد نتائج متاحة" message="سيظهر المحتوى هنا فور نشره." /> : null}

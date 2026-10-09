@@ -20,8 +20,21 @@ export interface ExamMaterialGroup {
   lectures: ExamLectureSnapshot[];
   questionCount: number;
   quizId: string;
+  /** Number of visible revisions of this exact lecture selection. */
+  revisionCount?: number;
 }
-export interface ExamMaterialDetail extends ExamMaterialGroup { summary: ExamMaterialSummary; quiz: Quiz }
+export interface ExamMaterialDetail extends ExamMaterialGroup {
+  summary: ExamMaterialSummary;
+  quiz: Quiz;
+  /** Latest visible revision; the requested snapshot and quiz remain unchanged. */
+  currentRevision?: ExamMaterialGroup;
+}
+export interface ExamMaterialHistory {
+  revisions: ExamMaterialGroup[];
+  latestId: string;
+  total: number;
+  page: number;
+}
 export interface ExamMaterialIndex {
   subject: Subject;
   lectures: Lecture[];

@@ -25,6 +25,8 @@ const paths: Record<string, ReactNode> = {
   arrow: <path d="M21 12H3m5-5-5 5 5 5" />,
   menu: <path d="M3 5h18M3 12h18M3 19h18" />,
   close: <path d="m5 5 14 14M19 5 5 19" />,
+  assistant: <><path d="M4 15a7 7 0 0 1 11-9M4 15v6l4-3h7a6 6 0 0 0 6-6" /><path d="m18 2 1.5 4.5L24 8l-4.5 1.5L18 14l-1.5-4.5L12 8l4.5-1.5Z" /><path d="M8 12h3M8 15h7" /></>,
+  download: <><path d="M12 2v13m-5-5 5 5 5-5M3 16v5h18v-5" /></>,
   user: <><circle cx="12" cy="8" r="4" /><path d="M4 22v-2a8 8 0 0 1 16 0v2" /></>,
   settings: <><circle cx="12" cy="12" r="4" /><path d="m9 2-1 3-3 1-3 3 2 3-1 3 3 3 3-1 3 2 3-2 3 1 3-3-1-3 2-3-3-3-3-1-1-3Z" /></>,
 };
