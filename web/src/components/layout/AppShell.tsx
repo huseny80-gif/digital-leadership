@@ -17,6 +17,7 @@ import { SmartSearch } from "@/components/search/SmartSearch";
 import { LearningProvider } from "@/components/learning/LearningProvider";
 import { NotificationsHub } from "@/components/learning/NotificationsHub";
 import { useThemePreference } from "@/lib/themePreference";
+import { StudyAssistantWidget } from "@/components/study-tools/StudyAssistantWidget";
 
 /** One application shell for registered users, admins and scoped guests.
  * Route/API authorization stays at the existing server boundaries. */
@@ -40,6 +41,7 @@ export function AppShell({ children, isAdmin, isInstructor = false, userEmail, u
     { href: "/subjects?view=assignments", label: "الواجبات والأنشطة", icon: "document" },
     { href: "/subjects?view=assessments", label: "الاختبارات", icon: "quiz" },
     { href: "/subjects?view=files", label: "المصادر والملفات", icon: "folder" },
+    { href: "/subjects/reports", label: "التقارير الأكاديمية", icon: "document" },
     { href: "/training", label: "المجتمع التدريبي", icon: "users" },
     { href: "/dashboard#learning-analytics", label: "الإحصائيات", icon: "chart" },
     { href: "/feedback", label: "شاركنا رأيك", icon: "feedback" },
@@ -95,5 +97,6 @@ export function AppShell({ children, isAdmin, isInstructor = false, userEmail, u
     <div className="app-body"><Sidebar items={items} onNavigate={() => setNavigationOpen(false)} /><main id="main-content" className="app-main">{children}</main></div>
     <Footer items={items} accountLinks={isGuest ? [] : undefined} />
     <BottomNav items={items.filter((item) => ["home", "book", "quiz", "feedback", "info"].includes(item.icon ?? ""))} />
+    <StudyAssistantWidget />
   </div></LearningProvider>;
 }

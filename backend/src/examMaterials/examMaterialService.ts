@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import type { Pool, PoolClient } from "pg";
-import type { AssessmentPrincipal, ExamMaterialAttempt, ExamMaterialDetail, ExamMaterialGroup, ExamMaterialIndex, ExamMaterialSummary, Lecture, LibraryEntry, QuestionType } from "@shared/index";
+import type { AssessmentPrincipal, ExamMaterialAttempt, ExamMaterialDetail, ExamMaterialGroup, ExamMaterialHistory, ExamMaterialIndex, ExamMaterialSummary, Lecture, LibraryEntry, QuestionType } from "@shared/index";
 import { ContentService } from "../content/contentService.js";
 import { PgContentRepository } from "../content/contentRepository.js";
 import { LibraryService } from "../finquiz/catalog.js";
@@ -15,10 +15,12 @@ import { aiAssessmentReview, reviewedAiPdf } from "../contentAutomation/aiAssess
 import { compileExamSummary, isAssessmentAppendixTitle, lectureSelectionLabel, plainStudyText, readableStudyText, studyOnlyExamSummary } from "./summary.js";
 import { examGroupVisible } from "./visibility.js";
 
-interface GroupRow {
+interface GroupMetadataRow {
   id: string; subject_id: string; title: string; sequence: number; created_at: Date;
-  lecture_ids: string[]; lectures: ExamMaterialGroup["lectures"]; summary: ExamMaterialSummary;
-  question_count: number; quiz_id: string;
+  lectures: ExamMaterialGroup["lectures"]; question_count: number; quiz_id: string; revision_count?: number;
+}
+interface GroupRow extends GroupMetadataRow {
+  lecture_ids: string[]; summary: ExamMaterialSummary;
 }
 interface SourceQuestion {
   id?: string; lecture_id: string; question_type: QuestionType; prompt: string; points: number;
@@ -69,12 +71,17 @@ function balancedQuestions(questions: SourceQuestion[], limit: number): SourceQu
   }
   return result;
 }
-function groupMetadata(row: GroupRow): ExamMaterialGroup {
+function groupMetadata(row: GroupMetadataRow): ExamMaterialGroup {
   return { id: row.id, subjectId: row.subject_id, title: row.title, sequence: row.sequence,
-    createdAt: row.created_at.toISOString(), lectures: row.lectures, questionCount: row.question_count, quizId: row.quiz_id };
+    createdAt: row.created_at.toISOString(), lectures: row.lectures, questionCount: row.question_count, quizId: row.quiz_id,
+    ...(row.revision_count === undefined ? {} : { revisionCount: row.revision_count }) };
 }
 const groupWhere = (isAdmin: boolean) => `s.deleted_at is null and q.deleted_at is null ${isAdmin ? "" : `and s.status='published' and q.status='published' and ${examGroupVisible}`}`;
 const groupJoin = "from exam_material_groups g join subjects s on s.id=g.subject_id join quizzes q on q.id=g.quiz_id";
+const metadataColumns = "g.id,g.subject_id,g.title,g.sequence,g.created_at,g.lectures,g.question_count,g.quiz_id";
+// Lecture identity, not titles or selection order, defines an exam group.
+const selectionKey = "array(select distinct lecture_id from unnest(g.lecture_ids) as chosen(lecture_id) order by lecture_id)";
+const sameSelection = "g.lecture_ids @> $2::uuid[] and g.lecture_ids <@ $2::uuid[]";
 
 export class ExamMaterialService {
   private readonly content: ContentService;
@@ -93,8 +100,13 @@ export class ExamMaterialService {
     // Draft sources never become selectable or get published through generation.
     const lectures = subject.status === "published" ? await this.publishedLectures(subjectId) : [];
     const [groups, count] = await Promise.all([
-      this.pool.query<GroupRow>(`select g.* ${groupJoin} where g.subject_id=$1 and ${groupWhere(isAdmin)} order by g.sequence desc limit $2 offset $3`, [subjectId, pagination.limit, pagination.offset]),
-      this.pool.query<{ total: number }>(`select count(*)::int as total ${groupJoin} where g.subject_id=$1 and ${groupWhere(isAdmin)}`, [subjectId]),
+      this.pool.query<GroupMetadataRow>(`with ranked as (
+        select ${metadataColumns},
+          row_number() over(partition by ${selectionKey} order by g.sequence desc,g.id) as revision_rank,
+          (count(*) over(partition by ${selectionKey}))::int as revision_count
+        ${groupJoin} where g.subject_id=$1 and ${groupWhere(isAdmin)}
+      ) select * from ranked where revision_rank=1 order by sequence desc,id limit $2 offset $3`, [subjectId, pagination.limit, pagination.offset]),
+      this.pool.query<{ total: number }>(`select count(distinct ${selectionKey})::int as total ${groupJoin} where g.subject_id=$1 and ${groupWhere(isAdmin)}`, [subjectId]),
     ]);
     return { subject, lectures, groups: groups.rows.map(groupMetadata), canGenerate: isAdmin && subject.status === "published", total: count.rows[0]!.total, page: pagination.page };
   }
@@ -102,7 +114,28 @@ export class ExamMaterialService {
   async detail(subjectId: string, groupId: string, isAdmin: boolean): Promise<ExamMaterialDetail> {
     const row = (await this.pool.query<GroupRow>(`select g.* ${groupJoin} where g.subject_id=$1 and g.id=$2 and ${groupWhere(isAdmin)}`, [subjectId, groupId])).rows[0];
     if (!row) throw notFound("Exam material");
-    return { ...groupMetadata(row), summary: studyOnlyExamSummary(row.summary), quiz: await this.assessments.getQuizOrThrow(row.quiz_id, isAdmin) };
+    const [currentRevision, quiz] = await Promise.all([
+      this.latestRevision(subjectId, row.lecture_ids, isAdmin),
+      this.assessments.getQuizOrThrow(row.quiz_id, isAdmin),
+    ]);
+    return { ...groupMetadata(row), revisionCount: currentRevision.revisionCount!, currentRevision, summary: studyOnlyExamSummary(row.summary), quiz };
+  }
+
+  async history(subjectId: string, groupId: string, isAdmin: boolean, pagination: PaginationParams): Promise<ExamMaterialHistory> {
+    const row = (await this.pool.query<{ lecture_ids: string[] }>(`select g.lecture_ids ${groupJoin} where g.subject_id=$1 and g.id=$2 and ${groupWhere(isAdmin)}`, [subjectId, groupId])).rows[0];
+    if (!row) throw notFound("Exam material");
+    const current = await this.latestRevision(subjectId, row.lecture_ids, isAdmin);
+    const revisions = await this.pool.query<GroupMetadataRow>(`select ${metadataColumns} ${groupJoin}
+      where g.subject_id=$1 and ${sameSelection} and g.id<>$3 and ${groupWhere(isAdmin)}
+      order by g.sequence desc,g.id limit $4 offset $5`, [subjectId, row.lecture_ids, current.id, pagination.limit, pagination.offset]);
+    return { revisions: revisions.rows.map(groupMetadata), latestId: current.id, total: current.revisionCount! - 1, page: pagination.page };
+  }
+
+  private async latestRevision(subjectId: string, lectureIds: string[], isAdmin: boolean): Promise<ExamMaterialGroup> {
+    const row = (await this.pool.query<GroupMetadataRow>(`select ${metadataColumns},(count(*) over())::int as revision_count ${groupJoin}
+      where g.subject_id=$1 and ${sameSelection} and ${groupWhere(isAdmin)} order by g.sequence desc,g.id limit 1`, [subjectId, lectureIds])).rows[0];
+    if (!row) throw notFound("Exam material");
+    return groupMetadata(row);
   }
 
   async attempt(subjectId: string, groupId: string, attemptId: string, principal: AssessmentPrincipal, isAdmin: boolean): Promise<ExamMaterialAttempt> {

@@ -116,8 +116,50 @@ describe("independent exam material archives", () => {
     const copiedKey = (await pool.query("select o.option_text from question_options o join quiz_questions qq on qq.question_id=o.question_id where qq.quiz_id=$1 and o.is_correct and o.option_text='توجيه الموارد'", [first.quizId])).rows;
     expect(copiedKey).not.toHaveLength(0);
     const index = await request(s.app).get(`${s.path}?page=2&limit=1`).set("Cookie", s.cookie).expect(200);
-    expect(index.body.data.total).toBe(3); expect(index.body.data.groups[0].id).toBe(second.id);
+    expect(index.body.data.total).toBe(2); expect(index.body.data.groups[0].id).toBe(first.id);
     expect(index.headers["cache-control"]).toBe("private, no-store");
+    const history = (await request(s.app).get(`${s.path}/${second.id}/revisions?limit=1`).set("Cookie", s.cookie).expect(200)).body.data;
+    expect(history).toMatchObject({ latestId: third.id, total: 1, page: 1 });
+    expect(history.revisions.map((revision: { id: string }) => revision.id)).toEqual([second.id]);
+  });
+
+  it("lists each unordered lecture selection once before pagination and keeps all revisions accessible", async () => {
+    const s = await seed();
+    const pairs: ExamMaterialDetail[] = [], triples: ExamMaterialDetail[] = [];
+    for (let i = 0; i < 3; i++) {
+      pairs.push(await s.generate(s.lectures.slice(0, 2)));
+      triples.push(await s.generate(s.lectures.slice(0, 3)));
+    }
+    await pool.query("update exam_material_groups set lecture_ids=$1 where id=$2", [[...s.lectures.slice(0, 2)].reverse(), pairs[0]!.id]);
+    for (const [page, latest] of [[1, triples[2]!], [2, pairs[2]!]] as const) {
+      const response = (await request(s.app).get(`${s.path}?limit=1&page=${page}`).set("Cookie", s.cookie).expect(200)).body.data;
+      expect(response.total).toBe(2);
+      expect(response.groups).toHaveLength(1);
+      expect(response.groups[0]).toMatchObject({ id: latest.id, revisionCount: 3 });
+      expect(response.groups[0]).not.toHaveProperty("summary");
+    }
+    const old = (await request(s.app).get(`${s.path}/${pairs[0]!.id}`).set("Cookie", s.cookie).expect(200)).body.data;
+    expect(old).toMatchObject({ id: pairs[0]!.id, quizId: pairs[0]!.quizId, currentRevision: { id: pairs[2]!.id, revisionCount: 3 } });
+    expect(old.summary).toEqual(pairs[0]!.summary);
+    for (const [page, historical] of [[1, pairs[1]!], [2, pairs[0]!]] as const) {
+      const response = await request(s.app).get(`${s.path}/${pairs[0]!.id}/revisions?limit=1&page=${page}`).set("Cookie", s.cookie).expect(200);
+      expect(response.headers["cache-control"]).toBe("private, no-store");
+      expect(response.body.data).toMatchObject({ latestId: pairs[2]!.id, total: 2, page });
+      expect(response.body.data.revisions.map((revision: { id: string }) => revision.id)).toEqual([historical.id]);
+      expect(JSON.stringify(response.body.data)).not.toMatch(/summary|isCorrect|is_correct|acceptedAnswers/);
+    }
+    expect((await pool.query("select count(*)::int as total from exam_material_groups")).rows[0].total).toBe(6);
+    await request(s.app).get(`${s.path}/${pairs[0]!.id}/revisions`).expect(401);
+    await request(s.app).get(`/api/v1/subjects/${s.other}/exam-material/${pairs[0]!.id}/revisions`).set("Cookie", s.cookie).expect(404);
+    await request(s.app).get(`${s.path}/${randomUUID()}/revisions`).set("Cookie", s.cookie).expect(404);
+    await request(s.app).get(`${s.path}/${pairs[0]!.id}/revisions?limit=101`).set("Cookie", s.cookie).expect(400);
+    await pool.query("update quizzes set status='draft' where id=$1", [pairs[2]!.quizId]);
+    await request(s.app).get(`${s.path}/${pairs[2]!.id}/revisions`).set("Cookie", s.cookie).expect(404);
+    const visible = (await request(s.app).get(`${s.path}/${pairs[0]!.id}/revisions`).set("Cookie", s.cookie).expect(200)).body.data;
+    expect(visible).toMatchObject({ latestId: pairs[1]!.id, total: 1 });
+    expect(visible.revisions.map((revision: { id: string }) => revision.id)).toEqual([pairs[0]!.id]);
+    const admin = (await request(s.app).get(`${s.path}/${pairs[0]!.id}/revisions`).set("Authorization", `Bearer ${s.tokens[0]}`).expect(200)).body.data;
+    expect(admin).toMatchObject({ latestId: pairs[2]!.id, total: 2 });
   });
 
   it("builds an academic summary from all selected lecture sources, including topics beyond a brief summary", async () => {
@@ -259,6 +301,10 @@ describe("independent exam material archives", () => {
     const completed = (await request(s.app).get(bundlePath).set("Cookie", s.cookie).expect(200)).body.data as ExamMaterialAttempt;
     expect(completed.result).toMatchObject({ percentage: 100, status: "graded", correctAnswers: 8, pendingManualReview: false });
     expect(completed.feedback).toHaveLength(8);
+    const revised = await s.generate(s.lectures.slice(0, 3));
+    expect(revised.quizId).not.toBe(group.quizId);
+    expect((await request(s.app).get(bundlePath).set("Cookie", s.cookie).expect(200)).body.data.result).toEqual(completed.result);
+    await request(s.app).get(`${s.path}/${revised.id}/attempts/${attempt.id}`).set("Cookie", s.cookie).expect(404);
     const next = (await request(s.app).post(`/api/v1/quizzes/${group.quizId}/attempts`).set("Cookie", s.cookie).expect(201)).body.data;
     expect(next.id).not.toBe(attempt.id);
     const different = await s.generate([s.lectures[0]!]);
@@ -272,6 +318,7 @@ describe("independent exam material archives", () => {
     if (state === "moved") await pool.query("update lectures set subject_id=$1 where id=$2", [s.other, s.lectures[0]]);
     if (state === "subject-draft") await pool.query("update subjects set status='draft' where id=$1", [s.subject]);
     await request(s.app).get(`${s.path}/${group.id}`).set("Cookie", s.cookie).expect(404);
+    await request(s.app).get(`${s.path}/${group.id}/revisions`).set("Cookie", s.cookie).expect(404);
     await request(s.app).get(`/api/v1/quizzes/${group.quizId}`).set("Cookie", s.cookie).expect(404);
     await request(s.app).post(`/api/v1/quizzes/${group.quizId}/attempts`).set("Cookie", s.cookie).expect(404);
     const search = (await request(s.app).get("/api/v1/search?q=" + encodeURIComponent("مجموعة محاضرات")).set("Cookie", s.cookie).expect(200)).body.data;

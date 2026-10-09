@@ -13,6 +13,8 @@ describe("exam material authenticated GET proxy", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     await GET(new Request("http://test/api/exam-material"), ctx([id, id, "attempts", id]));
     expect(apiGet).toHaveBeenLastCalledWith(`/api/v1/subjects/${id}/exam-material/${id}/attempts/${id}`);
+    await GET(new Request("http://test/api/exam-material?page=2&limit=10"), ctx([id, id, "revisions"]));
+    expect(apiGet).toHaveBeenLastCalledWith(`/api/v1/subjects/${id}/exam-material/${id}/revisions?page=2&limit=10`);
   });
   it.each([["admin", "users"], [id, ".."], [id, id, "answers"], [id, id, "attempts", "bad-id"], [id, id, "questions", id]])("rejects non-archive paths %s", async (...path) => {
     const response = await GET(new Request("http://test/api/exam-material"), ctx(path));
@@ -21,6 +23,8 @@ describe("exam material authenticated GET proxy", () => {
   it("rejects client-supplied owner/role queries and preserves safe backend errors", async () => {
     expect((await GET(new Request("http://test/api/exam-material?role=admin"), ctx([id]))).status).toBe(400);
     expect(apiGet).not.toHaveBeenCalled();
+    expect((await GET(new Request("http://test/api/exam-material?role=admin"), ctx([id, id, "revisions"]))).status).toBe(400);
+    expect((await GET(new Request("http://test/api/exam-material?page=2"), ctx([id, id]))).status).toBe(400);
     vi.mocked(apiGet).mockRejectedValue(new ApiError({ error: { code: "not_found", message: "المحاولة غير متاحة." } }, 404));
     const response = await GET(new Request("http://test/api/exam-material"), ctx([id, id]));
     expect(response.status).toBe(404); expect((await response.json()).error.message).toBe("المحاولة غير متاحة.");

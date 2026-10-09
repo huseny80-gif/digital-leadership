@@ -1,10 +1,11 @@
 import Link from "next/link";
 import type { NavItem } from "./MobileNav";
+import { FooterNavigate } from "./FooterNavigate";
 
 /**
  * Site footer (Phase 18.1), structurally modeled on Finquiz's
  * renderFooter (brand column + link columns + bottom bar) but built as a
- * plain server component against this app's own nav items — no Finquiz
+ * server component with a collapsible client navigation control — no Finquiz
  * code or data reused.
  *
  * `accountLinks` defaults to the registered-user "Profile" link; `AppShell`
@@ -29,16 +30,7 @@ export function Footer({
           <p className="app-footer-brand-name">Digital Leadership</p>
           <p className="app-footer-tagline">Professional Diploma Platform</p>
         </div>
-        <div>
-          <h3 className="app-footer-heading">Navigate</h3>
-          <div className="app-footer-links">
-            {items.map((item) => (
-              <Link key={item.href} href={item.href}>
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </div>
+        <FooterNavigate items={items} />
         {accountLinks.length > 0 && (
           <div>
             <h3 className="app-footer-heading">Account</h3>

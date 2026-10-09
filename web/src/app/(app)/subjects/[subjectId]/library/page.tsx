@@ -30,6 +30,7 @@ export default async function SubjectLibraryPage({ params, searchParams }: {
     <Breadcrumbs items={[{ label: "المواد الدراسية", href: "/subjects" }, { label: subject.title, href: "/subjects/" + subjectId }, { label: librarySections[section] }]} />
     <h1 className="page-heading">{librarySections[section]}</h1><p className="page-subheading">{subject.title}</p>
     <SubjectTabs tabs={subjectTabs(subjectId)} activeKey={section} />
+    {["resources", "references", "summaries"].includes(section) ? <p><Link href={`/subjects/reports?subject=${subjectId}`} className="text-link">إعداد تقرير أكاديمي من مصادر هذه المادة</Link></p> : null}
     {selected ? <><p><Link className="text-link" href={"?section=" + section}>عرض جميع المحتويات</Link></p><LibraryEntryContent entry={selected} subjectId={subjectId} /></> : entries.length ? <div className="dl-library-list">{entries.map(entry => <LibraryEntryContent key={entry.id} entry={entry} subjectId={subjectId} />)}</div> : <EmptyState title="لا يوجد محتوى منشور في هذا القسم بعد" message="سيظهر المحتوى هنا فور نشره." />}
   </section>;
 }

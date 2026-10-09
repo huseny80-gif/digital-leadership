@@ -1,0 +1,10 @@
+.wrapper { position: relative; width: min(100%, 290px); }
+.trigger { display: inline-flex; align-items: center; justify-content: space-between; gap: 1rem; min-width: 150px; padding: .65rem .8rem; border: 1px solid var(--color-border); border-radius: 10px; color: var(--color-text); background: var(--color-surface); font: inherit; font-weight: 700; cursor: pointer; }
+.trigger svg { width: 18px; height: 18px; transition: transform .15s; }
+.trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
+.panel { position: absolute; inset-inline-start: 0; inset-block-end: calc(100% + .65rem); z-index: 35; width: min(290px, calc(100vw - 3rem)); max-height: min(380px, 55dvh); overflow-y: auto; display: grid; padding: .45rem; border: 1px solid rgba(98, 192, 211, .28); border-radius: 14px; background: linear-gradient(140deg, rgba(15, 43, 57, .97), rgba(7, 21, 35, .98)); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 15px 40px rgba(0, 0, 0, .3); scrollbar-width: thin; }
+.panel a { display: flex; align-items: center; gap: .7rem; color: #e1edf5; padding: .6rem .7rem; text-decoration: none; border-radius: 8px; font-size: .9rem; line-height: 1.6; }
+.panel a:hover, .panel a[aria-current="page"] { background: rgba(50, 194, 212, .12); color: #a3eef2; }
+.panel a svg { width: 18px; height: 18px; flex-shrink: 0; }
+.trigger:focus-visible, .panel a:focus-visible { outline: 2px solid #4ec6d1; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .trigger svg { transition: none; } }
