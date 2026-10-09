@@ -247,3 +247,14 @@
 .dl-workspace .dl-library-file { padding-block: 10px; border-top: 1px solid #dce6e9; }
 .dl-workspace .dl-library-file small { display: block; }
 .dl-workspace .dl-library-file iframe { width: 100%; height: 70vh; border: 1px solid #dce6e9; margin-top: 12px; }
+
+/* The subject directory uses the dashboard artwork and a smaller card scale. */
+.dl-workspace .dl-subject-grid.dl-subject-grid--compact { gap: 12px; margin-inline: 0; padding-block: 8px 16px; }
+.dl-workspace .dl-subject-card--compact { min-height: 200px; padding: 12px 10px 10px; border-radius: 16px; }
+.dl-workspace .dl-subject-card--compact :is(.dl-subject-icon, .dl-subject-mark) { width: 86px; height: 78px; }
+.dl-workspace .dl-subject-card--compact .dl-subject-icon { margin-block-end: 8px; }
+.dl-workspace .dl-subject-card--compact h3 { min-height: 44px; font-size: 14px; line-height: 1.6; }
+.dl-workspace .dl-subject-description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; min-height: 20px; margin-block: 5px 8px; color: #c4d3e5; font-size: 12px; line-height: 1.6; }
+.dl-workspace .dl-subject-card--compact .dl-subject-button { min-height: 36px; padding: 6px 8px; border-radius: 9px; font-size: 12px; }
+@media (min-width: 1000px) and (max-width: 1100px) { .dl-workspace .dl-subject-grid.dl-subject-grid--compact { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 680px) { .dl-workspace .dl-subject-grid.dl-subject-grid--compact { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }

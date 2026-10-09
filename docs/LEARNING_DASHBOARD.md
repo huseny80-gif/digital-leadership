@@ -61,3 +61,16 @@ Dark academic readers use restrained surfaces, pale text, comfortable line
 spacing and scrollable tables. Metrics, search, notifications and activities
 adapt to desktop, tablet and mobile. Navigation and focus states remain
 accessible with a keyboard; existing reduced motion preferences are respected.
+
+The personal metrics use compact horizontal cards: four columns on screens
+of 700 px or more, and two columns on smaller screens. The progress ring is
+48 px (44 px on mobile), and the heading and supporting text occupy one
+compact row. Completion values and their existing live update logic remain
+the authoritative learning overview.
+
+The subject directory and homepage share `SubjectCard`, including the exact
+reference artwork, glass surfaces, subject colors and **عرض المادة** action.
+Directory cards use smaller 86 × 78 px artwork, 200 px minimum card height,
+and responsive five/three/two-column layouts. The directory keeps recorded
+subject descriptions and the homepage keeps its lecture counts; both link
+to the same authorized subject route. Subject titles wrap without truncation.

@@ -4,8 +4,9 @@ import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 import { SubjectCard } from "@/components/content/SubjectCard";
 import { ContentHub, contentViews, type ContentView } from "@/components/content/ContentHub";
+import { getSubjectTheme, subjectThemes } from "@/components/content/subjectTheme";
 
-export const metadata = { title: "Subjects | Digital Leadership" };
+export const metadata = { title: "المواد الدراسية | القيادة الرقمية" };
 
 /**
  * Subjects listing (API_V1.md `GET /subjects`). The backend already
@@ -31,25 +32,26 @@ export default async function SubjectsPage({ searchParams }: { searchParams?: Pr
   if (!errorMessage && params?.view && Object.hasOwn(contentViews, params.view)) {
     return <ContentHub subjects={subjects} view={params.view as ContentView} query={params.q?.trim().slice(0, 200)} />;
   }
+  const orderedSubjects = [...subjects].sort((a, b) => subjectThemes.indexOf(getSubjectTheme(a.title)) - subjectThemes.indexOf(getSubjectTheme(b.title)) || a.orderIndex - b.orderIndex);
 
   return (
     <section>
-      <h1 className="page-heading">Subjects</h1>
-      <p className="page-subheading">Browse all available subjects.</p>
+      <h1 className="page-heading">المواد الدراسية</h1>
+      <p className="page-subheading">اختر المادة للاطلاع على محاضراتها وملخصاتها واختباراتها.</p>
 
       {errorMessage ? <ErrorState message={errorMessage} retryHref="/subjects" /> : null}
 
       {!errorMessage && subjects.length === 0 ? (
         <EmptyState
-          title="No subjects available yet"
-          message="Check back soon — new subjects will appear here once they're published."
+          title="لا توجد مواد متاحة حاليًا"
+          message="ستظهر المواد هنا فور نشرها."
         />
       ) : null}
 
       {!errorMessage && subjects.length > 0 ? (
-        <div className="card-grid">
-          {subjects.map((subject) => (
-            <SubjectCard key={subject.id} subject={subject} />
+        <div className="dl-subject-grid dl-subject-grid--compact">
+          {orderedSubjects.map((subject, index) => (
+            <SubjectCard key={subject.id} subject={subject} index={index} compact />
           ))}
         </div>
       ) : null}
