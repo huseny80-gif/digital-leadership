@@ -35,7 +35,7 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
   const titleOf = (number: number) => {
     const ordinal = ordinals[number - 1];
     if (!ordinal) throw new Error("invalid_course_lecture_number");
-    return `المحاضرة ${ordinal} في ${topic}`;
+    return slug === "risk-management" ? `المحاضرة ${ordinal} مخاطر` : `المحاضرة ${ordinal} في ${topic}`;
   };
   // These reviewed uploads already exist in the deployed AI course. They are
   // matching aliases, not new manifest records or fabricated source files.
@@ -46,7 +46,7 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
   const aliases = new Map(source.lectures.filter(lecture => lecture.id !== "cs-iso-roadmap").flatMap(lecture => [lecture.title, ...(lecture.legacyTitles ?? [])].map(title => [normalizeText(title), lecture.number] as const)));
   const legacyNumber = (value: string) => {
     const text = normalizeText(value).replace(/\.(?:pdf|pptx)$/i, "").trim();
-    const expression = slug === "ai-data" ? /^(?:ai|lecture|مقرر\s*الذكاء الاصطناعي|الذكاء الاصطناعي)[\s_-]*([1-9]|10)$/ : /^(?:cybersecurity|cyber\s*security|مقرر\s*(?:حوكمة\s*)?الامن السيبراني|(?:حوكمة\s*)?الامن السيبراني)[\s_-]*([1-9]|10)$/;
+    const expression = slug === "ai-data" ? /^(?:ai|lecture|مقرر\s*الذكاء الاصطناعي|الذكاء الاصطناعي)[\s_-]*([1-9]|10)$/ : slug === "risk-management" ? /^(?:risk(?:\s*management)?)[\s_-]*([1-3])$/ : /^(?:cybersecurity|cyber\s*security|مقرر\s*(?:حوكمة\s*)?الامن السيبراني|(?:حوكمة\s*)?الامن السيبراني)[\s_-]*([1-9]|10)$/;
     const match = expression.exec(text);
     return match ? Number(match[1]) : null;
   };
@@ -63,10 +63,15 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
     if (number) return titleOf(number) + extension;
     const pattern = slug === "ai-data"
       ? /(?<![\p{L}\p{N}])(?:Ai|Lecture|مقرر\s*الذكاء الاصطناعي)[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
+      : slug === "risk-management" ? /(?<![\p{L}\p{N}])Risk(?:\s*Management)?[\s_-]*([1-3])(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
       : /(?<![\p{L}\p{N}])Cybersecurity[\s_-]*([1-9]|10)(?![\p{L}\p{N}])/giu;
-    return value.replace(pattern, (_, digit: string) => titleOf(Number(digit)));
+    let result = value.replace(pattern, (_, digit: string) => titleOf(Number(digit)));
+    if (slug === "risk-management") for (const lecture of source.lectures) {
+      for (const alias of [lecture.title, ...(lecture.legacyTitles ?? [])]) if (!legacyNumber(alias)) result = result.replaceAll(alias, titleOf(lecture.number));
+    }
+    return result;
   };
   return { slug, subjectId: subjectMapping[slug]!, source, titleOf, numberOf, legacyNumber, label };
 }
-export const refreshedCourseLabels = [makeLabels("ai-data", "الذكاء الاصطناعي"), makeLabels("cybersecurity-governance", "حوكمة الأمن السيبراني")];
+export const refreshedCourseLabels = [makeLabels("ai-data", "الذكاء الاصطناعي"), makeLabels("cybersecurity-governance", "حوكمة الأمن السيبراني"), makeLabels("risk-management", "مخاطر")];
 export function courseLabelsForSubject(subjectId: string) { return refreshedCourseLabels.find(profile => profile.subjectId === subjectId); }

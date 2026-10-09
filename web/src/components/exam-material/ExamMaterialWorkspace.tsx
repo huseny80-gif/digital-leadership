@@ -7,6 +7,7 @@ import type { ExamMaterialDetail, ExamMaterialGroup, ExamMaterialIndex } from "@
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import { ExamMaterialQuiz } from "./ExamMaterialQuiz";
 import { ExamGroupTitle } from "./ExamGroupTitle";
+import { ExamAcademicSummary } from "./ExamAcademicSummary";
 import { examHref, examRequest } from "./request";
 import styles from "./examMaterial.module.css";
 
@@ -59,13 +60,13 @@ export function ExamMaterialWorkspace({ initialIndex, initialDetail }: { initial
   function chooseGroup(id: string) { setMessage(null); window.history.pushState(null, "", examHref(subjectId, id, "summary")); }
   function chooseTab(next: "summary" | "quiz") { if (groupId) window.history.pushState(null, "", examHref(subjectId, groupId, next, query.get("attempt") ?? undefined)); }
   function changeSelection(ids: string[]) { if (generatingRef.current) return; setSelection(ids); request.current = null; setGenerationError(null); setMessage(null); }
-  async function generate() {
-    if (!selection.length || generatingRef.current) return;
+  async function generate(lectureIds = selection) {
+    if (!lectureIds.length || generatingRef.current) return;
     generatingRef.current = true; setGenerating(true); setGenerationError(null); setMessage(null);
-    const signature = [...selection].sort().join(":");
+    const signature = [...lectureIds].sort().join(":");
     if (request.current?.selection !== signature) request.current = { id: crypto.randomUUID(), selection: signature };
     try {
-      const group = await examRequest<ExamMaterialDetail>(`/api/admin/subjects/${subjectId}/exam-material`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lectureIds: selection, requestId: request.current.id }) });
+      const group = await examRequest<ExamMaterialDetail>(`/api/admin/subjects/${subjectId}/exam-material`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lectureIds, requestId: request.current.id }) });
       cache.current.set(group.id, group); setDetail(group);
       setGroups(previous => [group, ...previous.filter(g => g.id !== group.id)]);
       setTotal(previous => previous + (groups.some(g => g.id === group.id) ? 0 : 1));
@@ -105,9 +106,9 @@ export function ExamMaterialWorkspace({ initialIndex, initialDetail }: { initial
       </aside>
       <section id="exam-group-panel" role="tabpanel" aria-labelledby={groupId ? `group-${groupId}` : undefined} className={styles.content} aria-busy={loading}>
         {loading ? <p className={styles.notice} role="status">جارٍ تحميل المجموعة…</p> : loadError ? <div className={styles.notice} role="alert"><p>{loadError}</p><button className={styles.action} onClick={() => setRetry(v => v + 1)}>إعادة المحاولة</button></div> : selectedDetail ? <>
-          <div className={styles.contentHead}><span className={styles.eyebrow}>المجموعة {selectedDetail.sequence}</span><h2><ExamGroupTitle title={selectedDetail.title} /></h2><p className={styles.muted}>{selectedDetail.lectures.length} محاضرة · {selectedDetail.questionCount} سؤالًا</p></div>
+          <div className={styles.contentHead}><span className={styles.eyebrow}>المجموعة {selectedDetail.sequence}</span><h2><ExamGroupTitle title={selectedDetail.title} /></h2><p className={styles.muted}>{selectedDetail.lectures.length} محاضرة · {selectedDetail.questionCount} سؤالًا</p>{initialIndex.canGenerate ? <div className={styles.refreshReview}><button className={styles.quiet} disabled={generating || selectedDetail.lectures.some(lecture => !initialIndex.lectures.some(current => current.id === lecture.id))} onClick={() => void generate(selectedDetail.lectures.map(lecture => lecture.id))}><PlatformIcon name="document" />{generating ? "جارٍ إعداد المراجعة…" : "إنشاء مراجعة محدّثة"}</button><span>تُحفظ المراجعة الحالية في الأرشيف.</span></div> : null}</div>
           <div className={styles.innerTabs} role="tablist" aria-label="محتوى المجموعة"><button id="exam-summary-tab" role="tab" aria-selected={tab === "summary"} aria-controls="exam-summary-panel" tabIndex={tab === "summary" ? 0 : -1} onClick={() => chooseTab("summary")} onKeyDown={e => tabKeys(e, ["summary", "quiz"], "summary", id => chooseTab(id as "summary" | "quiz"))}><PlatformIcon name="document" />الملخص الشامل</button><button id="exam-quiz-tab" role="tab" aria-selected={tab === "quiz"} aria-controls="exam-quiz-panel" tabIndex={tab === "quiz" ? 0 : -1} onClick={() => chooseTab("quiz")} onKeyDown={e => tabKeys(e, ["summary", "quiz"], "quiz", id => chooseTab(id as "summary" | "quiz"))}><PlatformIcon name="quiz" />الاختبار التفاعلي المتقدم</button></div>
-          {tab === "summary" ? <article id="exam-summary-panel" role="tabpanel" aria-labelledby="exam-summary-tab" className={styles.summary}><p className={styles.introduction}>{selectedDetail.summary.introduction}</p>{selectedDetail.summary.sections.map(section => <section key={section.id} className={styles.summarySection}><div className={styles.sectionHead}><h3>{section.title}</h3><Link href={`/subjects/${subjectId}/lectures/${section.id}`} className={styles.sourceLink}>المحاضرة الأصلية <PlatformIcon name="arrow" /></Link></div>{section.text.split(/\n{2,}/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}{section.keyPoints.length ? <details className={styles.keyPoints}><summary>نقاط أساسية للمراجعة</summary><ul>{section.keyPoints.map((point, index) => <li key={index}>{point}</li>)}</ul></details> : null}</section>)}</article> : <div id="exam-quiz-panel" role="tabpanel" aria-labelledby="exam-quiz-tab"><ExamMaterialQuiz key={selectedDetail.id} group={selectedDetail} /></div>}
+          {tab === "summary" ? <ExamAcademicSummary summary={selectedDetail.summary} subjectId={subjectId} /> : <div id="exam-quiz-panel" role="tabpanel" aria-labelledby="exam-quiz-tab"><ExamMaterialQuiz key={selectedDetail.id} group={selectedDetail} /></div>}
         </> : <div className={styles.empty}><PlatformIcon name="book" /><h2>لا توجد مجموعة امتحانية بعد</h2><p>{initialIndex.canGenerate ? "اختر المحاضرات أعلاه لبدء إعداد أول مجموعة." : "ستتوفر الملخصات والاختبارات هنا فور نشر مجموعة امتحانية."}</p></div>}
       </section>
     </div>

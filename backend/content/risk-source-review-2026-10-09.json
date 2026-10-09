@@ -1,0 +1,64 @@
+{
+  "key": "risk-arabic-source-review-2026-10-09",
+  "files": [
+    {
+      "slug": "risk-management",
+      "assetId": "e46bb191dbde187f6b413242",
+      "filename": "Risk 1.pdf",
+      "canonicalFilename": "المحاضرة الأولى مخاطر.pdf",
+      "sha256": "f567de9bd8df8d0bbd6606bed669499854d539a0da55cfeafb526383f7b8f7ec",
+      "bytes": 369999,
+      "pages": 12,
+      "number": 1,
+      "resource": false
+    },
+    {
+      "slug": "risk-management",
+      "assetId": "26478f3055fb003aa26150e9",
+      "filename": "Risk 3.pdf",
+      "canonicalFilename": "المحاضرة الثالثة مخاطر.pdf",
+      "sha256": "ea9b8f2a66c5a50627529720e4b81788cbdd8bba3b4e62d6053efa6072635af9",
+      "bytes": 226467,
+      "pages": 11,
+      "number": 3,
+      "resource": false
+    },
+    {
+      "slug": "risk-management",
+      "assetId": "3a44c117f0a2b82d4e092537",
+      "filename": "Risk 2.pdf",
+      "canonicalFilename": "المحاضرة الثانية مخاطر.pdf",
+      "sha256": "55341ea2a940428c8fc3212ac6b9c57bf991daf1987f9f4c0766e98befba19f2",
+      "bytes": 241846,
+      "pages": 13,
+      "number": 2,
+      "resource": false
+    }
+  ],
+  "quizzes": [
+    {
+      "slug": "risk-management",
+      "quizId": "risk-reviewed-lecture-1",
+      "lectureId": "rm-l1",
+      "assetId": "e46bb191dbde187f6b413242",
+      "sourceSha256": "f567de9bd8df8d0bbd6606bed669499854d539a0da55cfeafb526383f7b8f7ec",
+      "questionDigest": "9ab0cc5795068d558e02d7621cd2c9199b566301029f234d9ea727880a14290d"
+    },
+    {
+      "slug": "risk-management",
+      "quizId": "risk-reviewed-lecture-2",
+      "lectureId": "rm-l2",
+      "assetId": "3a44c117f0a2b82d4e092537",
+      "sourceSha256": "55341ea2a940428c8fc3212ac6b9c57bf991daf1987f9f4c0766e98befba19f2",
+      "questionDigest": "7fade51d6771a864946c95ad13428488c007c37c176e9b5e290f47db8cc5ffed"
+    },
+    {
+      "slug": "risk-management",
+      "quizId": "risk-reviewed-lecture-3",
+      "lectureId": "rm-l3",
+      "assetId": "26478f3055fb003aa26150e9",
+      "sourceSha256": "ea9b8f2a66c5a50627529720e4b81788cbdd8bba3b4e62d6053efa6072635af9",
+      "questionDigest": "b36f8ea2f539307ead13d7015676e1720efd85369f4b6360eba2713ac03505e3"
+    }
+  ]
+}

@@ -113,7 +113,13 @@ export async function consolidateCourseContent(pool: Pool, profile: CourseConsol
       if (!old.length || group.length < 2) continue;
       const reason = canonical.length !== 1 ? "ambiguous_source" : canonical[0]!.status !== "published" && old.some(lecture => lecture.status === "published") ? "canonical_unpublished" : null;
       if (reason) { skippedNumbers.push(number); skippedReasons.push({ number, legacyCount: old.length, canonicalCount: canonical.length, reason }); continue; }
-      for (const lecture of old) if (lecture.id !== canonical[0]!.id) replacements.set(lecture.id, canonical[0]!.id);
+      for (const lecture of old) if (lecture.id !== canonical[0]!.id) {
+        // Exam groups retain their original source identities. Renaming is
+        // safe; deleting an archived source would hide the saved group.
+        const archived = await client.query("select 1 from exam_material_groups where $1::uuid=any(lecture_ids) limit 1", [lecture.id]);
+        if (archived.rowCount) { skippedNumbers.push(number); skippedReasons.push({ number, legacyCount: old.length, canonicalCount: canonical.length, reason: "archived_exam_source" }); continue; }
+        replacements.set(lecture.id, canonical[0]!.id);
+      }
     }
     const oldIds = [...replacements.keys()];
     if (oldIds.length) {
