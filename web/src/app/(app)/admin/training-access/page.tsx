@@ -1,52 +1,49 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { TrainingAccessGrant, TrainingAccessGrantCreated, GuestTraineeAnalyticsRow } from "@shared/index";
-import { adminGet, adminPost, AdminApiError } from "@/lib/api/adminBrowserClient";
+import type { TrainingAccessGrant, TrainingAccessGrantCreated, TrainingAccessShareLink, GuestTraineeAnalyticsRow } from "@shared/index";
+import { adminGet, adminPost } from "@/lib/api/adminBrowserClient";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/States";
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { TrainingAccessQrCode } from "@/components/admin/TrainingAccessQrCode";
+import { GuestTraineeDashboard } from "@/components/admin/GuestTraineeDashboard";
+import { PlatformIcon } from "@/components/ui/PlatformIcon";
+import { guestDate, guestNumber } from "@/lib/guestAnalytics";
 
-/**
- * Phase 6 admin console screen: create, list, and revoke Training Access
- * grants (task requirement #9). Follows the same list/create-form/table
- * shape as `admin/subjects/page.tsx` for consistency with the rest of the
- * admin console, rather than inventing a new layout style.
- *
- * The raw join token/URL is shown ONLY in the "just created" panel,
- * immediately after `POST /admin/training-access` returns it — the list
- * below never re-displays it (the backend never returns it again either;
- * only its hash is stored). A client-side-generated QR code (the `qrcode`
- * npm package — see `TrainingAccessQrCode`) accompanies that same
- * one-time link, encoding nothing but the join URL itself.
- *
- * The trainee analytics table below reads a NEW admin-only endpoint
- * (`GET /admin/training-access/guests`) — never any guest-facing route,
- * which never returns more than the calling guest's own session.
- */
+/** Admin-only lists never carry tokens; the selected link uses a dedicated
+ * no-store endpoint which returns the same saved URL on subsequent visits. */
 export default function TrainingAccessPage() {
   const [grants, setGrants] = useState<TrainingAccessGrant[] | null>(null);
-  const [guestAnalytics, setGuestAnalytics] = useState<GuestTraineeAnalyticsRow[] | null>(null);
+  const [guests, setGuests] = useState<GuestTraineeAnalyticsRow[]>([]);
+  const [asOf, setAsOf] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [label, setLabel] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [justCreated, setJustCreated] = useState<TrainingAccessGrantCreated | null>(null);
-  const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState("");
+  const [links, setLinks] = useState<Record<string, string>>({});
+  const [showQr, setShowQr] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [cleaning, setCleaning] = useState(false);
+  const selected = grants?.find(grant => grant.id === selectedId);
 
   async function load() {
     setError(null);
     try {
-      const [grantsData, guestAnalyticsData] = await Promise.all([
+      const [grantData, guestData] = await Promise.all([
         adminGet<TrainingAccessGrant[]>("training-access"),
         adminGet<GuestTraineeAnalyticsRow[]>("training-access/guests"),
       ]);
-      setGrants(grantsData);
-      setGuestAnalytics(guestAnalyticsData);
-    } catch {
-      setError("Unable to load training access grants. Please try again.");
-    }
+      const active = grantData.filter(grant => !grant.revoked);
+      setGrants(active);
+      setGuests(guestData);
+      setAsOf(new Date().toISOString());
+      const preferred = [...active].sort((a, b) => b.sessionCount - a.sessionCount || b.createdAt.localeCompare(a.createdAt))[0];
+      setSelectedId(current => active.some(grant => grant.id === current) ? current : preferred?.id ?? "");
+    } catch { setError("تعذر تحميل روابط الدخول وإحصاءات الزوار. أعد المحاولة."); }
   }
 
   useEffect(() => {
@@ -54,190 +51,79 @@ export default function TrainingAccessPage() {
     void load();
   }, []);
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    setFormError(null);
+  // Retrieve before the copy gesture so Safari can use the clipboard without
+  // losing user activation while waiting for a network request.
+  useEffect(() => {
+    if (!selectedId || links[selectedId]) return;
+    let ignore = false;
+    adminPost<TrainingAccessShareLink>(`training-access/${selectedId}/link`).then(result => {
+      if (!ignore) { setLinks(current => ({ ...current, [selectedId]: result.joinUrl })); setLinkError(null); }
+    }).catch(() => { if (!ignore) setLinkError("تعذر استرجاع الرابط. اضغط على عرض الرابط وQR لإعادة المحاولة."); });
+    return () => { ignore = true; };
+  }, [selectedId, links]);
+
+  async function share(id: string, copy: boolean) {
+    setBusyId(id); setLinkError(null); setNotice(null); setSelectedId(id);
     try {
-      const created = await adminPost<TrainingAccessGrantCreated>("training-access", {
-        label: label || null,
-        description: null,
-        maxSessions: null,
-      });
-      setJustCreated(created);
-      setLabel("");
-      setFormOpen(false);
-      await load();
-    } catch (err) {
-      setFormError(err instanceof AdminApiError ? err.message : "Unable to create the access link. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
+      const url = links[id] ?? (await adminPost<TrainingAccessShareLink>(`training-access/${id}/link`)).joinUrl;
+      setLinks(current => ({ ...current, [id]: url }));
+      if (copy) {
+        try { await navigator.clipboard.writeText(url); setNotice("تم نسخ الرابط بنجاح. يمكنك مشاركته مع المتدربين والزوار."); }
+        catch { setNotice("الرابط جاهز. تعذر النسخ التلقائي؛ حدده من الحقل وانسخه يدويًا."); }
+      } else { setShowQr(true); }
+    } catch { setLinkError("تعذر استرجاع الرابط. تأكد من أنه مفعّل وأعد المحاولة."); }
+    finally { setBusyId(null); }
+  }
+
+  async function handleCreate(event: React.FormEvent) {
+    event.preventDefault(); setSubmitting(true); setFormError(null);
+    try {
+      const created = await adminPost<TrainingAccessGrantCreated>("training-access", { label: label.trim() || null, description: null, maxSessions: null });
+      setLinks(current => ({ ...current, [created.id]: created.joinUrl }));
+      await load(); setSelectedId(created.id); setShowQr(true);
+      setLabel(""); setFormOpen(false); setNotice("تم إنشاء الرابط وحفظه. يمكنك العودة لنسخه في أي وقت.");
+    } catch { setFormError("تعذر إنشاء رابط الدخول. أعد المحاولة."); }
+    finally { setSubmitting(false); }
   }
 
   async function handleRevoke(id: string) {
     await adminPost(`training-access/${id}/revoke`);
+    setShowQr(false); setNotice("تم تعطيل الرابط وإزالته من القائمة مع حفظ جلسات المتدربين ونتائجهم.");
     await load();
   }
 
-  async function copyLink(url: string) {
+  async function clean() {
+    setCleaning(true); setLinkError(null);
     try {
-      await navigator.clipboard.writeText(url);
-      setCopyStatus("Link copied.");
-    } catch {
-      setCopyStatus("Unable to copy automatically — please copy the link manually.");
-    }
-    setTimeout(() => setCopyStatus(null), 3000);
+      await adminPost<{ removed: number }>("training-access/cleanup"); await load();
+      setNotice("تم تنظيف السجلات المعطلة. بيانات المتدربين ونتائجهم محفوظة.");
+    } catch { setLinkError("تعذر تنظيف السجلات. أعد المحاولة."); }
+    finally { setCleaning(false); }
   }
 
-  return (
-    <section>
-      <div className="admin-toolbar">
-        <h1 className="page-heading" style={{ marginBottom: 0 }}>
-          دخول المتدربين والزوار
-        </h1>
-        <button type="button" className="btn" onClick={() => setFormOpen((o) => !o)}>
-          {formOpen ? "إلغاء" : "رابط دخول جديد"}
-        </button>
-      </div>
+  return <section className="dl-access-page" dir="rtl">
+    <div className="dl-access-heading"><div><span className="dl-access-eyebrow">إدارة المشاركة والمتابعة</span><h1>دخول المتدربين والزوار</h1></div><button type="button" className="btn btn-secondary" onClick={() => setFormOpen(value => !value)}>{formOpen ? "إلغاء" : "رابط دخول جديد"}</button></div>
+    <p className="page-subheading">الدخول عبر الرابط أو رمز QR متاح دائمًا للتصفح وإجراء الاختبارات التدريبية، دون تحديد ساعات أو أيام.</p>
 
-      <p className="page-subheading">الدخول عبر الرابط أو رمز QR متاح دائمًا للتصفح وإجراء الاختبارات التدريبية، دون تحديد ساعات أو أيام.</p>
+    {formOpen && <form className="admin-form dl-access-glass" onSubmit={handleCreate}><div className="form-field"><label className="form-label" htmlFor="grant-label">اسم الرابط (اختياري)</label><input id="grant-label" className="form-input" maxLength={200} value={label} onChange={event => setLabel(event.target.value)} placeholder="مثل: رابط المنصة للمتدربين" /></div>{formError && <p role="alert" className="dl-access-error">{formError}</p>}<button type="submit" className="btn" disabled={submitting}>{submitting ? "جارٍ الإنشاء…" : "إنشاء رابط الدخول"}</button></form>}
+    {error && <ErrorState message={error} retryHref="/admin/training-access" />}
+    {!error && grants === null && <LoadingState label="جارٍ تحميل الروابط وإحصاءات الزوار…" />}
 
-      {justCreated ? (
-        <div
-          className="admin-form"
-          style={{ marginBottom: "var(--space-6)", background: "var(--color-success-bg)", border: "1px solid var(--color-success)" }}
-        >
-          <p style={{ margin: 0, fontWeight: 600 }}>Access link created — copy it now, it will not be shown again.</p>
-          <p style={{ wordBreak: "break-all", fontFamily: "monospace", background: "var(--color-surface)", padding: "var(--space-3)", borderRadius: "var(--radius-sm)" }}>
-            {justCreated.joinUrl}
-          </p>
-          <div className="form-actions">
-            <button type="button" className="btn" onClick={() => copyLink(justCreated.joinUrl)}>
-              Copy link
-            </button>
-            <button type="button" className="btn btn-secondary" onClick={() => setJustCreated(null)}>
-              Dismiss
-            </button>
-          </div>
-          {copyStatus && <p role="status">{copyStatus}</p>}
-          <div style={{ marginTop: "var(--space-4)" }}>
-            <TrainingAccessQrCode joinUrl={justCreated.joinUrl} label={justCreated.label ?? "Digital Leadership"} />
-          </div>
-        </div>
-      ) : null}
+    {!error && grants && <>
+      <section className="dl-access-glass dl-access-share" aria-labelledby="published-link-heading">
+        <div className="dl-access-share-intro"><span className="dl-access-share-icon"><PlatformIcon name="globe" /></span><div><h2 id="published-link-heading">رابط الدخول المنشور</h2><p>انسخ الرابط المحفوظ وشاركه متى شئت. الروابط المتداولة تبقى صالحة حتى تعطيلها.</p></div><span className="dl-access-chip">دخول دائم</span></div>
+        {grants.length ? <>
+          <div className="dl-access-share-controls"><label htmlFor="published-grant">اختر الرابط<select id="published-grant" value={selectedId} onChange={event => { setSelectedId(event.target.value); setShowQr(false); setNotice(null); setLinkError(null); }}>{grants.map((grant, index) => <option key={grant.id} value={grant.id}>{grant.label || `رابط الدخول ${guestNumber(index + 1)}`} · {guestNumber(grant.sessionCount)} جلسة</option>)}</select></label><button type="button" className="btn" disabled={busyId !== null || !selected} onClick={() => void share(selectedId, true)}><PlatformIcon name="clipboard" />{busyId === selectedId ? "جارٍ التحضير…" : "نسخ الرابط"}</button><button type="button" className="btn btn-secondary" disabled={busyId !== null || !selected} onClick={() => void share(selectedId, false)}>عرض الرابط وQR</button></div>
+          {links[selectedId] && <input className="dl-access-url" aria-label="رابط الدخول المحفوظ" readOnly dir="ltr" value={links[selectedId]} onFocus={event => event.target.select()} />}
+          {showQr && links[selectedId] && <div className="dl-access-qr"><TrainingAccessQrCode joinUrl={links[selectedId]} label={selected?.label ?? "القيادة الرقمية"} /><p>يمكن للمتدرب مسح الرمز والدخول إلى المنصة. الرمز يحمل رابط الدخول نفسه.</p><button className="btn btn-secondary" type="button" onClick={() => setShowQr(false)}>إخفاء QR</button></div>}
+        </> : <EmptyState title="لا توجد روابط مفعّلة" message="أنشئ رابط دخول ليتمكن المتدربون والزوار من الوصول إلى المنصة." />}
+        {notice && <p role="status" className="dl-access-notice">{notice}</p>}{linkError && <p role="alert" className="dl-access-error">{linkError}</p>}
+      </section>
 
-      {formOpen ? (
-        <form className="admin-form" onSubmit={handleCreate} style={{ marginBottom: "var(--space-6)" }}>
-          <div className="form-field">
-            <label className="form-label" htmlFor="grant-label">
-              Label (optional)
-            </label>
-            <input id="grant-label" className="form-input" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Q3 onboarding cohort" />
-          </div>
-          {formError ? (
-            <p role="alert" style={{ color: "var(--color-danger)" }}>
-              {formError}
-            </p>
-          ) : null}
-          <div className="form-actions">
-            <button type="submit" className="btn" disabled={submitting}>
-              {submitting ? "Creating…" : "Create Access Link"}
-            </button>
-          </div>
-        </form>
-      ) : null}
-
-      {error ? <ErrorState message={error} retryHref="/admin/training-access" /> : null}
-      {!error && grants === null ? <LoadingState label="Loading training access grants…" /> : null}
-      {!error && grants && grants.length === 0 ? (
-        <EmptyState title="No training access links yet" message="Create your first access link above." />
-      ) : null}
-
-      {!error && grants && grants.length > 0 ? (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Label</th>
-                <th>Sessions</th>
-                <th>Status</th>
-                <th>الصلاحية</th>
-                <th>Created</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {grants.map((g) => {
-                const statusLabel = g.revoked ? "معطّل" : "مفعّل";
-                return (
-                  <tr key={g.id}>
-                    <td>{g.label ?? "—"}</td>
-                    <td>
-                      {g.sessionCount}
-                      {g.maxSessions ? ` / ${g.maxSessions}` : ""}
-                    </td>
-                    <td>{statusLabel}</td>
-                    <td>دائم — دون تاريخ انتهاء</td>
-                    <td>{new Date(g.createdAt).toLocaleString()}</td>
-                    <td>
-                      {!g.revoked ? (
-                        <ConfirmButton
-                          label="Revoke"
-                          confirmTitle="Revoke this access link?"
-                          confirmMessage="Guests will no longer be able to join using this link. Sessions already in progress are not affected."
-                          onConfirm={() => handleRevoke(g.id)}
-                        />
-                      ) : null}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-
-      <h2 className="page-heading" style={{ fontSize: "var(--font-size-lg)", marginTop: "var(--space-6)" }}>
-        Guest Trainees
-      </h2>
-      {!error && guestAnalytics && guestAnalytics.length === 0 ? (
-        <EmptyState title="No guests yet" message="Trainees who join via a link above will appear here." />
-      ) : null}
-      {!error && guestAnalytics && guestAnalytics.length > 0 ? (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Joined</th>
-                <th>Last active</th>
-                <th>Status</th>
-                <th>Lectures</th>
-                <th>Quizzes started</th>
-                <th>Quizzes completed</th>
-                <th>Avg. score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {guestAnalytics.map((r) => (
-                <tr key={r.guestSessionId}>
-                  <td>{r.displayName}</td>
-                  <td>{new Date(r.joinedAt).toLocaleString()}</td>
-                  <td>{new Date(r.lastSeenAt).toLocaleString()}</td>
-                  <td>{r.status}</td>
-                  <td>
-                    {r.lecturesCompleted} / {r.totalLectures}
-                  </td>
-                  <td>{r.quizzesStarted}</td>
-                  <td>{r.quizzesCompleted}</td>
-                  <td>{r.averageScore !== null ? r.averageScore.toFixed(1) : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-    </section>
-  );
+      <details className="dl-access-glass dl-access-link-list"><summary>إدارة روابط الدخول <span>{guestNumber(grants.length)} روابط مفعّلة</span><PlatformIcon name="chevron" /></summary><div className="dl-access-list-actions"><p>تُعرض الروابط المفعّلة فقط. تنظيف السجلات لا يحذف تقدم المتدربين أو نتائجهم.</p><button type="button" className="btn btn-secondary" disabled={cleaning} onClick={() => void clean()}>{cleaning ? "جارٍ التنظيف…" : "تنظيف السجلات المعطلة"}</button></div>
+        <div className="dl-guest-table-scroll" role="region" aria-label="روابط الدخول المفعلة" tabIndex={0}><table className="dl-guest-table dl-access-grants"><thead><tr><th scope="col">اسم الرابط</th><th scope="col">الجلسات</th><th scope="col">الصلاحية</th><th scope="col">تاريخ الإنشاء (UTC)</th><th scope="col">الإجراءات</th></tr></thead><tbody>{grants.map((grant, index) => <tr key={grant.id}><td>{grant.label || `رابط الدخول ${guestNumber(index + 1)}`}</td><td>{guestNumber(grant.sessionCount)}</td><td><span className="dl-guest-badge dl-guest-badge-active">مفعّل</span><small className="dl-access-permanent">دائم — دون تاريخ انتهاء</small></td><td>{guestDate(grant.createdAt, true)}</td><td><div className="dl-access-row-actions"><button type="button" className="btn btn-secondary" aria-label={`نسخ رابط ${grant.label || guestNumber(index + 1)}`} disabled={busyId !== null} onClick={() => void share(grant.id, true)}>نسخ</button><button type="button" className="btn btn-secondary" aria-label={`عرض QR ${grant.label || guestNumber(index + 1)}`} disabled={busyId !== null} onClick={() => void share(grant.id, false)}>QR</button><ConfirmButton label="تعطيل" confirmTitle="تعطيل رابط الدخول؟" confirmMessage="سيتوقف دخول الزوار الجدد عبر هذا الرابط. جلسات المتدربين الحاليين ونتائجهم ستبقى محفوظة." confirmLabel="تعطيل الرابط" cancelLabel="إلغاء" busyLabel="جارٍ التعطيل…" errorMessage="تعذر تعطيل الرابط. أعد المحاولة." onConfirm={() => handleRevoke(grant.id)} /></div></td></tr>)}</tbody></table></div>
+      </details>
+      {asOf && <GuestTraineeDashboard rows={guests} asOf={asOf} />}
+    </>}
+  </section>;
 }

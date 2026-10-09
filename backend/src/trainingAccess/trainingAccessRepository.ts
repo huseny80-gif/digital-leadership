@@ -35,7 +35,9 @@ export class TrainingAccessRepository {
   constructor(private readonly pool: Pool) {}
 
   async createGrant(params: {
+    id?: string;
     tokenHash: string;
+    shareTokenCiphertext?: string;
     label: string | null;
     description: string | null;
     maxSessions: number | null;
@@ -44,10 +46,10 @@ export class TrainingAccessRepository {
   }): Promise<GrantRow> {
     const result = await this.pool.query<{ id: string }>(
       `insert into training_access_grants
-         (token_hash, label, description, max_sessions, expires_at, created_by)
-       values ($1, $2, $3, $4, $5, $6)
+         (id, token_hash, label, description, max_sessions, expires_at, created_by, share_token_hash, share_token_ciphertext)
+       values (coalesce($7::uuid,gen_random_uuid()), $1, $2, $3, $4, $5, $6, case when $8::text is null then null else $1 end, $8)
        returning id`,
-      [params.tokenHash, params.label, params.description, params.maxSessions, params.expiresAt, params.createdBy],
+      [params.tokenHash, params.label, params.description, params.maxSessions, params.expiresAt, params.createdBy, params.id ?? null, params.shareTokenCiphertext ?? null],
     );
     return (await this.getGrantById(result.rows[0]!.id))!;
   }
@@ -59,7 +61,7 @@ export class TrainingAccessRepository {
               (select count(*)::text from guest_training_sessions gs where gs.grant_id = g.id) as session_count,
               g.revoked, g.revoked_at, g.expires_at, g.created_by, g.created_at, g.updated_at
        from training_access_grants g
-       where g.id = $1`,
+       where g.id = $1 and g.archived_at is null`,
       [id],
     );
     return result.rows[0] ?? null;
@@ -72,7 +74,7 @@ export class TrainingAccessRepository {
               (select count(*)::text from guest_training_sessions gs where gs.grant_id = g.id) as session_count,
               g.revoked, g.revoked_at, g.expires_at, g.created_by, g.created_at, g.updated_at
        from training_access_grants g
-       where g.token_hash = $1`,
+       where (g.token_hash = $1 or g.share_token_hash = $1) and g.archived_at is null`,
       [tokenHash],
     );
     return result.rows[0] ?? null;
@@ -85,13 +87,40 @@ export class TrainingAccessRepository {
               (select count(*)::text from guest_training_sessions gs where gs.grant_id = g.id) as session_count,
               g.revoked, g.revoked_at, g.expires_at, g.created_by, g.created_at, g.updated_at
        from training_access_grants g
+       where g.archived_at is null
        order by g.created_at desc`,
     );
     return result.rows;
   }
 
   async revokeGrant(id: string): Promise<void> {
-    await this.pool.query(`update training_access_grants set revoked = true, revoked_at = now() where id = $1`, [id]);
+    await this.pool.query(`update training_access_grants set revoked = true, revoked_at = now(), archived_at = now() where id = $1`, [id]);
+  }
+
+  /** Serialize copies so legacy grants gain one persistent sharing link. */
+  async getOrCreateShareToken(id: string, candidate: { hash: string; ciphertext: string }): Promise<{ hash: string; ciphertext: string } | null> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      const result = await client.query<{ share_token_hash: string | null; share_token_ciphertext: string | null }>(
+        "select share_token_hash,share_token_ciphertext from training_access_grants where id=$1 and not revoked and archived_at is null and (expires_at is null or expires_at>now()) for update", [id],
+      );
+      const row = result.rows[0];
+      if (!row) { await client.query("commit"); return null; }
+      if (row.share_token_ciphertext === null) {
+        await client.query("update training_access_grants set share_token_hash=$2,share_token_ciphertext=$3 where id=$1", [id,candidate.hash,candidate.ciphertext]);
+      }
+      await client.query("commit");
+      return row.share_token_ciphertext !== null
+        ? { hash: row.share_token_hash!, ciphertext: row.share_token_ciphertext }
+        : candidate;
+    } catch (error) { await client.query("rollback"); throw error; }
+    finally { client.release(); }
+  }
+
+  async cleanDisabledGrants(): Promise<number> {
+    const result = await this.pool.query("update training_access_grants set archived_at=now() where revoked and archived_at is null returning id");
+    return result.rowCount ?? 0;
   }
 
   async createGuestSession(params: {
@@ -141,9 +170,9 @@ export class TrainingAccessRepository {
    * (`lecture_progress.guest_session_id` / `quiz_attempts.guest_session_id`
    * — the same nullable-FK-with-XOR-constraint columns migration 16
    * added), never `user_id`, so this can never pull in a registered
-   * learner's data. `total_lectures` is scoped to the SAME subject the
-   * guest's own grant covers (per-row subquery), matching how each
-   * guest can only ever complete lectures within their own scope.
+   * learner's data. Progress and total lectures both count the same
+   * published, non-deleted lectures and parent subjects across the
+   * platform, matching the guest's platform-wide access.
    */
   async listGuestAnalytics(): Promise<GuestAnalyticsRow[]> {
     const result = await this.pool.query<GuestAnalyticsRow>(
@@ -151,11 +180,11 @@ export class TrainingAccessRepository {
          gs.id as guest_session_id,
          gs.display_name,
          g.id as grant_id,
-         case when g.revoked then 'revoked' else gs.status::text end as status,
+         case when gs.status='active' and gs.expires_at is not null and gs.expires_at<=now() then 'expired' else gs.status::text end as status,
          gs.created_at as joined_at,
          gs.last_seen_at,
-         (select count(*) from lecture_progress lp where lp.guest_session_id = gs.id and lp.completed) as lectures_completed,
-         (select count(*) from lectures l where l.status = 'published' and l.deleted_at is null) as total_lectures,
+         (select count(*) from lecture_progress lp join lectures l on l.id=lp.lecture_id join subjects s on s.id=l.subject_id where lp.guest_session_id = gs.id and lp.completed and l.status='published' and l.deleted_at is null and s.status='published' and s.deleted_at is null) as lectures_completed,
+         (select count(*) from lectures l join subjects s on s.id=l.subject_id where l.status = 'published' and l.deleted_at is null and s.status='published' and s.deleted_at is null) as total_lectures,
          (select count(*) from quiz_attempts qa where qa.guest_session_id = gs.id) as quizzes_started,
          (select count(*) from quiz_attempts qa where qa.guest_session_id = gs.id and qa.status = 'graded') as quizzes_completed,
          (select avg(qa.score) from quiz_attempts qa where qa.guest_session_id = gs.id and qa.status = 'graded' and qa.score is not null) as average_score

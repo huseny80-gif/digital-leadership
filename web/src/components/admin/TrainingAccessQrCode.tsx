@@ -27,7 +27,7 @@ export function TrainingAccessQrCode({ joinUrl, label }: { joinUrl: string; labe
   useEffect(() => {
     if (!canvasRef.current) return;
     QRCode.toCanvas(canvasRef.current, joinUrl, { width: 176, margin: 1 }, (err) => {
-      if (err) setError("Unable to generate QR code.");
+      setError(err ? "تعذر إنشاء رمز QR. أعد المحاولة." : null);
     });
   }, [joinUrl]);
 
@@ -47,10 +47,10 @@ export function TrainingAccessQrCode({ joinUrl, label }: { joinUrl: string; labe
           {error}
         </p>
       ) : (
-        <canvas ref={canvasRef} aria-label={`QR code for ${label}`} style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)" }} />
+        <canvas ref={canvasRef} aria-label={`رمز QR لرابط ${label}`} style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)" }} />
       )}
       <button type="button" className="btn btn-secondary" onClick={handleDownload} disabled={!!error}>
-        Download QR
+        تحميل رمز QR
       </button>
     </div>
   );

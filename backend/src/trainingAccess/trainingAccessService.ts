@@ -4,11 +4,14 @@ import type {
   TrainingAccessJoinInfo,
   GuestTrainingSession,
   GuestTraineeAnalyticsRow,
+  TrainingAccessShareLink,
 } from "@shared/index";
 import type { GrantRow, GuestSessionRow, TrainingAccessRepository } from "./trainingAccessRepository.js";
-import { generateAccessToken, hashToken } from "./token.js";
+import { generateAccessToken, hashToken, hashesEqual } from "./token.js";
 import { validateTraineeName } from "./nameValidation.js";
 import { conflict, notFound } from "../lib/httpError.js";
+import { randomUUID } from "node:crypto";
+import { encryptShareToken, decryptShareToken } from "./shareToken.js";
 
 function toGrant(row: GrantRow): TrainingAccessGrant {
   return {
@@ -54,6 +57,7 @@ export class TrainingAccessService {
   constructor(
     private readonly repository: TrainingAccessRepository,
     private readonly webBaseUrl: string,
+    private readonly shareStorageSecret?: string,
   ) {}
 
   async createGrant(params: {
@@ -64,7 +68,9 @@ export class TrainingAccessService {
   }): Promise<TrainingAccessGrantCreated> {
     const token = generateAccessToken();
     const tokenHash = hashToken(token);
+    const id = this.shareStorageSecret ? randomUUID() : undefined;
     const row = await this.repository.createGrant({
+      ...(id ? { id, shareTokenCiphertext: encryptShareToken(token, this.shareStorageSecret!, id) } : {}),
       tokenHash,
       label: params.label,
       description: params.description,
@@ -94,6 +100,23 @@ export class TrainingAccessService {
     const row = await this.repository.getGrantById(id);
     if (!row) throw notFound("Training access grant");
     await this.repository.revokeGrant(id);
+  }
+
+  async getShareLink(id: string): Promise<TrainingAccessShareLink> {
+    if (!this.shareStorageSecret) throw new Error("Training link storage is not configured");
+    const candidate = generateAccessToken();
+    const stored = await this.repository.getOrCreateShareToken(id, {
+      hash: hashToken(candidate),
+      ciphertext: encryptShareToken(candidate, this.shareStorageSecret, id),
+    });
+    if (!stored) throw notFound("Training access link");
+    const token = decryptShareToken(stored.ciphertext, this.shareStorageSecret, id);
+    if (!hashesEqual(hashToken(token), stored.hash)) throw new Error("Stored training link integrity check failed");
+    return { grantId: id, joinUrl: `${this.webBaseUrl.replace(/\/$/, "")}/join/${token}` };
+  }
+
+  async cleanDisabledGrants(): Promise<{ removed: number }> {
+    return { removed: await this.repository.cleanDisabledGrants() };
   }
 
   /** Public: resolves a raw token to join-page info WITHOUT creating a
