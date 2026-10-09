@@ -9,8 +9,13 @@ import { ExamMaterialQuiz } from "./ExamMaterialQuiz";
 import { ExamGroupTitle } from "./ExamGroupTitle";
 import { ExamAcademicSummary } from "./ExamAcademicSummary";
 import { ExamMaterialHistory } from "./ExamMaterialHistory";
-import { examHref, examRequest } from "./request";
+import { ExamMindMap } from "./ExamMindMap";
+import { ExamRevisionPackage } from "./ExamRevisionPackage";
+import { generateExamReviewArtifacts } from "@digital-leadership/shared";
+import { examHref, examRequest, type ExamMaterialTab } from "./request";
 import styles from "./examMaterial.module.css";
+
+const contentTabs: Array<{ id: ExamMaterialTab; label: string; icon: string }> = [{ id: "summary", label: "الملخص الشامل", icon: "document" }, { id: "map", label: "خريطة المفاهيم", icon: "network" }, { id: "quiz", label: "الاختبار التفاعلي المتقدم", icon: "quiz" }, { id: "package", label: "حزمة المراجعة", icon: "download" }];
 
 function selectionKey(group: ExamMaterialGroup) {
   return JSON.stringify([group.subjectId, [...new Set(group.lectures.map(lecture => lecture.id))].sort()]);
@@ -55,11 +60,12 @@ export function ExamMaterialWorkspace({ initialIndex, initialDetail }: { initial
   const generatingRef = useRef(false);
   const cache = useRef(new Map(initialDetail ? [[initialDetail.id, initialDetail]] : []));
   const groupId = query.get("group") ?? initialDetail?.id ?? groups[0]?.id ?? null;
-  const tab = query.get("tab") === "quiz" ? "quiz" : "summary";
+  const tab: ExamMaterialTab = contentTabs.find(item => item.id === query.get("tab"))?.id ?? "summary";
   const selectedDetail = detail?.id === groupId ? detail : null;
   const currentRevision = selectedDetail ? groups.find(group => selectionKey(group) === selectionKey(selectedDetail)) ?? selectedDetail.currentRevision ?? selectedDetail : null;
   const activeGroupId = currentRevision?.id ?? groupId;
   const historical = Boolean(currentRevision && groupId !== currentRevision.id);
+  const review = selectedDetail ? selectedDetail.review ?? generateExamReviewArtifacts(selectedDetail.summary, selectedDetail.title) : null;
 
   useEffect(() => () => indexRequest.current?.abort(), []);
 
@@ -82,7 +88,7 @@ export function ExamMaterialWorkspace({ initialIndex, initialDetail }: { initial
   }, [groupId, subjectId, retry]);
 
   function chooseGroup(id: string) { setMessage(null); window.history.pushState(null, "", examHref(subjectId, id, "summary")); }
-  function chooseTab(next: "summary" | "quiz") { if (groupId) window.history.pushState(null, "", examHref(subjectId, groupId, next, query.get("attempt") ?? undefined)); }
+  function chooseTab(next: ExamMaterialTab) { if (groupId) window.history.pushState(null, "", examHref(subjectId, groupId, next, query.get("attempt") ?? undefined)); }
   function changeSelection(ids: string[]) { if (generatingRef.current) return; setSelection(ids); request.current = null; setGenerationError(null); setMessage(null); }
   async function refreshIndex() {
     indexRequest.current?.abort();
@@ -127,12 +133,12 @@ export function ExamMaterialWorkspace({ initialIndex, initialDetail }: { initial
   }
 
   return <div className={styles.workspace}>
-    <div className={styles.banner}><span className={styles.largeIcon}><PlatformIcon name="clipboard" /></span><div><h2>مراجعتك الامتحانية في مكان واحد</h2><p>ملخص شامل واختبار تفاعلي لكل مجموعة محاضرات، مع الاحتفاظ بجميع المجموعات السابقة.</p></div><Link href={`/subjects/${subjectId}`} className={styles.back}>العودة إلى المحاضرات <PlatformIcon name="arrow" /></Link></div>
+    <div className={styles.banner}><span className={styles.largeIcon}><PlatformIcon name="clipboard" /></span><div><h2>مراجعتك الامتحانية في مكان واحد</h2><p>ملخص أكاديمي، ومراجعة صوتية، وخريطة مفاهيم، واختبار بوضعَي التعلم والتحدي، مع حزمة PDF وأرشيف محفوظ.</p></div><Link href={`/subjects/${subjectId}`} className={styles.back}>العودة إلى المحاضرات <PlatformIcon name="arrow" /></Link></div>
     {initialIndex.canGenerate ? <section className={styles.admin} aria-labelledby="exam-admin-heading">
       <div className={styles.sectionHead}><div><span className={styles.eyebrow}>إعداد المحتوى — المدير</span><h2 id="exam-admin-heading">اختيار المحاضرات</h2></div><span className={styles.badge}>{selection.length} محاضرة محددة</span></div>
       <p className={styles.muted}>حدد المحاضرات المطلوبة ثم ولّد المحتوى. تظهر كل مجموعة محاضرات مرة واحدة بأحدث مراجعة، وتُحفظ مراجعاتها السابقة في الأرشيف.</p>
       {initialIndex.lectures.length ? <><fieldset className={styles.lectures} disabled={generating}><legend className={styles.srOnly}>المحاضرات المنشورة</legend>{initialIndex.lectures.map((lecture, index) => <label key={lecture.id} className={styles.lecture} data-selected={selection.includes(lecture.id)}><input type="checkbox" checked={selection.includes(lecture.id)} onChange={event => changeSelection(event.target.checked ? [...selection, lecture.id] : selection.filter(id => id !== lecture.id))} /><span className={styles.lectureNumber}>{lecture.orderIndex > 0 ? lecture.orderIndex : index + 1}</span><span>{lecture.title}</span></label>)}</fieldset>
-        <div className={styles.controls}><div><button className={styles.quiet} disabled={generating || initialIndex.lectures.length > 50} onClick={() => changeSelection(initialIndex.lectures.map(l => l.id))}>تحديد الكل</button><button className={styles.quiet} disabled={generating || !selection.length} onClick={() => changeSelection([])}>إلغاء التحديد</button></div><button className={styles.action} disabled={generating || selection.length === 0 || selection.length > 50} onClick={() => void generate()}><PlatformIcon name="clipboard" />{generating ? "جارٍ توليد المحتوى…" : "توليد المحتوى الامتحاني"}</button></div>
+        <div className={styles.controls}><div><button className={styles.quiet} disabled={generating || initialIndex.lectures.length > 50} onClick={() => changeSelection(initialIndex.lectures.map(l => l.id))}>تحديد الكل</button><button className={styles.quiet} disabled={generating || !selection.length} onClick={() => changeSelection([])}>إلغاء التحديد</button></div><button className={styles.action} disabled={generating || selection.length === 0 || selection.length > 50} onClick={() => void generate()}><PlatformIcon name="clipboard" />{generating ? "جارٍ توليد المحتوى…" : "توليد المحتوى الامتحاني الذكي"}</button></div>
         {selection.length > 50 ? <p role="alert">يمكن اختيار ٥٠ محاضرة كحد أقصى لكل مجموعة.</p> : null}
       </> : <p className={styles.notice}>لا توجد محاضرات منشورة للاختيار بعد.</p>}
       {generationError ? <p className={styles.error} role="alert">{generationError}</p> : null}
@@ -150,8 +156,8 @@ export function ExamMaterialWorkspace({ initialIndex, initialDetail }: { initial
           <div className={styles.contentHead}><span className={styles.eyebrow}>{historical ? "مراجعة مؤرشفة" : "أحدث مراجعة للمحاضرات"}</span><h2><ExamGroupTitle title={selectedDetail.title} /></h2><p className={styles.muted}>{selectedDetail.lectures.length} محاضرة · {selectedDetail.questionCount} سؤالًا</p>
             {historical && currentRevision ? <div className={styles.historicalNotice}><span>أنت تعرض مراجعة سابقة لهذه المجموعة.</span><button className={styles.quiet} onClick={() => chooseGroup(currentRevision.id)}>عرض أحدث مراجعة</button></div> : null}
             {initialIndex.canGenerate ? <div className={styles.refreshReview}><button className={styles.quiet} disabled={generating || selectedDetail.lectures.some(lecture => !initialIndex.lectures.some(current => current.id === lecture.id))} onClick={() => void generate(selectedDetail.lectures.map(lecture => lecture.id))}><PlatformIcon name="document" />{generating ? "جارٍ إعداد المراجعة…" : "إنشاء مراجعة محدّثة"}</button><span>تُحفظ المراجعة الحالية في الأرشيف.</span></div> : null}</div>
-          <div className={styles.innerTabs} role="tablist" aria-label="محتوى المجموعة"><button id="exam-summary-tab" role="tab" aria-selected={tab === "summary"} aria-controls="exam-summary-panel" tabIndex={tab === "summary" ? 0 : -1} onClick={() => chooseTab("summary")} onKeyDown={e => tabKeys(e, ["summary", "quiz"], "summary", id => chooseTab(id as "summary" | "quiz"))}><PlatformIcon name="document" />الملخص الشامل</button><button id="exam-quiz-tab" role="tab" aria-selected={tab === "quiz"} aria-controls="exam-quiz-panel" tabIndex={tab === "quiz" ? 0 : -1} onClick={() => chooseTab("quiz")} onKeyDown={e => tabKeys(e, ["summary", "quiz"], "quiz", id => chooseTab(id as "summary" | "quiz"))}><PlatformIcon name="quiz" />الاختبار التفاعلي المتقدم</button></div>
-          {tab === "summary" ? <ExamAcademicSummary summary={selectedDetail.summary} subjectId={subjectId} /> : <div id="exam-quiz-panel" role="tabpanel" aria-labelledby="exam-quiz-tab"><ExamMaterialQuiz key={selectedDetail.id} group={selectedDetail} /></div>}
+          <div className={styles.innerTabs} role="tablist" aria-label="محتوى المجموعة">{contentTabs.map(item => <button key={item.id} id={`exam-${item.id}-tab`} role="tab" aria-selected={tab === item.id} aria-controls={`exam-${item.id}-panel`} tabIndex={tab === item.id ? 0 : -1} onClick={() => chooseTab(item.id)} onKeyDown={event => tabKeys(event, contentTabs.map(tab => tab.id), item.id, id => chooseTab(id as ExamMaterialTab))}><PlatformIcon name={item.icon} />{item.label}</button>)}</div>
+          {tab === "summary" ? <ExamAcademicSummary key={selectedDetail.id} summary={selectedDetail.summary} subjectId={subjectId} chapters={review!.audioChapters} /> : tab === "map" ? <ExamMindMap key={selectedDetail.id} map={review!.mindMap} /> : tab === "package" ? <ExamRevisionPackage key={selectedDetail.id} group={selectedDetail} /> : <div id="exam-quiz-panel" role="tabpanel" aria-labelledby="exam-quiz-tab"><ExamMaterialQuiz key={selectedDetail.id} group={selectedDetail} /></div>}
         </> : <div className={styles.empty}><PlatformIcon name="book" /><h2>لا توجد مجموعة امتحانية بعد</h2><p>{initialIndex.canGenerate ? "اختر المحاضرات أعلاه لبدء إعداد أول مجموعة." : "ستتوفر الملخصات والاختبارات هنا فور نشر مجموعة امتحانية."}</p></div>}
       </section>
     </div>

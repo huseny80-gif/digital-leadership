@@ -35,7 +35,7 @@ export async function reportDocx(report: StudyReport): Promise<Buffer> {
  * within each run. Keeping logical text avoids disconnected or reversed glyphs.
  * An explicit features array bypasses PDFKit's word-by-word layout cache, which
  * otherwise places shaped Arabic words in logical (left-to-right) order. */
-function visualRuns(text: string): string[] {
+export function visualRuns(text: string): string[] {
   const levels = bidi.getEmbeddingLevels(text, /[\u0600-\u06ff]/.test(text) ? "rtl" : "ltr");
   const mirrors = bidi.getMirroredCharactersMap(text, levels.levels);
   const order = bidi.getReorderedIndices(text, levels);

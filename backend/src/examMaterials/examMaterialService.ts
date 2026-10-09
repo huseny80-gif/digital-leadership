@@ -14,6 +14,8 @@ import { hasBrokenSourceEncoding } from "../contentAutomation/sourceTextQuality.
 import { aiAssessmentReview, reviewedAiPdf } from "../contentAutomation/aiAssessmentReviewCatalog.js";
 import { compileExamSummary, isAssessmentAppendixTitle, lectureSelectionLabel, plainStudyText, readableStudyText, studyOnlyExamSummary } from "./summary.js";
 import { examGroupVisible } from "./visibility.js";
+import { generateExamReviewArtifacts, examChallengeSeconds } from "@digital-leadership/shared";
+import type { ExamExperienceMode, QuizAttempt, QuestionForAttempt } from "@shared/index";
 
 interface GroupMetadataRow {
   id: string; subject_id: string; title: string; sequence: number; created_at: Date;
@@ -118,7 +120,8 @@ export class ExamMaterialService {
       this.latestRevision(subjectId, row.lecture_ids, isAdmin),
       this.assessments.getQuizOrThrow(row.quiz_id, isAdmin),
     ]);
-    return { ...groupMetadata(row), revisionCount: currentRevision.revisionCount!, currentRevision, summary: studyOnlyExamSummary(row.summary), quiz };
+    const summary = studyOnlyExamSummary(row.summary);
+    return { ...groupMetadata(row), revisionCount: currentRevision.revisionCount!, currentRevision, summary, quiz, review: generateExamReviewArtifacts(summary, row.title) };
   }
 
   async history(subjectId: string, groupId: string, isAdmin: boolean, pagination: PaginationParams): Promise<ExamMaterialHistory> {
@@ -148,9 +151,23 @@ export class ExamMaterialService {
       this.assessments.getFeedbackOrThrow(attemptId, principal, isAdmin),
       attempt.status === "in_progress" ? Promise.resolve(null) : this.assessments.getResultOrThrow(attemptId, principal, isAdmin),
     ]);
-    return { quiz: group.quiz, attempt, answers, feedback, result, questions: questions.map(q => {
+    return { quiz: group.quiz, attempt, answers, feedback, result, serverTime: new Date().toISOString(), questions: questions.map(q => {
       const lecture = group.lectures.find(l => l.id === q.lectureId);
       return lecture ? { ...q, lectureNumber: lecture.number, lectureTitle: lecture.title } : q;
+    }) };
+  }
+
+  async startAttempt(subjectId: string, groupId: string, principal: AssessmentPrincipal, isAdmin: boolean, mode: ExamExperienceMode): Promise<QuizAttempt> {
+    const group = await this.detail(subjectId, groupId, isAdmin);
+    return this.assessments.startAttempt(group.quizId, principal, isAdmin, { mode, ...(mode === "challenge" ? { timeLimitSeconds: examChallengeSeconds(group.questionCount) } : {}) });
+  }
+
+  async reviewPackage(subjectId: string, groupId: string, isAdmin: boolean): Promise<{ group: ExamMaterialDetail; questions: QuestionForAttempt[] }> {
+    const group = await this.detail(subjectId, groupId, isAdmin);
+    const questions = await this.assessmentRepository.listQuestionsForAttempt(group.quizId);
+    return { group, questions: questions.map(question => {
+      const lecture = group.lectures.find(lecture => lecture.id === question.lectureId);
+      return lecture ? { ...question, lectureTitle: lecture.title } : question;
     }) };
   }
 

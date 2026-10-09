@@ -1,6 +1,10 @@
 import type { ReactNode, SVGProps } from "react";
 
 const paths: Record<string, ReactNode> = {
+  headphones: <><path d="M3 14v-3a9 9 0 0 1 18 0v3" /><rect x="2" y="12" width="5" height="9" rx="2" /><rect x="17" y="12" width="5" height="9" rx="2" /></>,
+  play: <path d="m8 3 13 9-13 9Z" />,
+  pause: <><path d="M8 3v18M16 3v18" /></>,
+  network: <><rect x="8" y="1" width="8" height="6" rx="1" /><path d="M12 7v5M4 16v-4h16v4" /><rect x="1" y="16" width="6" height="7" rx="1" /><rect x="17" y="16" width="6" height="7" rx="1" /><path d="M12 12v8" /></>,
   home: <><path d="m3 11 9-8 9 8M5 10v11h5v-7h4v7h5V10" /><path d="m3 7 9-5 9 5M17 3h3v5" /></>,
   book: <><path d="M12 5c-3-3-7-3-10-2v17c3-1 7-1 10 2 3-3 7-3 10-2V3c-3-1-7-1-10 2Z" /><path d="M12 5v17" /></>,
   video: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m10 8 6 4-6 4Z" /></>,
