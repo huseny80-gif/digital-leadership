@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compileExamSummary, lectureSelectionLabel, plainStudyText } from "../../src/examMaterials/summary.js";
+import { compileExamSummary, lectureSelectionLabel, plainStudyText, readableStudyText } from "../../src/examMaterials/summary.js";
 describe("source-grounded exam summaries", () => {
   it("names contiguous and non-contiguous lecture selections without implying unselected lectures", () => {
     expect(lectureSelectionLabel([3, 1, 2, 2])).toBe("1-3");
@@ -13,6 +13,12 @@ describe("source-grounded exam summaries", () => {
   });
   it("never fills missing or broken sources with invented subject content", () => {
     for (const text of ["اسم محاضرة فقط", "�".repeat(150)]) expect(() => compileExamSummary("الذكاء الاصطناعي", [{ id: "l1", title: "المقدمة", number: 1, text }])).toThrow();
+  });
+  it("keeps readable source wording while discarding damaged fragments independently", () => {
+    const original = "يساعد الذكاء الاصطناعي على تحليل البيانات واستخلاص الأنماط، مع ضرورة التحقق من النتائج ومراجعة المصادر.";
+    const broken = ["�".repeat(150), "القانؽنية السؾاطشيؽ القانؽنية السؾاطشيؽ".repeat(20)];
+    expect(readableStudyText([...broken, `<p>${original}</p>`, original, "عنوان فقط"])).toBe(original);
+    expect(readableStudyText(broken)).toBe("");
   });
   it("condenses long sources while covering their beginning and end with original wording", () => {
     const statements = Array.from({ length: 180 }, (_, i) => `الفكرة الدراسية رقم ${i} تتضمن دراسة البيانات وتوثيق مصادرها ومراجعة النتائج بمنهجية واضحة قبل اتخاذ القرارات في المؤسسة.`);

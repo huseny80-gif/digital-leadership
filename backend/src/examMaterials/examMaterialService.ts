@@ -12,7 +12,7 @@ import { ValidationError, type PaginationParams } from "../lib/validation.js";
 import { generateSourceQuestions, type GeneratedQuestion } from "../contentAutomation/questionGeneration.js";
 import { hasBrokenSourceEncoding } from "../contentAutomation/sourceTextQuality.js";
 import { aiAssessmentReview, reviewedAiPdf } from "../contentAutomation/aiAssessmentReviewCatalog.js";
-import { compileExamSummary, lectureSelectionLabel, plainStudyText } from "./summary.js";
+import { compileExamSummary, lectureSelectionLabel, readableStudyText } from "./summary.js";
 import { examGroupVisible } from "./visibility.js";
 
 interface GroupRow {
@@ -150,11 +150,15 @@ export class ExamMaterialService {
       const sections = await Promise.all(selected.map(async (lecture, position) => {
         const entries = library.entries.filter(e => e.lectureId === lecture.id && ["summaries", "lectures"].includes(e.section));
         const summaries = entries.filter(e => e.section === "summaries");
-        const entryText = (summaries.length ? summaries : entries).flatMap(e => [e.description ?? "", ...(e.keyPoints ?? []), ...(e.concepts ?? []).map(c => `${c.term}: ${c.definition}`), ...e.files.map(f => f.bodyHtml ?? "")]);
+        const entryContent = (entry: LibraryEntry) => [entry.description ?? "", ...(entry.keyPoints ?? []), ...(entry.concepts ?? []).map(c => `${c.term}: ${c.definition}`), ...entry.files.map(f => f.bodyHtml ?? "")];
+        const summaryText = readableStudyText(summaries.flatMap(entryContent));
+        // Prefer a usable study summary; an empty/damaged summary must not
+        // hide the published lecture body or disable the exact-PDF fallback.
+        const entryText = summaryText.length >= 70 ? summaryText : readableStudyText(entries.flatMap(entryContent));
         const itemText = items.filter(i => i.lecture_id === lecture.id).map(i => i.body_text);
-        let text = [...new Set([...entryText, ...itemText].map(plainStudyText).filter(t => t.length > 30))].join("\n\n");
+        let text = readableStudyText([entryText, ...itemText]);
         // A previously reviewed source excerpt is preferable to guessing from a filename.
-        if (text.length < 70) text = [...new Set(sources.filter(q => q.lecture_id === lecture.id).map(q => q.source_excerpt ?? "").filter(Boolean))].join("\n\n");
+        if (text.length < 70) text = readableStudyText(sources.filter(q => q.lecture_id === lecture.id).map(q => q.source_excerpt ?? ""));
         if (text.length < 70) {
           const reviewed = await this.publishedPdfReview(subjectId, entries);
           if (reviewed) { text = reviewed.text; reviewedQuestions.push(...reviewed.questions.map(q => generatedSource(q, lecture.id))); }
