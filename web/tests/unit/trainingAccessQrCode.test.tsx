@@ -40,9 +40,9 @@ describe("TrainingAccessQrCode", () => {
     });
     render(<TrainingAccessQrCode joinUrl="https://example.test/join/token" label="Cohort A" />);
     await waitFor(() => {
-      expect(screen.getByLabelText("QR code for Cohort A")).toBeInTheDocument();
+      expect(screen.getByLabelText("رمز QR لرابط Cohort A")).toBeInTheDocument();
     });
-    expect(screen.getByRole("button", { name: /download qr/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "تحميل رمز QR" })).toBeEnabled();
   });
 
   it("shows an error state and disables download if QR generation fails", async () => {
@@ -52,8 +52,8 @@ describe("TrainingAccessQrCode", () => {
     });
     render(<TrainingAccessQrCode joinUrl="https://example.test/join/token" label="Cohort A" />);
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(/unable to generate/i);
+      expect(screen.getByRole("alert")).toHaveTextContent(/تعذر إنشاء رمز QR/);
     });
-    expect(screen.getByRole("button", { name: /download qr/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "تحميل رمز QR" })).toBeDisabled();
   });
 });

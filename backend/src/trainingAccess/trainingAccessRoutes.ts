@@ -48,7 +48,7 @@ const joinSchema = z.object({
 export function trainingAccessRoutes(): Router {
   const router = Router();
 
-  const getService = () => new TrainingAccessService(new TrainingAccessRepository(getPool()), getEnv().WEB_BASE_URL);
+  const getService = () => new TrainingAccessService(new TrainingAccessRepository(getPool()), getEnv().WEB_BASE_URL, getEnv().GUEST_SESSION_SIGNING_SECRET);
   const getContentService = () => new ContentService(new PgContentRepository(getPool()));
   const getFilesService = () => {
     const env = getEnv();
@@ -65,6 +65,17 @@ export function trainingAccessRoutes(): Router {
   // ---------- Admin ----------
   const admin = Router();
   admin.use(requireAdmin);
+  admin.use((_req, res, next) => { res.setHeader("Cache-Control", "private, no-store"); next(); });
+
+  admin.post("/cleanup", async (_req, res, next) => {
+    try { res.json({ data: await getService().cleanDisabledGrants() }); }
+    catch (error) { next(error); }
+  });
+
+  admin.post("/:grantId/link", requireUuidParam("grantId"), async (req, res, next) => {
+    try { res.json({ data: await getService().getShareLink(req.params.grantId as string) }); }
+    catch (error) { next(error); }
+  });
 
   admin.post("/", async (req, res, next) => {
     try {

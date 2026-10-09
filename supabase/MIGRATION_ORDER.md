@@ -78,7 +78,7 @@ by the time migration 16 runs. Full corrected order:
 Current full order:
 
 ```
-1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 14 → 12 → 13 → 15 → 16 → 17 → 18 → 19 → 20 → 21
+1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 14 → 12 → 13 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23
 ```
 
 19. `00000000000019_permanent_training_access.sql` — removes time limits
@@ -96,3 +96,13 @@ Current full order:
     completion and active learning time, plus optional assignment/quiz
     deadlines. Apply after 20; it requires the assignments table from 13
     and guest sessions from 16. Startup applies it before accepting requests.
+
+22. `00000000000022_exam_material.sql` — persists independent exam groups
+    and their content revisions.
+
+23. `00000000000023_reusable_training_links.sql` — adds encrypted,
+    admin-recoverable sharing tokens and archived-link timestamps. Removes
+    disabled links without participants and archives those with participants
+    to preserve sessions, results and progress. Existing primary token hashes
+    and active links are unchanged. Startup applies it idempotently under a
+    transaction and advisory lock before serving requests.

@@ -3,11 +3,9 @@
  * Mirrors `training_access_grants` / `guest_training_sessions`
  * (supabase/migrations/00000000000016_training_access.sql).
  *
- * The raw access token itself only ever appears in two client-facing
- * places: the admin's create-grant response (`TrainingAccessGrantCreated`,
- * shown once so the admin can copy the join link/QR) and the trainee's
- * own join URL — never in any list/read response afterward, since only
- * its hash is stored server-side.
+ * Hashes authorize joins; an authenticated ciphertext also lets admins
+ * retrieve a persistent share link through a dedicated admin endpoint.
+ * Raw links never appear in grant or trainee list responses.
  */
 
 export interface TrainingAccessGrant {
@@ -25,9 +23,15 @@ export interface TrainingAccessGrant {
   updatedAt: string;
 }
 
-/** Returned only once, immediately after `POST /admin/training-access`. */
+/** Creation response; admins can retrieve the same link later. */
 export interface TrainingAccessGrantCreated extends TrainingAccessGrant {
   token: string;
+  joinUrl: string;
+}
+
+/** Dedicated admin-only response. Never included in grant/guest lists. */
+export interface TrainingAccessShareLink {
+  grantId: string;
   joinUrl: string;
 }
 
@@ -52,17 +56,15 @@ export interface GuestTrainingSession {
  * path (`GET /admin/training-access/guests`), never merged into the
  * existing registered-user `AdminStudentAnalyticsRow` shape — guests
  * have no `users` row, no email, and their status can additionally be
- * "revoked" (their grant was revoked) or "expired" (their own session
+ * "revoked" (the session was revoked) or "expired" (their own session
  * timed out), which registered-student analytics has no equivalent of.
  */
 export interface GuestTraineeAnalyticsRow {
   guestSessionId: string;
   displayName: string;
   grantId: string;
-  /** "active"/"expired" from the session row itself, plus "revoked" if
-   * the owning grant has since been revoked (independent of the
-   * session's own `status` column — a grant can be revoked after a
-   * guest already joined). */
+  /** Actual session usability. Disabling an old join link only prevents
+   * new entrants and does not stop guests who have already joined. */
   status: "active" | "expired" | "revoked";
   joinedAt: string;
   lastSeenAt: string;
