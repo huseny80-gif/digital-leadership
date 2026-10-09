@@ -6,6 +6,8 @@ import type { Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer, QuizAtte
 import { QuizNavigation } from "./QuizNavigation";
 import { readQuizDraft, writeQuizDraft, type AnswerState } from "./quizDraft";
 import { notifyLearningProgress } from "@/lib/learning";
+import { FloatingPdfButton } from "@/components/printing/FloatingPdfButton";
+import { questionPrintDocument } from "@/components/printing/printDocuments";
 
 const levels = [{ id: "all", label: "الكل" }, { id: "easy", label: "سهل" }, { id: "medium", label: "متوسط" }, { id: "hard", label: "صعب" }];
 const letters = ["أ", "ب", "ج", "د", "هـ", "و"];
@@ -277,6 +279,7 @@ export function QuizAttemptRunner({
 
   return (
     <section className="finquiz-training" aria-label={reviewMode ? "مراجعة الإجابات" : "الاختبار التفاعلي"}>
+      {filteredQuestions.length ? <FloatingPdfButton label="طباعة الأسئلة PDF" getDocument={() => questionPrintDocument(quiz.title, filteredQuestions)} /> : null}
       <QuizNavigation quiz={quiz} backHref={backHref ?? `${routeBasePath}/${quiz.id}`} />
       <div className="quiz-head">
         {reviewMode ? <h2>مراجعة الإجابات — {displayTitle ?? quiz.title}</h2> : <h1>{displayTitle ?? quiz.title}</h1>}

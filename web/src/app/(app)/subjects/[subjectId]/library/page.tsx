@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { SubjectTabs } from "@/components/content/SubjectTabs";
 import { subjectTabs } from "@/components/content/subjectTabs.config";
 import { LibraryEntryContent, librarySections } from "@/components/content/LibraryContent";
+import { LibrarySummaryPrint } from "@/components/printing/LibrarySummaryPrint";
 
 export default async function SubjectLibraryPage({ params, searchParams }: {
   params: Promise<{ subjectId: string }>;
@@ -27,6 +28,7 @@ export default async function SubjectLibraryPage({ params, searchParams }: {
   const selected = query.entry ? entries.find(e => e.id === query.entry) : undefined;
   if (query.entry && !selected) return <NotFoundState message="المحتوى غير متاح." />;
   return <section>
+    {section === "summaries" && entries.length ? <LibrarySummaryPrint title={`${subject.title} — ${selected?.title ?? "الملخصات الدراسية"}`} subjectId={subjectId} entries={selected ? [selected] : entries} /> : null}
     <Breadcrumbs items={[{ label: "المواد الدراسية", href: "/subjects" }, { label: subject.title, href: "/subjects/" + subjectId }, { label: librarySections[section] }]} />
     <h1 className="page-heading">{librarySections[section]}</h1><p className="page-subheading">{subject.title}</p>
     <SubjectTabs tabs={subjectTabs(subjectId)} activeKey={section} />

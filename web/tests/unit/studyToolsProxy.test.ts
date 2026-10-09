@@ -28,4 +28,11 @@ describe("private learner study tool proxy", () => {
     expect((await POST(new Request("http://test/api/study-tools/export?format=html"), context("export"))).status).toBe(400);
     expect((await POST(new Request("http://test/api/study-tools/report", { method: "POST", body: "invalid-json" }), context("report"))).status).toBe(400);
   });
+  it("streams private print PDFs through the fixed print route and rejects extra query parameters", async () => {
+    vi.mocked(apiPostDownload).mockResolvedValue(new Response("%PDF-print"));
+    const body = { kind: "summary", title: "ملخص", subtitle: "المادة", blocks: [{ text: "نص علمي" }] };
+    const result = await POST(new Request("http://test/api/study-tools/print", { method: "POST", body: JSON.stringify(body) }), context("print"));
+    expect(apiPostDownload).toHaveBeenCalledWith("/api/v1/study-tools/print", body); expect(await result.text()).toBe("%PDF-print"); expect(result.headers.get("content-type")).toBe("application/pdf"); expect(result.headers.get("cache-control")).toBe("private, no-store");
+    expect((await POST(new Request("http://test/api/study-tools/print?role=admin", { method: "POST", body: JSON.stringify(body) }), context("print"))).status).toBe(400);
+  });
 });

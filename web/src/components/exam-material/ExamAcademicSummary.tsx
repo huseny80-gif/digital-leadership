@@ -1,10 +1,13 @@
 import Link from "next/link";
 import type { ExamMaterialSummary } from "@shared/index";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
+import { FloatingPdfButton } from "@/components/printing/FloatingPdfButton";
+import { examSummaryPrintDocument } from "@/components/printing/printDocuments";
 import styles from "./examMaterial.module.css";
 
 export function ExamAcademicSummary({ summary, subjectId }: { summary: ExamMaterialSummary; subjectId: string }) {
   return <article id="exam-summary-panel" role="tabpanel" aria-labelledby="exam-summary-tab" className={styles.summary}>
+    <FloatingPdfButton label="طباعة الملخص الشامل PDF" document={examSummaryPrintDocument(summary)} />
     <div className={styles.summaryCover}><span className={styles.eyebrow}>المادة الامتحانية · الملخص الشامل</span><h3>مراجعة أكاديمية للمحاضرات المختارة</h3><p>{summary.introduction}</p></div>
     <nav className={styles.summaryIndex} aria-label="فهرس الملخص"><h4>محتويات المراجعة</h4><ol>{summary.sections.map(section => <li key={section.id}><a href={`#summary-lecture-${section.id}`}><span className={styles.lectureNumber}>{section.number}</span><span>{section.title}</span><PlatformIcon name="arrow" /></a></li>)}</ol></nav>
     {summary.sections.map(section => <section id={`summary-lecture-${section.id}`} key={section.id} className={styles.summarySection}>

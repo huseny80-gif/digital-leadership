@@ -8,6 +8,7 @@ import { getLectureLibraryEntries, LibraryEntryContent } from "@/components/cont
 import { LectureCompleteToggle } from "@/components/content/LectureCompleteToggle";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { LectureTabs } from "@/components/content/LectureTabs";
+import { LibrarySummaryPrint } from "@/components/printing/LibrarySummaryPrint";
 
 /**
  * Lecture detail (API_V1.md `GET /lectures/:lectureId`,
@@ -97,6 +98,8 @@ export default async function LectureDetailPage({
 
   const currentIndex = siblingLectures.findIndex((l) => l.id === lectureId);
   const libraryEntries = await getLectureLibraryEntries(lecture!.subjectId, lecture!.id);
+  const summaryEntries = libraryEntries.filter(entry => entry.section === "summaries");
+  const summaryItems = items.filter(item => item.itemType === "summary" && item.bodyText).map(item => ({ title: item.title, text: item.bodyText! }));
   const hasPosition = currentIndex !== -1 && siblingLectures.length > 0;
   const previousLecture = hasPosition && currentIndex > 0 ? siblingLectures[currentIndex - 1] : null;
   const nextLecture =
@@ -104,6 +107,7 @@ export default async function LectureDetailPage({
 
   return (
     <section>
+      {summaryEntries.length || summaryItems.length ? <LibrarySummaryPrint title={`${lecture!.title} — الملخص الدراسي`} subjectId={lecture!.subjectId} entries={summaryEntries} items={summaryItems} /> : null}
       <Breadcrumbs
         items={[
           { label: "Subjects", href: "/subjects" },
