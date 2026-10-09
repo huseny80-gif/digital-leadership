@@ -536,11 +536,124 @@
   backdrop-filter: blur(20px);
 }
 
-.dl-workspace .dl-smart-activities {
-  padding-bottom: 14px;
+.dl-workspace .dl-dashboard-disclosure {
+  padding: 0;
+  overflow: hidden;
+  direction: rtl;
 }
-.dl-workspace .dl-smart-activities .dl-panel-heading {
-  margin-bottom: 8px;
+.dl-disclosure-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--color-text);
+}
+.dl-disclosure-summary::-webkit-details-marker {
+  display: none;
+}
+.dl-disclosure-summary:hover {
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+}
+.dl-disclosure-summary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -3px;
+  border-radius: 12px;
+}
+.dl-disclosure-summary h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-heading), sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.dl-disclosure-summary h2 svg {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+.dl-disclosure-title {
+  flex: 1;
+  min-width: 0;
+}
+.dl-disclosure-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  padding: 2px 7px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 12px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1.8;
+  white-space: nowrap;
+}
+.dl-disclosure-summary .dl-disclosure-chevron {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--color-primary);
+  transition: transform .15s ease;
+}
+.dl-dashboard-disclosure details[open] > summary .dl-disclosure-chevron {
+  transform: rotate(180deg);
+}
+.dl-disclosure-body {
+  padding: 0 14px 12px;
+  border-top: 1px solid var(--color-border-soft);
+}
+.dl-disclosure-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding-block: 8px;
+}
+.dl-disclosure-toolbar > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  color: var(--color-primary);
+  font-size: 11px;
+}
+.dl-disclosure-toolbar svg {
+  width: 13px;
+  height: 13px;
+}
+.dl-dashboard-disclosure .dl-preview-row {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: start;
+  gap: 2px 10px;
+  padding-block: 9px;
+  margin-top: 0;
+  direction: rtl;
+}
+.dl-dashboard-disclosure .dl-lecture-thumbnail {
+  width: 76px;
+  height: 32px;
+  grid-row: span 2;
+}
+.dl-dashboard-disclosure .dl-preview-row .dl-preview-copy {
+  max-width: none;
+  padding-top: 0;
+  overflow-wrap: anywhere;
+}
+.dl-dashboard-disclosure .dl-preview-row .dl-preview-date {
+  grid-column: 2;
+  justify-content: flex-start;
+  padding-top: 2px;
+  margin-inline: 0;
+  gap: 5px;
 }
 .dl-activity-filters {
   display: flex;
@@ -564,7 +677,7 @@
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 .dl-activity-list {
-  max-height: 420px;
+  max-height: 300px;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -797,6 +910,12 @@
     flex-direction: row;
     margin-inline-start: 45px;
   }
+  .dl-disclosure-summary {
+    padding-inline: 11px;
+  }
+  .dl-disclosure-body {
+    padding-inline: 11px;
+  }
   .dl-quick-action,
   .dl-complete-task {
     min-height: 36px;
@@ -804,6 +923,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .dl-disclosure-chevron {
+    transition: none;
+  }
   .dl-workspace
     :is(
       .dl-metric-card,

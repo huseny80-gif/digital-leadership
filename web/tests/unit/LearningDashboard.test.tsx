@@ -84,6 +84,7 @@ describe("personal metrics, activities and notifications", () => {
         <ActivityFeed />
       </LearningProvider>,
     );
+    fireEvent.click(screen.getByText("الأنشطة القادمة"));
     await screen.findByRole("link", { name: "إعداد خطة أمن المعلومات" });
     expect(screen.getByRole("link", { name: "ابدأ" })).toHaveAttribute(
       "href",

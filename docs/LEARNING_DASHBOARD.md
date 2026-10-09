@@ -74,3 +74,11 @@ Directory cards use smaller 86 × 78 px artwork, 200 px minimum card height,
 and responsive five/three/two-column layouts. The directory keeps recorded
 subject descriptions and the homepage keeps its lecture counts; both link
 to the same authorized subject route. Subject titles wrap without truncation.
+
+The latest-lecture and upcoming-activity panels are independent native
+`details` disclosures, closed initially. Their compact headers show a count
+and a directional indicator. Opening one panel does not stretch its neighbor;
+the three recent lectures retain their full titles and direct links, while
+activities keep status filters, completion controls, and an optional full
+list within a 300 px scroll area. Closing a panel retains its active filter.
+Changing the filter or list size returns the list to its first item.

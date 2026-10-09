@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import {
@@ -10,6 +10,7 @@ import {
 } from "@/lib/learning";
 import type { ActivityStatus } from "@shared/index";
 import { useLearning } from "./LearningProvider";
+import { DashboardDisclosure } from "@/components/content/DashboardDisclosure";
 
 export function ActivityFeed() {
   const { overview, loading, error, refresh } = useLearning();
@@ -17,6 +18,7 @@ export function ActivityFeed() {
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const activities = (overview?.activities ?? []).filter(
     (item) => filter === "all" || item.status === filter,
   );
@@ -39,17 +41,21 @@ export function ActivityFeed() {
     }
   }
   return (
-    <section
-      className="dl-preview-panel dl-smart-activities"
+    <DashboardDisclosure
+      className="dl-smart-activities"
       id="upcoming-activities"
-      aria-labelledby="upcoming-activities-title"
-      aria-busy={loading}
+      title="الأنشطة القادمة"
+      icon="calendar"
+      count={
+        loading && !overview
+          ? "…"
+          : error && !overview
+            ? "تعذّر التحميل"
+            : (overview?.activities.length ?? 0).toLocaleString("ar")
+      }
+      busy={loading}
     >
-      <div className="dl-panel-heading">
-        <h2 id="upcoming-activities-title">
-          <PlatformIcon name="calendar" />
-          الأنشطة القادمة
-        </h2>
+      <div className="dl-disclosure-toolbar">
         <Link href="/subjects?view=assignments">
           الواجبات <PlatformIcon name="arrow" />
         </Link>
@@ -64,6 +70,7 @@ export function ActivityFeed() {
               onClick={() => {
                 setFilter(value);
                 setExpanded(false);
+                if (listRef.current) listRef.current.scrollTop = 0;
               }}
             >
               {value === "all" ? "الكل" : activityStatusLabels[value]}
@@ -84,7 +91,7 @@ export function ActivityFeed() {
           {saveError}
         </p>
       ) : null}
-      <div className="dl-activity-list">
+      <div className="dl-activity-list" ref={listRef}>
         {visible.map((activity) => (
           <article
             className="dl-smart-activity"
@@ -157,13 +164,16 @@ export function ActivityFeed() {
           type="button"
           className="dl-show-activities"
           aria-expanded={expanded}
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => {
+            setExpanded(!expanded);
+            if (listRef.current) listRef.current.scrollTop = 0;
+          }}
         >
           {expanded
             ? "عرض أقل"
             : `عرض جميع الأنشطة (${activities.length.toLocaleString("ar")})`}
         </button>
       ) : null}
-    </section>
+    </DashboardDisclosure>
   );
 }
