@@ -2,8 +2,15 @@ import type { Lecture, Subject } from "./content.js";
 import type { Quiz, QuizAttempt, QuestionForAttempt, AttemptAnswer, SubmitAnswerAck, QuizAttemptResult } from "./quiz.js";
 
 export interface ExamLectureSnapshot { id: string; title: string; number: number }
-export interface ExamSummarySection extends ExamLectureSnapshot { text: string; keyPoints: string[] }
-export interface ExamMaterialSummary { introduction: string; sections: ExamSummarySection[] }
+export interface ExamSummaryTopic { title: string; text: string; details?: string }
+export interface ExamSummarySection extends ExamLectureSnapshot {
+  text: string;
+  keyPoints: string[];
+  topics?: ExamSummaryTopic[];
+  objectives?: string[];
+  concepts?: Array<{ term: string; definition: string }>;
+}
+export interface ExamMaterialSummary { introduction: string; sections: ExamSummarySection[]; version?: number }
 export interface ExamMaterialGroup {
   id: string;
   subjectId: string;

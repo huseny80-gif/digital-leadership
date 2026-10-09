@@ -12,7 +12,7 @@ import { ValidationError, type PaginationParams } from "../lib/validation.js";
 import { generateSourceQuestions, type GeneratedQuestion } from "../contentAutomation/questionGeneration.js";
 import { hasBrokenSourceEncoding } from "../contentAutomation/sourceTextQuality.js";
 import { aiAssessmentReview, reviewedAiPdf } from "../contentAutomation/aiAssessmentReviewCatalog.js";
-import { compileExamSummary, lectureSelectionLabel, readableStudyText } from "./summary.js";
+import { compileExamSummary, lectureSelectionLabel, plainStudyText, readableStudyText } from "./summary.js";
 import { examGroupVisible } from "./visibility.js";
 
 interface GroupRow {
@@ -145,25 +145,34 @@ export class ExamMaterialService {
       const currentLectures = await client.query<{ id: string; updated_at: Date }>("select id,updated_at from lectures where subject_id=$1 and id=any($2::uuid[]) and status='published' and deleted_at is null order by id for share", [subjectId, lectureIds]);
       if (!currentSubject.rowCount || currentLectures.rowCount !== selected.length || currentLectures.rows.some(l => selected.find(s => s.id === l.id)!.updatedAt !== l.updated_at.toISOString())) throw conflict("تغيرت المحاضرات المختارة. حدّث الصفحة وأعد التوليد.");
       const sources = await this.sourceQuestions(client, subjectId, lectureIds);
-      const items = (await client.query<{ lecture_id: string; body_text: string }>("select lecture_id,body_text from lecture_items where lecture_id=any($1::uuid[]) and item_type in ('summary','pdf') and status='published' and deleted_at is null and body_text is not null order by lecture_id,item_type desc,order_index,created_at", [lectureIds])).rows;
+      const items = (await client.query<{ lecture_id: string; title: string; item_type: string; body_text: string }>("select lecture_id,title,item_type,body_text from lecture_items where lecture_id=any($1::uuid[]) and item_type in ('summary','pdf') and status='published' and deleted_at is null and body_text is not null order by lecture_id,item_type desc,order_index,created_at", [lectureIds])).rows;
       const reviewedQuestions: SourceQuestion[] = [];
       const sections = await Promise.all(selected.map(async (lecture, position) => {
         const entries = library.entries.filter(e => e.lectureId === lecture.id && ["summaries", "lectures"].includes(e.section));
-        const summaries = entries.filter(e => e.section === "summaries");
-        const entryContent = (entry: LibraryEntry) => [entry.description ?? "", ...(entry.keyPoints ?? []), ...(entry.concepts ?? []).map(c => `${c.term}: ${c.definition}`), ...entry.files.map(f => f.bodyHtml ?? "")];
-        const summaryText = readableStudyText(summaries.flatMap(entryContent));
-        // Prefer a usable study summary; an empty/damaged summary must not
-        // hide the published lecture body or disable the exact-PDF fallback.
-        const entryText = summaryText.length >= 70 ? summaryText : readableStudyText(entries.flatMap(entryContent));
-        const itemText = items.filter(i => i.lecture_id === lecture.id).map(i => i.body_text);
-        let text = readableStudyText([entryText, ...itemText]);
+        const heading = (title: string, fragments: string[]) => {
+          const body = readableStudyText(fragments);
+          return body ? `## ${title}\n\n${body}` : "";
+        };
+        // A short catalog summary cannot hide the full lecture body. Include
+        // every readable published source for this selected lecture, with
+        // source headings intact and damaged fragments rejected separately.
+        const entryText = entries.flatMap(entry => [
+          heading(entry.section === "summaries" ? "الخلاصة الأكاديمية" : "السياق العام للمحاضرة", [entry.description ?? ""]),
+          heading("محاور المحاضرة", entry.keyPoints ?? []),
+          ...entry.files.map(file => file.bodyHtml ?? ""),
+        ]);
+        const itemText = items.filter(item => item.lecture_id === lecture.id).map(item => heading(item.item_type === "pdf" ? "محتوى المحاضرة وتفاصيلها" : "الشرح والمراجعة", [item.body_text]));
+        // Approved exact-PDF passages supplement the published lecture bodies,
+        // even when a brief summary already exists. No filename inference.
+        const reviewed = await this.publishedPdfReview(subjectId, entries);
+        if (reviewed) reviewedQuestions.push(...reviewed.questions.map(q => generatedSource(q, lecture.id)));
+        const objectives = [...new Set(entries.flatMap(entry => entry.objectives ?? []).map(plainStudyText))].filter(text => text.length > 5 && !hasBrokenSourceEncoding(text));
+        const concepts = [...new Map(entries.flatMap(entry => entry.concepts ?? []).filter(concept => !hasBrokenSourceEncoding(JSON.stringify(concept))).map(concept => [concept.term.trim(), { term: plainStudyText(concept.term).trim(), definition: plainStudyText(concept.definition).trim() }])).values()].filter(concept => concept.term && concept.definition);
+        const conceptText = concepts.map(concept => `${concept.term}: ${concept.definition}`);
+        let text = readableStudyText([...entryText, ...itemText, heading("المفاهيم والمصطلحات الأساسية", conceptText), reviewed ? heading("موضوعات المحاضرة وتطبيقاتها", [reviewed.text]) : ""]);
         // A previously reviewed source excerpt is preferable to guessing from a filename.
         if (text.length < 70) text = readableStudyText(sources.filter(q => q.lecture_id === lecture.id).map(q => q.source_excerpt ?? ""));
-        if (text.length < 70) {
-          const reviewed = await this.publishedPdfReview(subjectId, entries);
-          if (reviewed) { text = reviewed.text; reviewedQuestions.push(...reviewed.questions.map(q => generatedSource(q, lecture.id))); }
-        }
-        return { id: lecture.id, title: lecture.title, number: lecture.orderIndex > 0 ? lecture.orderIndex : allLectures.indexOf(lecture) + 1 || position + 1, text };
+        return { id: lecture.id, title: lecture.title, number: lecture.orderIndex > 0 ? lecture.orderIndex : allLectures.indexOf(lecture) + 1 || position + 1, text, objectives, concepts };
       }));
       const summary = compileExamSummary(subject.title, sections);
       const perLecture = Math.min(12, Math.floor(200 / selected.length));
@@ -185,7 +194,7 @@ export class ExamMaterialService {
       for (const [index, q] of questions.entries()) await this.copyQuestion(client, bankId, quizId, actorId, q, index);
       const digest = createHash("sha256").update(JSON.stringify({ summary, questions })).digest("hex");
       await client.query("insert into exam_material_groups(id,subject_id,title,sequence,lecture_ids,lectures,summary,source_digest,question_count,quiz_id,created_by,request_id) values($1,$2,$3,$4,$5,$6::jsonb,$7::jsonb,$8,$9,$10,$11,$12)", [groupId, subjectId, title, sequence, snapshots.map(l => l.id), JSON.stringify(snapshots), JSON.stringify(summary), digest, questions.length, quizId, actorId, requestId]);
-      await client.query("insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'exam_material.generated','exam_material_group',$2,$3::jsonb)", [actorId, groupId, JSON.stringify({ subjectId, lectureCount: selected.length, questionCount: questions.length, sequence, sourceDigest: digest })]);
+      await client.query("insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'exam_material.generated','exam_material_group',$2,$3::jsonb)", [actorId, groupId, JSON.stringify({ subjectId, lectureCount: selected.length, questionCount: questions.length, sequence, sourceDigest: digest, summaryVersion: summary.version })]);
       await client.query("commit");
     } catch (error) { await client.query("rollback"); throw error; }
     finally { client.release(); }

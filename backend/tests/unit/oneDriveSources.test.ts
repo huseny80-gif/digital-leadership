@@ -13,7 +13,7 @@ describe("approved OneDrive lecture sources", () => {
     await validateOneDriveSources();
     expect(oneDriveSourceReview.files).toHaveLength(24);
     expect(oneDriveSourceReview.quizzes).toHaveLength(6);
-    expect(manifest.subjects.flatMap(source => source.quizzes).filter(quiz => quiz.sourceReview).reduce((n, quiz) => n + quiz.questions.length, 0)).toBe(72);
+    expect(manifest.subjects.flatMap(source => source.quizzes).filter(quiz => quiz.sourceReview === oneDriveSourceReview.key).reduce((n, quiz) => n + quiz.questions.length, 0)).toBe(72);
     const legal = manifest.subjects.find(source => source.id === "legal-regulatory")!;
     const five = legal.lectures.find(lecture => lecture.id === "lg-l5")!;
     const six = legal.lectures.find(lecture => lecture.id === "lg-l6")!;

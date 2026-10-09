@@ -35,7 +35,10 @@ export async function synchronizeFinquizCore(pool: Pool) {
       for (const quiz of source.quizzes) {
         // Reviewed source editions have their own history-preserving writer.
         if (quiz.sourceReview) continue;
-        const existingQuiz = await client.query<{ id: string }>("select id from quizzes where subject_id = $1 and title = $2 and deleted_at is null limit 1", [subjectId, quiz.title]);
+        // Use the original source edition consistently. A newer visibility
+        // edition may intentionally omit old questions; selecting it would
+        // reinsert them on the next deployment.
+        const existingQuiz = await client.query<{ id: string }>("select id from quizzes where subject_id = $1 and title = $2 and purpose='course' and deleted_at is null order by (id=$3) desc,created_at,id limit 1", [subjectId, quiz.title, id("quiz:" + quiz.id)]);
         const quizId = existingQuiz.rows[0]?.id ?? id("quiz:" + quiz.id);
         if (!existingQuiz.rows.length) {
           await client.query("insert into quizzes (id, subject_id, title, description, status, created_by) values ($1,$2,$3,$4,$5,$6) on conflict (id) do nothing", [quizId, subjectId, quiz.title, quiz.description ?? null, quiz.status ?? "draft", owner]);
@@ -66,7 +69,7 @@ export async function synchronizeFinquizCore(pool: Pool) {
   finally { client.release(); }
 }
 
-async function insertAnswerRows(client: PoolClient, questionId: string, question: Record<string, unknown>) {
+export async function insertAnswerRows(client: PoolClient, questionId: string, question: Record<string, unknown>) {
   const type = question.type;
   if (type === "mcq" || type === "tf") {
     const options = type === "tf" ? ["صح", "خطأ"] : question.options as string[];

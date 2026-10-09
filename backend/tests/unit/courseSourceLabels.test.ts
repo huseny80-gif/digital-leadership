@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { correctCoursePresentation, refreshedCourseLabels } from "../../src/contentAutomation/courseSourceLabels.js";
 
-const [ai, cyber] = refreshedCourseLabels;
+const [ai, cyber, risk] = refreshedCourseLabels;
 
 describe("source-based Arabic course names", () => {
   it("recognizes old file names and the inspected NIST lecture as the third lecture", () => {
@@ -10,6 +10,17 @@ describe("source-based Arabic course names", () => {
     expect(cyber!.label("Cybersecurity3.pptx")).toBe("المحاضرة الثالثة في حوكمة الأمن السيبراني.pptx");
     expect(cyber!.numberOf(cyber!.source.lectures.find(lecture => lecture.id === "cs-l3")!.legacyTitles![0]!)).toBe(3);
     expect(cyber!.numberOf("المحاضرة الثالثة في حوكمة الأمن السيبراني")).toBe(3);
+  });
+
+  it("uses the requested Arabic risk names for lectures, files and related labels", () => {
+    for (const [index, ordinal] of ["الأولى", "الثانية", "الثالثة"].entries()) {
+      const number = index + 1;
+      expect(risk!.label(`Risk${number}`)).toBe(`المحاضرة ${ordinal} مخاطر`);
+      expect(risk!.label(`Risk ${number}.pdf`)).toBe(`المحاضرة ${ordinal} مخاطر.pdf`);
+      expect(risk!.label(`ملخص RiskManagement${number}`)).toBe(`ملخص المحاضرة ${ordinal} مخاطر`);
+      expect(risk!.numberOf(`المحاضرة ${ordinal} في إدارة المخاطر واتخاذ القرار`)).toBe(number);
+    }
+    for (const title of ["Risk12", "Risk1-3", "RiskManagement31", "risk-based audit", "ISO 31000"]) expect(risk!.label(title)).toBe(title);
   });
 
   it("keeps the combined file and solutions guide distinct from numbered lectures", () => {

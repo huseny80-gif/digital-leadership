@@ -24,7 +24,7 @@ export async function refreshStudyCourses(pool: Pool) {
       labelsAuditAction: "course_content.labels_normalized",
       auditAction: "course_content.consolidated", lockKey: key + ":consolidate:" + profile.slug,
     });
-    const assessments = await refreshLectureQuizzes(pool, profile, normalization.hiddenDemoIds);
+    const assessments = await refreshCourseLectureQuizzes(pool, profile, normalization.hiddenDemoIds);
     result.push({ subjectId: profile.subjectId, slug: profile.slug, sourceCopies, normalization: normalization.changed, consolidation, ...assessments });
   }
   return result;
@@ -140,7 +140,7 @@ async function normalizeCourse(pool: Pool, profile: CourseSourceLabels) {
   finally { client.release(); }
 }
 
-async function refreshLectureQuizzes(pool: Pool, profile: CourseSourceLabels, hiddenDemoIds: string[]) {
+export async function refreshCourseLectureQuizzes(pool: Pool, profile: CourseSourceLabels, hiddenDemoIds: string[] = []) {
   const client = await pool.connect();
   let lectureQuizzesCreated = 0, visibilityEditions = 0;
   try {

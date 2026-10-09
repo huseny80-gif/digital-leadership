@@ -120,6 +120,24 @@ describe("independent exam material archives", () => {
     expect(index.headers["cache-control"]).toBe("private, no-store");
   });
 
+  it("builds an academic summary from all selected lecture sources, including topics beyond a brief summary", async () => {
+    const s = await seed();
+    const lateTopic = "يجب توثيق محفز التصعيد وجهة الإبلاغ ومهلته عندما تتجاوز معالجة الخطر حدود صلاحية مالكه، ثم متابعة الاستجابة للتحقق من تنفيذ القرار.";
+    const full = Array.from({ length: 130 }, (_, index) => `يعرض المحور الدراسي ${index + 1} تطبيقات إدارة المخاطر في المؤسسة، مع تحديد المسؤوليات وتوثيق الإجراء ومتابعة تنفيذه بصورة منتظمة.`);
+    await createLectureItem(pool, { lectureId: s.lectures[0]!, itemType: "summary", title: "ملخص موجز", status: "published", createdBy: s.admin, bodyText: source });
+    const file = await createFile(pool, { storageKey: `full-source/${randomUUID()}.pdf`, uploadedBy: s.admin });
+    await createLectureItem(pool, { lectureId: s.lectures[0]!, itemType: "pdf", title: "النص الكامل", fileId: file, status: "published", createdBy: s.admin, bodyText: `## تطبيقات إدارة المخاطر\n${full.join("\n")}\n## التصعيد وحدود الصلاحية\n${lateTopic}` });
+    const group = await s.generate([s.lectures[0]!]);
+    expect(group.summary.version).toBe(2);
+    const section = group.summary.sections[0]!;
+    expect(group.summary.sections).toHaveLength(1);
+    for (const paragraph of full) expect(section.text).toContain(paragraph);
+    expect(section.text).toContain(lateTopic);
+    expect(section.topics?.some(topic => topic.title === "التصعيد وحدود الصلاحية")).toBe(true);
+    expect(section.keyPoints).toContain(lateTopic);
+    expect(JSON.stringify(group.summary)).not.toContain("محتوى المحاضرة 2");
+  });
+
   it("deduplicates concurrent network retries and rejects reusing a request for a changed selection", async () => {
     const s = await seed(); const id = randomUUID();
     const [first, second] = await Promise.all([s.generate(s.lectures.slice(0, 2), id), s.generate(s.lectures.slice(0, 2), id)]);

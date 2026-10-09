@@ -92,6 +92,28 @@ describe("exam material selection and archive navigation", () => {
     expect(screen.getByRole("button", { name: "بدء الاختبار أو متابعة المحاولة" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: "الملخص الشامل" })); await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
   });
+  it("shows academic topics, objectives, a concept glossary and a source-linked summary index", async () => {
+    const academic = { ...group, summary: { ...group.summary, version: 2, sections: [{ ...group.summary.sections[0]!, topics: [{ title: "تعريف المفهوم", text: "تعريف أكاديمي مستند إلى المصدر الأول." }, { title: "التطبيق وحدود القرار", text: "تطبيق من المصدر مع توثيق شروط القرار وحدوده." }], objectives: ["التمييز بين المعرفة بالخطر وأثرها في القرار."], concepts: [{ term: "مالك الخطر", definition: "من يمتلك القرار اللازم لتغيير مستوى الخطر." }] }] } };
+    render(<ExamMaterialWorkspace initialIndex={{ ...index, canGenerate: false }} initialDetail={academic} />);
+    await screen.findByRole("heading", { name: /التطبيق وحدود القرار/ });
+    const contents = within(screen.getByRole("navigation", { name: "فهرس الملخص" }));
+    expect(contents.getByRole("link", { name: /المحاضرة الأولى/ })).toHaveAttribute("href", "#summary-lecture-l1");
+    expect(screen.getByText("من يمتلك القرار اللازم لتغيير مستوى الخطر.")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("أهداف المحاضرة"));
+    expect(screen.getByText("التمييز بين المعرفة بالخطر وأثرها في القرار.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "إنشاء مراجعة محدّثة" })).not.toBeInTheDocument();
+  });
+  it("lets an admin refresh the current selection into a new archived group while retaining the original summary", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(reply(second)); vi.stubGlobal("fetch", fetchMock);
+    renderWorkspace(); await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
+    fireEvent.click(screen.getByRole("button", { name: "إنشاء مراجعة محدّثة" }));
+    await screen.findByText(/تم توليد المحتوى الامتحاني وحفظ المجموعة بنجاح/);
+    expect(JSON.parse(fetchMock.mock.calls[0]![1].body).lectureIds).toEqual(["l1", "l2"]);
+    const archives = within(screen.getByRole("tablist", { name: "مجموعات المحاضرات" }));
+    expect(archives.getAllByRole("tab")).toHaveLength(2);
+    fireEvent.click(archives.getByRole("tab", { name: /\(1-2\)/ }));
+    await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
+  });
   it("ignores an aborted archive response when another group is selected", async () => {
     let complete!: (value: unknown) => void;
     const fetchMock = vi.fn().mockImplementation(() => new Promise(resolve => { complete = resolve; })); vi.stubGlobal("fetch", fetchMock);
