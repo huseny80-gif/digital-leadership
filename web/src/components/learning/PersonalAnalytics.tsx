@@ -16,10 +16,10 @@ export function PersonalAnalytics() {
       aria-labelledby="personal-analytics-title"
       aria-busy={loading}
     >
-      <div className="dl-section-heading">
+      <div className="dl-personal-heading">
         <div>
-          <span>رحلتك التعليمية</span>
           <h2 id="personal-analytics-title">تقدمك الشخصي</h2>
+          <span>رحلتك التعليمية</span>
         </div>
         <span className="dl-live-label">
           <i aria-hidden="true" />
@@ -47,7 +47,8 @@ export function PersonalAnalytics() {
             aria-label="نسبة إنجاز المنهج"
             aria-valuemin={0}
             aria-valuemax={100}
-          aria-valuenow={overview?.progressPercentage}
+            aria-valuenow={overview?.progressPercentage}
+            title="الإنجاز الكلي للمحاضرات والواجبات والاختبارات"
           >
             <strong>
               {overview ? `${count(overview.progressPercentage)}٪` : "—"}
@@ -55,10 +56,9 @@ export function PersonalAnalytics() {
           </div>
           <div>
             <h3>إنجاز المنهج</h3>
-            <p>المحاضرات والواجبات والاختبارات</p>
             <small>
               {overview
-                ? `${count(overview.completedQuizzes)} من ${count(overview.totalQuizzes)} اختبارات مكتملة`
+                ? `الاختبارات: ${count(overview.completedQuizzes)} من ${count(overview.totalQuizzes)}`
                 : "جارٍ تحميل تقدمك"}
             </small>
           </div>
@@ -67,33 +67,28 @@ export function PersonalAnalytics() {
           <span className="dl-metric-icon">
             <PlatformIcon name="clock" />
           </span>
-          <h3>ساعات التعلم</h3>
-          <strong>
-            {overview ? formatLearningTime(overview.learningSeconds) : "—"}
-          </strong>
-          <p>وقت التعلم النشط المسجل</p>
+          <div title="وقت التعلم النشط المسجل">
+            <h3>ساعات التعلم</h3>
+            <strong className="dl-metric-value">{overview ? formatLearningTime(overview.learningSeconds) : "—"}</strong>
+          </div>
         </article>
         <article className="dl-metric-card dl-metric-lectures">
           <span className="dl-metric-icon">
             <PlatformIcon name="video" />
           </span>
-          <h3>المحاضرات المكتملة</h3>
-          <strong>
-            {count(overview?.completedLectures)}
-            <small> / {count(overview?.totalLectures)}</small>
-          </strong>
-          <p>خطوة جديدة نحو الإنجاز</p>
+          <div>
+            <h3>المحاضرات المكتملة</h3>
+            <strong className="dl-metric-value"><bdi dir="ltr">{count(overview?.completedLectures)}<small> / {count(overview?.totalLectures)}</small></bdi></strong>
+          </div>
         </article>
         <article className="dl-metric-card dl-metric-assignments">
           <span className="dl-metric-icon">
             <PlatformIcon name="clipboard" />
           </span>
-          <h3>الواجبات المكتملة</h3>
-          <strong>
-            {count(overview?.completedAssignments)}
-            <small> / {count(overview?.totalAssignments)}</small>
-          </strong>
-          <p>تابع مهامك وإنجازاتك</p>
+          <div>
+            <h3>الواجبات المكتملة</h3>
+            <strong className="dl-metric-value"><bdi dir="ltr">{count(overview?.completedAssignments)}<small> / {count(overview?.totalAssignments)}</small></bdi></strong>
+          </div>
         </article>
       </div>
     </section>

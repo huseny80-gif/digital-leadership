@@ -129,21 +129,41 @@
 }
 
 .dl-personal-analytics {
-  margin-block: 8px 20px;
+  margin-block: 12px 18px;
   scroll-margin-top: 150px;
 }
-.dl-workspace .dl-personal-analytics .dl-section-heading {
-  height: auto;
-  min-height: 64px;
-  padding-block: 10px;
+.dl-personal-heading {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-block-end: 8px;
+}
+.dl-personal-heading > div {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+}
+.dl-personal-heading h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-heading), sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.6;
+}
+.dl-personal-heading > div > span {
+  color: var(--color-text-muted);
+  font-size: 11px;
 }
 .dl-live-label {
   display: flex;
   align-items: center;
   gap: 6px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 .dl-live-label i {
   width: 6px;
@@ -154,31 +174,34 @@
 }
 .dl-metric-grid {
   display: grid;
-  grid-template-columns: minmax(280px, 1.45fr) repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
 .dl-metric-card {
   --metric-accent: #2497b3;
   position: relative;
   min-width: 0;
-  min-height: 155px;
-  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 88px;
+  padding: 12px;
   border: 1px solid var(--color-border);
-  border-radius: 18px;
+  border-radius: 14px;
   background: var(--color-surface);
   background: color-mix(in srgb, var(--color-surface) 88%, transparent);
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 8%),
-    0 10px 24px rgb(0 8 22 / 9%);
+    0 4px 14px rgb(0 8 22 / 6%);
   overflow: hidden;
 }
 .dl-metric-card::after {
   content: "";
   position: absolute;
   inset: auto 12% -40px;
-  height: 55px;
+  height: 40px;
   border-radius: 50%;
   background: var(--metric-accent);
   filter: blur(26px);
@@ -187,34 +210,37 @@
 }
 .dl-metric-card h3 {
   color: var(--color-text);
-  font-size: 14px;
-  margin: 8px 0 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0 0 4px;
   font-weight: 700;
 }
-.dl-metric-card > strong {
-  font-size: 27px;
-  line-height: 1.4;
+.dl-metric-value {
+  display: block;
+  font-size: 20px;
+  line-height: 1.35;
   font-weight: 800;
   color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 .dl-metric-card strong small {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 400;
   color: var(--color-text-muted);
 }
-.dl-metric-card p,
 .dl-metric-progress small {
-  font-size: 12px;
+  display: block;
+  font-size: 10px;
   color: var(--color-text-muted);
-  line-height: 1.7;
-  margin: 5px 0 0;
+  line-height: 1.6;
 }
 .dl-metric-icon {
-  width: 33px;
-  height: 33px;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
-  border-radius: 10px;
+  border-radius: 9px;
   color: var(--metric-accent);
   background: color-mix(in srgb, var(--metric-accent) 12%, transparent);
 }
@@ -243,17 +269,16 @@
   --metric-accent: #68e6b8;
 }
 .dl-metric-progress {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  gap: 10px;
 }
-.dl-metric-progress > div:last-child {
+.dl-metric-card > div:last-child {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 .dl-progress-ring {
   --progress: 0%;
-  width: 85px;
-  height: 85px;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
@@ -268,13 +293,13 @@
 .dl-progress-ring::before {
   content: "";
   position: absolute;
-  inset: 7px;
+  inset: 4px;
   border-radius: 50%;
   background: var(--color-surface);
 }
 .dl-progress-ring strong {
   position: relative;
-  font-size: 22px;
+  font-size: 13px;
   font-weight: 800;
 }
 .dl-learning-error {
@@ -725,29 +750,25 @@
   outline-offset: 3px;
 }
 
-@media (max-width: 1199px) {
+@media (max-width: 699px) {
   .dl-metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .dl-metric-card {
+    padding: 10px;
+    min-height: 80px;
+    gap: 8px;
+  }
+  .dl-progress-ring {
+    width: 44px;
+    height: 44px;
+  }
+  .dl-metric-value {
+    font-size: 18px;
   }
 }
 @media (max-width: 620px) {
-  .dl-metric-card {
-    padding: 14px;
-    min-height: 145px;
-  }
-  .dl-metric-card h3 {
-    font-size: 12px;
-  }
-  .dl-metric-card > strong {
-    font-size: 23px;
-  }
-  .dl-metric-progress {
-    grid-column: 1 / -1;
-    min-height: 120px;
-  }
-  .dl-metric-assignments {
-    grid-column: 1 / -1;
-  }
   .dl-search-dropdown {
     width: 100%;
   }

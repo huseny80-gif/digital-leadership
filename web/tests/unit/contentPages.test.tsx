@@ -130,7 +130,7 @@ describe("SubjectsPage", () => {
     const element = await SubjectsPage({});
     render(element);
 
-    expect(screen.getByText(/no subjects available yet/i)).toBeInTheDocument();
+    expect(screen.getByText("لا توجد مواد متاحة حاليًا")).toBeInTheDocument();
   });
 
   it("7. renders a safe error state on API failure", async () => {
