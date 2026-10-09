@@ -14,6 +14,9 @@ import type {
 import { fillAnswerMatches } from "./fillNormalization.js";
 import { ValidationError } from "../lib/validation.js";
 import { examQuizVisible } from "../examMaterials/visibility.js";
+import { conflict } from "../lib/httpError.js";
+
+export interface AttemptExperienceOptions { mode: "learning" | "challenge"; timeLimitSeconds?: number }
 
 /** Source rubrics contain {text, keywords}; never display them through
  * String(object), JSON or heuristic grading. Plain legacy text is also supported. */
@@ -72,8 +75,10 @@ export interface AssessmentsRepository {
     questionId: string,
     orderedItemIds: string[],
   ): Promise<{ isCorrect: boolean; pointsAwarded: number }>;
-  findInProgressAttempt(quizId: string, principal: AssessmentPrincipal): Promise<QuizAttempt | null>;
-  createAttempt(quizId: string, principal: AssessmentPrincipal): Promise<QuizAttempt>;
+  findInProgressAttempt(quizId: string, principal: AssessmentPrincipal, options?: AttemptExperienceOptions): Promise<QuizAttempt | null>;
+  createAttempt(quizId: string, principal: AssessmentPrincipal, options?: AttemptExperienceOptions): Promise<QuizAttempt>;
+  /** Challenge grading and answer writes serialize on the same attempt row. */
+  finalizeChallengeAttempt?(attemptId: string): Promise<QuizAttempt>;
   getAttemptById(attemptId: string): Promise<QuizAttempt | null>;
   listAnswersForAttempt(attemptId: string): Promise<AttemptAnswer[]>;
   upsertAnswer(input: {
@@ -160,6 +165,9 @@ interface AttemptRow {
   started_at: Date;
   submitted_at: Date | null;
   score: string | null;
+  experience_mode: "learning" | "challenge";
+  time_limit_seconds: number | null;
+  deadline_at: Date | null;
 }
 
 function toAttempt(row: AttemptRow): QuizAttempt {
@@ -172,10 +180,13 @@ function toAttempt(row: AttemptRow): QuizAttempt {
     startedAt: row.started_at.toISOString(),
     submittedAt: row.submitted_at ? row.submitted_at.toISOString() : null,
     score: row.score !== null ? Number(row.score) : null,
+    mode: row.experience_mode,
+    timeLimitSeconds: row.time_limit_seconds,
+    deadlineAt: row.deadline_at?.toISOString() ?? null,
   };
 }
 
-const ATTEMPT_COLUMNS = "id, quiz_id, user_id, guest_session_id, status, started_at, submitted_at, score";
+const ATTEMPT_COLUMNS = "id, quiz_id, user_id, guest_session_id, status, started_at, submitted_at, score, experience_mode, time_limit_seconds, deadline_at";
 
 /** Fisher-Yates shuffle, does not mutate the input array. Used only to
  * randomize the display order of match/order delivery items — never used
@@ -562,30 +573,58 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
     return { isCorrect, pointsAwarded: isCorrect ? points : 0 };
   }
 
-  async findInProgressAttempt(quizId: string, principal: AssessmentPrincipal): Promise<QuizAttempt | null> {
+  async findInProgressAttempt(quizId: string, principal: AssessmentPrincipal, options?: AttemptExperienceOptions): Promise<QuizAttempt | null> {
     const ownerColumn = principal.kind === "user" ? "user_id" : "guest_session_id";
     const ownerId = principal.kind === "user" ? principal.userId : principal.guestSessionId;
     const result = await this.pool.query<AttemptRow>(
       `select ${ATTEMPT_COLUMNS}
        from quiz_attempts
-       where quiz_id = $1 and ${ownerColumn} = $2 and status = 'in_progress'
+       where quiz_id = $1 and ${ownerColumn} = $2 and status = 'in_progress' and experience_mode=$3
        order by started_at desc
        limit 1`,
-      [quizId, ownerId],
+      [quizId, ownerId, options?.mode ?? "learning"],
     );
     return result.rows[0] ? toAttempt(result.rows[0]) : null;
   }
 
-  async createAttempt(quizId: string, principal: AssessmentPrincipal): Promise<QuizAttempt> {
+  async createAttempt(quizId: string, principal: AssessmentPrincipal, options?: AttemptExperienceOptions): Promise<QuizAttempt> {
     const userId = principal.kind === "user" ? principal.userId : null;
     const guestSessionId = principal.kind === "guest" ? principal.guestSessionId : null;
-    const result = await this.pool.query<AttemptRow>(
-      `insert into quiz_attempts (quiz_id, user_id, guest_session_id, status)
-       values ($1, $2, $3, 'in_progress')
-       returning ${ATTEMPT_COLUMNS}`,
-      [quizId, userId, guestSessionId],
-    );
-    return toAttempt(result.rows[0]!);
+    const mode = options?.mode ?? "learning", seconds = mode === "challenge" ? options!.timeLimitSeconds! : null;
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      await client.query("select pg_advisory_xact_lock(hashtext($1))", [`attempt:${quizId}:${userId ?? guestSessionId}:${mode}`]);
+      const existing = await client.query<AttemptRow>(`select ${ATTEMPT_COLUMNS} from quiz_attempts where quiz_id=$1 and (user_id=$2 or guest_session_id=$3) and experience_mode=$4 and status='in_progress' order by started_at desc limit 1`, [quizId, userId, guestSessionId, mode]);
+      const result = existing.rowCount ? existing : await client.query<AttemptRow>(
+        `insert into quiz_attempts (quiz_id,user_id,guest_session_id,status,experience_mode,time_limit_seconds,deadline_at)
+         values ($1,$2,$3,'in_progress',$4,$5,case when $5::integer is null then null else now()+make_interval(secs=>$5) end) returning ${ATTEMPT_COLUMNS}`,
+        [quizId, userId, guestSessionId, mode, seconds],
+      );
+      await client.query("commit"); return toAttempt(result.rows[0]!);
+    } catch (error) { await client.query("rollback"); throw error; }
+    finally { client.release(); }
+  }
+
+  private async lockActiveAnswer(client: PoolClient, attemptId: string): Promise<void> {
+    const row = (await client.query<{ status: string }>("select status from quiz_attempts where id=$1 for update", [attemptId])).rows[0];
+    if (!row || row.status !== "in_progress") throw conflict("تم تسليم هذه المحاولة بالفعل.");
+    // clock_timestamp is evaluated after acquiring the lock, so queued writes
+    // cannot use a transaction's stale start time to exceed the deadline.
+    const expired = await client.query("select 1 from quiz_attempts where id=$1 and deadline_at<=clock_timestamp()", [attemptId]);
+    if (expired.rowCount) throw conflict("انتهى وقت التحدي. تُقيَّم الإجابات المحفوظة فقط.");
+  }
+
+  async finalizeChallengeAttempt(attemptId: string): Promise<QuizAttempt> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      const row = (await client.query<AttemptRow>(`select ${ATTEMPT_COLUMNS} from quiz_attempts where id=$1 for update`, [attemptId])).rows[0]!;
+      if (row.status !== "in_progress") { await client.query("commit"); return toAttempt(row); }
+      const result = await client.query<AttemptRow>(`update quiz_attempts set status='graded',submitted_at=clock_timestamp(),score=(select coalesce(sum(points_awarded),0) from quiz_attempt_answers where attempt_id=$1) where id=$1 returning ${ATTEMPT_COLUMNS}`, [attemptId]);
+      await client.query("commit"); return toAttempt(result.rows[0]!);
+    } catch (error) { await client.query("rollback"); throw error; }
+    finally { client.release(); }
   }
 
   async getAttemptById(attemptId: string): Promise<QuizAttempt | null> {
@@ -679,23 +718,30 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
     isCorrect: boolean | null;
     pointsAwarded: number | null;
   }): Promise<void> {
-    await this.pool.query(
-      `insert into quiz_attempt_answers (attempt_id, question_id, selected_option_id, answer_text, is_correct, points_awarded)
-       values ($1, $2, $3, $4, $5, $6)
-       on conflict (attempt_id, question_id) do update set
-         selected_option_id = excluded.selected_option_id,
-         answer_text = excluded.answer_text,
-         is_correct = excluded.is_correct,
-         points_awarded = excluded.points_awarded`,
-      [
-        input.attemptId,
-        input.questionId,
-        input.selectedOptionId,
-        input.answerText,
-        input.isCorrect,
-        input.pointsAwarded,
-      ],
-    );
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      await this.lockActiveAnswer(client, input.attemptId);
+      await client.query(
+        `insert into quiz_attempt_answers (attempt_id, question_id, selected_option_id, answer_text, is_correct, points_awarded)
+         values ($1, $2, $3, $4, $5, $6)
+         on conflict (attempt_id, question_id) do update set
+           selected_option_id = excluded.selected_option_id,
+           answer_text = excluded.answer_text,
+           is_correct = excluded.is_correct,
+           points_awarded = excluded.points_awarded`,
+        [
+          input.attemptId,
+          input.questionId,
+          input.selectedOptionId,
+          input.answerText,
+          input.isCorrect,
+          input.pointsAwarded,
+        ],
+      );
+      await client.query("commit");
+    } catch (error) { await client.query("rollback"); throw error; }
+    finally { client.release(); }
   }
 
   /**
@@ -714,6 +760,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
     const client: PoolClient = await this.pool.connect();
     try {
       await client.query("begin");
+      await this.lockActiveAnswer(client, input.attemptId);
       const upsertResult = await client.query<{ id: string }>(
         `insert into quiz_attempt_answers (attempt_id, question_id, selected_option_id, answer_text, is_correct, points_awarded)
          values ($1, $2, null, null, $3, $4)
@@ -757,6 +804,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
     const client: PoolClient = await this.pool.connect();
     try {
       await client.query("begin");
+      await this.lockActiveAnswer(client, input.attemptId);
       const upsertResult = await client.query<{ id: string }>(
         `insert into quiz_attempt_answers (attempt_id, question_id, selected_option_id, answer_text, is_correct, points_awarded)
          values ($1, $2, null, null, $3, $4)

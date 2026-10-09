@@ -28,6 +28,23 @@ export interface ExamMaterialDetail extends ExamMaterialGroup {
   quiz: Quiz;
   /** Latest visible revision; the requested snapshot and quiz remain unchanged. */
   currentRevision?: ExamMaterialGroup;
+  review?: ExamReviewArtifacts;
+}
+export type ExamExperienceMode = "learning" | "challenge";
+export interface ExamMindMapNode {
+  id: string;
+  parentId: string | null;
+  kind: "root" | "lecture" | "concept" | "topic";
+  label: string;
+  description: string;
+  lectureId: string | null;
+}
+export interface ExamMindMapEdge { from: string; to: string; kind: "contains" | "shared" }
+export interface ExamAudioChapter { id: string; title: string; lectureId: string | null; chunks: string[] }
+export interface ExamReviewArtifacts {
+  generator: "source-mock-v1";
+  mindMap: { nodes: ExamMindMapNode[]; edges: ExamMindMapEdge[] };
+  audioChapters: ExamAudioChapter[];
 }
 export interface ExamMaterialHistory {
   revisions: ExamMaterialGroup[];
@@ -50,4 +67,6 @@ export interface ExamMaterialAttempt {
   answers: AttemptAnswer[];
   feedback: SubmitAnswerAck[];
   result: QuizAttemptResult | null;
+  /** Synchronizes the countdown with the server clock when restoring a challenge. */
+  serverTime?: string;
 }

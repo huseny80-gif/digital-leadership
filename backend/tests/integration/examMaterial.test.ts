@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { Pool } from "pg";
+import { PDFParse } from "pdf-parse";
 import request from "supertest";
 import type { ExamMaterialDetail, ExamMaterialAttempt } from "@shared/index";
 import { createApp } from "../../src/app.js";
@@ -382,4 +383,108 @@ describe("independent exam material archives", () => {
     expect((await pool.query("select count(*)::int as n from quizzes where purpose='exam_material' and superseded_by is not null")).rows[0].n).toBe(0);
     for (const group of archives) expect((await request(s.app).get(`/api/v1/subjects/${group.subjectId}/exam-material/${group.id}`).set("Cookie", s.cookie).expect(200)).body.data.summary).toEqual(group.summary);
   }, 30000); // Imports/reviews all five real catalogs in a cold database.
+});
+
+describe("advanced exam review and challenge protection", () => {
+  it("creates separate resumable modes, validates options, and deduplicates concurrent challenge starts", async () => {
+    const s = await seed(), group = await s.generate(s.lectures.slice(0, 3));
+    const url = `${s.path}/${group.id}/attempts`;
+    await request(s.app).post(url).send({ mode: "challenge" }).expect(401);
+    for (const body of [{}, { mode: "unknown" }, { mode: "challenge", timeLimitSeconds: 99999 }, { mode: "challenge", userId: s.admin }]) await request(s.app).post(url).set("Cookie", s.cookie).send(body).expect(400);
+    await request(s.app).post(`/api/v1/subjects/${s.other}/exam-material/${group.id}/attempts`).set("Cookie", s.cookie).send({ mode: "challenge" }).expect(404);
+    const challenges = await Promise.all(Array.from({ length: 4 }, () => request(s.app).post(url).set("Cookie", s.cookie).send({ mode: "challenge" }).expect(201)));
+    const attempt = challenges[0]!.body.data;
+    expect(new Set(challenges.map(response => response.body.data.id)).size).toBe(1);
+    expect(attempt.mode).toBe("challenge"); expect(attempt.timeLimitSeconds).toBe(group.questionCount * 90);
+    expect(new Date(attempt.deadlineAt).getTime() - new Date(attempt.startedAt).getTime()).toBe(attempt.timeLimitSeconds * 1000);
+    const learning = (await request(s.app).post(url).set("Cookie", s.cookie).send({ mode: "learning" }).expect(201)).body.data;
+    expect(learning).toMatchObject({ mode: "learning", deadlineAt: null, timeLimitSeconds: null }); expect(learning.id).not.toBe(attempt.id);
+    const restored = (await request(s.app).get(`${url}/${attempt.id}`).set("Cookie", s.cookie).expect(200)).body.data;
+    expect(restored.attempt).toEqual(attempt); expect(restored.serverTime).toBeTruthy(); expect(restored.feedback).toEqual([]);
+    expect(restored.result).toBeNull(); expect(JSON.stringify(restored.questions)).not.toMatch(/isCorrect|answerReview|acceptedAnswers/);
+  });
+
+  it("records editable answers without leaking keys through acknowledgements or feedback until final submission", async () => {
+    const s = await seed(), group = await s.generate();
+    const url = `${s.path}/${group.id}/attempts`;
+    const attempt = (await request(s.app).post(url).set("Cookie", s.cookie).send({ mode: "challenge" }).expect(201)).body.data;
+    const question = (await pool.query("select q.id from quiz_questions qq join questions q on q.id=qq.question_id where qq.quiz_id=$1 and q.question_type='multiple_choice' limit 1", [group.quizId])).rows[0].id;
+    const options = (await pool.query("select id,is_correct from question_options where question_id=$1", [question])).rows;
+    for (const selected of [options.find(option => option.is_correct)!, options.find(option => !option.is_correct)!]) {
+      const ack = (await request(s.app).post(`/api/v1/attempts/${attempt.id}/answers`).set("Cookie", s.cookie).send({ questionId: question, selectedOptionId: selected.id }).expect(200)).body.data;
+      expect(ack).toMatchObject({ recorded: true, isCorrect: null, correctAnswerSummary: null }); expect(ack).not.toHaveProperty("answerReview");
+      const feedback = (await request(s.app).get(`/api/v1/attempts/${attempt.id}/feedback`).set("Cookie", s.cookie).expect(200)).body.data;
+      expect(feedback[0]).toMatchObject({ isCorrect: null, correctAnswerSummary: null }); expect(JSON.stringify(feedback)).not.toContain("correctOptionIds");
+    }
+    await request(s.app).get(`${url}/${attempt.id}`).set("Authorization", `Bearer ${s.tokens[1]}`).expect(404);
+    const finished = (await request(s.app).post(`/api/v1/attempts/${attempt.id}/submit`).set("Cookie", s.cookie).expect(200)).body.data;
+    expect(finished).toMatchObject({ correctAnswers: 0, answeredQuestions: 1, percentage: 0 });
+    const reviewed = (await request(s.app).get(`${url}/${attempt.id}`).set("Cookie", s.cookie).expect(200)).body.data;
+    expect(reviewed.feedback[0]).toMatchObject({ isCorrect: false, answerReview: { correctOptionIds: [options.find(option => option.is_correct)!.id] } });
+    await request(s.app).post(`/api/v1/attempts/${attempt.id}/answers`).set("Cookie", s.cookie).send({ questionId: question, selectedOptionId: options[0].id }).expect(409);
+    const next = (await request(s.app).post(url).set("Cookie", s.cookie).send({ mode: "challenge" }).expect(201)).body.data;
+    expect(next.id).not.toBe(attempt.id);
+    expect((await request(s.app).get(`${url}/${attempt.id}`).set("Cookie", s.cookie).expect(200)).body.data.result).toEqual(reviewed.result);
+  });
+
+  it("enforces expiration on the server, finalizes on restore, and never restarts the timer on reload", async () => {
+    const s = await seed(), group = await s.generate();
+    const url = `${s.path}/${group.id}/attempts`, start = () => request(s.app).post(url).set("Cookie", s.cookie).send({ mode: "challenge" }).expect(201);
+    const attempt = (await start()).body.data;
+    const question = (await pool.query("select question_id from quiz_questions where quiz_id=$1 limit 1", [group.quizId])).rows[0].question_id;
+    await pool.query("update quiz_attempts set deadline_at=clock_timestamp()-interval '1 second' where id=$1", [attempt.id]);
+    const restored = (await request(s.app).get(`${url}/${attempt.id}`).set("Cookie", s.cookie).expect(200)).body.data;
+    expect(restored.attempt.status).toBe("graded"); expect(restored.result).toMatchObject({ answeredQuestions: 0, percentage: 0 });
+    await request(s.app).post(`/api/v1/attempts/${attempt.id}/answers`).set("Cookie", s.cookie).send({ questionId: question, answerText: "إجابة متأخرة" }).expect(409);
+    const another = (await start()).body.data;
+    expect(another.id).not.toBe(attempt.id);
+    await pool.query("update quiz_attempts set deadline_at=clock_timestamp()-interval '1 second' where id=$1", [another.id]);
+    await request(s.app).post(`/api/v1/attempts/${another.id}/answers`).set("Cookie", s.cookie).send({ questionId: question, answerText: "إجابة متأخرة" }).expect(409);
+    expect((await pool.query("select status from quiz_attempts where id=$1", [another.id])).rows[0].status).toBe("graded");
+    expect((await pool.query("select count(*)::int as n from quiz_attempt_answers where attempt_id=any($1::uuid[])", [[attempt.id, another.id]])).rows[0].n).toBe(0);
+  });
+
+  it("serializes a final score against simultaneous answer writes and denies direct challenge deadline edits", async () => {
+    const s = await seed(), group = await s.generate();
+    const url = `${s.path}/${group.id}/attempts`;
+    const attempt = (await request(s.app).post(url).set("Authorization", `Bearer ${s.tokens[2]}`).send({ mode: "challenge" }).expect(201)).body.data;
+    const option = (await pool.query("select q.id as question,o.id as option from quiz_questions qq join questions q on q.id=qq.question_id join question_options o on o.question_id=q.id where qq.quiz_id=$1 and o.is_correct limit 1", [group.quizId])).rows[0];
+    const writes = await Promise.all([...Array.from({ length: 8 }, () => request(s.app).post(`/api/v1/attempts/${attempt.id}/answers`).set("Authorization", `Bearer ${s.tokens[2]}`).send({ questionId: option.question, selectedOptionId: option.option })), request(s.app).post(`/api/v1/attempts/${attempt.id}/submit`).set("Authorization", `Bearer ${s.tokens[2]}`)]);
+    expect(writes.every(response => [200, 409].includes(response.status))).toBe(true);
+    const row = (await pool.query("select score,(select coalesce(sum(points_awarded),0) from quiz_attempt_answers where attempt_id=$1) as total from quiz_attempts where id=$1", [attempt.id])).rows[0];
+    expect(Number(row.score)).toBe(Number(row.total));
+    const active = (await request(s.app).post(url).set("Authorization", `Bearer ${s.tokens[2]}`).send({ mode: "challenge" }).expect(201)).body.data;
+    await request(s.app).post(`/api/v1/attempts/${active.id}/answers`).set("Authorization", `Bearer ${s.tokens[2]}`).send({ questionId: option.question, selectedOptionId: option.option }).expect(200);
+    const client = await pool.connect();
+    try {
+      await client.query("begin"); await client.query("set local role authenticated"); await client.query("select set_config('request.jwt.claim.sub',$1,true)", [s.bob]);
+      expect((await client.query("select id from quiz_attempt_answers where attempt_id=$1", [active.id])).rows).toHaveLength(0);
+      expect((await client.query("update quiz_attempts set deadline_at=now()+interval '1 day' where id=$1 returning id", [active.id])).rows).toHaveLength(0);
+      await client.query("rollback");
+    } finally { await client.query("rollback"); client.release(); }
+    expect((await request(s.app).get(`${url}/${active.id}`).set("Authorization", `Bearer ${s.tokens[2]}`).expect(200)).body.data.attempt.deadlineAt).toBe(active.deadlineAt);
+  });
+
+  it("exports a branded, complete Arabic review with vector maps and public questions under archive visibility", async () => {
+    const s = await seed();
+    await createLectureItem(pool, { lectureId: s.lectures[0]!, itemType: "summary", title: "محاور موسعة", status: "published", createdBy: s.admin, bodyText: `## محور أول\n${source}\n## محور متأخر\nFINAL_SOURCE_PARAGRAPH يجب مراجعة إجراءات المؤسسة بانتظام.` });
+    const group = await s.generate(s.lectures.slice(0, 3)), url = `${s.path}/${group.id}/review-package.pdf`;
+    expect(group.review?.generator).toBe("source-mock-v1"); expect(group.review?.audioChapters.length).toBe(4);
+    expect(group.review?.mindMap.nodes.filter(node => node.kind === "lecture")).toHaveLength(3);
+    await request(s.app).get(url).expect(401);
+    await request(s.app).get(`/api/v1/subjects/${s.other}/exam-material/${group.id}/review-package.pdf`).set("Cookie", s.cookie).expect(404);
+    const response = await request(s.app).get(url).set("Cookie", s.cookie).expect(200);
+    expect(response.headers["content-type"]).toContain("application/pdf"); expect(response.headers["cache-control"]).toBe("private, no-store");
+    expect(response.body.subarray(0, 5).toString()).toBe("%PDF-"); expect(response.body.toString("latin1")).toContain("/Subtype /Image");
+    const parser = new PDFParse({ data: response.body });
+    try {
+      const parsed = await parser.getText(), text = parsed.text.normalize("NFKC");
+      // PDF extractors can insert whitespace within shaped Arabic glyph runs.
+      const compact = text.replace(/\s+/g, "");
+      expect(parsed.pages.length).toBeGreaterThan(5); expect(text).toContain("FINAL_SOURCE_PARAGRAPH"); expect(compact).toContain("خريطةالمفاهيم"); expect(compact).toContain("الأسئلةالتدريبية"); expect(compact).toContain("رتبمراحل");
+      expect(text).not.toContain("الإجابة الصحيحة"); expect(text).not.toContain("correctOptionIds");
+    } finally { await parser.destroy(); }
+    await pool.query("update lectures set status='draft' where id=$1", [s.lectures[0]]);
+    await request(s.app).get(url).set("Cookie", s.cookie).expect(404);
+  }, 20000);
 });

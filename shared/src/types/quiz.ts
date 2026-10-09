@@ -84,6 +84,10 @@ export interface QuizAttempt {
   startedAt: string;
   submittedAt: string | null;
   score: number | null;
+  /** Absent on legacy attempts; treated as learning. Deadlines are server-owned. */
+  mode?: "learning" | "challenge";
+  timeLimitSeconds?: number | null;
+  deadlineAt?: string | null;
 }
 
 /** Who an assessment action is being performed as — resolved server-side

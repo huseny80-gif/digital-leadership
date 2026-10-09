@@ -58,7 +58,7 @@ export function QuizAttemptRunner({
   quiz, questions, attemptId, initialAnswers = [], initialFeedback = [], startedAt,
   apiBasePath = "/api", routeBasePath = "/quizzes", reviewMode = false,
   initialDifficulty = "all", initialLecture = "all",
-  backHref, onFinished, onRestart, displayTitle,
+  backHref, onFinished, onRestart, displayTitle, startAttempt,
 }: {
   quiz: Quiz;
   questions: QuestionForAttempt[];
@@ -75,6 +75,7 @@ export function QuizAttemptRunner({
   onFinished?: (attemptId: string) => Promise<void> | void;
   onRestart?: (attempt: QuizAttempt) => Promise<void> | void;
   displayTitle?: ReactNode;
+  startAttempt?: () => Promise<QuizAttempt>;
 }) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -262,11 +263,16 @@ export function QuizAttemptRunner({
         const finished = await fetch(`${apiBasePath}/attempts/${attemptId}/submit`, { method: "POST" });
         if (!finished.ok && finished.status !== 409) throw new Error("Restart failed");
       }
-      const response = await fetch(`${apiBasePath}/quizzes/${quiz.id}/attempts`, { method: "POST" });
-      const body = await response.json() as { data?: QuizAttempt };
-      if (!response.ok || !body.data?.id) throw new Error("Restart failed");
-      if (onRestart) await onRestart(body.data);
-      else router.push(`${routeBasePath}/${quiz.id}/attempt/${body.data.id}`);
+      let next: QuizAttempt;
+      if (startAttempt) next = await startAttempt();
+      else {
+        const response = await fetch(`${apiBasePath}/quizzes/${quiz.id}/attempts`, { method: "POST" });
+        const body = await response.json() as { data?: QuizAttempt };
+        if (!response.ok || !body.data?.id) throw new Error("Restart failed");
+        next = body.data;
+      }
+      if (onRestart) await onRestart(next);
+      else router.push(`${routeBasePath}/${quiz.id}/attempt/${next.id}`);
       navigated = true;
     } catch {
       setSubmitError("تعذر بدء محاولة جديدة. حاول مرة أخرى.");

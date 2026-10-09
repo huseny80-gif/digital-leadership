@@ -6,7 +6,8 @@ export async function examRequest<T>(url: string, init?: RequestInit): Promise<T
   if (!response.ok || !("data" in body)) throw new Error(body.error?.message || "تعذر إتمام الطلب. حاول مرة أخرى.");
   return body.data;
 }
-export const examHref = (subjectId: string, groupId: string, tab: "summary" | "quiz", attemptId?: string) => {
+export type ExamMaterialTab = "summary" | "map" | "quiz" | "package";
+export const examHref = (subjectId: string, groupId: string, tab: ExamMaterialTab, attemptId?: string) => {
   const query = new URLSearchParams({ group: groupId, tab });
   if (attemptId) query.set("attempt", attemptId);
   return `/subjects/${subjectId}/exam-material?${query}`;

@@ -8,7 +8,7 @@ import type {
   AttemptAnswer,
   AssessmentPrincipal,
 } from "@shared/index";
-import type { AssessmentsRepository } from "./assessmentsRepository.js";
+import type { AssessmentsRepository, AttemptExperienceOptions } from "./assessmentsRepository.js";
 import { conflict, forbidden, notFound } from "../lib/httpError.js";
 import { ValidationError } from "../lib/validation.js";
 import { withFinquizQuestionMetadata } from "../finquiz/questionMetadata.js";
@@ -78,14 +78,19 @@ export class AssessmentsService {
    * refresh or a double-click on "Start Quiz" from silently orphaning the
    * learner's first attempt (PHASE 09B "Quiz Attempts").
    */
-  async startAttempt(quizId: string, principal: AssessmentPrincipal, isAdmin: boolean): Promise<QuizAttempt> {
+  async startAttempt(quizId: string, principal: AssessmentPrincipal, isAdmin: boolean, options?: AttemptExperienceOptions): Promise<QuizAttempt> {
     // Visibility check only — any learner (registered or guest) may
     // start an attempt on any quiz they can see; there is no further
     // subject-scoping now that guest access is platform-wide.
     await this.getQuizOrThrow(quizId, isAdmin);
-    const existing = await this.repository.findInProgressAttempt(quizId, principal);
-    if (existing) return existing;
-    return this.repository.createAttempt(quizId, principal);
+    const existing = await this.repository.findInProgressAttempt(quizId, principal, options);
+    if (existing && !this.challengeExpired(existing)) return existing;
+    if (existing) await this.repository.finalizeChallengeAttempt!(existing.id);
+    return this.repository.createAttempt(quizId, principal, options);
+  }
+
+  private challengeExpired(attempt: QuizAttempt): boolean {
+    return attempt.mode === "challenge" && attempt.status === "in_progress" && !!attempt.deadlineAt && new Date(attempt.deadlineAt).getTime() <= Date.now();
   }
 
   private async getOwnedActiveAttemptOrThrow(attemptId: string, principal: AssessmentPrincipal): Promise<QuizAttempt> {
@@ -98,6 +103,10 @@ export class AssessmentsService {
     if (!attempt || !attemptBelongsTo(attempt, principal)) throw notFound("Quiz attempt");
     if (attempt.status !== "in_progress") {
       throw conflict("This quiz attempt has already been submitted.");
+    }
+    if (this.challengeExpired(attempt)) {
+      await this.repository.finalizeChallengeAttempt!(attempt.id);
+      throw conflict("انتهى وقت التحدي. تُقيَّم الإجابات المحفوظة فقط.");
     }
     return attempt;
   }
@@ -128,7 +137,7 @@ export class AssessmentsService {
   async getAttemptOrThrow(attemptId: string, principal: AssessmentPrincipal): Promise<QuizAttempt> {
     const attempt = await this.repository.getAttemptById(attemptId);
     if (!attempt || !attemptBelongsTo(attempt, principal)) throw notFound("Quiz attempt");
-    return attempt;
+    return this.challengeExpired(attempt) ? this.repository.finalizeChallengeAttempt!(attempt.id) : attempt;
   }
 
   /**
@@ -153,12 +162,18 @@ export class AssessmentsService {
     return { questionId, recorded: true, isCorrect, correctAnswerSummary: answer.summary, feedback: sourceExplanation?.trim() || fallback, answerReview: answer.review };
   }
 
+  private answerAck(attempt: QuizAttempt, questionId: string, isCorrect: boolean | null): Promise<SubmitAnswerAck> {
+    if (attempt.mode === "challenge") return Promise.resolve({ questionId, recorded: true, isCorrect: null, correctAnswerSummary: null, feedback: "تم حفظ إجابتك. يظهر التصحيح بعد تسليم التحدي." });
+    return this.studyAck(questionId, isCorrect);
+  }
+
   /** Restore only feedback already earned by answering. An empty attempt
    * returns no answer keys; another learner's attempt is always a 404. */
   async getFeedbackOrThrow(attemptId: string, principal: AssessmentPrincipal, isAdmin: boolean): Promise<SubmitAnswerAck[]> {
     const attempt = await this.getAttemptOrThrow(attemptId, principal);
     await this.getQuizOrThrow(attempt.quizId, isAdmin);
     const answered = await this.repository.listAnsweredQuestionGrades(attemptId);
+    if (attempt.mode === "challenge" && attempt.status === "in_progress") return answered.map(answer => ({ questionId: answer.questionId, recorded: true, isCorrect: null, correctAnswerSummary: null, feedback: "تم حفظ إجابتك. يظهر التصحيح بعد تسليم التحدي." }));
     return Promise.all(answered.map(answer => this.studyAck(answer.questionId, answer.isCorrect)));
   }
 
@@ -199,7 +214,7 @@ export class AssessmentsService {
         isCorrect: grading.isCorrect,
         pointsAwarded: grading.pointsAwarded,
       });
-      return this.studyAck(input.questionId, grading.isCorrect);
+      return this.answerAck(attempt, input.questionId, grading.isCorrect);
     }
 
     if (input.orderAnswer !== undefined) {
@@ -214,7 +229,7 @@ export class AssessmentsService {
         isCorrect: grading.isCorrect,
         pointsAwarded: grading.pointsAwarded,
       });
-      return this.studyAck(input.questionId, grading.isCorrect);
+      return this.answerAck(attempt, input.questionId, grading.isCorrect);
     }
 
     let isCorrect: boolean | null = null;
@@ -258,7 +273,7 @@ export class AssessmentsService {
       pointsAwarded,
     });
 
-    return this.studyAck(input.questionId, isCorrect);
+    return this.answerAck(attempt, input.questionId, isCorrect);
   }
 
   /**
@@ -280,6 +295,11 @@ export class AssessmentsService {
    * server-derived results.
    */
   async submitAttempt(attemptId: string, principal: AssessmentPrincipal): Promise<QuizAttemptResult> {
+    const owned = await this.getAttemptOrThrow(attemptId, principal);
+    if (owned.mode === "challenge") {
+      await this.repository.finalizeChallengeAttempt!(attemptId);
+      return this.getResultOrThrow(attemptId, principal, false);
+    }
     const attempt = await this.getOwnedActiveAttemptOrThrow(attemptId, principal);
     const totalQuestions = await this.repository.countQuestionsForQuiz(attempt.quizId);
     const grading = await this.repository.gradeAttempt(attemptId);

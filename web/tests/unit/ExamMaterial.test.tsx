@@ -39,7 +39,7 @@ beforeEach(() => {
   }
 });
 const renderWorkspace = (extra: Partial<ExamMaterialIndex> = {}) => render(<ExamMaterialWorkspace initialIndex={{ ...index, ...extra }} initialDetail={group} />);
-const generateButton = () => screen.getByRole("button", { name: "توليد المحتوى الامتحاني" });
+const generateButton = () => screen.getByRole("button", { name: "توليد المحتوى الامتحاني الذكي" });
 
 describe("exam material selection and archive navigation", () => {
   it("hides admin controls from visitors, renders selected sources safely, and retains links back to the course", async () => {
@@ -88,7 +88,7 @@ describe("exam material selection and archive navigation", () => {
   });
   it("supports keyboard tabs and returns from the quiz to the selected summary", async () => {
     renderWorkspace({ canGenerate: false }); await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
-    fireEvent.keyDown(screen.getByRole("tab", { name: "الملخص الشامل" }), { key: "ArrowLeft" });
+    fireEvent.keyDown(screen.getByRole("tab", { name: "خريطة المفاهيم" }), { key: "ArrowLeft" });
     expect(screen.getByRole("tab", { name: "الاختبار التفاعلي المتقدم" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("button", { name: "بدء الاختبار أو متابعة المحاولة" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: "الملخص الشامل" })); await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
