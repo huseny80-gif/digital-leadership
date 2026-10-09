@@ -1,25 +1,18 @@
 import type { ExamMaterialSummary, ExamMindMapNode, ExamReviewArtifacts, ExamSummarySection } from "./types/examMaterial.js";
+import { academicNarrationChapters } from "./academicNarration.js";
+export { speechChunks } from "./academicNarration.js";
 
 /** Deterministic mock AI adapter. It arranges only authorized source text: no
  * inferred definitions, invented causal relationships, or external material. */
 const normalizedTerm = (value: string) => value.normalize("NFKC").replace(/[\u064b-\u065f\u0670\u0640]/g, "").replace(/\s+/g, " ").trim().toLocaleLowerCase();
 
+/** A spoken heading needs a perceptible boundary in browser speech synthesis. */
+const spokenHeading = (value: string) => `${value.trim()} …`;
+
 export function examSectionNarration(section: ExamSummarySection): string {
   const topics = section.topics?.filter(topic => !(section.concepts?.length && topic.title === "المفاهيم والمصطلحات الأساسية"));
-  return [section.title, ...(section.objectives?.length ? ["أهداف المحاضرة", ...section.objectives] : []), ...(topics?.length ? topics.flatMap(topic => [topic.title, topic.text, topic.details ?? ""]) : [section.text]),
-    ...(section.concepts ?? []).map(concept => `${concept.term}: ${concept.definition}`), ...(section.keyPoints.length ? ["نقاط أساسية للمراجعة", ...section.keyPoints] : [])].filter(Boolean).join("\n\n");
-}
-
-/** Short utterances avoid browser speech engines silently stopping on a long
- * lecture. Every word is preserved, including the last paragraph. */
-export function speechChunks(text: string, limit = 350): string[] {
-  const chunks: string[] = []; let current = "";
-  for (const word of text.trim().split(/\s+/).filter(Boolean)) {
-    if (current && current.length + word.length + 1 > limit) { chunks.push(current); current = ""; }
-    current += `${current ? " " : ""}${word}`;
-  }
-  if (current) chunks.push(current);
-  return chunks;
+  return [spokenHeading(section.title), ...(section.objectives?.length ? [spokenHeading("أهداف المحاضرة"), ...section.objectives] : []), ...(topics?.length ? topics.flatMap(topic => [spokenHeading(topic.title), topic.text, topic.details ?? ""]) : [section.text]),
+    ...(section.concepts ?? []).map(concept => `${concept.term}: ${concept.definition}`), ...(section.keyPoints.length ? [spokenHeading("نقاط أساسية للمراجعة"), ...section.keyPoints] : [])].filter(Boolean).join("\n\n");
 }
 
 export function generateExamReviewArtifacts(summary: ExamMaterialSummary, title: string): ExamReviewArtifacts {
@@ -50,10 +43,7 @@ export function generateExamReviewArtifacts(summary: ExamMaterialSummary, title:
       terms.set(key, node);
     }
   }
-  return { generator: "source-mock-v1", mindMap: { nodes, edges }, audioChapters: [
-    ...(summary.introduction.trim() ? [{ id: "introduction", title: "مقدمة المراجعة", lectureId: null, chunks: speechChunks(summary.introduction) }] : []),
-    ...summary.sections.map(section => ({ id: section.id, title: section.title, lectureId: section.id, chunks: speechChunks(examSectionNarration(section)) })),
-  ] };
+  return { generator: "source-mock-v1", mindMap: { nodes, edges }, audioChapters: academicNarrationChapters(summary) };
 }
 
 export function examChallengeSeconds(questionCount: number): number {

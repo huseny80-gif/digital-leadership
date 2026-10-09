@@ -58,6 +58,8 @@
 .summaryCover { padding: 1.3rem; margin-block-end: 1rem; border: 1px solid var(--exam-line); border-radius: 16px; background: radial-gradient(ellipse at top right, rgba(25, 166, 187, .13), transparent 75%), rgba(6, 18, 31, .5); }
 .summaryCover h3 { font-size: 1.2rem; }
 .summaryCover p { color: #d0e2ed; margin-block-end: 0; }
+.summaryActions { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; margin-block: .8rem 1rem; }
+.summaryActions button { display: inline-flex; align-items: center; gap: .45rem; }
 .summaryIndex { margin-block: 1rem 1.8rem; padding: 1rem 1.2rem; border-radius: 14px; background: rgba(4, 15, 28, .4); border: 1px solid var(--exam-line); }
 .summary h4 { margin: 0; color: #f6fbff; font-size: .98rem; line-height: 1.9; }
 .summaryIndex ol { list-style: none; padding: 0; display: grid; gap: .5rem; margin-block-end: 0; }

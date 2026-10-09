@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { ExamMaterialSummary, ExamAudioChapter } from "@shared/index";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import { FloatingPdfButton } from "@/components/printing/FloatingPdfButton";
@@ -9,13 +9,27 @@ import { examSummaryPrintDocument } from "@/components/printing/printDocuments";
 import styles from "./examMaterial.module.css";
 import { ExamAudioPlayer } from "./ExamAudioPlayer";
 
-export function ExamAcademicSummary({ summary, subjectId, chapters }: { summary: ExamMaterialSummary; subjectId: string; chapters?: ExamAudioChapter[] }) {
+export function ExamAcademicSummary({ summary, subjectId, groupId, chapters }: { summary: ExamMaterialSummary; subjectId: string; groupId: string; chapters?: ExamAudioChapter[] }) {
+  const [downloadBusy, setDownloadBusy] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  async function downloadNarration() {
+    if (downloadBusy) return;
+    setDownloadBusy(true); setDownloadError(null);
+    try {
+      const response = await fetch(`/api/exam-material/${subjectId}/${encodeURIComponent(groupId)}/review-narration.txt`, { cache: "no-store" });
+      if (!response.ok) throw new Error("تعذر تنزيل نص السرد.");
+      const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a");
+      link.href = url; link.download = "السرد-الأكاديمي-القيادة-الرقمية.txt"; link.click(); URL.revokeObjectURL(url);
+    } catch (error) { setDownloadError(error instanceof Error ? error.message : "تعذر تنزيل نص السرد."); }
+    finally { setDownloadBusy(false); }
+  }
   useEffect(() => {
     const target = window.location.hash.slice(1);
     if (target.startsWith("summary-lecture-")) document.getElementById(target)?.scrollIntoView({ block: "start" });
   }, []);
   return <article id="exam-summary-panel" role="tabpanel" aria-labelledby="exam-summary-tab" className={styles.summary}>
     <FloatingPdfButton label="طباعة الملخص الشامل PDF" document={examSummaryPrintDocument(summary)} />
+    <div className={styles.summaryActions}><button type="button" className={styles.quiet} disabled={downloadBusy || !chapters?.length} onClick={() => void downloadNarration()}><PlatformIcon name="download" />{downloadBusy ? "جارٍ تجهيز النص…" : "تنزيل نص السرد الأكاديمي"}</button>{downloadError ? <span className={styles.error} role="alert">{downloadError}</span> : null}</div>
     <div className={styles.summaryCover}><span className={styles.eyebrow}>المادة الامتحانية · الملخص الشامل</span><h3>مراجعة أكاديمية للمحاضرات المختارة</h3><p>{summary.introduction}</p></div>
     {chapters?.length ? <ExamAudioPlayer chapters={chapters} /> : null}
     <nav className={styles.summaryIndex} aria-label="فهرس الملخص"><h4>محتويات المراجعة</h4><ol>{summary.sections.map(section => <li key={section.id}><a href={`#summary-lecture-${section.id}`}><span className={styles.lectureNumber}>{section.number}</span><span>{section.title}</span><PlatformIcon name="arrow" /></a></li>)}</ol></nav>

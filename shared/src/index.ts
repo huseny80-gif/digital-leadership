@@ -15,5 +15,7 @@ export * from "./types/studyTools.js";
 export * from "./types/studyPrint.js";
 export * from "./search.js";
 export * from "./examReview.js";
+export * from "./academicNarration.js";
+export * from "./academicSpeech.js";
 export * from "./constants/guestSession.js";
 export * from "./contracts/api.js";

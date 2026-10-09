@@ -8,6 +8,7 @@ import { parsePagination, requireUuidParam, ValidationError } from "../lib/valid
 import { forbidden } from "../lib/httpError.js";
 import { ExamMaterialService } from "./examMaterialService.js";
 import { examReviewPdf } from "./examReviewPdf.js";
+import { academicNarrationChapters, academicNarrationText } from "@digital-leadership/shared";
 
 const generateSchema = z.object({ lectureIds: z.array(z.string().uuid()).min(1).max(50).refine(ids => new Set(ids).size === ids.length), requestId: z.string().uuid() }).strict();
 const attemptSchema = z.object({ mode: z.enum(["learning", "challenge"]) }).strict();
@@ -54,6 +55,20 @@ export function examMaterialRoutes(): Router {
       res.set("Content-Type", "application/pdf");
       res.set("Content-Disposition", 'attachment; filename="digital-leadership-exam-review.pdf"');
       res.send(bytes);
+    } catch (error) { next(error); }
+  });
+  router.get("/subjects/:subjectId/exam-material/:groupId/review-narration.txt", requireLearnerPrincipal, requireUuidParam("subjectId"), requireUuidParam("groupId"), exportLimit, async (req, res, next) => {
+    try {
+      const source = await service().detail(req.params.subjectId as string, req.params.groupId as string, req.user?.role === "admin");
+      res.set("Content-Type", "text/plain; charset=utf-8");
+      res.set("Content-Disposition", 'attachment; filename="digital-leadership-academic-narration.txt"');
+      res.send(`منصة القيادة الرقمية\n\n${academicNarrationText(source.summary)}\n`);
+    } catch (error) { next(error); }
+  });
+  router.get("/subjects/:subjectId/exam-material/:groupId/review-narration.json", requireLearnerPrincipal, requireUuidParam("subjectId"), requireUuidParam("groupId"), exportLimit, async (req, res, next) => {
+    try {
+      const source = await service().detail(req.params.subjectId as string, req.params.groupId as string, req.user?.role === "admin");
+      res.json({ data: { title: source.title, rate: 0.9, language: "ar", chapters: academicNarrationChapters(source.summary) } });
     } catch (error) { next(error); }
   });
   router.get("/subjects/:subjectId/exam-material/:groupId/attempts/:attemptId", requireLearnerPrincipal, requireUuidParam("subjectId"), requireUuidParam("groupId"), requireUuidParam("attemptId"), async (req, res, next) => {
