@@ -25,10 +25,11 @@ describe("complete print-only content", () => {
     expect(text).not.toMatch(/PRIVATE_|private-question|private-option|secret-|isCorrect|answerReview/);
   });
   it("prints folded academic topics, details and concepts, and preserves the end of long source text", () => {
-    const summary: ExamMaterialSummary = { introduction: "ملخص المحاضرات المختارة.", sections: [{ id: "lecture", number: 1, title: "المحاضرة الأولى", text: "LEGACY_DUPLICATE", objectives: ["فهم مفهوم الخطر"], keyPoints: ["المتابعة المستمرة"], concepts: [{ term: "الاحتمالية", definition: "إمكان وقوع الحدث" }], topics: [{ title: "التقييم", text: "المخاطر ".repeat(2500) + "نهاية المحور العلمية.", details: "تفاصيل علمية مطوية في واجهة القراءة." }, { title: "المفاهيم والمصطلحات الأساسية", text: "DUPLICATE_CONCEPT_TOPIC" }] }] };
+    const summary: ExamMaterialSummary = { introduction: "ملخص المحاضرات المختارة.", sections: [{ id: "lecture", number: 1, title: "المحاضرة الأولى", text: "LEGACY_DUPLICATE", objectives: ["فهم مفهوم الخطر"], keyPoints: ["المتابعة المستمرة"], concepts: [{ term: "الاحتمالية", definition: "إمكان وقوع الحدث" }], topics: [{ title: "التقييم", text: "المخاطر ".repeat(2500) + "نهاية المحور العلمية.", details: "تفاصيل علمية مطوية في واجهة القراءة." }, { title: "المفاهيم والمصطلحات الأساسية", text: "الاحتمالية: إمكان وقوع الحدث" }] }] };
     const printable = JSON.stringify(examSummaryPrintDocument(summary));
     expect(printable).toContain("نهاية المحور العلمية."); expect(printable).toContain("تفاصيل علمية مطوية"); expect(printable).toContain("فهم مفهوم الخطر"); expect(printable).toContain("إمكان وقوع الحدث");
-    expect(printable).not.toMatch(/LEGACY_DUPLICATE|DUPLICATE_CONCEPT_TOPIC/);
+    expect(printable).not.toContain("LEGACY_DUPLICATE");
+    expect(printable.split("إمكان وقوع الحدث").length - 1).toBe(1);
     expect(examSummaryPrintDocument(summary).blocks.every(block => block.text.length <= 20000)).toBe(true);
   });
   it("keeps HTML lists, folded sections and table values without executable text or reader controls", () => {
