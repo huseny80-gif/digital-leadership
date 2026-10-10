@@ -1,7 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import type { Pool, PoolClient } from "pg";
-import type { AssessmentPrincipal, ExamMaterialAttempt, ExamMaterialDetail, ExamMaterialGroup, ExamMaterialHistory, ExamMaterialIndex, ExamMaterialSummary, Lecture, LibraryEntry, QuestionType } from "@shared/index";
+import type { AssessmentPrincipal, ExamInstructorGuide, ExamMaterialAttempt, ExamMaterialDetail, ExamMaterialGroup, ExamMaterialHistory, ExamMaterialIndex, ExamMaterialSummary, Lecture, QuestionType } from "@shared/index";
 import { ContentService } from "../content/contentService.js";
 import { PgContentRepository } from "../content/contentRepository.js";
 import { LibraryService } from "../finquiz/catalog.js";
@@ -9,10 +8,12 @@ import { AssessmentsService } from "../assessments/assessmentsService.js";
 import { PgAssessmentsRepository } from "../assessments/assessmentsRepository.js";
 import { conflict, notFound } from "../lib/httpError.js";
 import { ValidationError, type PaginationParams } from "../lib/validation.js";
-import { generateSourceQuestions, type GeneratedQuestion } from "../contentAutomation/questionGeneration.js";
+import type { GeneratedQuestion } from "../contentAutomation/questionGeneration.js";
 import { hasBrokenSourceEncoding } from "../contentAutomation/sourceTextQuality.js";
-import { aiAssessmentReview, reviewedAiPdf } from "../contentAutomation/aiAssessmentReviewCatalog.js";
-import { compileExamSummary, isAssessmentAppendixTitle, lectureSelectionLabel, plainStudyText, readableStudyText, studyOnlyExamSummary } from "./summary.js";
+import { compileExamSummary, lectureSelectionLabel, studyOnlyExamSummary } from "./summary.js";
+import { LectureSourceFiles } from "./lectureSourceFiles.js";
+import { assertSourceBoundSummary, groundedQuestionCandidates, prioritizeGroundedCandidates, groundingVersion, type GroundedQuestion } from "./sourceGrounding.js";
+import { instructorDebriefGuide, knowledgeGapReport, storedSourceReferences } from "./learningAnalysis.js";
 import { examGroupVisible } from "./visibility.js";
 import { generateExamReviewArtifacts, examChallengeSeconds } from "@digital-leadership/shared";
 import type { ExamExperienceMode, QuizAttempt, QuestionForAttempt } from "@shared/index";
@@ -40,10 +41,10 @@ function validQuestion(q: SourceQuestion): boolean {
   if (q.question_type === "match") return q.pairs.length >= 2 && q.pairs.every(p => p.left_text.trim() && p.right_text.trim());
   return q.items.length >= 2 && new Set(q.items.map(i => i.correct_order_index)).size === q.items.length && q.items.every(i => i.item_text.trim());
 }
-function generatedSource(q: GeneratedQuestion, lectureId: string): SourceQuestion {
+function generatedSource(q: GeneratedQuestion & Pick<GroundedQuestion, "references">, lectureId: string): SourceQuestion {
   return {
     lecture_id: lectureId, question_type: q.type, prompt: q.prompt, points: 1, explanation: q.explanation,
-    rubric: null, difficulty: q.difficulty, kind: q.kind ?? null, source_excerpt: q.excerpt,
+    rubric: { grounding: groundingVersion, sourceReferences: q.references }, difficulty: q.difficulty, kind: q.kind ?? null, source_excerpt: q.excerpt,
     options: (q.options ?? []).map((option_text, order_index) => ({ option_text, order_index, is_correct: order_index === q.correctIndex })),
     accepted: (q.acceptedAnswers ?? []).map((answer_text, order_index) => ({ answer_text, order_index })),
     pairs: (q.pairs ?? []).map((p, order_index) => ({ left_text: p.left, right_text: p.right, order_index })),
@@ -90,9 +91,11 @@ export class ExamMaterialService {
   private readonly library: LibraryService;
   private readonly assessments: AssessmentsService;
   private readonly assessmentRepository: PgAssessmentsRepository;
+  private readonly sourceFiles: LectureSourceFiles;
   constructor(private readonly pool: Pool) {
     this.content = new ContentService(new PgContentRepository(pool));
     this.library = new LibraryService(this.content);
+    this.sourceFiles = new LectureSourceFiles(pool, this.library);
     this.assessmentRepository = new PgAssessmentsRepository(pool);
     this.assessments = new AssessmentsService(this.assessmentRepository);
   }
@@ -151,7 +154,17 @@ export class ExamMaterialService {
       this.assessments.getFeedbackOrThrow(attemptId, principal, isAdmin),
       attempt.status === "in_progress" ? Promise.resolve(null) : this.assessments.getResultOrThrow(attemptId, principal, isAdmin),
     ]);
-    return { quiz: group.quiz, attempt, answers, feedback, result, serverTime: new Date().toISOString(), questions: questions.map(q => {
+    let knowledgeGaps: ExamMaterialAttempt["knowledgeGaps"];
+    if (attempt.status === "graded") {
+      const evidence = await this.pool.query<{ id: string; lecture_id: string; rubric: unknown }>(`select q.id,q.lecture_id,q.rubric from questions q
+        join quiz_questions qq on qq.question_id=q.id where qq.quiz_id=$1 order by qq.order_index`, [group.quizId]);
+      knowledgeGaps = knowledgeGapReport({ attemptId, questions, answers, feedback, sources: evidence.rows.map(question => ({
+        questionId: question.id, lectureId: question.lecture_id,
+        lectureTitle: group.lectures.find(lecture => lecture.id === question.lecture_id)?.title ?? "المحاضرة الأصلية",
+        references: storedSourceReferences(question.rubric),
+      })) });
+    }
+    return { quiz: group.quiz, attempt, answers, feedback, result, ...(knowledgeGaps ? { knowledgeGaps } : {}), serverTime: new Date().toISOString(), questions: questions.map(q => {
       const lecture = group.lectures.find(l => l.id === q.lectureId);
       return lecture ? { ...q, lectureNumber: lecture.number, lectureTitle: lecture.title } : q;
     }) };
@@ -160,6 +173,14 @@ export class ExamMaterialService {
   async startAttempt(subjectId: string, groupId: string, principal: AssessmentPrincipal, isAdmin: boolean, mode: ExamExperienceMode): Promise<QuizAttempt> {
     const group = await this.detail(subjectId, groupId, isAdmin);
     return this.assessments.startAttempt(group.quizId, principal, isAdmin, { mode, ...(mode === "challenge" ? { timeLimitSeconds: examChallengeSeconds(group.questionCount) } : {}) });
+  }
+
+  /** Called exclusively behind requireAdmin; never part of a public detail. */
+  async instructorGuide(subjectId: string, groupId: string): Promise<ExamInstructorGuide> {
+    await this.detail(subjectId, groupId, true);
+    const stored = await this.pool.query<{ guide: ExamInstructorGuide }>("select guide from exam_instructor_guides where group_id=$1", [groupId]);
+    if (!stored.rows[0]) throw notFound("لا يوجد دليل موثق لهذه المراجعة. أنشئ مراجعة محدّثة للمحاضرات.");
+    return stored.rows[0].guide;
   }
 
   async reviewPackage(subjectId: string, groupId: string, isAdmin: boolean): Promise<{ group: ExamMaterialDetail; questions: QuestionForAttempt[] }> {
@@ -181,6 +202,31 @@ export class ExamMaterialService {
     const selected = allLectures.filter(l => lectureIds.includes(l.id));
     if (selected.length !== lectureIds.length) throw new ValidationError("اختر محاضرات منشورة تابعة لهذه المادة فقط.");
     const library = await this.library.get(subjectId, false);
+    // File/OCR work and optional model selection happen before database locks.
+    // Only original file bytes are evidence, never descriptions or old keys.
+    const { sources: fileSources, links } = await this.sourceFiles.read(subjectId, selected, library);
+    const sections = fileSources.map(({ lecture, paragraphs }, position) => ({
+      id: lecture.id, title: lecture.title,
+      number: lecture.orderIndex > 0 ? lecture.orderIndex : allLectures.indexOf(lecture) + 1 || position + 1,
+      text: paragraphs.map(paragraph => `## ${paragraph.heading}\n\n${paragraph.text}`).join("\n\n"),
+    }));
+    const summary = compileExamSummary(subject.title, sections);
+    assertSourceBoundSummary(summary, fileSources.map(source => ({ lectureId: source.lecture.id, paragraphs: source.paragraphs })));
+    summary.grounding = { policy: groundingVersion, sources: fileSources.flatMap(source => source.documents.map(document => ({
+      lectureId: source.lecture.id, fileId: document.id, filename: document.filename, sha256: document.sha256,
+    }))) };
+    const perLecture = Math.min(12, Math.floor(200 / selected.length));
+    const questions: SourceQuestion[] = [];
+    const guideSources: Parameters<typeof instructorDebriefGuide>[1] = [];
+    for (const source of fileSources) {
+      const candidates = groundedQuestionCandidates(source.paragraphs);
+      const prioritized = await prioritizeGroundedCandidates(candidates, source.paragraphs);
+      const chosen = balancedQuestions(prioritized.map(question => generatedSource(question, source.lecture.id)), perLecture);
+      if (!chosen.length) throw new ValidationError(`لا يتوفر نص كافٍ لإنشاء أسئلة موثقة من ملف «${source.lecture.title}». أرفق ملفًا واضحًا يتضمن محتوى المحاضرة.`);
+      questions.push(...chosen);
+      const section = sections.find(section => section.id === source.lecture.id)!;
+      guideSources.push({ lecture: { id: section.id, title: section.title, number: section.number }, paragraphs: source.paragraphs, candidates: prioritized });
+    }
     const client = await this.pool.connect();
     let groupId: string;
     try {
@@ -194,47 +240,7 @@ export class ExamMaterialService {
       const currentSubject = await client.query("select id from subjects where id=$1 and status='published' and deleted_at is null for share", [subjectId]);
       const currentLectures = await client.query<{ id: string; updated_at: Date }>("select id,updated_at from lectures where subject_id=$1 and id=any($2::uuid[]) and status='published' and deleted_at is null order by id for share", [subjectId, lectureIds]);
       if (!currentSubject.rowCount || currentLectures.rowCount !== selected.length || currentLectures.rows.some(l => selected.find(s => s.id === l.id)!.updatedAt !== l.updated_at.toISOString())) throw conflict("تغيرت المحاضرات المختارة. حدّث الصفحة وأعد التوليد.");
-      const sources = await this.sourceQuestions(client, subjectId, lectureIds);
-      const items = (await client.query<{ lecture_id: string; title: string; item_type: string; body_text: string }>("select lecture_id,title,item_type,body_text from lecture_items where lecture_id=any($1::uuid[]) and item_type in ('summary','pdf') and status='published' and deleted_at is null and body_text is not null order by lecture_id,item_type desc,order_index,created_at", [lectureIds])).rows;
-      const reviewedQuestions: SourceQuestion[] = [];
-      const sections = await Promise.all(selected.map(async (lecture, position) => {
-        const entries = library.entries.filter(e => e.lectureId === lecture.id && ["summaries", "lectures"].includes(e.section) && !isAssessmentAppendixTitle(e.title));
-        const heading = (title: string, fragments: string[]) => {
-          const body = readableStudyText(fragments);
-          return body ? `## ${title}\n\n${body}` : "";
-        };
-        // A short catalog summary cannot hide the full lecture body. Include
-        // every readable published source for this selected lecture, with
-        // source headings intact and damaged fragments rejected separately.
-        const entryText = entries.flatMap(entry => [
-          heading(entry.section === "summaries" ? "الخلاصة الأكاديمية" : "السياق العام للمحاضرة", [entry.description ?? ""]),
-          heading("محاور المحاضرة", entry.keyPoints ?? []),
-          ...entry.files.filter(file => !isAssessmentAppendixTitle(file.filename) && !isAssessmentAppendixTitle(file.label)).map(file => file.bodyHtml ?? ""),
-        ]);
-        const itemText = items.filter(item => item.lecture_id === lecture.id && !isAssessmentAppendixTitle(item.title)).map(item => heading(item.item_type === "pdf" ? "محتوى المحاضرة وتفاصيلها" : "الشرح والمراجعة", [item.body_text]));
-        // Approved exact-PDF passages supplement the published lecture bodies,
-        // even when a brief summary already exists. No filename inference.
-        const reviewed = await this.publishedPdfReview(subjectId, entries);
-        if (reviewed) reviewedQuestions.push(...reviewed.questions.map(q => generatedSource(q, lecture.id)));
-        const objectives = [...new Set(entries.flatMap(entry => entry.objectives ?? []).map(plainStudyText))].filter(text => text.length > 5 && !hasBrokenSourceEncoding(text));
-        const concepts = [...new Map(entries.flatMap(entry => entry.concepts ?? []).filter(concept => !hasBrokenSourceEncoding(JSON.stringify(concept))).map(concept => [concept.term.trim(), { term: plainStudyText(concept.term).trim(), definition: plainStudyText(concept.definition).trim() }])).values()].filter(concept => concept.term && concept.definition);
-        const conceptText = concepts.map(concept => `${concept.term}: ${concept.definition}`);
-        let text = readableStudyText([...entryText, ...itemText, heading("المفاهيم والمصطلحات الأساسية", conceptText), reviewed ? heading("موضوعات المحاضرة وتطبيقاتها", [reviewed.text]) : ""]);
-        // A previously reviewed source excerpt is preferable to guessing from a filename.
-        if (text.length < 70) text = readableStudyText(sources.filter(q => q.lecture_id === lecture.id).map(q => q.source_excerpt ?? ""));
-        return { id: lecture.id, title: lecture.title, number: lecture.orderIndex > 0 ? lecture.orderIndex : allLectures.indexOf(lecture) + 1 || position + 1, text, objectives, concepts };
-      }));
-      const summary = compileExamSummary(subject.title, sections);
-      const perLecture = Math.min(12, Math.floor(200 / selected.length));
-      const questions = sections.flatMap(section => {
-        let chosen = balancedQuestions([...sources, ...reviewedQuestions].filter(q => q.lecture_id === section.id), perLecture);
-        if (!chosen.length) {
-          try { chosen = balancedQuestions(generateSourceQuestions(section.text, section.title).map(q => generatedSource(q, section.id)), perLecture); }
-          catch { throw new ValidationError(`لا يمكن إنشاء أسئلة موثوقة من «${section.title}». أضف محتوى مقروءًا أو أسئلة معتمدة للمحاضرة.`); }
-        }
-        if (!chosen.length) throw new ValidationError(`لا توجد أسئلة قابلة للتصحيح الفوري في «${section.title}».`);
-        return chosen;
-      });
+      await this.sourceFiles.assertUnchanged(client, selected, links);
       const snapshots = sections.map(({ id, title, number }) => ({ id, title, number }));
       const title = `مجموعة محاضرات ${subject.title} (${lectureSelectionLabel(snapshots.map(l => l.number))})`;
       const sequence = (await client.query<{ sequence: number }>("select coalesce(max(sequence),0)::int+1 as sequence from exam_material_groups where subject_id=$1", [subjectId])).rows[0]!.sequence;
@@ -244,7 +250,8 @@ export class ExamMaterialService {
       for (const [index, q] of questions.entries()) await this.copyQuestion(client, bankId, quizId, actorId, q, index);
       const digest = createHash("sha256").update(JSON.stringify({ summary, questions })).digest("hex");
       await client.query("insert into exam_material_groups(id,subject_id,title,sequence,lecture_ids,lectures,summary,source_digest,question_count,quiz_id,created_by,request_id) values($1,$2,$3,$4,$5,$6::jsonb,$7::jsonb,$8,$9,$10,$11,$12)", [groupId, subjectId, title, sequence, snapshots.map(l => l.id), JSON.stringify(snapshots), JSON.stringify(summary), digest, questions.length, quizId, actorId, requestId]);
-      await client.query("insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'exam_material.generated','exam_material_group',$2,$3::jsonb)", [actorId, groupId, JSON.stringify({ subjectId, lectureCount: selected.length, questionCount: questions.length, sequence, sourceDigest: digest, summaryVersion: summary.version })]);
+      await client.query("insert into exam_instructor_guides(group_id,guide) values($1,$2::jsonb)", [groupId, JSON.stringify(instructorDebriefGuide(groupId, guideSources))]);
+      await client.query("insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'exam_material.generated','exam_material_group',$2,$3::jsonb)", [actorId, groupId, JSON.stringify({ subjectId, lectureCount: selected.length, questionCount: questions.length, sequence, sourceDigest: digest, summaryVersion: summary.version, grounding: summary.grounding })]);
       await client.query("commit");
     } catch (error) { await client.query("rollback"); throw error; }
     finally { client.release(); }
@@ -265,34 +272,6 @@ export class ExamMaterialService {
       if (lectures.length >= batch.total || batch.items.length === 0) return lectures;
       page++;
     }
-  }
-
-  private async publishedPdfReview(subjectId: string, entries: LibraryEntry[]): Promise<ReturnType<typeof reviewedAiPdf>> {
-    if (subjectId !== aiAssessmentReview.subjectId) return null;
-    for (const entry of entries) for (const asset of entry.files) {
-      if (!asset.filename.toLowerCase().endsWith(".pdf") || asset.sizeBytes > 20 * 1024 * 1024) continue;
-      // LibraryService rechecks publication and exact asset membership. Only
-      // the exact approved PDF checksum may select a reviewed transcription.
-      const file = await this.library.file(subjectId, asset.id, false);
-      const bytes = Buffer.concat(await Promise.all(file.absolutePaths.map(path => readFile(path))));
-      const reviewed = reviewedAiPdf(bytes);
-      if (reviewed) return { ...reviewed, text: isAssessmentAppendixTitle(asset.filename) || isAssessmentAppendixTitle(asset.label) ? "" : reviewed.text };
-    }
-    return null;
-  }
-
-  private async sourceQuestions(client: PoolClient, subjectId: string, lectureIds: string[]): Promise<SourceQuestion[]> {
-    return (await client.query<SourceQuestion>(`select distinct on(q.id) q.id,q.lecture_id,q.question_type,q.prompt,coalesce(qq.points_override,q.points) as points,q.explanation,q.rubric,coalesce(q.difficulty,'medium') as difficulty,q.kind,q.source_excerpt,
-      coalesce((select jsonb_agg(jsonb_build_object('option_text',o.option_text,'is_correct',o.is_correct,'order_index',o.order_index) order by o.order_index,o.id) from question_options o where o.question_id=q.id),'[]') as options,
-      coalesce((select jsonb_agg(jsonb_build_object('answer_text',a.answer_text,'order_index',a.order_index) order by a.order_index,a.id) from question_accepted_answers a where a.question_id=q.id),'[]') as accepted,
-      coalesce((select jsonb_agg(jsonb_build_object('left_text',p.left_text,'right_text',p.right_text,'order_index',p.order_index) order by p.order_index,p.id) from question_pairs p where p.question_id=q.id),'[]') as pairs,
-      coalesce((select jsonb_agg(jsonb_build_object('item_text',i.item_text,'correct_order_index',i.correct_order_index) order by i.correct_order_index,i.id) from question_items i where i.question_id=q.id),'[]') as items
-      from questions q join question_banks b on b.id=q.question_bank_id join quiz_questions qq on qq.question_id=q.id join quizzes z on z.id=qq.quiz_id
-      left join lectures parent on parent.id=z.lecture_id
-      where q.lecture_id=any($2::uuid[]) and b.subject_id=$1 and b.deleted_at is null and q.deleted_at is null
-      and z.subject_id=$1 and z.status='published' and z.deleted_at is null and z.superseded_by is null and z.purpose='course'
-      and (z.lecture_id is null or (parent.status='published' and parent.deleted_at is null and parent.subject_id=$1))
-      order by q.id,(z.lecture_id=q.lecture_id) desc,z.created_at desc,z.id,qq.order_index`, [subjectId, lectureIds])).rows;
   }
 
   private async copyQuestion(client: PoolClient, bankId: string, quizId: string, actorId: string, q: SourceQuestion, index: number): Promise<void> {

@@ -8,6 +8,7 @@ import { QuizAttemptRunner } from "@/components/quiz/QuizAttemptRunner";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import { examHref, examRequest } from "./request";
 import { ExamGroupTitle } from "./ExamGroupTitle";
+import { ExamKnowledgeGaps } from "./ExamKnowledgeGaps";
 import { ExamChallengeRunner } from "./ExamChallengeRunner";
 import styles from "./examMaterial.module.css";
 
@@ -74,6 +75,7 @@ export function ExamMaterialQuiz({ group }: { group: ExamMaterialDetail }) {
       <div><h3>نتيجة الاختبار</h3><p>الإجابات الصحيحة: {current.result.correctAnswers} من {current.result.totalQuestions}</p><p>الأسئلة المجاب عنها: {current.result.answeredQuestions} — الدرجة: {current.result.score}</p></div>
     </div> : null}
     {current.result && current.attempt.mode === "challenge" ? <div className={styles.readiness} data-tone={examReadiness(current.result.percentage).tone}><h4>{examReadiness(current.result.percentage).label}</h4><p>{examReadiness(current.result.percentage).advice}</p><small>تقدير تدريبي مبني على نتيجة هذه المحاولة، وليس ضمانًا لنتيجة الامتحان الرسمي.</small><button type="button" className={styles.quiet} onClick={() => window.history.replaceState(null, "", examHref(group.subjectId, group.id, "quiz"))}>اختيار وضع آخر</button></div> : null}
+    {current.knowledgeGaps && current.attempt.status === "graded" ? <ExamKnowledgeGaps report={current.knowledgeGaps} subjectId={group.subjectId} /> : null}
     {current.attempt.mode === "challenge" && current.attempt.status === "in_progress" ? <ExamChallengeRunner key={current.attempt.id} bundle={current} onFinished={refreshResult} onLeave={() => window.history.replaceState(null, "", examHref(group.subjectId, group.id, "quiz"))} /> : <QuizAttemptRunner key={`${current.attempt.id}:${current.attempt.status}`} quiz={current.quiz} displayTitle={<ExamGroupTitle title={current.quiz.title} />} questions={current.questions} attemptId={current.attempt.id} initialAnswers={current.answers} initialFeedback={current.feedback} startedAt={current.attempt.startedAt} reviewMode={current.attempt.status !== "in_progress"} backHref={examHref(group.subjectId, group.id, "summary")} onFinished={refreshResult} onRestart={restarted} startAttempt={() => createAttempt(current.attempt.mode ?? "learning")} />}
   </div>;
 }

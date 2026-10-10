@@ -32,7 +32,7 @@ export function ExamAcademicSummary({ summary, subjectId, groupId, chapters }: {
   return <article id="exam-summary-panel" role="tabpanel" aria-labelledby="exam-summary-tab" className={styles.summary}>
     <FloatingPdfButton label="طباعة الملخص الشامل PDF" document={examSummaryPrintDocument(summary)} />
     <div className={styles.summaryActions}><button type="button" className={styles.quiet} disabled={downloadBusy || !chapters?.length || !groupId} onClick={() => void downloadNarration()}><PlatformIcon name="download" />{downloadBusy ? "جارٍ تجهيز النص…" : "تنزيل نص السرد الأكاديمي"}</button>{downloadError ? <span className={styles.error} role="alert">{downloadError}</span> : null}</div>
-    <div className={styles.summaryCover}><span className={styles.eyebrow}>المادة الامتحانية · الملخص الشامل</span><h3>مراجعة أكاديمية للمحاضرات المختارة</h3><p>{summary.introduction}</p></div>
+    <div className={styles.summaryCover}><span className={styles.eyebrow}>المادة الامتحانية · الملخص الشامل</span><h3>مراجعة أكاديمية للمحاضرات المختارة</h3>{summary.introduction ? <p>{summary.introduction}</p> : null}</div>
     {chapters?.length && groupId ? <ExamAudioPlayer chapters={chapters} subjectId={subjectId} groupId={groupId} /> : null}
     <nav className={styles.summaryIndex} aria-label="فهرس الملخص"><h4>محتويات المراجعة</h4><ol>{summary.sections.map(section => <li key={section.id}><a href={`#summary-lecture-${section.id}`}><span className={styles.lectureNumber}>{section.number}</span><span>{section.title}</span><PlatformIcon name="arrow" /></a></li>)}</ol></nav>
     {display.sections.map(section => <section id={`summary-lecture-${section.id}`} key={section.id} className={styles.summarySection}>

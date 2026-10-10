@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { Pool } from "pg";
+import { createExamSourceFile } from "../helpers/examSourceFile.js";
 import { ExamMaterialService } from "../../src/examMaterials/examMaterialService.js";
 import { refreshAcademicSummaries } from "../../src/examMaterials/refreshAcademicSummaries.js";
-import { createUser, createSubject, createLecture, createLectureItem } from "../helpers/seedFixtures.js";
+import { createUser, createSubject, createLecture } from "../helpers/seedFixtures.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 beforeEach(async () => {
@@ -19,7 +20,7 @@ describe("existing academic exam review publication", () => {
     const lectures: string[] = [];
     for (let index = 1; index <= 2; index++) {
       const lecture = await createLecture(pool, { subjectId: subject, title: `المحاضرة ${index}`, orderIndex: index, status: "published", createdBy: actor });
-      await createLectureItem(pool, { lectureId: lecture, itemType: "summary", title: "النص الدراسي", status: "published", createdBy: actor, bodyText: "## ملكية الخطر\nيجب تحديد مالك لكل خطر يمتلك الصلاحية اللازمة لاتخاذ القرار الذي يغيّر مستوى الخطر، مع توثيق المسؤوليات داخل المؤسسة.\n## التصعيد والمتابعة\nيتطلب التصعيد تحديد جهة الإبلاغ وموعده عند تجاوز صلاحية المالك، ثم متابعة تنفيذ القرار والتحقق من أثره في مستوى الخطر." });
+      await createExamSourceFile(pool, { lectureId: lecture, title: "النص الدراسي", createdBy: actor, text: "## ملكية الخطر\nيجب تحديد مالك لكل خطر يمتلك الصلاحية اللازمة لاتخاذ القرار الذي يغيّر مستوى الخطر، مع توثيق المسؤوليات داخل المؤسسة.\n## التصعيد والمتابعة\nيتطلب التصعيد تحديد جهة الإبلاغ وموعده عند تجاوز صلاحية المالك، ثم متابعة تنفيذ القرار والتحقق من أثره في مستوى الخطر." });
       lectures.push(lecture);
     }
     const service = new ExamMaterialService(pool);
@@ -50,7 +51,7 @@ describe("existing academic exam review publication", () => {
     expect(current.groups[0]!.lectures.map(l => l.id)).toEqual([lectures[1]]);
     for (const review of result.reviews) {
       const detail = await service.detail(subject, review.currentId, false);
-      expect(detail.summary.version).toBe(3);
+      expect(detail.summary.version).toBe(4);
       expect(detail.summary.sections.every(section => section.topics?.some(topic => topic.title === "التصعيد والمتابعة"))).toBe(true);
     }
     expect(await refreshAcademicSummaries(pool)).toMatchObject({ published: 0, alreadyCurrent: 2, issues: [] });

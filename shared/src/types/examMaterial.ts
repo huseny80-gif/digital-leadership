@@ -10,7 +10,16 @@ export interface ExamSummarySection extends ExamLectureSnapshot {
   objectives?: string[];
   concepts?: Array<{ term: string; definition: string }>;
 }
-export interface ExamMaterialSummary { introduction: string; sections: ExamSummarySection[]; version?: number }
+export interface ExamMaterialSummary {
+  introduction: string;
+  sections: ExamSummarySection[];
+  version?: number;
+  /** Original file digests bind this revision to its actual lecture sources. */
+  grounding?: {
+    policy: "strict-file-extraction-v1";
+    sources: Array<{ lectureId: string; fileId: string; filename: string; sha256: string }>;
+  };
+}
 export interface ExamMaterialGroup {
   id: string;
   subjectId: string;
@@ -75,4 +84,47 @@ export interface ExamMaterialAttempt {
   result: QuizAttemptResult | null;
   /** Synchronizes the countdown with the server clock when restoring a challenge. */
   serverTime?: string;
+  /** Available to the owning learner only after final grading. */
+  knowledgeGaps?: ExamKnowledgeGapReport;
+}
+
+export interface ExamContextReference {
+  paragraphId: string;
+  fileId: string;
+  filename: string;
+  sha256: string;
+  number: number;
+  startLine: number;
+  endLine: number;
+  excerpt: string;
+}
+export interface ExamKnowledgeGap {
+  id: string;
+  lectureId: string;
+  lectureTitle: string;
+  topic: string;
+  wrongQuestionIds: string[];
+  unansweredQuestionIds: string[];
+  references: ExamContextReference[];
+}
+export interface ExamKnowledgeGapReport {
+  attemptId: string;
+  incorrectAnswers: number;
+  unansweredQuestions: number;
+  unmappedQuestions: number;
+  gaps: ExamKnowledgeGap[];
+}
+/** Never embedded in a learner-facing group/summary/attempt payload. */
+export interface ExamInstructorGuide {
+  groupId: string;
+  generator: "strict-source-extractive-v1";
+  items: Array<{
+    id: string;
+    lectureId: string;
+    lectureTitle: string;
+    topic: string;
+    expectedGap: string;
+    discussionQuestion: string;
+    references: ExamContextReference[];
+  }>;
 }

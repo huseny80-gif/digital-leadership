@@ -4,11 +4,12 @@ import { Pool } from "pg";
 import { PDFParse } from "pdf-parse";
 import request from "supertest";
 import type { ExamMaterialDetail, ExamMaterialAttempt } from "@shared/index";
+import { createExamSourceFile } from "../helpers/examSourceFile.js";
 import { createApp } from "../../src/app.js";
 import { ensureExamMaterialSchema } from "../../src/examMaterials/schema.js";
 import { ContentImportService } from "../../src/contentAutomation/contentImportService.js";
 import { generateSourceQuestions } from "../../src/contentAutomation/questionGeneration.js";
-import { createUser, createSubject, createLecture, createLectureItem, createFile, createQuiz, createEmptyQuestionBank, createFillQuestion, createMatchQuestion, createOrderQuestion, addQuestionToQuiz } from "../helpers/seedFixtures.js";
+import { createUser, createSubject, createLecture, createLectureItem, createQuiz, createEmptyQuestionBank, createFillQuestion, createMatchQuestion, createOrderQuestion, addQuestionToQuiz } from "../helpers/seedFixtures.js";
 import { signFakeSupabaseToken } from "../helpers/fakeSupabaseToken.js";
 import { hashToken } from "../../src/trainingAccess/token.js";
 import { signGuestSessionCookieValue } from "../../src/trainingAccess/guestSessionCookie.js";
@@ -48,7 +49,7 @@ async function seed() {
   for (let number = 1; number <= 4; number++) {
     const id = await createLecture(pool, { subjectId: subject, title: `المحاضرة ${number} في إدارة المخاطر`, orderIndex: number, status: "published", createdBy: admin });
     lectures.push(id);
-    await createLectureItem(pool, { lectureId: id, itemType: "summary", title: `ملخص ${number}`, status: "published", createdBy: admin, bodyText: `محتوى المحاضرة ${number}\n${source}` });
+    await createExamSourceFile(pool, { lectureId: id, createdBy: admin, text: `محتوى المحاضرة ${number}\n${source}` + (number === 3 ? "\n\nالاحتمالية: إمكان وقوع الحدث خلال المدة المحددة، مع ضرورة الاعتماد على معلومات موثقة.\nالأثر: نتائج وقوع الحدث على أهداف المؤسسة ومواردها خلال المدة المحددة.\n\n1. تحديد الخطر وتوثيق مصدره والأهداف المتأثرة به.\n2. تحليل الاحتمالية والأثر باستخدام المعلومات المتاحة.\n3. اختيار الاستجابة ومتابعة تنفيذ الإجراء وتقييم فعاليته." : "") });
     if (number === 4) continue; // New lecture with no pre-existing quiz.
     const choice = (await pool.query<{ id: string }>("insert into questions(question_bank_id,question_type,prompt,created_by,lecture_id,difficulty,source_excerpt,explanation) values($1,$2,$3,$4,$5,'easy',$6,$6) returning id", [bank, number === 2 ? "true_false" : "multiple_choice", number === 2 ? "تساعد مصفوفة المخاطر على ترتيب الأولويات. صح أم خطأ؟" : `ما هدف ترتيب الأولويات في المحاضرة ${number}؟`, admin, id, source])).rows[0]!.id;
     await pool.query("insert into question_options(question_id,option_text,is_correct,order_index) values($1,$2,true,0),($1,$3,false,1)", [choice, number === 2 ? "صح" : "توجيه الموارد", number === 2 ? "خطأ" : "إهمال الأحداث"]);
@@ -95,12 +96,67 @@ describe("independent exam material archives", () => {
     expect(group.summary.sections.map(l => l.id)).toEqual(s.lectures.slice(0, 3));
     expect(JSON.stringify(group.summary)).not.toContain("محتوى المحاضرة 4");
     const questions = (await request(s.app).get(`/api/v1/quizzes/${group.quizId}/questions`).set("Cookie", s.cookie).expect(200)).body.data;
-    expect(questions).toHaveLength(8);
+    expect(questions.length).toBeGreaterThan(8);
     expect(new Set(questions.map((q: { questionType: string }) => q.questionType))).toEqual(new Set(["multiple_choice", "true_false", "fill", "match", "order"]));
     expect(JSON.stringify(questions)).not.toMatch(/is_correct|isCorrect|correct_order_index|explanation|source_excerpt|acceptedAnswers/);
     expect(questions.every((q: { id: string }) => !s.originals.includes(q.id))).toBe(true);
     expect((await pool.query("select * from questions where id=any($1::uuid[]) order by id", [s.originals])).rows).toEqual(before);
     expect((await pool.query("select * from question_options where question_id=any($1::uuid[]) order by id", [s.originals])).rows).toEqual(optionsBefore);
+  });
+
+  it("uses actual file bytes exclusively, ignoring authored descriptions, summaries and old quiz excerpts", async () => {
+    const s = await seed();
+    await pool.query("update lecture_items set body_text=$1 where lecture_id=$2", [source + " OUTSIDE_SUMMARY_ONLY", s.lectures[0]]);
+    await pool.query("update questions set source_excerpt=$1,explanation=$1 where id=any($2::uuid[])", [source + " OUTSIDE_QUIZ_ONLY", s.originals]);
+    const group = await s.generate([s.lectures[0]!]);
+    expect(JSON.stringify(group.summary)).not.toMatch(/OUTSIDE_SUMMARY_ONLY|OUTSIDE_QUIZ_ONLY/);
+    expect(group.summary.grounding?.policy).toBe("strict-file-extraction-v1");
+    const proof = (await pool.query("select q.rubric,q.explanation from questions q join quiz_questions qq on qq.question_id=q.id where qq.quiz_id=$1", [group.quizId])).rows;
+    expect(proof.length).toBe(group.questionCount);
+    for (const question of proof) {
+      expect(question.rubric.grounding).toBe("strict-file-extraction-v1");
+      expect(question.rubric.sourceReferences[0].sha256).toMatch(/^[a-f0-9]{64}$/);
+      expect(question.explanation).toContain("الفقرة"); expect(question.explanation).toContain("الأسطر");
+    }
+    await pool.query("update files set checksum=$1 where id in (select file_id from lecture_items where lecture_id=$2)", ["0".repeat(64), s.lectures[0]]);
+    await request(s.app).post(`/api/v1/admin/subjects/${s.subject}/exam-material`).set("Authorization", `Bearer ${s.tokens[0]}`).send({ lectureIds: [s.lectures[0]], requestId: randomUUID() }).expect(400);
+    expect((await pool.query("select count(*)::int n from exam_material_groups")).rows[0].n).toBe(1);
+  });
+
+  it("protects instructor debriefs on the server and keeps them out of all learner group payloads", async () => {
+    const s = await seed(), group = await s.generate();
+    const url = `/api/v1/admin/subjects/${s.subject}/exam-material/${group.id}/instructor-guide`;
+    await request(s.app).get(url).expect(401);
+    await request(s.app).get(url).set("Cookie", s.cookie).expect(401);
+    for (const token of s.tokens.slice(1)) await request(s.app).get(url).set("Authorization", `Bearer ${token}`).expect(403);
+    const guide = (await request(s.app).get(url).set("Authorization", `Bearer ${s.tokens[0]}`).expect(200)).body.data;
+    expect(guide.groupId).toBe(group.id); expect(guide.items.length).toBeGreaterThan(0);
+    expect(guide.items.every((item: { discussionQuestion: string; references: Array<{ excerpt: string }> }) => item.discussionQuestion.includes(item.references[0]!.excerpt))).toBe(true);
+    expect(JSON.stringify((await request(s.app).get(`${s.path}/${group.id}`).set("Cookie", s.cookie).expect(200)).body.data)).not.toMatch(/expectedGap|discussionQuestion|instructorGuide/);
+    await request(s.app).get(`/api/v1/admin/subjects/${s.other}/exam-material/${group.id}/instructor-guide`).set("Authorization", `Bearer ${s.tokens[0]}`).expect(404);
+    const client = await pool.connect();
+    try {
+      await client.query("begin"); await client.query("set local role authenticated");
+      try { expect((await client.query("select * from exam_instructor_guides")).rows).toEqual([]); }
+      catch (error) { expect((error as { code: string }).code).toBe("42501"); }
+      await client.query("rollback");
+    } finally { client.release(); }
+  });
+
+  it("reveals source-linked knowledge gaps only after final grading and only to the attempt owner", async () => {
+    const s = await seed(), group = await s.generate([s.lectures[0]!]);
+    const attempt = (await request(s.app).post(`${s.path}/${group.id}/attempts`).set("Cookie", s.cookie).send({ mode: "challenge" }).expect(201)).body.data;
+    const bundle = `${s.path}/${group.id}/attempts/${attempt.id}`;
+    expect((await request(s.app).get(bundle).set("Cookie", s.cookie).expect(200)).body.data).not.toHaveProperty("knowledgeGaps");
+    const wrong = (await pool.query("select o.id,o.question_id from question_options o join quiz_questions qq on qq.question_id=o.question_id where qq.quiz_id=$1 and not o.is_correct limit 1", [group.quizId])).rows[0];
+    await request(s.app).post(`/api/v1/attempts/${attempt.id}/answers`).set("Cookie", s.cookie).send({ questionId: wrong.question_id, selectedOptionId: wrong.id }).expect(200);
+    expect((await request(s.app).get(bundle).set("Cookie", s.cookie).expect(200)).body.data).not.toHaveProperty("knowledgeGaps");
+    await request(s.app).post(`/api/v1/attempts/${attempt.id}/submit`).set("Cookie", s.cookie).expect(200);
+    const report = (await request(s.app).get(bundle).set("Cookie", s.cookie).expect(200)).body.data.knowledgeGaps;
+    expect(report).toMatchObject({ attemptId: attempt.id, incorrectAnswers: 1, unansweredQuestions: group.questionCount - 1, unmappedQuestions: 0 });
+    expect(report.gaps.some((gap: { wrongQuestionIds: string[] }) => gap.wrongQuestionIds.includes(wrong.question_id))).toBe(true);
+    expect(report.gaps.every((gap: { references: Array<{ startLine: number; endLine: number; excerpt: string }> }) => gap.references.every(reference => reference.startLine > 0 && reference.endLine >= reference.startLine && reference.excerpt.length > 30))).toBe(true);
+    await request(s.app).get(bundle).set("Authorization", `Bearer ${s.tokens[2]}`).expect(404);
   });
 
   it("creates a new archive per deliberate generation, preserves old snapshots, and paginates history", async () => {
@@ -116,8 +172,9 @@ describe("independent exam material archives", () => {
     expect(third.sequence).toBe(3);
     const old = (await request(s.app).get(`${s.path}/${first.id}`).set("Cookie", s.cookie).expect(200)).body.data;
     expect(JSON.stringify(old.summary)).toBe(original);
-    const copiedKey = (await pool.query("select o.option_text from question_options o join quiz_questions qq on qq.question_id=o.question_id where qq.quiz_id=$1 and o.is_correct and o.option_text='توجيه الموارد'", [first.quizId])).rows;
-    expect(copiedKey).not.toHaveLength(0);
+    const copiedKey = (await pool.query("select o.option_text from question_options o join quiz_questions qq on qq.question_id=o.question_id where qq.quiz_id=$1 and o.is_correct", [first.quizId])).rows;
+    expect(copiedKey.length).toBeGreaterThan(0);
+    expect(copiedKey.every(key => key.option_text !== "إجابة محدثة")).toBe(true);
     const index = await request(s.app).get(`${s.path}?page=2&limit=1`).set("Cookie", s.cookie).expect(200);
     expect(index.body.data.total).toBe(2); expect(index.body.data.groups[0].id).toBe(first.id);
     expect(index.headers["cache-control"]).toBe("private, no-store");
@@ -170,10 +227,9 @@ describe("independent exam material archives", () => {
     const lateTopic = "يجب توثيق محفز التصعيد وجهة الإبلاغ ومهلته عندما تتجاوز معالجة الخطر حدود صلاحية مالكه، ثم متابعة الاستجابة للتحقق من تنفيذ القرار.";
     const full = Array.from({ length: 130 }, (_, index) => `يعرض المحور الدراسي ${index + 1} تطبيقات إدارة المخاطر في المؤسسة، مع تحديد المسؤوليات وتوثيق الإجراء ومتابعة تنفيذه بصورة منتظمة.`);
     await createLectureItem(pool, { lectureId: s.lectures[0]!, itemType: "summary", title: "ملخص موجز", status: "published", createdBy: s.admin, bodyText: source });
-    const file = await createFile(pool, { storageKey: `full-source/${randomUUID()}.pdf`, uploadedBy: s.admin });
-    await createLectureItem(pool, { lectureId: s.lectures[0]!, itemType: "pdf", title: "النص الكامل", fileId: file, status: "published", createdBy: s.admin, bodyText: `## تطبيقات إدارة المخاطر\n${full.join("\n")}\n## التصعيد وحدود الصلاحية\n${lateTopic}` });
+    await createExamSourceFile(pool, { lectureId: s.lectures[0]!, title: "النص الكامل", createdBy: s.admin, text: `## تطبيقات إدارة المخاطر\n${full.join("\n")}\n## التصعيد وحدود الصلاحية\n${lateTopic}` });
     const group = await s.generate([s.lectures[0]!]);
-    expect(group.summary.version).toBe(3);
+    expect(group.summary.version).toBe(4);
     const section = group.summary.sections[0]!;
     expect(group.summary.sections).toHaveLength(1);
     for (const paragraph of full) expect(section.text).toContain(paragraph);
@@ -194,16 +250,15 @@ describe("independent exam material archives", () => {
   it("keeps scientific content separate from question appendices and also cleans bookmarked historical summaries", async () => {
     const s = await seed();
     const scientific = "يجب توثيق محفز التصعيد وجهة الإبلاغ ومهلته عند تجاوز صلاحية مالك الخطر، ثم متابعة تنفيذ القرار والتحقق من أثر الاستجابة.";
-    const file = await createFile(pool, { storageKey: `study-only/${randomUUID()}.pdf`, uploadedBy: s.admin });
-    await createLectureItem(pool, { lectureId: s.lectures[0]!, itemType: "pdf", title: "محتوى المحاضرة", fileId: file, status: "published", createdBy: s.admin,
-      bodyText: `<h2>التصعيد والمتابعة</h2><p>${scientific}</p><h3>التمرين التفاعلي — اختبار ذاتي موثّق بالمرجع</h3><p>بنك أسئلة المحاضرة</p><p>QUESTION_APPENDIX_ONLY</p><h4>الإجابة النموذجية والتعليل</h4><p>ANSWER_APPENDIX_ONLY</p>` });
+    await createExamSourceFile(pool, { lectureId: s.lectures[0]!, title: "محتوى المحاضرة", filename: "محتوى المحاضرة.html", createdBy: s.admin,
+      text: `<h2>التصعيد والمتابعة</h2><p>${scientific}</p><h3>التمرين التفاعلي — اختبار ذاتي موثّق بالمرجع</h3><p>بنك أسئلة المحاضرة</p><p>QUESTION_APPENDIX_ONLY</p><h4>الإجابة النموذجية والتعليل</h4><p>ANSWER_APPENDIX_ONLY</p>` });
     await createLectureItem(pool, { lectureId: s.lectures[0]!, itemType: "summary", title: "دليل الحلول والتعليل", status: "published", createdBy: s.admin,
       bodyText: "ANSWER_FILE_ONLY يتضمن هذا الملف إجابات الأسئلة وتفصيل التعاليل، وهو ملحق مستقل وليس من المحتوى العلمي للمحاضرة." });
     const keys = (await pool.query("select * from question_options where question_id=any($1::uuid[]) order by id", [s.originals])).rows;
     const group = await s.generate([s.lectures[0]!]);
     expect(group.summary.sections[0]!.text).toContain(scientific);
     expect(JSON.stringify(group.summary)).not.toMatch(/QUESTION_APPENDIX_ONLY|ANSWER_APPENDIX_ONLY|ANSWER_FILE_ONLY|التمرين التفاعلي/);
-    expect(group.questionCount).toBe(2);
+    expect(group.questionCount).toBeGreaterThan(2);
     const saved = structuredClone(group.summary);
     saved.version = 2;
     saved.sections[0]!.topics!.push({ title: "الإجابات النموذجية والتعاليل", text: "SAVED_ANSWER_APPENDIX" });
@@ -232,7 +287,10 @@ describe("independent exam material archives", () => {
   it("generates grounded automatic questions for a new lecture and rejects unreadable or missing content atomically", async () => {
     const s = await seed(); const group = await s.generate([s.lectures[3]!]);
     expect(group.questionCount).toBeGreaterThan(1);
-    expect((await pool.query("select source_excerpt from questions q join quiz_questions qq on qq.question_id=q.id where qq.quiz_id=$1", [group.quizId])).rows.every(q => JSON.stringify(group.summary).includes(q.source_excerpt))).toBe(true);
+    const scientificText = group.summary.sections.map(section => section.text).join("\n").replace(/\s+/gu, " ");
+    for (const question of (await pool.query("select source_excerpt from questions q join quiz_questions qq on qq.question_id=q.id where qq.quiz_id=$1", [group.quizId])).rows) {
+      expect(scientificText).toContain(question.source_excerpt.replace(/\s+/gu, " "));
+    }
     const empty = await createLecture(pool, { subjectId: s.subject, title: "مصدر ناقص", status: "published", createdBy: s.admin });
     const url = `/api/v1/admin/subjects/${s.subject}/exam-material`;
     await request(s.app).post(url).set("Authorization", `Bearer ${s.tokens[0]}`).send({ lectureIds: [empty], requestId: randomUUID() }).expect(400);
@@ -257,8 +315,7 @@ describe("independent exam material archives", () => {
     ];
     const itemIds: string[] = [];
     for (const row of corrupt) {
-      const fileId = row.type === "pdf" ? await createFile(pool, { storageKey: `legacy/${randomUUID()}.pdf`, uploadedBy: s.admin }) : undefined;
-      itemIds.push(await createLectureItem(pool, { lectureId: row.id, itemType: row.type, title: "استخلاص قديم", bodyText: row.text, ...(fileId ? { fileId } : {}), status: "published", createdBy: s.admin }));
+      itemIds.push(await createLectureItem(pool, { lectureId: row.id, itemType: "summary", title: "استخلاص قديم", bodyText: row.text, status: "published", createdBy: s.admin }));
     }
     const before = (await pool.query("select id,body_text from lecture_items where id=any($1::uuid[]) order by id", [itemIds])).rows;
     const response = await request(s.app).post(`/api/v1/admin/subjects/${subjectId}/exam-material`).set("Authorization", `Bearer ${s.tokens[0]}`).send({ lectureIds: lectures, requestId: randomUUID() });
@@ -273,14 +330,16 @@ describe("independent exam material archives", () => {
     expect((await pool.query("select id,body_text from lecture_items where id=any($1::uuid[]) order by id", [itemIds])).rows).toEqual(before);
   });
 
-  it("falls back to readable approved excerpts when all stored lecture text is damaged", async () => {
+  it("reads original files despite corrupt metadata and never falls back to old question excerpts", async () => {
     const s = await seed();
     await pool.query("update lecture_items set body_text=$1 where lecture_id=$2", ["�".repeat(150), s.lectures[0]]);
     await pool.query("update questions set source_excerpt=$1 where id=$2", ["�".repeat(150), s.originals[0]]);
     const group = await s.generate([s.lectures[0]!]);
-    expect(group.summary.sections[0]!.text.split(/\n+/)).toEqual(source.split("\n"));
-    expect(group.questionCount).toBe(1);
-    expect((await pool.query("select question_type from questions q join quiz_questions qq on qq.question_id=q.id where qq.quiz_id=$1", [group.quizId])).rows).toEqual([{ question_type: "fill" }]);
+    expect(group.summary.sections[0]!.text).toContain(source.split("\n")[0]);
+    expect(group.questionCount).toBeGreaterThan(1);
+    expect(group.summary.grounding?.policy).toBe("strict-file-extraction-v1");
+    await pool.query("delete from lecture_items where lecture_id=$1", [s.lectures[0]]);
+    await request(s.app).post(`/api/v1/admin/subjects/${s.subject}/exam-material`).set("Authorization", `Bearer ${s.tokens[0]}`).send({ lectureIds: [s.lectures[0]], requestId: randomUUID() }).expect(400);
   });
 
   it("grades all automatic formats for a permanent guest, restores only earned feedback, and protects attempt ownership", async () => {
@@ -293,7 +352,7 @@ describe("independent exam material archives", () => {
     for (const q of initial.questions) {
       let answer: object;
       if (q.options) answer = { selectedOptionId: (await pool.query("select id from question_options where question_id=$1 and is_correct", [q.id])).rows[0].id };
-      else if (q.questionType === "fill") answer = { answerText: "المخاطر" };
+      else if (q.questionType === "fill") answer = { answerText: (await pool.query("select answer_text from question_accepted_answers where question_id=$1 order by order_index limit 1", [q.id])).rows[0].answer_text };
       else if (q.matchItems) answer = { matchAnswer: q.matchItems.left.map(l => ({ leftId: l.id, rightId: l.id })) };
       else answer = { orderAnswer: (await pool.query("select id from question_items where question_id=$1 order by correct_order_index", [q.id])).rows.map(i => i.id) };
       const response = await request(s.app).post(`/api/v1/attempts/${attempt.id}/answers`).set("Cookie", s.cookie).send({ questionId: q.id, ...answer }).expect(200);
@@ -302,8 +361,8 @@ describe("independent exam material archives", () => {
     }
     await request(s.app).post(`/api/v1/attempts/${attempt.id}/submit`).set("Cookie", s.cookie).expect(200);
     const completed = (await request(s.app).get(bundlePath).set("Cookie", s.cookie).expect(200)).body.data as ExamMaterialAttempt;
-    expect(completed.result).toMatchObject({ percentage: 100, status: "graded", correctAnswers: 8, pendingManualReview: false });
-    expect(completed.feedback).toHaveLength(8);
+    expect(completed.result).toMatchObject({ percentage: 100, status: "graded", correctAnswers: group.questionCount, pendingManualReview: false });
+    expect(completed.feedback).toHaveLength(group.questionCount);
     const revised = await s.generate(s.lectures.slice(0, 3));
     expect(revised.quizId).not.toBe(group.quizId);
     expect((await request(s.app).get(bundlePath).set("Cookie", s.cookie).expect(200)).body.data.result).toEqual(completed.result);
@@ -368,14 +427,16 @@ describe("independent exam material archives", () => {
     const archives: ExamMaterialDetail[] = [];
     for (const sourceSubject of manifest.subjects) {
       const id = subjectMapping[sourceSubject.id]!;
-      const lectures = (await request(s.app).get(`/api/v1/subjects/${id}/exam-material`).set("Authorization", `Bearer ${s.tokens[0]}`).expect(200)).body.data.lectures as Array<{ id: string }>;
+      const lectures = (await request(s.app).get(`/api/v1/subjects/${id}/exam-material`).set("Authorization", `Bearer ${s.tokens[0]}`).expect(200)).body.data.lectures as Array<{ id: string; title: string }>;
+      const eligible = lectures.filter(lecture => !lecture.title.includes("محتوى تدريبي إضافي"));
       expect(lectures.length).toBeGreaterThan(0);
-      const response = await request(s.app).post(`/api/v1/admin/subjects/${id}/exam-material`).set("Authorization", `Bearer ${s.tokens[0]}`).send({ lectureIds: lectures.map(l => l.id), requestId: randomUUID() });
+      const response = await request(s.app).post(`/api/v1/admin/subjects/${id}/exam-material`).set("Authorization", `Bearer ${s.tokens[0]}`).send({ lectureIds: eligible.map(l => l.id), requestId: randomUUID() });
       expect(response.status, JSON.stringify({ subject: sourceSubject.id, error: response.body.error })).toBe(201);
       const archive = response.body.data as ExamMaterialDetail;
-      expect(archive.summary.sections).toHaveLength(lectures.length);
+      expect(archive.summary.sections).toHaveLength(eligible.length);
       expect(JSON.stringify(archive.summary), sourceSubject.id).not.toMatch(/التمرين التفاعلي|اختبار ذاتي موث|بنك أسئلة|عدد الأسئلة|نوع الأسئلة|ابدأ الاختبار|نص السؤال|الإجابة النموذجية/);
-      expect(archive.questionCount).toBeGreaterThanOrEqual(lectures.length);
+      expect(archive.questionCount).toBeGreaterThanOrEqual(eligible.length);
+      expect(archive.summary.grounding?.sources.length).toBeGreaterThanOrEqual(eligible.length);
       archives.push(archive);
     }
     const clonedIds = (await pool.query("select qq.question_id from quiz_questions qq join quizzes q on q.id=qq.quiz_id where q.purpose='exam_material'")).rows.map(q => q.question_id);
@@ -469,9 +530,9 @@ describe("advanced exam review and challenge protection", () => {
 
   it("exports a branded, complete Arabic review with vector maps and public questions under archive visibility", async () => {
     const s = await seed();
-    await createLectureItem(pool, { lectureId: s.lectures[0]!, itemType: "summary", title: "محاور موسعة", status: "published", createdBy: s.admin, bodyText: `## محور أول\n${source}\n## محور متأخر\nFINAL_SOURCE_PARAGRAPH يجب مراجعة إجراءات المؤسسة بانتظام.` });
+    await createExamSourceFile(pool, { lectureId: s.lectures[0]!, title: "محاور موسعة", createdBy: s.admin, text: `## محور أول\n${source}\n## محور متأخر\nFINAL_SOURCE_PARAGRAPH يجب مراجعة إجراءات المؤسسة بانتظام.` });
     const group = await s.generate(s.lectures.slice(0, 3)), url = `${s.path}/${group.id}/review-package.pdf`;
-    expect(group.review?.generator).toBe("source-mock-v1"); expect(group.review?.audioChapters.length).toBe(4);
+    expect(group.review?.generator).toBe("source-mock-v1"); expect(group.review?.audioChapters.length).toBe(3);
     expect(group.review?.mindMap.nodes.filter(node => node.kind === "lecture")).toHaveLength(3);
     await request(s.app).get(url).expect(401);
     await request(s.app).get(`/api/v1/subjects/${s.other}/exam-material/${group.id}/review-package.pdf`).set("Cookie", s.cookie).expect(404);
@@ -483,7 +544,7 @@ describe("advanced exam review and challenge protection", () => {
       const parsed = await parser.getText(), text = parsed.text.normalize("NFKC");
       // PDF extractors can insert whitespace within shaped Arabic glyph runs.
       const compact = text.replace(/\s+/g, "");
-      expect(parsed.pages.length).toBeGreaterThan(5); expect(text).toContain("FINAL_SOURCE_PARAGRAPH"); expect(compact).toContain("خريطةالمفاهيم"); expect(compact).toContain("الأسئلةالتدريبية"); expect(compact).toContain("رتبمراحل");
+      expect(parsed.pages.length).toBeGreaterThan(5); expect(text).toContain("FINAL_SOURCE_PARAGRAPH"); expect(compact).toContain("خريطةالمفاهيم"); expect(compact).toContain("الأسئلةالتدريبية"); expect(compact).toContain("رتّبالبنود");
       expect(text).not.toContain("الإجابة الصحيحة"); expect(text).not.toContain("correctOptionIds");
     } finally { await parser.destroy(); }
     await pool.query("update lectures set status='draft' where id=$1", [s.lectures[0]]);
@@ -492,9 +553,10 @@ describe("advanced exam review and challenge protection", () => {
 });
 
 describe("source-authorized academic MP3", () => {
-  const params = { chapter: "introduction", segment: "0", voice: "ar-IQ-RanaNeural" };
+  const audioParams = { segment: "0", voice: "ar-IQ-RanaNeural" };
   it("authorizes each source request before speech/cache access, including hidden or wrong-course groups", async () => {
     const s = await seed(), group = await s.generate(), provider = vi.spyOn(academicSpeechCache, "audio").mockResolvedValue(Buffer.from([255, 251, 1, 2]));
+    const params = { ...audioParams, chapter: group.review!.audioChapters[0]!.id };
     const url = `${s.path}/${group.id}/audio.mp3`;
     await request(s.app).get(url).query(params).expect(401);
     await request(s.app).get(`/api/v1/subjects/${s.other}/exam-material/${group.id}/audio.mp3`).set("Cookie", s.cookie).query(params).expect(404);
@@ -508,6 +570,7 @@ describe("source-authorized academic MP3", () => {
   });
   it("returns correct byte/suffix ranges for actual MP3 and rejects malformed ranges", async () => {
     const s = await seed(), group = await s.generate(), bytes = Buffer.from([255, 251, 1, 2, 3, 4]);
+    const params = { ...audioParams, chapter: group.review!.audioChapters[0]!.id };
     vi.spyOn(academicSpeechCache, "audio").mockResolvedValue(bytes);
     const call = (range?: string) => { const r = request(s.app).get(`${s.path}/${group.id}/audio.mp3`).set("Cookie", s.cookie).query(params); return range ? r.set("Range", range) : r; };
     await call().expect(200).expect("Content-Length", "6").expect("Cache-Control", "private, no-store");
@@ -518,6 +581,7 @@ describe("source-authorized academic MP3", () => {
   });
   it("accepts no client text, arbitrary voice, owner, or duplicate query and leaves failures retryable", async () => {
     const s = await seed(), group = await s.generate(), provider = vi.spyOn(academicSpeechCache, "audio").mockRejectedValueOnce(new AcademicSpeechUnavailable()).mockResolvedValue(Buffer.from([255, 251, 1]));
+    const params = { ...audioParams, chapter: group.review!.audioChapters[0]!.id };
     const url = `${s.path}/${group.id}/audio.mp3`;
     for (const input of [{ ...params, text: "untrusted" }, { ...params, ownerId: s.admin }, { ...params, voice: "unknown" }, { ...params, segment: "1.5" }, { ...params, voice: ["ar-IQ-RanaNeural", "ar-IQ-BasselNeural"] }]) await request(s.app).get(url).set("Cookie", s.cookie).query(input).expect(400);
     expect(provider).not.toHaveBeenCalled();
