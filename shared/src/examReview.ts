@@ -1,5 +1,5 @@
 import type { ExamMaterialSummary, ExamMindMapNode, ExamReviewArtifacts, ExamSummarySection } from "./types/examMaterial.js";
-import { academicNarrationChapters } from "./academicNarration.js";
+import { academicAudioChapters } from "./academicNarration.js";
 export { speechChunks } from "./academicNarration.js";
 
 /** Deterministic mock AI adapter. It arranges only authorized source text: no
@@ -43,7 +43,7 @@ export function generateExamReviewArtifacts(summary: ExamMaterialSummary, title:
       terms.set(key, node);
     }
   }
-  return { generator: "source-mock-v1", mindMap: { nodes, edges }, audioChapters: academicNarrationChapters(summary) };
+  return { generator: "source-mock-v1", mindMap: { nodes, edges }, audioChapters: academicAudioChapters(summary) };
 }
 
 export function examChallengeSeconds(questionCount: number): number {

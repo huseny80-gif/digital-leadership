@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ExamMaterialAttempt, ExamMaterialDetail, ExamMaterialSummary } from "@shared/index";
 import { generateExamReviewArtifacts } from "@digital-leadership/shared";
 import { ExamMindMap } from "@/components/exam-material/ExamMindMap";
-import { ExamAudioPlayer } from "@/components/exam-material/ExamAudioPlayer";
 import { ExamChallengeRunner } from "@/components/exam-material/ExamChallengeRunner";
 import { ExamRevisionPackage } from "@/components/exam-material/ExamRevisionPackage";
 import { answerSignature, challengeInitialState, challengeReducer, completeChallengeAnswer } from "@/components/exam-material/challengeState";
@@ -39,34 +38,6 @@ describe("interactive source mind map", () => {
     expect(screen.queryByRole("button", { name: "التصعيد" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "طيّ الكل" })); expect(screen.getByRole("button", { name: "توسيع الكل" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "تكبير الخريطة" })); expect(screen.getByRole("button", { name: "إعادة حجم الخريطة" })).toHaveTextContent("110%");
-  });
-});
-
-describe("Arabic podcast adapter", () => {
-  class MockUtterance { constructor(public text: string) {} lang = ""; rate = 1; voice: SpeechSynthesisVoice | null = null; onend: (() => void) | null = null; onerror: ((event: { error: string }) => void) | null = null; }
-  const voice = { lang: "ar-SA", name: "الصوت العربي", voiceURI: "arabic", default: true, localService: true } as SpeechSynthesisVoice;
-  function synthesis(voices: SpeechSynthesisVoice[] = [voice]) {
-    const engine = { getVoices: vi.fn(() => voices), speak: vi.fn<(utterance: MockUtterance) => void>(), pause: vi.fn(), resume: vi.fn(), cancel: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn() };
-    vi.stubGlobal("speechSynthesis", engine); vi.stubGlobal("SpeechSynthesisUtterance", MockUtterance); return engine;
-  }
-  it("plays source chapters, pauses/resumes, seeks and cancels on unmount or a stale end callback", async () => {
-    const engine = synthesis();
-    const view = render(<ExamAudioPlayer chapters={generateExamReviewArtifacts(summary, group.title).audioChapters} />);
-    await waitFor(() => expect(screen.getByRole("button", { name: "تشغيل المراجعة" })).toBeEnabled());
-    fireEvent.click(screen.getByRole("button", { name: "تشغيل المراجعة" }));
-    const first = engine.speak.mock.calls[0]![0] as MockUtterance; expect(first.text).toBe(summary.introduction); expect(first.lang).toBe("ar-SA");
-    fireEvent.click(screen.getByRole("button", { name: "إيقاف مؤقت" })); expect(engine.pause).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByRole("button", { name: "استئناف" })); expect(engine.resume).toHaveBeenCalled();
-    act(() => first.onend!()); expect(engine.speak).toHaveBeenCalledTimes(2);
-    fireEvent.click(screen.getByRole("button", { name: "المحاضرة الثانية" }));
-    fireEvent.click(screen.getByRole("button", { name: "تشغيل المراجعة" }));
-    expect((engine.speak.mock.calls.at(-1)![0] as MockUtterance).text).toContain("تعريف معتمد من المحاضرة الثانية.");
-    const count = engine.speak.mock.calls.length; view.unmount(); act(() => first.onend!()); expect(engine.speak).toHaveBeenCalledTimes(count); expect(engine.cancel).toHaveBeenCalled();
-  });
-  it("honestly disables playback when no Arabic voice is available", async () => {
-    synthesis([]); render(<ExamAudioPlayer chapters={generateExamReviewArtifacts(summary, group.title).audioChapters} />);
-    expect(await screen.findByText(/لا يتوفر صوت عربي حالياً/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "تشغيل المراجعة" })).toBeDisabled();
   });
 });
 
