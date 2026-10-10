@@ -10,3 +10,12 @@ export async function runStartupMaintenance({ refresh, onFailure, startWorker }:
   catch (error) { onFailure(error); }
   finally { startWorker(); }
 }
+
+/** Each review owns its transaction; stale source metadata must not block
+ * independent exam archives. Keep order to avoid racing import workers. */
+export async function runIndependentContentReviews(steps: Array<{ name: string; run: () => Promise<unknown> }>, onFailure: (name: string, error: unknown) => void): Promise<void> {
+  for (const step of steps) {
+    try { await step.run(); }
+    catch (error) { onFailure(step.name, error); }
+  }
+}

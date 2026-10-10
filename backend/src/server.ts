@@ -21,7 +21,7 @@ import { reviewOneDriveSources } from "./contentAutomation/reviewOneDriveSources
 import { ensureExamMaterialSchema } from "./examMaterials/schema.js";
 import { reviewRiskContent } from "./contentAutomation/reviewRiskContent.js";
 import { refreshAcademicSummaries } from "./examMaterials/refreshAcademicSummaries.js";
-import { runStartupMaintenance } from "./lib/startupMaintenance.js";
+import { runIndependentContentReviews, runStartupMaintenance } from "./lib/startupMaintenance.js";
 import { probeAcademicSpeech } from "./examMaterials/academicSpeech.js";
 
 initMonitoring();
@@ -58,9 +58,15 @@ async function refreshPublishedContent() {
   for (const source of generationSources) await getContentImportService().submitText({ actorId: source.actorId, text: source.text, title: legalLectureTitle(6), subjectId: LEGAL_SUBJECT_ID, lectureId: sixth.lectureId!, itemId: source.itemId });
   logger.info({ ...sixth, sourcesQueued: generationSources.length }, "legal_sixth_lecture_separated");
   logger.info({ courses: await refreshStudyCourses(getPool()) }, "study_courses_content_refreshed");
-  logger.info(await reviewOneDriveSources(getPool()), "onedrive_sources_reviewed");
-  logger.info(await reviewRiskContent(getPool()), "risk_content_source_reviewed");
-  logger.info(await refreshAcademicSummaries(getPool()), "academic_exam_summaries_refreshed");
+  await runIndependentContentReviews([
+    { name: "onedrive_sources", run: async () => { logger.info(await reviewOneDriveSources(getPool()), "onedrive_sources_reviewed"); } },
+    { name: "risk_content", run: async () => { logger.info(await reviewRiskContent(getPool()), "risk_content_source_reviewed"); } },
+    { name: "exam_archives", run: async () => { logger.info(await refreshAcademicSummaries(getPool()), "academic_exam_summaries_refreshed"); } },
+  ], (stage, error) => {
+    // Log a safe machine reason, never SQL values, private file text or tokens.
+    const reason = error instanceof Error && /^[a-z0-9_]{1,100}$/u.test(error.message) ? error.message : undefined;
+    logger.error({ stage, name: error instanceof Error ? error.name : "UnknownError", reason }, "published_content_review_failed");
+  });
 }
 
 // Bind explicitly to 0.0.0.0 — Railway's healthcheck prober connects over
