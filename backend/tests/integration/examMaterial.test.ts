@@ -287,7 +287,10 @@ describe("independent exam material archives", () => {
   it("generates grounded automatic questions for a new lecture and rejects unreadable or missing content atomically", async () => {
     const s = await seed(); const group = await s.generate([s.lectures[3]!]);
     expect(group.questionCount).toBeGreaterThan(1);
-    expect((await pool.query("select source_excerpt from questions q join quiz_questions qq on qq.question_id=q.id where qq.quiz_id=$1", [group.quizId])).rows.every(q => JSON.stringify(group.summary).includes(q.source_excerpt))).toBe(true);
+    const scientificText = group.summary.sections.map(section => section.text).join("\n").replace(/\s+/gu, " ");
+    for (const question of (await pool.query("select source_excerpt from questions q join quiz_questions qq on qq.question_id=q.id where qq.quiz_id=$1", [group.quizId])).rows) {
+      expect(scientificText).toContain(question.source_excerpt.replace(/\s+/gu, " "));
+    }
     const empty = await createLecture(pool, { subjectId: s.subject, title: "مصدر ناقص", status: "published", createdBy: s.admin });
     const url = `/api/v1/admin/subjects/${s.subject}/exam-material`;
     await request(s.app).post(url).set("Authorization", `Bearer ${s.tokens[0]}`).send({ lectureIds: [empty], requestId: randomUUID() }).expect(400);
@@ -550,9 +553,10 @@ describe("advanced exam review and challenge protection", () => {
 });
 
 describe("source-authorized academic MP3", () => {
-  const params = { chapter: "introduction", segment: "0", voice: "ar-IQ-RanaNeural" };
+  const audioParams = { segment: "0", voice: "ar-IQ-RanaNeural" };
   it("authorizes each source request before speech/cache access, including hidden or wrong-course groups", async () => {
     const s = await seed(), group = await s.generate(), provider = vi.spyOn(academicSpeechCache, "audio").mockResolvedValue(Buffer.from([255, 251, 1, 2]));
+    const params = { ...audioParams, chapter: group.review!.audioChapters[0]!.id };
     const url = `${s.path}/${group.id}/audio.mp3`;
     await request(s.app).get(url).query(params).expect(401);
     await request(s.app).get(`/api/v1/subjects/${s.other}/exam-material/${group.id}/audio.mp3`).set("Cookie", s.cookie).query(params).expect(404);
@@ -566,6 +570,7 @@ describe("source-authorized academic MP3", () => {
   });
   it("returns correct byte/suffix ranges for actual MP3 and rejects malformed ranges", async () => {
     const s = await seed(), group = await s.generate(), bytes = Buffer.from([255, 251, 1, 2, 3, 4]);
+    const params = { ...audioParams, chapter: group.review!.audioChapters[0]!.id };
     vi.spyOn(academicSpeechCache, "audio").mockResolvedValue(bytes);
     const call = (range?: string) => { const r = request(s.app).get(`${s.path}/${group.id}/audio.mp3`).set("Cookie", s.cookie).query(params); return range ? r.set("Range", range) : r; };
     await call().expect(200).expect("Content-Length", "6").expect("Cache-Control", "private, no-store");
@@ -576,6 +581,7 @@ describe("source-authorized academic MP3", () => {
   });
   it("accepts no client text, arbitrary voice, owner, or duplicate query and leaves failures retryable", async () => {
     const s = await seed(), group = await s.generate(), provider = vi.spyOn(academicSpeechCache, "audio").mockRejectedValueOnce(new AcademicSpeechUnavailable()).mockResolvedValue(Buffer.from([255, 251, 1]));
+    const params = { ...audioParams, chapter: group.review!.audioChapters[0]!.id };
     const url = `${s.path}/${group.id}/audio.mp3`;
     for (const input of [{ ...params, text: "untrusted" }, { ...params, ownerId: s.admin }, { ...params, voice: "unknown" }, { ...params, segment: "1.5" }, { ...params, voice: ["ar-IQ-RanaNeural", "ar-IQ-BasselNeural"] }]) await request(s.app).get(url).set("Cookie", s.cookie).query(input).expect(400);
     expect(provider).not.toHaveBeenCalled();
