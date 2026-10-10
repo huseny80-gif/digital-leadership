@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import type { ExamMaterialDetail, ExamMaterialGroup, ExamMaterialIndex } from "@shared/index";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
+import { ExamInstructorGuide } from "./ExamInstructorGuide";
 import { ExamMaterialQuiz } from "./ExamMaterialQuiz";
 import { ExamGroupTitle } from "./ExamGroupTitle";
 import { ExamAcademicSummary } from "./ExamAcademicSummary";
@@ -156,6 +157,7 @@ export function ExamMaterialWorkspace({ initialIndex, initialDetail }: { initial
           <div className={styles.contentHead}><span className={styles.eyebrow}>{historical ? "مراجعة مؤرشفة" : "أحدث مراجعة للمحاضرات"}</span><h2><ExamGroupTitle title={selectedDetail.title} /></h2><p className={styles.muted}>{selectedDetail.lectures.length} محاضرة · {selectedDetail.questionCount} سؤالًا</p>
             {historical && currentRevision ? <div className={styles.historicalNotice}><span>أنت تعرض مراجعة سابقة لهذه المجموعة.</span><button className={styles.quiet} onClick={() => chooseGroup(currentRevision.id)}>عرض أحدث مراجعة</button></div> : null}
             {initialIndex.canGenerate ? <div className={styles.refreshReview}><button className={styles.quiet} disabled={generating || selectedDetail.lectures.some(lecture => !initialIndex.lectures.some(current => current.id === lecture.id))} onClick={() => void generate(selectedDetail.lectures.map(lecture => lecture.id))}><PlatformIcon name="document" />{generating ? "جارٍ إعداد المراجعة…" : "إنشاء مراجعة محدّثة"}</button><span>تُحفظ المراجعة الحالية في الأرشيف.</span></div> : null}</div>
+          {initialIndex.canGenerate ? <ExamInstructorGuide key={`instructor-${selectedDetail.id}`} subjectId={subjectId} groupId={selectedDetail.id} /> : null}
           <div className={styles.innerTabs} role="tablist" aria-label="محتوى المجموعة">{contentTabs.map(item => <button key={item.id} id={`exam-${item.id}-tab`} role="tab" aria-selected={tab === item.id} aria-controls={`exam-${item.id}-panel`} tabIndex={tab === item.id ? 0 : -1} onClick={() => chooseTab(item.id)} onKeyDown={event => tabKeys(event, contentTabs.map(tab => tab.id), item.id, id => chooseTab(id as ExamMaterialTab))}><PlatformIcon name={item.icon} />{item.label}</button>)}</div>
           {tab === "summary" ? <ExamAcademicSummary key={selectedDetail.id} summary={selectedDetail.summary} subjectId={subjectId} groupId={selectedDetail.id} chapters={review!.audioChapters} /> : tab === "map" ? <ExamMindMap key={selectedDetail.id} map={review!.mindMap} /> : tab === "package" ? <ExamRevisionPackage key={selectedDetail.id} group={selectedDetail} /> : <div id="exam-quiz-panel" role="tabpanel" aria-labelledby="exam-quiz-tab"><ExamMaterialQuiz key={selectedDetail.id} group={selectedDetail} /></div>}
         </> : <div className={styles.empty}><PlatformIcon name="book" /><h2>لا توجد مجموعة امتحانية بعد</h2><p>{initialIndex.canGenerate ? "اختر المحاضرات أعلاه لبدء إعداد أول مجموعة." : "ستتوفر الملخصات والاختبارات هنا فور نشر مجموعة امتحانية."}</p></div>}

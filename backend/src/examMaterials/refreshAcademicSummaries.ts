@@ -12,7 +12,7 @@ interface LegacyGroup { id: string; subject_id: string; lecture_ids: string[]; c
 export async function refreshAcademicSummaries(pool: Pool) {
   const legacy = (await pool.query<LegacyGroup>(`select g.id,g.subject_id,g.lecture_ids,g.created_by
     from exam_material_groups g join subjects s on s.id=g.subject_id join quizzes q on q.id=g.quiz_id
-    where coalesce(g.summary->>'version','1') in ('1','2') and s.status='published' and s.deleted_at is null
+    where coalesce(g.summary->>'version','1') in ('1','2','3') and s.status='published' and s.deleted_at is null
     and q.status='published' and q.deleted_at is null and ${examGroupVisible}
     order by g.created_at,g.id`)).rows;
   const selections = new Map<string, LegacyGroup>();
@@ -29,7 +29,7 @@ export async function refreshAcademicSummaries(pool: Pool) {
       and q.status='published' and q.deleted_at is null and ${examGroupVisible} limit 1`, [group.subject_id, group.lecture_ids, String(examSummaryVersion)]);
     if (current.rowCount) { alreadyCurrent++; continue; }
     try {
-      const requestId = finquizRecordId("academic-exam-summary-v3:" + group.id);
+      const requestId = finquizRecordId("academic-exam-summary-v4:" + group.id);
       const review = await service.generate(group.subject_id, group.lecture_ids, requestId, group.created_by);
       reviews.push({ originalId: group.id, currentId: review.id, subjectId: group.subject_id });
     } catch (error) {
@@ -38,5 +38,5 @@ export async function refreshAcademicSummaries(pool: Pool) {
       issues.push({ groupId: group.id, code: error instanceof Error && "code" in error ? String(error.code) : "source_review_unavailable" });
     }
   }
-  return { key: "academic-exam-summary-v3-study-only-2026-10-09", legacyGroups: legacy.length, selections: groups.length, published: reviews.length, alreadyCurrent, reviews, issues };
+  return { key: "academic-exam-summary-v4-strict-files-2026-10-10", legacyGroups: legacy.length, selections: groups.length, published: reviews.length, alreadyCurrent, reviews, issues };
 }

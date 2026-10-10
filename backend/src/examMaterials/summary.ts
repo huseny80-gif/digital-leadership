@@ -1,23 +1,23 @@
 import type { ExamLectureSnapshot, ExamMaterialSummary, ExamSummaryTopic, ExamSummarySection } from "@shared/index";
-import { sourceFacts } from "../contentAutomation/questionGeneration.js";
 import { cleanSourceText } from "../contentAutomation/sourceText.js";
 import { hasBrokenSourceEncoding } from "../contentAutomation/sourceTextQuality.js";
 import { ValidationError } from "../lib/validation.js";
 
 /** Keep source wording and paragraph boundaries. No generated factual claims. */
 export function plainStudyText(value: string): string {
-  return cleanSourceText(value.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
+  return cleanSourceText(value.replace(/<(script|style|nav|form|button)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
     .replace(/<h([1-6])\b[^>]*>/gi, (_, level: string) => "\n\n" + "#".repeat(Number(level)) + " ")
     .replace(/<\/(?:td|th)>/gi, " | ").replace(/<\/?tr\b[^>]*>/gi, "\n")
     .replace(/<\/(?:p|div|li|h[1-6])>|<br\s*\/?\s*>/gi, "\n")
-    .replace(/<[^>]*>/g, " ")
+    .replace(/<\/?[a-z][^>]*>/gi, " ")
     .replace(/&#x([\da-f]+);/gi, (_, code: string) => String.fromCodePoint(Math.min(0x10ffff, parseInt(code, 16))))
     .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Math.min(0x10ffff, Number(code))))
     .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/[ \t]+/g, " "));
 }
 
-export const examSummaryVersion = 3;
+export const examSummaryVersion = 4;
 const normalizedTitle = (value: string) => value.normalize("NFKC")
+  .replace(/األ|اإل|اال/g, "ال")
   .replace(/[\u064B-\u065F\u0670\u0640]/g, "").replace(/[أإآ]/g, "ا")
   .replace(/^[\s#*•\d٠-٩.()\-–—:]+/u, "").replace(/\s+/g, " ").trim();
 
@@ -29,7 +29,7 @@ export function isAssessmentAppendixTitle(value: string): boolean {
     || /^(?:ال)?(?:اختبار|اختبارات|تقييم)\s+(?:ال)?(?:ذاتي|ذاتية|تفاعلي|تفاعلية|تدريبي|تدريبية|قصير|نهائي|مع\s+(?:الحلول|الاجابات))/u.test(title)
     || /^(?:(?:ال)?(?:دليل|بنك|قسم|نموذج|نماذج|مفتاح|مفاتيح)\s+)(?:ال)?(?:اسئلة|اجوبة|اجابات|حلول|تعليل|تعاليل|اختبارات)(?:\s|$|[:،\-–—])/u.test(title)
     || /^(?:ال)?(?:ملحق|ملاحق)(?:\s+\S+){0,3}[:\s\-–—]+(?:ال)?(?:اسئلة|اجوبة|اجابات|حلول|تعليل|تعاليل|اختبارات)/u.test(title)
-    || /^(?:ال)?(?:اسئلة\s+(?:ال)?(?:مراجعة|اختبار|تقييم|تدريب|مقالية|ختامية)|(?:اجابة|اجابات)\s+(?:ال)?(?:نموذجية|صحيحة)|حلول\s+(?:الاسئلة|التمارين)|تعليل|تعاليل)(?:\s|$|[:،\-–—])/u.test(title)
+    || /^(?:ال)?(?:اسئلة\s+(?:ال)?(?:مراجعة|اختبار|تقييم|تدريب|مقالية|ختامية|نقاشية)|(?:اجابة|اجابات)\s+(?:ال)?(?:نموذجية|صحيحة)|حلول\s+(?:الاسئلة|التمارين)|تعليل|تعاليل)(?:\s|$|[:،\-–—])/u.test(title)
     || /^(?:ال)?(?:اسئلة|اجوبة|اجابات|حلول|تمارين|تعاليل)(?:\s*(?:و(?:ال)?(?:اسئلة|اجوبة|اجابات|حلول|تعليل|تعاليل)))?\s*[:\-–—]?$/u.test(title)
     || /(?:^|[-_ ])(?:question[-_ ]?bank|answer[-_ ]?(?:key|guide)|solution[-_ ]?guide|(?:interactive|self)[-_ ]?(?:quiz|test))\b/i.test(title);
 }
@@ -37,24 +37,39 @@ export function isAssessmentAppendixTitle(value: string): boolean {
 function isAssessmentInstruction(value: string): boolean {
   const line = normalizedTitle(value);
   return isAssessmentAppendixTitle(line)
-    || /^(?:عدد الاسئلة|نوع الاسئلة|نمط الاختبار|نطاق (?:الاختبار|التركيز)|اختر (?:نمط|نوع) الاختبار|ابدا الاختبار|السؤال (?:التالي|السابق)|نص السؤال|اجابات صحيحة|الاجابة (?:النموذجية|الصحيحة)|معايير التقييم|عناصر التقييم|اعادة (?:الضبط|الاختبار)|صح(?:يح)?\s*(?:\/|و)\s*خطا|اختيار من متعدد فقط|اسئلة مقالية فقط|سيناريوهات تطبيقية فقط)(?:\s|$|[:،\-–—])/u.test(line)
+    || /^(?:عدد الاسئلة|نوع الاسئلة|نمط الاختبار|نطاق (?:الاختبار|التركيز)|اختر (?:نمط|نوع) الاختبار|ابدا الاختبار|السؤال (?:التالي|السابق)|نص السؤال|اجابات صحيحة|الاجابة (?:النموذجية|الصحيحة)|اعادة (?:الضبط|الاختبار)|صح(?:يح)?\s*(?:\/|و)\s*خطا|اختيار من متعدد فقط|اسئلة مقالية فقط|سيناريوهات تطبيقية فقط)(?:\s|$|[:،\-–—])/u.test(line)
     || /^(?:السؤال\s+(?:[0-9٠-٩]+|الاول|الثاني|الثالث)|[سq]\s*[0-9٠-٩]+\s*[:.)])/iu.test(line)
     || /^(?:المطلوب تسليمه|ملاحظة:.*(?:الاسئلة المقالية|الاجابة النموذجية)|ستحصل على تغذية راجعة|قارن اجابتك|اختر الاجابة الصحيحة)/u.test(line);
+}
+
+export function isAdministrativeTitle(value: string): boolean {
+  return /^(?:بيانات المحاضرة|معلومات المحاضرة|عن هذه المحاضرة|لمحة عامة عن محاضرة اليوم|خطة المحاضرة|اهداف المحاضرة|نواتج التعلم|الاهداف التعليمية|فهرس المحتويات|جدول المحتويات|قائمة المراجع|المراجع(?: والمصادر)?|المصادر(?: والمراجع)?|مواد مساندة|روابط اضافية|مرفقات المحاضرة|تعليمات استخدام (?:الملف|المنصة))\s*[:.]?$/u.test(normalizedTitle(value));
+}
+
+export function sourceHeading(value: string): string | null {
+  const title = value.trim(), normalized = normalizedTitle(title).replace(/^(?:اولا|ثانيا|ثالثا|رابعا|خامسا|سادسا)\s*[:：-]\s*/u, "");
+  if (title.length > 140 || /[.!؛]/u.test(title)) return null;
+  return /^(?:الفصل|المبحث|المحور|الوحدة|الجزء|القسم|مدخل|التعريف|المفهوم|المقدمة|مقدمة|الخاتمة|الخلاصة|الملخص|المراجع)(?:\s|$|[:：])/u.test(normalized) ? title : null;
 }
 
 /** Remove an entire appendix, including its controls and answer explanations.
  * Resume at the next sibling/parent scientific heading. Run per source before
  * combining documents so an appendix cannot swallow another lecture source. */
 export function studyContentText(value: string): string {
+  return studyContentLines(value).map(line => line.text).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/** Original line numbers refer to extracted file text, never invented PDF coordinates. */
+export function studyContentLines(value: string): Array<{ line: number; text: string }> {
   const lines = plainStudyText(value).split(/\n/);
-  const result: string[] = [];
+  const result: Array<{ line: number; text: string }> = [];
   let excludedDepth: number | null = null;
-  for (const line of lines) {
+  for (const [index, line] of lines.entries()) {
     const trimmed = line.trim();
     const heading = trimmed.match(/^(#{1,6})\s+(.+)$/u);
     const title = heading?.[2] ?? trimmed;
-    const depth = heading?.[1]?.length ?? (/^(?:الفصل|المبحث|المحور|الوحدة|القسم|الخاتمة|الخلاصة|المراجع)\s+.{2,100}$/u.test(trimmed) && !/[.!؟؛]/u.test(trimmed) ? 1 : null);
-    if (isAssessmentAppendixTitle(title)) {
+    const depth = heading?.[1]?.length ?? (sourceHeading(trimmed) || isAdministrativeTitle(title) ? 1 : null);
+    if (isAssessmentAppendixTitle(title) || isAdministrativeTitle(title)) {
       if (excludedDepth === null) excludedDepth = depth ?? Infinity;
       continue;
     }
@@ -66,9 +81,11 @@ export function studyContentText(value: string): string {
       excludedDepth = depth ?? Infinity;
       continue;
     }
-    result.push(line);
+    if (/^(?:--\s*\d+\s+of\s+\d+\s*--|(?:صفحة|Page)\s*\d+(?:\s*(?:من|of|\/)\s*\d+)?|[©®].*|جميع الحقوق محفوظة.*)$/iu.test(trimmed)) continue;
+    if (/^(?:إعداد|اعداد|تقديم|إلقاء|القاء|المحاضر|اسم المحاضر|تاريخ المحاضرة|البريد الإلكتروني)\s*[:：]/u.test(trimmed)) continue;
+    result.push({ line: index + 1, text: line });
   }
-  return result.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return result;
 }
 
 /** Evaluate each published source independently. A failed PDF transcription
@@ -85,7 +102,7 @@ export function lectureSelectionLabel(numbers: number[]): string {
     ? `${sorted[0]}-${sorted.at(-1)}` : sorted.join("، ");
 }
 
-const identity = (text: string) => text.normalize("NFKC").replace(/[\u064B-\u065F\u0670]/g, "").replace(/\s+/g, " ").trim();
+const identity = (text: string) => text.normalize("NFC").replace(/\s+/g, " ").trim();
 const essential = /تعريف|مفهوم|يتكون|تتكون|يُعرف|يعرف|يعني|تعني|مراحل|خطوات|أنواع|أقسام|يجب|يشترط|بشرط|ليس|ليست|إلا|إذا|عندما|مثال|حالة|المادة\s|[0-9٠-٩]|(?<!\p{L})(?:لا|لم|لن|عدم|دون|غير|باستثناء)(?!\p{L})/u;
 
 /** Preserve every source paragraph/topic, rather than sampling a long
@@ -106,20 +123,30 @@ function organizeTopics(text: string): ExamSummaryTopic[] {
   const topics: Array<{ title: string; paragraphs: string[]; originals: string[] }> = [];
   const seen = new Set<string>();
   let current = { title: "العرض الأكاديمي للمحاضرة", paragraphs: [] as string[], originals: [] as string[] };
-  for (const line of text.split(/\n+/).map(line => line.trim()).filter(Boolean)) {
-    const heading = line.match(/^#{1,6}\s+(.{2,150})$/u)?.[1]
-      ?? (/^(?:الفصل|المبحث|المحور|الوحدة|الجزء)\s+.{2,100}$/u.test(line) && !/[.!؟؛]/u.test(line) ? line : null);
+  let pending: string[] = [];
+  const flush = () => {
+    const paragraph = pending.join("\n").trim(); pending = [];
+    if (!paragraph) return;
+    const key = identity(paragraph);
+    if (seen.has(key)) return;
+    seen.add(key);
+    current.paragraphs.push(condenseParagraph(paragraph)); current.originals.push(paragraph);
+  };
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    const heading = line.match(/^#{1,6}\s+(.{2,150})$/u)?.[1] ?? sourceHeading(line);
     if (heading) {
+      flush();
       if (current.paragraphs.length) topics.push(current);
       current = { title: heading.trim(), paragraphs: [], originals: [] };
-      continue;
+    } else if (!line) flush();
+    else {
+      pending.push(line);
+      // Sentence-final punctuation is a real boundary; a PDF line wrap is not.
+      if (/[.!؟؛]$/u.test(line) && !/^\s*(?:[-•●]|[0-9٠-٩]+[.)])/u.test(line)) flush();
     }
-    const key = identity(line);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    current.paragraphs.push(condenseParagraph(line));
-    current.originals.push(line);
   }
+  flush();
   if (current.paragraphs.length) topics.push(current);
   // Merge recurring source headings without discarding their distinct ideas.
   const merged = new Map<string, ExamSummaryTopic & { original: string }>();
@@ -136,7 +163,7 @@ function organizeTopics(text: string): ExamSummaryTopic[] {
 function reviewPoints(topics: ExamSummaryTopic[]): string[] {
   // Balance the review checklist across all topics, including the last ones.
   const buckets = topics.map(topic => {
-    const facts = sourceFacts(topic.text);
+    const facts = topic.text.split(/\n{2,}|(?<=[.!؟؛])\s+/u).map(line => line.trim()).filter(line => line.length >= 40 && line.length <= 900 && !/https?:\/\/|@|©/u.test(line));
     return facts.map((text, index) => ({ text, index, score: essential.test(text) ? 2 : 1 }))
       .sort((a, b) => b.score - a.score || a.index - b.index).slice(0, 3).sort((a, b) => a.index - b.index).map(fact => fact.text);
   });
@@ -148,18 +175,18 @@ function reviewPoints(topics: ExamSummaryTopic[]): string[] {
   return result;
 }
 
-export function compileExamSummary(subject: string, lectures: Array<ExamLectureSnapshot & Pick<ExamSummarySection, "objectives" | "concepts"> & { text: string }>): ExamMaterialSummary {
+export function compileExamSummary(_subject: string, lectures: Array<ExamLectureSnapshot & Pick<ExamSummarySection, "objectives" | "concepts"> & { text: string }>): ExamMaterialSummary {
   return {
     version: examSummaryVersion,
-    introduction: `مراجعة أكاديمية لمادة «${subject}» تستند إلى المحاضرات المختارة ومصادرها المنشورة. يعرض الملخص الأفكار في سياقها، وينظم المفاهيم والمحاور والتفاصيل التطبيقية وفق تسلسل المادة، مع نقاط مركزة للمراجعة وربط كل محاضرة بمصدرها الأصلي.`,
+    introduction: "",
     sections: lectures.map(lecture => {
       const text = studyContentText(lecture.text);
       if (text.length < 70 || hasBrokenSourceEncoding(text)) throw new ValidationError(`لا يتوفر محتوى واضح كافٍ لتلخيص «${lecture.title}». أضف ملخصًا أو مصدرًا مقروءًا للمحاضرة.`);
       const topics = organizeTopics(text);
       return { id: lecture.id, title: lecture.title, number: lecture.number, text: topics.map(topic => topic.text).join("\n\n"), topics,
         keyPoints: reviewPoints(topics),
-        ...(lecture.objectives?.length ? { objectives: lecture.objectives.map(studyContentText).filter(Boolean) } : {}),
-        ...(lecture.concepts?.length ? { concepts: lecture.concepts.filter(concept => !isAssessmentInstruction(concept.term)).map(concept => ({ term: concept.term, definition: studyContentText(concept.definition) })).filter(concept => concept.definition) } : {}) };
+        // Catalog objectives/concepts are not file evidence. Never import them.
+      };
     }),
   };
 }
@@ -168,8 +195,8 @@ export function compileExamSummary(subject: string, lectures: Array<ExamLectureS
  * newer lecture sources or changing their quiz, answer keys, scores or stored
  * snapshot. This also protects readers before the startup refresh completes. */
 export function studyOnlyExamSummary(summary: ExamMaterialSummary): ExamMaterialSummary {
-  return { ...summary, sections: summary.sections.map(section => {
-    const topics = section.topics?.filter(topic => !isAssessmentInstruction(topic.title)).map(topic => {
+  return { ...summary, introduction: "", sections: summary.sections.map(section => {
+    const topics = section.topics?.filter(topic => !isAssessmentInstruction(topic.title) && !isAdministrativeTitle(topic.title)).map(topic => {
       const text = studyContentText(topic.text), details = topic.details ? studyContentText(topic.details) : undefined;
       return { title: topic.title, text, ...(details && details !== text ? { details } : {}) };
     }).filter(topic => topic.text);
@@ -181,7 +208,7 @@ export function studyOnlyExamSummary(summary: ExamMaterialSummary): ExamMaterial
     // appendix fragments too; preserve independently authored scientific notes.
     const cleanField = (value: string) => {
       const clean = studyContentText(value), key = identity(clean);
-      return key && original.includes(key) && !scientific.includes(key) ? "" : clean;
+      return key && scientific.includes(key) && !(original.includes(key) && !scientific.includes(key)) ? clean : "";
     };
     return { ...section, text,
       ...(section.topics ? { topics: topics ?? [] } : {}),
