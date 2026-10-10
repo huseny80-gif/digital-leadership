@@ -55,3 +55,39 @@ describe("exam challenge and PDF proxies", () => {
     expect((await GET(new Request("http://test/api/exam-material?userId=other"), ctx([id, id, "review-package.pdf"]))).status).toBe(400);
   });
 });
+
+describe("authorized neural MP3 proxy", () => {
+  const query = "chapter=introduction&segment=0&voice=ar-IQ-RanaNeural";
+  it("streams actual binary audio and preserves Safari byte ranges and chosen voice", async () => {
+    vi.mocked(apiGetDownload).mockResolvedValue(new Response(new Uint8Array([255, 251, 1]), { status: 206, headers: { "content-type": "audio/mpeg", "content-range": "bytes 0-2/100", "content-length": "3", "x-audio-voice": "ar-IQ-RanaNeural" } }));
+    const response = await GET(new Request(`http://test/api/exam-material?${query}`, { headers: { Range: "bytes=0-2" } }), ctx([id, id, "audio.mp3"]));
+    expect(apiGetDownload).toHaveBeenCalledWith(`/api/v1/subjects/${id}/exam-material/${id}/audio.mp3?${query}`, { range: "bytes=0-2" });
+    expect(response.status).toBe(206); expect(response.headers.get("content-range")).toBe("bytes 0-2/100");
+    expect(response.headers.get("cache-control")).toBe("private, no-store"); expect(response.headers.get("x-audio-voice")).toBe("ar-IQ-RanaNeural");
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(new Uint8Array([255, 251, 1]));
+  });
+  it.each(["voice=injected", "chapter=bad", "segment=-1", "segment=1.5", "segment=100000", "text=untrusted", "ownerId=other", "voice=ar-IQ-BasselNeural&voice=ar-IQ-RanaNeural"])("rejects forged or ambiguous query %s before calling the backend", async invalid => {
+    const url = new URL(`http://test/api/exam-material?${query}`);
+    const part = new URLSearchParams(invalid); for (const key of part.keys()) url.searchParams.delete(key);
+    for (const [key, value] of part) url.searchParams.append(key, value);
+    expect((await GET(new Request(url), ctx([id, id, "audio.mp3"]))).status).toBe(400); expect(apiGetDownload).not.toHaveBeenCalled();
+  });
+  it("preserves authorization/provider errors instead of silently returning device audio", async () => {
+    vi.mocked(apiGetDownload).mockRejectedValue(new ApiError({ error: { code: "forbidden", message: "الدخول غير متاح." } }, 403));
+    expect((await GET(new Request(`http://test/api/exam-material?${query}`), ctx([id, id, "audio.mp3"]))).status).toBe(403);
+    vi.mocked(apiGetDownload).mockRejectedValue(new ApiError({ error: { code: "audio_unavailable", message: "أعد المحاولة" } }, 503));
+    expect((await GET(new Request(`http://test/api/exam-material?${query}`), ctx([id, id, "audio.mp3"]))).status).toBe(503);
+  });
+});
+
+describe("preserved academic narration exports", () => {
+  it("downloads the authorized prepared text and forwards the existing JSON metadata route", async () => {
+    vi.mocked(apiGetDownload).mockResolvedValue(new Response("مُراجَعَة أكاديمية.", { headers: { "content-type": "text/plain; charset=utf-8" } }));
+    const text = await GET(new Request("http://test/api/exam-material"), ctx([id, id, "review-narration.txt"]));
+    expect(await text.text()).toBe("مُراجَعَة أكاديمية."); expect(text.headers.get("cache-control")).toBe("private, no-store");
+    vi.mocked(apiGet).mockResolvedValue({ data: { language: "ar-IQ", chapters: [] } });
+    expect((await GET(new Request("http://test/api/exam-material"), ctx([id, id, "review-narration.json"]))).status).toBe(200);
+    expect(apiGet).toHaveBeenCalledWith(`/api/v1/subjects/${id}/exam-material/${id}/review-narration.json`);
+    expect((await GET(new Request("http://test/api/exam-material?text=forged"), ctx([id, id, "review-narration.txt"]))).status).toBe(400);
+  });
+});

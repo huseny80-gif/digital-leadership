@@ -9,13 +9,14 @@ export async function apiPostDownload(path: string, body: unknown): Promise<Resp
   return requestDownload(path, "POST", body);
 }
 
-export async function apiGetDownload(path: string): Promise<Response> {
-  return requestDownload(path, "GET");
+export async function apiGetDownload(path: string, options?: { range?: string }): Promise<Response> {
+  return requestDownload(path, "GET", undefined, options?.range);
 }
 
-async function requestDownload(path: string, method: "GET" | "POST", body?: unknown): Promise<Response> {
+async function requestDownload(path: string, method: "GET" | "POST", body?: unknown, range?: string): Promise<Response> {
   const token = await getCurrentAccessToken();
   const headers: Record<string, string> = method === "POST" ? { "content-type": "application/json" } : {};
+  if (range) headers.range = range;
   if (token) headers.authorization = `Bearer ${token}`;
   else {
     const cookie = await readGuestSessionCookieValue();

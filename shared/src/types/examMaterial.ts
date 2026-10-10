@@ -40,7 +40,12 @@ export interface ExamMindMapNode {
   lectureId: string | null;
 }
 export interface ExamMindMapEdge { from: string; to: string; kind: "contains" | "shared" }
-export interface ExamNarrationSegment { text: string; kind: "heading" | "body"; pauseAfterMs: number }
+export interface ExamNarrationSegment {
+  kind: "title" | "heading" | "body";
+  /** Prepared spoken text only; the academic source remains unchanged. */
+  text: string;
+  pauseAfterMs: number;
+}
 export interface ExamAudioChapter { id: string; title: string; lectureId: string | null; chunks: string[]; segments?: ExamNarrationSegment[] }
 export interface ExamReviewArtifacts {
   generator: "source-mock-v1";

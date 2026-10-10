@@ -9,11 +9,11 @@ import { examSummaryPrintDocument } from "@/components/printing/printDocuments";
 import styles from "./examMaterial.module.css";
 import { ExamAudioPlayer } from "./ExamAudioPlayer";
 
-export function ExamAcademicSummary({ summary, subjectId, groupId, chapters }: { summary: ExamMaterialSummary; subjectId: string; groupId: string; chapters?: ExamAudioChapter[] }) {
+export function ExamAcademicSummary({ summary, subjectId, groupId, chapters }: { summary: ExamMaterialSummary; subjectId: string; groupId?: string; chapters?: ExamAudioChapter[] }) {
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   async function downloadNarration() {
-    if (downloadBusy) return;
+    if (downloadBusy || !groupId) return;
     setDownloadBusy(true); setDownloadError(null);
     try {
       const response = await fetch(`/api/exam-material/${subjectId}/${encodeURIComponent(groupId)}/review-narration.txt`, { cache: "no-store" });
@@ -29,9 +29,9 @@ export function ExamAcademicSummary({ summary, subjectId, groupId, chapters }: {
   }, []);
   return <article id="exam-summary-panel" role="tabpanel" aria-labelledby="exam-summary-tab" className={styles.summary}>
     <FloatingPdfButton label="طباعة الملخص الشامل PDF" document={examSummaryPrintDocument(summary)} />
-    <div className={styles.summaryActions}><button type="button" className={styles.quiet} disabled={downloadBusy || !chapters?.length} onClick={() => void downloadNarration()}><PlatformIcon name="download" />{downloadBusy ? "جارٍ تجهيز النص…" : "تنزيل نص السرد الأكاديمي"}</button>{downloadError ? <span className={styles.error} role="alert">{downloadError}</span> : null}</div>
+    <div className={styles.summaryActions}><button type="button" className={styles.quiet} disabled={downloadBusy || !chapters?.length || !groupId} onClick={() => void downloadNarration()}><PlatformIcon name="download" />{downloadBusy ? "جارٍ تجهيز النص…" : "تنزيل نص السرد الأكاديمي"}</button>{downloadError ? <span className={styles.error} role="alert">{downloadError}</span> : null}</div>
     <div className={styles.summaryCover}><span className={styles.eyebrow}>المادة الامتحانية · الملخص الشامل</span><h3>مراجعة أكاديمية للمحاضرات المختارة</h3><p>{summary.introduction}</p></div>
-    {chapters?.length ? <ExamAudioPlayer chapters={chapters} /> : null}
+    {chapters?.length && groupId ? <ExamAudioPlayer chapters={chapters} subjectId={subjectId} groupId={groupId} /> : null}
     <nav className={styles.summaryIndex} aria-label="فهرس الملخص"><h4>محتويات المراجعة</h4><ol>{summary.sections.map(section => <li key={section.id}><a href={`#summary-lecture-${section.id}`}><span className={styles.lectureNumber}>{section.number}</span><span>{section.title}</span><PlatformIcon name="arrow" /></a></li>)}</ol></nav>
     {summary.sections.map(section => <section id={`summary-lecture-${section.id}`} key={section.id} className={styles.summarySection}>
       <div className={styles.sectionHead}><div><span className={styles.eyebrow}>المحاضرة {section.number}</span><h3>{section.title}</h3></div><Link href={`/subjects/${subjectId}/lectures/${section.id}`} className={styles.sourceLink}>المحاضرة الأصلية <PlatformIcon name="arrow" /></Link></div>

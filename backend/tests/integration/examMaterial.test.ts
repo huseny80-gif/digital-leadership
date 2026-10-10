@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Pool } from "pg";
 import { PDFParse } from "pdf-parse";
 import request from "supertest";
@@ -19,6 +19,7 @@ import { refreshStudyCourses } from "../../src/contentAutomation/refreshStudyCou
 import { reviewOneDriveSources } from "../../src/contentAutomation/reviewOneDriveSources.js";
 import { reviewAiAssessments } from "../../src/contentAutomation/reviewAiAssessments.js";
 import { hasBrokenSourceEncoding } from "../../src/contentAutomation/sourceTextQuality.js";
+import { academicSpeechCache, AcademicSpeechUnavailable } from "../../src/examMaterials/academicSpeech.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const source = "تتضمن إدارة المخاطر تحديد الأحداث المحتملة وتحليل الاحتمالية والأثر قبل اختيار خطة الاستجابة المناسبة لحماية أهداف المؤسسة.\nتساعد مصفوفة المخاطر على ترتيب الأولويات وتوجيه الموارد نحو المخاطر ذات التأثير المرتفع بصورة منتظمة داخل المؤسسة.\nيجب توثيق الإجراءات ومراجعة النتائج مع فريق العمل لتحديث خطة المخاطر ومتابعة فعالية الاستجابة والتحسين المستمر.";
@@ -28,6 +29,7 @@ beforeAll(async () => {
 });
 beforeEach(async () => { await pool.query("truncate users,audit_logs restart identity cascade"); });
 afterAll(async () => { await pool.end(); });
+afterEach(() => { vi.restoreAllMocks(); });
 
 async function seed() {
   const admin = await createUser(pool, { email: "admin@example.com", roleName: "admin", providerSubject: "exam-admin" });
@@ -487,4 +489,40 @@ describe("advanced exam review and challenge protection", () => {
     await pool.query("update lectures set status='draft' where id=$1", [s.lectures[0]]);
     await request(s.app).get(url).set("Cookie", s.cookie).expect(404);
   }, 20000);
+});
+
+describe("source-authorized academic MP3", () => {
+  const params = { chapter: "introduction", segment: "0", voice: "ar-IQ-RanaNeural" };
+  it("authorizes each source request before speech/cache access, including hidden or wrong-course groups", async () => {
+    const s = await seed(), group = await s.generate(), provider = vi.spyOn(academicSpeechCache, "audio").mockResolvedValue(Buffer.from([255, 251, 1, 2]));
+    const url = `${s.path}/${group.id}/audio.mp3`;
+    await request(s.app).get(url).query(params).expect(401);
+    await request(s.app).get(`/api/v1/subjects/${s.other}/exam-material/${group.id}/audio.mp3`).set("Cookie", s.cookie).query(params).expect(404);
+    await request(s.app).get(url).set("Cookie", s.cookie).query({ ...params, chapter: randomUUID() }).expect(404);
+    await request(s.app).get(url).set("Cookie", s.cookie).query({ ...params, segment: "9999" }).expect(404);
+    expect(provider).not.toHaveBeenCalled();
+    await request(s.app).get(url).set("Cookie", s.cookie).query(params).expect(200).expect("Content-Type", /audio\/mpeg/).expect("X-Audio-Voice", "ar-IQ-RanaNeural");
+    expect(provider).toHaveBeenCalledWith(group.review!.audioChapters[0]!.segments![0]!.text, "ar-IQ-RanaNeural");
+    provider.mockClear(); await pool.query("update quizzes set status='draft' where id=$1", [group.quizId]);
+    await request(s.app).get(url).set("Cookie", s.cookie).query(params).expect(404); expect(provider).not.toHaveBeenCalled();
+  });
+  it("returns correct byte/suffix ranges for actual MP3 and rejects malformed ranges", async () => {
+    const s = await seed(), group = await s.generate(), bytes = Buffer.from([255, 251, 1, 2, 3, 4]);
+    vi.spyOn(academicSpeechCache, "audio").mockResolvedValue(bytes);
+    const call = (range?: string) => { const r = request(s.app).get(`${s.path}/${group.id}/audio.mp3`).set("Cookie", s.cookie).query(params); return range ? r.set("Range", range) : r; };
+    await call().expect(200).expect("Content-Length", "6").expect("Cache-Control", "private, no-store");
+    await call("bytes=0-1").expect(206).expect("Content-Range", "bytes 0-1/6").expect("Content-Length", "2");
+    await call("bytes=-2").expect(206).expect("Content-Range", "bytes 4-5/6");
+    await call("bytes=2-").expect(206).expect("Content-Range", "bytes 2-5/6");
+    for (const range of ["bytes=-0", "bytes=-", "bytes=9-", "bytes=3-1", "bytes=0-1,3-4"]) await call(range).expect(416).expect("Content-Range", "bytes */6");
+  });
+  it("accepts no client text, arbitrary voice, owner, or duplicate query and leaves failures retryable", async () => {
+    const s = await seed(), group = await s.generate(), provider = vi.spyOn(academicSpeechCache, "audio").mockRejectedValueOnce(new AcademicSpeechUnavailable()).mockResolvedValue(Buffer.from([255, 251, 1]));
+    const url = `${s.path}/${group.id}/audio.mp3`;
+    for (const input of [{ ...params, text: "untrusted" }, { ...params, ownerId: s.admin }, { ...params, voice: "unknown" }, { ...params, segment: "1.5" }, { ...params, voice: ["ar-IQ-RanaNeural", "ar-IQ-BasselNeural"] }]) await request(s.app).get(url).set("Cookie", s.cookie).query(input).expect(400);
+    expect(provider).not.toHaveBeenCalled();
+    const failure = await request(s.app).get(url).set("Cookie", s.cookie).query(params).expect(503);
+    expect(failure.body.error.code).toBe("audio_unavailable"); expect(JSON.stringify(failure.body)).not.toContain("speech.platform");
+    await request(s.app).get(url).set("Authorization", `Bearer ${s.tokens[1]}`).query(params).expect(200);
+  });
 });

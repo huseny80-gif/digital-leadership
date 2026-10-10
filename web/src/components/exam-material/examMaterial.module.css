@@ -115,6 +115,10 @@
 .score small { font-size: 1rem; align-self: center; }
 .audioPlayer { padding: 1rem; margin-block: 1rem 1.5rem; border-radius: 16px; border: 1px solid rgba(105, 208, 222, .25); background: linear-gradient(125deg, rgba(19, 89, 112, .25), rgba(26, 38, 66, .6)); line-height: 1.8; }
 .audioPlayer h3 { display: flex; gap: .5rem; align-items: center; font-size: 1rem; margin: .4rem 0; }
+.hiddenAudio { display: none; }
+.narrationBadges { display: flex; gap: .4rem; flex-wrap: wrap; margin-block: .5rem .8rem; }
+.narrationBadges span { font-size: .72rem; color: #c7f2f4; border: 1px solid rgba(77, 194, 204, .25); background: rgba(23, 123, 133, .14); padding: .2rem .65rem; border-radius: 99px; }
+.audioStatus { color: #b4d6e1; font-size: .8rem; min-height: 1.5em; margin-block: .7rem .2rem; }
 .audioPlayer svg, .mapToolbar svg, .mapRoot svg, .mapLecture svg, .packageItems svg, .experienceModes svg, .countdown svg { width: 21px; height: 21px; flex-shrink: 0; }
 .audioControls { display: flex; flex-wrap: wrap; gap: .6rem; align-items: end; }
 .audioControls label { display: grid; gap: .3rem; font-size: .8rem; max-width: 100%; }

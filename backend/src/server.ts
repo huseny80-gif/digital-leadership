@@ -21,6 +21,7 @@ import { reviewOneDriveSources } from "./contentAutomation/reviewOneDriveSources
 import { ensureExamMaterialSchema } from "./examMaterials/schema.js";
 import { reviewRiskContent } from "./contentAutomation/reviewRiskContent.js";
 import { refreshAcademicSummaries } from "./examMaterials/refreshAcademicSummaries.js";
+import { probeAcademicSpeech } from "./examMaterials/academicSpeech.js";
 
 initMonitoring();
 
@@ -67,6 +68,10 @@ if (env.NODE_ENV === "production" && env.DATABASE_URL) {
 // itself sees as "listening" but the prober can never reach.
 app.listen(env.PORT, "0.0.0.0", () => {
   logger.info({ port: env.PORT }, "backend_listening");
+  if (env.NODE_ENV === "production") void probeAcademicSpeech().then(voices => {
+    if (voices.every(voice => voice.ready)) logger.info({ voices }, "academic_narration_provider_checked");
+    else logger.warn({ voices }, "academic_narration_provider_checked");
+  });
 });
 
 if (env.DATABASE_URL) {
