@@ -21,6 +21,7 @@ import { reviewOneDriveSources } from "./contentAutomation/reviewOneDriveSources
 import { ensureExamMaterialSchema } from "./examMaterials/schema.js";
 import { reviewRiskContent } from "./contentAutomation/reviewRiskContent.js";
 import { refreshAcademicSummaries } from "./examMaterials/refreshAcademicSummaries.js";
+import { runStartupMaintenance } from "./lib/startupMaintenance.js";
 import { probeAcademicSpeech } from "./examMaterials/academicSpeech.js";
 
 initMonitoring();
@@ -42,7 +43,7 @@ if (env.DATABASE_URL) {
   logger.info("exam_material_schema_ready");
 }
 
-if (env.NODE_ENV === "production" && env.DATABASE_URL) {
+async function refreshPublishedContent() {
   const result = await synchronizeFinquizCore(getPool());
   logger.info(result, "finquiz_core_content_synchronized");
   const moved = await relocateIso27001Roadmap(getPool());
@@ -68,13 +69,15 @@ if (env.NODE_ENV === "production" && env.DATABASE_URL) {
 // itself sees as "listening" but the prober can never reach.
 app.listen(env.PORT, "0.0.0.0", () => {
   logger.info({ port: env.PORT }, "backend_listening");
+  void runStartupMaintenance({
+    refresh: env.NODE_ENV === "production" && env.DATABASE_URL ? refreshPublishedContent : undefined,
+    onFailure: error => logger.error({ name: error instanceof Error ? error.name : "UnknownError" }, "published_content_refresh_failed"),
+    startWorker: () => {
+      if (env.DATABASE_URL) { startContentImportWorker(); logger.info("content_import_worker_started"); }
+    },
+  });
   if (env.NODE_ENV === "production") void probeAcademicSpeech().then(voices => {
     if (voices.every(voice => voice.ready)) logger.info({ voices }, "academic_narration_provider_checked");
     else logger.warn({ voices }, "academic_narration_provider_checked");
   });
 });
-
-if (env.DATABASE_URL) {
-  startContentImportWorker();
-  logger.info("content_import_worker_started");
-}
