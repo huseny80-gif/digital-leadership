@@ -30,6 +30,22 @@ describe("source-preserving summary presentation", () => {
     for (const fact of facts) expect(display.text.split(fact).length - 1).toBe(1);
     expect(display.text).toContain(facts[49]);
   });
+  it("merges overlapping copies of the same named topic while retaining later source additions", () => {
+    const shared = "يجب توثيق الاستجابة.", first = "تحفظ السجلات لمدة 3 سنوات.", last = "تراجع صلاحيات الوصول كل شهر.";
+    const original = { ...section, topics: [{ title: "الاستجابة", text: shared, details: shared + " " + first }, { title: "الاستجابة", text: shared + " " + last, details: shared + " " + first + " " + last }] };
+    const archived = structuredClone(original), display = examSectionPresentation(original);
+    expect(display.topics).toHaveLength(1);
+    for (const fact of [shared, first, last]) expect(display.text.split(fact).length - 1).toBe(1);
+    expect(original).toEqual(archived);
+  });
+  it("prefers the complete numbered source list over an identical prose copy without erasing repeated ordered steps", () => {
+    const fact = "يجب توثيق الاستجابة.", ordered = "1. راجع المصدر.\n2. عدل القرار.\n3. راجع المصدر.";
+    const original = { ...section, keyPoints: [fact], topics: [{ title: "الاستجابة", text: fact + "\n\n" + ordered + "\n\n٣. " + fact }] };
+    const display = examSectionPresentation(original);
+    expect(display.text.split(fact).length - 1).toBe(1); expect(display.text).toContain("٣. " + fact);
+    expect(display.text).toContain(ordered); expect(display.keyPoints).toEqual([]);
+    expect(uniqueStudyText("القيمة 1.0.", ["القيمة 1."])).toBe("القيمة 1.0.");
+  });
   it("deduplicates a glossary rendered in the body without discarding its concept-map definitions", () => {
     const summary: ExamMaterialSummary = { introduction: "", sections: [{ ...section, keyPoints: [], topics: [{ title: "المفاهيم والمصطلحات الأساسية", text: "السجل: توثيق معتمد للإجراء." }] }] };
     const display = examSectionPresentation(summary.sections[0]!);

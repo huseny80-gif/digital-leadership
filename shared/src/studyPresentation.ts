@@ -48,13 +48,30 @@ export function uniqueStudyText(text: string, preceding: string[] = []): string 
 export function examSectionPresentation(section: ExamSummarySection): ExamSummarySection {
   const body = new Prose(), topicKeys = new Set<string>();
   const topics: ExamSummaryTopic[] = [];
+  const contexts = new Map<string, { prose: Prose; topic?: ExamSummaryTopic }>();
+  for (const topic of section.topics ?? []) {
+    const title = identity(topic.title), context = contexts.get(title) ?? { prose: new Prose() };
+    contexts.set(title, context);
+    // Keep the complete numbered source item rather than a second, unnumbered
+    // copy of the same prose. The ordered source itself is never abbreviated.
+    for (const value of [topic.text, topic.details ?? ""]) for (const paragraph of paragraphs(value)) {
+      const item = paragraph.match(/^[0-9٠-٩]+[.)]\s+([\s\S]+)$/u);
+      if (item) { context.prose.remember(item[1]!); body.remember(item[1]!); }
+    }
+  }
   for (const topic of section.topics ?? []) {
     const key = [topic.title, topic.text, topic.details ?? ""].map(identity).join("\0");
     if (topicKeys.has(key)) continue; topicKeys.add(key);
     // Distinct topic contexts retain their own explanations.
-    const prose = new Prose(), text = prose.retain(topic.text), details = topic.details ? prose.retain(topic.details) : "";
+    const title = identity(topic.title);
+    const context = contexts.get(title)!;
+    const text = context.prose.retain(topic.text), details = topic.details ? context.prose.retain(topic.details) : "";
     if (!text && !details) continue;
-    topics.push({ title: topic.title, text: text || details, ...(text && details ? { details } : {}) });
+    if (context.topic) context.topic.details = [context.topic.details, text, details].filter(Boolean).join("\n\n");
+    else {
+      context.topic = { title: topic.title, text: text || details, ...(text && details ? { details } : {}) };
+      topics.push(context.topic);
+    }
     body.remember(text); body.remember(details);
   }
   const text = topics.length ? topics.map(topic => [topic.text, topic.details].filter(Boolean).join("\n\n")).join("\n\n") : uniqueStudyText(section.text);
