@@ -31,6 +31,10 @@ export function examMaterialRoutes(): Router {
       res.status(201).json({ data: await service().generate(req.params.subjectId as string, parsed.data.lectureIds, parsed.data.requestId, req.user!.id) });
     } catch (error) { next(error); }
   });
+  router.get("/admin/subjects/:subjectId/exam-material/:groupId/instructor-guide", requireAdmin, requireUuidParam("subjectId"), requireUuidParam("groupId"), async (req, res, next) => {
+    try { res.json({ data: await service().instructorGuide(req.params.subjectId as string, req.params.groupId as string) }); }
+    catch (error) { next(error); }
+  });
   router.get("/subjects/:subjectId/exam-material", requireLearnerPrincipal, requireUuidParam("subjectId"), async (req, res, next) => {
     try { res.json({ data: await service().index(req.params.subjectId as string, req.user?.role === "admin", parsePagination(req.query)) }); }
     catch (error) { next(error); }

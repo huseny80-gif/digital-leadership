@@ -106,3 +106,10 @@ Current full order:
     to preserve sessions, results and progress. Existing primary token hashes
     and active links are unchanged. Startup applies it idempotently under a
     transaction and advisory lock before serving requests.
+
+24. `00000000000024_exam_challenge.sql` — adds server-authoritative timed
+    exam attempts. Apply after 22; existing learning attempts remain valid.
+
+25. `00000000000025_exam_instructor_guides.sql` — stores instructor discussion
+    guides separately from learner-facing exam groups. Apply after 22. RLS
+    denies all browser roles; the backend additionally requires admin access.

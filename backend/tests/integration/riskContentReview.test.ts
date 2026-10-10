@@ -5,7 +5,9 @@ import request from "supertest";
 import type { QuestionForAttempt } from "@shared/index";
 import { createApp } from "../../src/app.js";
 import { synchronizeFinquizCore } from "../../src/finquiz/synchronizeCore.js";
-import { manifest, subjectMapping } from "../../src/finquiz/catalog.js";
+import { manifest, subjectMapping, catalogRoot } from "../../src/finquiz/catalog.js";
+import { readAsset } from "../../src/finquiz/assetFiles.js";
+import { getStorageProvider } from "../../src/files/storageProviderFactory.js";
 import { refreshStudyCourses } from "../../src/contentAutomation/refreshStudyCourses.js";
 import { reviewRiskContent, riskSourceReview } from "../../src/contentAutomation/reviewRiskContent.js";
 import { ExamMaterialService } from "../../src/examMaterials/examMaterialService.js";
@@ -19,6 +21,7 @@ const subjectId = subjectMapping[source.id]!;
 beforeEach(async () => {
   if (!new URL(process.env.DATABASE_URL!).pathname.endsWith("_test")) throw new Error("Requires an isolated test database");
   await pool.query("truncate users,audit_logs restart identity cascade");
+  await Promise.all([1, 2, 3].map(number => getStorageProvider().delete(`original/Risk${number}.pdf`)));
 });
 afterAll(async () => { await pool.end(); });
 
@@ -30,7 +33,10 @@ async function seed() {
     const id = await createLecture(pool, { subjectId, title: `Risk${index + 1}`, orderIndex: index + 1, status: "published", createdBy: actor });
     const file = await createFile(pool, { storageKey: `original/Risk${index + 1}.pdf`, uploadedBy: actor });
     const originalFile = riskSourceReview.files.find(file => file.canonicalFilename === lecture.title + ".pdf")!;
-    await pool.query("update files set original_filename=$2,checksum=$3 where id=$1", [file, `Risk${index + 1}.pdf`, originalFile.sha256]);
+    const asset = Object.values(manifest.assets).find(asset => !asset.bodyHtml && asset.sha256 === originalFile.sha256)!;
+    const bytes = await readAsset(asset, catalogRoot);
+    await getStorageProvider().upload(`original/Risk${index + 1}.pdf`, bytes, "application/pdf");
+    await pool.query("update files set original_filename=$2,checksum=$3,size_bytes=$4 where id=$1", [file, `Risk${index + 1}.pdf`, originalFile.sha256, bytes.length]);
     await createLectureItem(pool, { lectureId: id, itemType: "pdf", title: `Risk${index + 1}`, fileId: file, status: "published", createdBy: actor });
     const summary = source.summaries.find(summary => summary.lectureId === lecture.id)!;
     summaries.push(await createLectureItem(pool, { lectureId: id, itemType: "summary", title: `ملخص Risk${index + 1}`, bodyText: summary.body + "\nنسخة سابقة محفوظة للمقارنة.", status: "published", createdBy: actor }));

@@ -46,6 +46,7 @@ describe("exam material selection and archive navigation", () => {
     renderWorkspace({ canGenerate: false });
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /توليد المحتوى/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("دليل المناقشة الذكي للمدير")).not.toBeInTheDocument();
     await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
     expect(screen.getByRole("link", { name: /العودة إلى المحاضرات/ })).toHaveAttribute("href", `/subjects/${subjectId}`);
     expect(screen.getByRole("link", { name: /المحاضرة الأصلية/ })).toHaveAttribute("href", `/subjects/${subjectId}/lectures/l1`);
