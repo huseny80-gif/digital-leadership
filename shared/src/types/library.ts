@@ -5,6 +5,8 @@ export interface LibraryAsset {
   label: string;
   sizeBytes: number;
   bodyHtml?: string;
+  /** View-only link to a source already rendered in the same collection. */
+  inlineReferenceId?: string;
 }
 export interface LibraryEntry {
   id: string;

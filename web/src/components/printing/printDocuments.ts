@@ -1,4 +1,5 @@
 import type { ExamMaterialSummary, LibraryEntry, QuestionForAttempt, StudyPrintBlock, StudyPrintDocument } from "@shared/index";
+import { examSummaryPresentation, libraryEntriesPresentation, uniqueStudyText } from "@digital-leadership/shared";
 
 const letters = ["أ", "ب", "ج", "د", "هـ", "و"];
 const questionTypes = { multiple_choice: "اختيار من متعدد", true_false: "صح أو خطأ", fill: "إكمال", match: "مطابقة", order: "ترتيب", open: "سؤال مقالي أو سيناريو", short_answer: "إجابة قصيرة" };
@@ -42,10 +43,10 @@ export function questionPrintDocument(title: string, questions: QuestionForAttem
 export function examSummaryPrintDocument(summary: ExamMaterialSummary): StudyPrintDocument {
   const blocks: StudyPrintBlock[] = [];
   add(blocks, summary.introduction);
-  summary.sections.forEach(section => {
+  examSummaryPresentation(summary).sections.forEach(section => {
     add(blocks, `المحاضرة ${section.number} — ${section.title}`, true);
     if (section.objectives?.length) { add(blocks, "أهداف المحاضرة", true); section.objectives.forEach(text => add(blocks, `• ${text}`)); }
-    if (section.topics?.length) section.topics.filter(topic => !(section.concepts?.length && topic.title === "المفاهيم والمصطلحات الأساسية")).forEach(topic => {
+    if (section.topics?.length) section.topics.forEach(topic => {
       add(blocks, topic.title, true); add(blocks, topic.text);
       if (topic.details) { add(blocks, "تفاصيل المحور وتطبيقاته", true); add(blocks, topic.details); }
     });
@@ -86,7 +87,7 @@ export function htmlPrintBlocks(html: string): StudyPrintBlock[] {
 
 export function librarySummaryPrintDocument(title: string, entries: LibraryEntry[], items: Array<{ title: string; text: string }> = []): StudyPrintDocument | null {
   const blocks: StudyPrintBlock[] = [];
-  entries.forEach(entry => {
+  libraryEntriesPresentation(entries).forEach(entry => {
     add(blocks, entry.title, true);
     if (entry.description) add(blocks, entry.description);
     if (entry.objectives?.length) { add(blocks, "أهداف المحاضرة", true); entry.objectives.forEach(text => add(blocks, `• ${text}`)); }
@@ -94,8 +95,8 @@ export function librarySummaryPrintDocument(title: string, entries: LibraryEntry
     if (entry.concepts?.length) { add(blocks, "المفاهيم", true); entry.concepts.forEach(concept => add(blocks, `${concept.term}: ${concept.definition}`)); }
     if (entry.terms?.length) add(blocks, entry.terms.join(" · "));
     if (entry.note) add(blocks, entry.note);
-    entry.files.filter(file => file.bodyHtml).forEach(file => { add(blocks, file.label, true); blocks.push(...htmlPrintBlocks(file.bodyHtml!)); });
+    entry.files.filter(file => file.bodyHtml && !file.inlineReferenceId).forEach(file => { add(blocks, file.label, true); blocks.push(...htmlPrintBlocks(file.bodyHtml!)); });
   });
-  items.forEach(item => { add(blocks, item.title, true); add(blocks, item.text); });
+  items.forEach(item => { const text = uniqueStudyText(item.text, blocks.filter(block => !block.heading).map(block => block.text)); if (text) { add(blocks, item.title, true); add(blocks, text); } });
   return blocks.some(block => !block.heading) ? { kind: "summary", title, subtitle: "منصة القيادة الرقمية · الملخصات الدراسية", blocks } : null;
 }

@@ -1,4 +1,5 @@
 import type { ExamAudioChapter, ExamMaterialSummary, ExamNarrationSegment, ExamSummarySection } from "./types/examMaterial.js";
+import { examSectionPresentation } from "./studyPresentation.js";
 
 export const ACADEMIC_NARRATION_VERSION = "academic-ar-v1";
 export const ACADEMIC_VOICES = [
@@ -69,10 +70,11 @@ export function academicAudioChapters(summary: ExamMaterialSummary): ExamAudioCh
     chapters.push({ id, title, lectureId, chunks: segments.map(segment => segment.text), segments });
   }
   if (summary.introduction.trim()) chapter("introduction", "مقدمة المراجعة", null, [["title", "مقدمة المراجعة"], ["body", summary.introduction]]);
-  for (const section of summary.sections) {
+  for (const original of summary.sections) {
+    const section = examSectionPresentation(original);
     const parts: Array<[ExamNarrationSegment["kind"], string]> = [["title", section.title]];
     if (section.objectives?.length) { parts.push(["heading", "أهداف المحاضرة"]); section.objectives.forEach(text => parts.push(["body", text])); }
-    const topics = section.topics?.filter(topic => !(section.concepts?.length && topic.title === "المفاهيم والمصطلحات الأساسية"));
+    const topics = section.topics;
     if (topics?.length) for (const topic of topics) { parts.push(["heading", topic.title], ["body", topic.text]); if (topic.details) parts.push(["body", topic.details]); }
     else parts.push(["body", section.text]);
     if (section.concepts?.length) { parts.push(["heading", "المفاهيم والمصطلحات الأساسية"]); section.concepts.forEach(concept => parts.push(["body", `${concept.term}: ${concept.definition}`])); }

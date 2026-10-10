@@ -46,7 +46,7 @@ describe("permanent training access administration", () => {
     vi.mocked(adminGet).mockImplementation(async path => path.endsWith("/guests") ? [] : [grant, used]);
     render(<TrainingAccessPage />);
     await waitFor(() => expect(screen.getByLabelText("اختر الرابط")).toHaveValue("used-link"));
-    expect(adminPost).toHaveBeenCalledWith("training-access/used-link/link");
+    await waitFor(() => expect(adminPost).toHaveBeenCalledWith("training-access/used-link/link"));
   });
   it("offers manual copy when the browser blocks the clipboard", async () => {
     vi.mocked(navigator.clipboard.writeText).mockRejectedValue(new Error("permission"));
