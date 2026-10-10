@@ -17,5 +17,6 @@ export * from "./search.js";
 export * from "./examReview.js";
 export * from "./academicNarration.js";
 export * from "./academicSpeech.js";
+export * from "./studyPresentation.js";
 export * from "./constants/guestSession.js";
 export * from "./contracts/api.js";

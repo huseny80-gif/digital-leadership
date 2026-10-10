@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import PDFDocument from "pdfkit";
 import type { ExamMaterialDetail, ExamMindMapNode, QuestionForAttempt } from "@shared/index";
-import { generateExamReviewArtifacts } from "@digital-leadership/shared";
+import { examSummaryPresentation, generateExamReviewArtifacts } from "@digital-leadership/shared";
 import { visualRuns } from "../studyTools/reportExport.js";
 
 const font = (weight: string) => fileURLToPath(new URL(`../../content/report-fonts/Amiri-${weight}.ttf`, import.meta.url));
@@ -68,10 +68,10 @@ export async function examReviewPdf(group: ExamMaterialDetail, questions: Questi
     write("١. الملخص الأكاديمي الشامل\n٢. خرائط المفاهيم البصرية وروابط المصطلحات المشتركة\n٣. الأسئلة التدريبية ومساحة للإجابة");
     write("المحاضرات المختارة", true); group.lectures.forEach(lecture => write(`${lecture.number}. ${lecture.title}`));
     newPage(); write("١. الملخص الأكاديمي الشامل", true); write(group.summary.introduction);
-    for (const section of group.summary.sections) {
+    for (const section of examSummaryPresentation(group.summary).sections) {
       write(`المحاضرة ${section.number} — ${section.title}`, true);
       if (section.objectives?.length) { write("أهداف المحاضرة", true); section.objectives.forEach(objective => write(`• ${objective}`)); }
-      if (section.topics?.length) for (const topic of section.topics.filter(topic => !(section.concepts?.length && topic.title === "المفاهيم والمصطلحات الأساسية"))) { write(topic.title, true); write(topic.text); if (topic.details) write(topic.details); }
+      if (section.topics?.length) for (const topic of section.topics) { write(topic.title, true); write(topic.text); if (topic.details) write(topic.details); }
       else write(section.text);
       if (section.concepts?.length) { write("المفاهيم والمصطلحات الأساسية", true); section.concepts.forEach(concept => write(`${concept.term}: ${concept.definition}`)); }
       if (section.keyPoints.length) { write("نقاط أساسية للمراجعة", true); section.keyPoints.forEach(point => write(`• ${point}`)); }
