@@ -64,6 +64,16 @@ describe("strict grounding to original lecture files", () => {
     expect(summary.introduction).toBe(""); expect(JSON.stringify(summary)).not.toMatch(/OUTSIDE_|اسم المادة/);
     expect(summary.sections[0]!.text).toContain("25%"); expect(summary.sections[0]!.text).toContain("لا يُعد");
   });
+  it("excludes identified covers and presenters without discarding scientific introductions or changing file lines", () => {
+    const file = { ...document, text: `إدارة المخاطر\nCOVER_ONLY عميد المعهد العالي لإعداد القادة\nإعداد وتقديم: PRESENTER_ONLY\nالفصل الأول\n${text}` };
+    const content = sourceParagraphs(file);
+    expect(content.map(paragraph => paragraph.text).join("\n")).not.toMatch(/COVER_ONLY|PRESENTER_ONLY/);
+    expect(content.some(paragraph => paragraph.text.includes("25%") && paragraph.startLine > 4)).toBe(true);
+    const introduction = { ...document, text: `إعداد وتقديم: PRESENTER_ONLY\n## المقدمة\n${text}\nالفصل الأول\n${text}` };
+    expect(sourceParagraphs(introduction).some(paragraph => paragraph.text.includes("25%") && paragraph.startLine < introduction.text.split("\n").findIndex(line => line === "الفصل الأول"))).toBe(true);
+    const enumerated = "د. تحليل الأثر وتحديد حجم الضرر باستخدام البيانات قبل اعتماد الاستجابة المناسبة.";
+    expect(sourceParagraphs({ ...document, text: enumerated }).map(paragraph => paragraph.text)).toContain(enumerated);
+  });
   it("reads actual bytes, rejects fake PDFs and keeps shared lectures separate", async () => {
     const bytes = Buffer.from(text);
     expect(await actualFileText(bytes, "lecture.txt", "text/plain")).toEqual({ text, sha256: document.sha256 });

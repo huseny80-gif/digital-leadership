@@ -49,7 +49,7 @@ export function isAdministrativeTitle(value: string): boolean {
 export function sourceHeading(value: string): string | null {
   const title = value.trim(), normalized = normalizedTitle(title).replace(/^(?:اولا|ثانيا|ثالثا|رابعا|خامسا|سادسا)\s*[:：-]\s*/u, "");
   if (title.length > 140 || /[.!؛]/u.test(title)) return null;
-  return /^(?:الفصل|المبحث|المحور|الوحدة|الجزء|القسم|مدخل|التعريف|المفهوم|المقدمة|مقدمة|الخاتمة|الخلاصة|الملخص|المراجع)(?:\s|$|[:：])/u.test(normalized) ? title : null;
+  return /^(?:الفصل|المبحث|المحور|الوحدة|الجزء|القسم|المحاضرة|محاضرة الاسبوع|محاضرات .*الاسبوع|مدخل|التعريف|المفهوم|المقدمة|مقدمة|الخاتمة|الخلاصة|الملخص|المراجع)(?:\s|$|[:：])/u.test(normalized) ? title : null;
 }
 
 /** Remove an entire appendix, including its controls and answer explanations.
@@ -62,9 +62,17 @@ export function studyContentText(value: string): string {
 /** Original line numbers refer to extracted file text, never invented PDF coordinates. */
 export function studyContentLines(value: string): Array<{ line: number; text: string }> {
   const lines = plainStudyText(value).split(/\n/);
+  // A short, identified cover before the first chapter is metadata, not a
+  // scientific paragraph. Preserve introductions preceding later chapters.
+  const firstChapter = lines.findIndex((line, index) => index < 60 && /^(?:الفصل|المبحث|المحور)\s+(?:الاول|1)(?:\s|$|[:：])/u.test(normalizedTitle(line)));
+  const prefix = lines.slice(0, Math.max(0, firstChapter));
+  const coverEnd = firstChapter > 0 && prefix.join("\n").length < 2000
+    && /(?:المعهد العالي|المعهد العالى|عميد|الاستاذ الدكتور|جامعة|كلية)/u.test(normalizedTitle(prefix.join(" ")))
+    && !prefix.some(line => /^(?:المقدمة|مقدمة|التعريف|المفهوم|مدخل)(?:\s|$|[:：])/u.test(normalizedTitle(line))) ? firstChapter : 0;
   const result: Array<{ line: number; text: string }> = [];
   let excludedDepth: number | null = null;
   for (const [index, line] of lines.entries()) {
+    if (index < coverEnd) continue;
     const trimmed = line.trim();
     const heading = trimmed.match(/^(#{1,6})\s+(.+)$/u);
     const title = heading?.[2] ?? trimmed;
@@ -82,7 +90,9 @@ export function studyContentLines(value: string): Array<{ line: number; text: st
       continue;
     }
     if (/^(?:--\s*\d+\s+of\s+\d+\s*--|(?:صفحة|Page)\s*\d+(?:\s*(?:من|of|\/)\s*\d+)?|[©®].*|جميع الحقوق محفوظة.*)$/iu.test(trimmed)) continue;
-    if (/^(?:إعداد|اعداد|تقديم|إلقاء|القاء|المحاضر|اسم المحاضر|تاريخ المحاضرة|البريد الإلكتروني)\s*[:：]/u.test(trimmed)) continue;
+    if (/^(?:(?:إعداد|اعداد)(?:\s+وتقديم)?|تقديم|إلقاء|القاء|المحاضر|اسم المحاضر|تاريخ المحاضرة|مدة المحاضرة|زمن المحاضرة|البريد الإلكتروني)\s*[:：]/u.test(trimmed)) continue;
+    if (/^(?:د\.|أ\.\s*د\.|ا\.\s*د\.)\s*\S/u.test(trimmed) && trimmed.length < 180 && /(?:المعهد|جامعة|كلية|https?:\/\/|@)/u.test(trimmed)) continue;
+    if (trimmed.length < 180 && /[—–|]\s*الاستاذ الدكتور/u.test(normalizedTitle(trimmed)) && lines.filter(other => other.trim() === trimmed).length >= 2) continue;
     result.push({ line: index + 1, text: line });
   }
   return result;
