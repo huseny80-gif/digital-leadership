@@ -65,7 +65,7 @@ export function academicNarrationChapters(summary: ExamMaterialSummary): ExamAud
   const chapters: ExamAudioChapter[] = [];
   if (cleanAcademicText(summary.introduction)) {
     const intro: ExamNarrationSegment = { text: shapeAcademicArabic(summary.introduction), kind: "body", pauseAfterMs: 700 };
-    chapters.push(chapterFromSegments("introduction", "مقدمة المراجعة", null, [intro]));
+    chapters.push(chapterFromSegments("introduction", "مقدمة المراجعة", null, [{ ...intro, pauseAfterMs: 0 }]));
   }
   summary.sections.forEach(section => chapters.push(chapterFromSegments(section.id, section.title, section.id, narrationSegments(section))));
   return chapters;
