@@ -59,6 +59,11 @@ the existing background refresh. Source failures retain the old revision and
 are recorded rather than blocking HTTP startup. The main group list remains
 deduplicated by lecture selection; earlier revisions remain accessible.
 
+Legacy OneDrive and risk reviews run sequentially in separate failure
+boundaries before the exam archive refresh. A failed legacy review reports
+its stage and safe machine reason without preventing independent archives
+from updating. Import workers start only after these reviews finish.
+
 The extraction suite checks all 23 physical source PDFs across the five
 subjects. Unit and interface checks cover altered negation/numbers, invented
 quotes, excluded appendices, AI response restrictions, precise citations,
