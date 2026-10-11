@@ -13,7 +13,9 @@ import { createUser, createSubject, createLecture, createLectureItem, createQuiz
 import { signFakeSupabaseToken } from "../helpers/fakeSupabaseToken.js";
 import { hashToken } from "../../src/trainingAccess/token.js";
 import { signGuestSessionCookieValue } from "../../src/trainingAccess/guestSessionCookie.js";
-import { manifest, subjectMapping } from "../../src/finquiz/catalog.js";
+import { manifest, subjectMapping, catalogRoot } from "../../src/finquiz/catalog.js";
+import { readAsset } from "../../src/finquiz/assetFiles.js";
+import { getStorageProvider } from "../../src/files/storageProviderFactory.js";
 import { synchronizeFinquizCore } from "../../src/finquiz/synchronizeCore.js";
 import { normalizeLegalContent } from "../../src/contentAutomation/normalizeLegalContent.js";
 import { refreshStudyCourses } from "../../src/contentAutomation/refreshStudyCourses.js";
@@ -318,6 +320,15 @@ describe("independent exam material archives", () => {
       itemIds.push(await createLectureItem(pool, { lectureId: row.id, itemType: "summary", title: "استخلاص قديم", bodyText: row.text, status: "published", createdBy: s.admin }));
     }
     const before = (await pool.query("select id,body_text from lecture_items where id=any($1::uuid[]) order by id", [itemIds])).rows;
+    // Production may still link the old combined PDF as a private upload,
+    // with no saved checksum, alongside the current standalone editions.
+    const old = manifest.assets["cae05b9640b56a01c8bf42c9"]!;
+    expect(old).toBeDefined();
+    expect(old.subjectSlug).toBe(sourceSubject.id);
+    const bytes = await readAsset(old, catalogRoot), storageKey = `exam-source-test/${randomUUID()}.pdf`;
+    await getStorageProvider().upload(storageKey, bytes, "application/pdf");
+    const oldFileId = (await pool.query<{ id: string }>("insert into files(storage_key,original_filename,mime_type,size_bytes,uploaded_by) values($1,$2,'application/pdf',$3,$4) returning id", [storageKey, old.filename, bytes.length, s.admin])).rows[0]!.id;
+    for (const lectureId of lectures.slice(0, 2)) await createLectureItem(pool, { lectureId, itemType: "pdf", title: old.filename, fileId: oldFileId, status: "published", createdBy: s.admin });
     const response = await request(s.app).post(`/api/v1/admin/subjects/${subjectId}/exam-material`).set("Authorization", `Bearer ${s.tokens[0]}`).send({ lectureIds: lectures, requestId: randomUUID() });
     expect(response.status, JSON.stringify(response.body.error)).toBe(201);
     const group = response.body.data as ExamMaterialDetail;
@@ -327,7 +338,16 @@ describe("independent exam material archives", () => {
     expect(group.summary.sections[0]!.text).toContain("Claude");
     expect(group.summary.sections[2]!.text.length).toBeGreaterThan(70);
     expect(group.questionCount).toBeGreaterThanOrEqual(3);
+    expect(group.summary.grounding!.sources.some(source => source.sha256 === old.sha256)).toBe(false);
     expect((await pool.query("select id,body_text from lecture_items where id=any($1::uuid[]) order by id", [itemIds])).rows).toEqual(before);
+    // A different file with the same name remains a required source. It is
+    // not silently skipped by an alias or by the standalone preference.
+    const changed = Buffer.from(bytes); changed[0] = 88;
+    const changedKey = `exam-source-test/${randomUUID()}.pdf`;
+    await getStorageProvider().upload(changedKey, changed, "application/pdf");
+    await pool.query("update files set storage_key=$2 where id=$1", [oldFileId, changedKey]);
+    await request(s.app).post(`/api/v1/admin/subjects/${subjectId}/exam-material`).set("Authorization", `Bearer ${s.tokens[0]}`).send({ lectureIds: lectures, requestId: randomUUID() }).expect(400);
+    expect((await pool.query("select count(*)::int n from exam_material_groups where subject_id=$1", [subjectId])).rows[0]!.n).toBe(1);
   });
 
   it("reads original files despite corrupt metadata and never falls back to old question excerpts", async () => {

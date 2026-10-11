@@ -27,6 +27,12 @@ const fileLinksSql = `select li.id as item_id,li.lecture_id,li.title,li.updated_
   and l.status='published' and l.deleted_at is null and f.status='active' and f.deleted_at is null
   order by li.lecture_id,li.order_index,li.id`;
 const extractionCache = new Map<string, Promise<string>>();
+// Permanent catalog identities record the retired combined edition and its
+// standalone replacements. The retired file is now a resource, so it need not
+// appear in either lecture's current file list. Never infer this from names.
+const supersededCombinedEditions: Record<string, readonly string[]> = {
+  cae05b9640b56a01c8bf42c9: ["557a6e404fcd4ce161213ded", "aea44816c87b86f1a4c73888"],
+};
 let bundled: Promise<Map<string, VerifiedExtraction>> | undefined;
 async function bundledExtractions(): Promise<Map<string, VerifiedExtraction>> {
   bundled ??= readFile(new URL("../../content/finquiz/extractedSources.json", import.meta.url), "utf8").then(text => {
@@ -110,8 +116,16 @@ export class LectureSourceFiles {
           const storage = getStorageProvider();
           if (!storage.read) throw new Error("private_source_read_unavailable");
           const bytes = await storage.read(link.storage_key);
+          const checksum = sha(bytes);
+          if (Number(link.size_bytes) !== bytes.length || link.checksum && link.checksum !== checksum) throw new Error("uploaded_source_checksum_mismatch");
+          // The same superseded combined edition may also exist as an upload.
+          // Identify it by actual bytes, never by filename or edited metadata.
+          // Standalone files above have already been read and verified.
+          const superseded = Object.entries(supersededCombinedEditions).some(([id, replacements]) =>
+            manifest.assets[id]?.sha256 === checksum && standalone.some(asset => replacements.includes(asset.id)
+              && documents.some(document => document.id === asset.id)));
+          if (superseded) continue;
           const extracted = await actualFileText(bytes, link.original_filename, link.mime_type);
-          if (Number(link.size_bytes) !== bytes.length || link.checksum && link.checksum !== extracted.sha256) throw new Error("uploaded_source_checksum_mismatch");
           add({ id: link.file_id, filename: link.original_filename, ...extracted }, link.owner_count > 1);
         } catch {
           throw new ValidationError(`تعذرت قراءة ملف «${link.original_filename}» المرتبط بـ«${lecture.title}» أو التحقق من حدوده. أعد رفع ملف واضح مستقل للمحاضرة.`);
