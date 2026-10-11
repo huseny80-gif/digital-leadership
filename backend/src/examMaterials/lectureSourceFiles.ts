@@ -110,8 +110,13 @@ export class LectureSourceFiles {
           const storage = getStorageProvider();
           if (!storage.read) throw new Error("private_source_read_unavailable");
           const bytes = await storage.read(link.storage_key);
+          const checksum = sha(bytes);
+          if (Number(link.size_bytes) !== bytes.length || link.checksum && link.checksum !== checksum) throw new Error("uploaded_source_checksum_mismatch");
+          // The same superseded combined edition may also exist as an upload.
+          // Identify it by actual bytes, never by filename or edited metadata.
+          // Standalone files above have already been read and verified.
+          if (standalone.length && assets.some(asset => assetOwners(asset.id).length > 1 && manifest.assets[asset.id]?.sha256 === checksum)) continue;
           const extracted = await actualFileText(bytes, link.original_filename, link.mime_type);
-          if (Number(link.size_bytes) !== bytes.length || link.checksum && link.checksum !== extracted.sha256) throw new Error("uploaded_source_checksum_mismatch");
           add({ id: link.file_id, filename: link.original_filename, ...extracted }, link.owner_count > 1);
         } catch {
           throw new ValidationError(`تعذرت قراءة ملف «${link.original_filename}» المرتبط بـ«${lecture.title}» أو التحقق من حدوده. أعد رفع ملف واضح مستقل للمحاضرة.`);

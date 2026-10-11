@@ -17,6 +17,9 @@ specific error and leave previous archives untouched.
   Run `npx tsx scripts/extractExamSources.ts` from `backend`.
 - Explicit boundaries scope combined files to the selected lecture, even
   when the file is attached to only one lecture. Ambiguous shared files fail.
+- When verified standalone editions exist, a private upload of the registered
+  older combined edition is superseded only after hashing its actual bytes.
+  A reused filename or different bytes cannot bypass source verification.
 - Scientific paragraphs retain their actual words, conditions, numbers and
   negation. Assessment appendices, controls and administrative sections are
   excluded before summarization. Deduplication uses exact normalized text.
