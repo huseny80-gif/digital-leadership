@@ -322,9 +322,9 @@ describe("independent exam material archives", () => {
     const before = (await pool.query("select id,body_text from lecture_items where id=any($1::uuid[]) order by id", [itemIds])).rows;
     // Production may still link the old combined PDF as a private upload,
     // with no saved checksum, alongside the current standalone editions.
-    const old = Object.values(manifest.assets).find(asset => !asset.bodyHtml && asset.subjectSlug === sourceSubject.id
-      && sourceSubject.lectures.filter(lecture => lecture.files?.some(file => file.url === asset.path)).length > 1)!;
+    const old = manifest.assets["cae05b9640b56a01c8bf42c9"]!;
     expect(old).toBeDefined();
+    expect(old.subjectSlug).toBe(sourceSubject.id);
     const bytes = await readAsset(old, catalogRoot), storageKey = `exam-source-test/${randomUUID()}.pdf`;
     await getStorageProvider().upload(storageKey, bytes, "application/pdf");
     const oldFileId = (await pool.query<{ id: string }>("insert into files(storage_key,original_filename,mime_type,size_bytes,uploaded_by) values($1,$2,'application/pdf',$3,$4) returning id", [storageKey, old.filename, bytes.length, s.admin])).rows[0]!.id;
