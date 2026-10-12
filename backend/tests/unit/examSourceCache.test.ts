@@ -13,8 +13,23 @@ const cache = JSON.parse(await readFile(new URL("extractedSources.json", catalog
 };
 
 describe("original PDF extraction provenance across the five subjects", () => {
+  it("restores lecture two from native PDF characters instead of recycling the malformed screenshot question", () => {
+    const source = cache.sources.find(item => item.sha256 === "99339d60fce911b1326130020c36a0ed3d9633e575fdc066f3d765a67d240f1e")!;
+    expect(source.text).toContain("جولة داخل كلود: الواجهات والإعدادات");
+    expect(source.text).toContain("الأسبوع الأول عرّفنا على الأداة.");
+    expect(source.text).toContain("نافذة السياق Context window");
+    expect(source.text).not.toMatch(/الوايمرات|زعرارات|راهل كلور|تشتفل|بعي\s+عن/);
+    const paragraphs = sourceParagraphs({ id: "aea44816c87b86f1a4c73888", filename: "المحاضرة الثانية في الذكاء الاصطناعي.pdf", ...source });
+    const questions = groundedQuestionCandidates(paragraphs);
+    expect(questions.length).toBeGreaterThanOrEqual(12);
+    for (const question of questions) {
+      expect(question.prompt).not.toMatch(/academic-cv|github|<<|>>|المصدر:|الوايمرات|زعرارات/);
+      expect(question.references.every(reference => !/github|academic-cv|<<|>>/.test(reference.excerpt))).toBe(true);
+      expect(validGroundedQuestion(question, paragraphs)).toBe(true);
+    }
+  });
   it("covers all physical standalone lecture PDFs without substituting authored HTML or answer guides", () => {
-    expect(cache.version).toBe("pdf-parse-tesseract-v1");
+    expect(cache.version).toBe("verified-pdf-transcripts-v2");
     const primary = manifest.subjects.flatMap(subject => subject.lectures.filter(lecture => lecture.status === "published").flatMap(lecture =>
       (lecture.files ?? []).flatMap(file => Object.values(manifest.assets).filter(asset => asset.path === file.url && !asset.bodyHtml && asset.filename.endsWith(".pdf")
         && manifest.subjects.flatMap(course => course.lectures).filter(owner => owner.files?.some(link => link.url === asset.path)).length === 1))));

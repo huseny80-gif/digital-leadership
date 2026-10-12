@@ -3,6 +3,7 @@ import type { ExamMaterialSummary } from "@shared/index";
 import type { GeneratedQuestion } from "../contentAutomation/questionGeneration.js";
 import { hasBrokenSourceEncoding } from "../contentAutomation/sourceTextQuality.js";
 import { sourceHeading, studyContentLines } from "./summary.js";
+import { readableSourcePassage, usableQuestionPassage } from "./sourceReadability.js";
 
 export const STRICT_SOURCE_INSTRUCTION = "أنت محرك تحليل أكاديمي دقيق. اعتمادك حصرياً على النصوص المزودة من ملفات المحاضرات أدناه. لا تقم بإضافة أي معلومات خارجية أو افتراضات غير مذكورة نصياً في المحاضرات المحددة. إذا كانت المعلومة غير موجودة في النص، فلا تدرجها في الملخص أو الأسئلة.";
 export const groundingVersion = "strict-file-extraction-v1";
@@ -22,7 +23,7 @@ const digest = (text: string) => createHash("sha256").update(text).digest("hex")
 // drop a preceding negation/condition. Keep complete sentences and definitions.
 const sourceSentences = (text: string) => text.split(/(?<=[.!؟؛])\s+/u).map(sentence => sentence.trim()).filter(Boolean);
 const completeExcerpt = (text: string, excerpt: string) => [text, ...sourceSentences(text),
-  ...text.split("\n").filter(line => /^[^:：]{3,65}[:：]\s*\S/u.test(line.trim()))]
+  ...text.split("\n").filter(line => /^[^:：—]{3,65}(?:[:：]|\s+—)\s*\S/u.test(line.trim()))]
   .some(unit => exactSourceText(unit) === exactSourceText(excerpt));
 const words = (text: string) => [...new Set(text.match(/[\p{L}\p{M}]+/gu) ?? [])].filter(word => word.length >= 5 && word.length <= 30)
   .filter(word => !/^(?:المحاضرة|الدراسة|العبارة|التالية|السؤال|المرجع|بالنسبة|بالإضافة|وبالتالي|والتي|والذي|يمكننا|تتضمن|يتضمن|بواسطة|خلالها|لأنها|عليها|إليها|بينما)$/u.test(word));
@@ -39,13 +40,18 @@ export function sourceParagraphs(document: ExamSourceDocument, lineOffset = 0): 
     paragraph = [];
   };
   for (const line of studyContentLines(document.text)) {
+    // Screenshot labels are useful context, but must not be inserted into
+    // the wrapped Arabic sentence alongside them.
+    if (/^[\sA-Za-z0-9٠-٩+_.(),:/–—-]+$/u.test(line.text) && /[A-Za-z]{3}/u.test(line.text) && line.text.length < 100) {
+      flush(); paragraph.push(line); flush(); continue;
+    }
     const title = line.text.trim().match(/^#{1,6}\s+(.+)$/u)?.[1] ?? sourceHeading(line.text);
     if (title) { flush(); heading = title; }
     else if (!line.text.trim() || paragraph.length && line.line > paragraph.at(-1)!.line + 1) { flush(); if (line.text.trim()) paragraph.push(line); }
     else paragraph.push(line);
   }
   flush();
-  return result.filter(paragraph => !hasBrokenSourceEncoding(paragraph.text));
+  return result.filter(paragraph => readableSourcePassage(paragraph.text));
 }
 
 export function referenceFor(paragraph: SourceParagraph, excerpt: string): SourceReference {
@@ -90,38 +96,44 @@ function finish(question: Omit<GroundedQuestion, "candidateId" | "explanation" |
  * keys, explanations, quotations, distractors or summaries. */
 export function groundedQuestionCandidates(paragraphs: SourceParagraph[]): GroundedQuestion[] {
   const facts = paragraphs.flatMap(paragraph => sourceSentences(paragraph.text)
-    .filter(text => text.length >= 60 && text.length <= 650 && words(text).length >= 5 && !/https?:\/\/|@|©/u.test(text))
-    .map(text => ({ paragraph, text })));
+    .filter(text => usableQuestionPassage(text) && words(text).length >= 5)
+    .map(text => ({ paragraph, text }))).filter((fact, index, all) => all.findIndex(other => other.paragraph.fileId === fact.paragraph.fileId && exactSourceText(other.text) === exactSourceText(fact.text)) === index);
   const selected = Array.from({ length: Math.min(20, facts.length) }, (_, index) => facts[Math.floor(index * facts.length / Math.min(20, facts.length))]!);
   const candidates: GroundedQuestion[] = [];
   for (const [index, fact] of selected.entries()) {
-    const tokens = words(fact.text), term = tokens[index % tokens.length];
+    // Blank a complete content word, never a substring inside another word.
+    // Definite nouns are preferable to conjunctions and arbitrary verbs.
+    const tokens = words(fact.text).filter(word => /^ال[\u0621-\u064A]/u.test(word) && !/^(?:التي|الذي|الذين|الآتي|التالي|المذكورة|المشار|الأول|الثاني|الثالث)$/u.test(word));
+    const term = tokens[index % tokens.length];
     if (!term) continue;
-    const start = fact.text.indexOf(term), blank = fact.text.slice(0, start) + "________" + fact.text.slice(start + term.length);
+    const start = [...fact.text.matchAll(/[\p{L}\p{M}]+/gu)].find(match => match[0] === term)!.index;
+    const blank = fact.text.slice(0, start) + "________" + fact.text.slice(start + term.length);
     const references = [referenceFor(fact.paragraph, fact.text)];
-    const pool = words(paragraphs.filter(paragraph => paragraph.fileId === fact.paragraph.fileId).map(paragraph => paragraph.text).join("\n"));
+    const pool = words(facts.filter(other => other.paragraph.fileId === fact.paragraph.fileId).map(other => other.text).join("\n")).filter(word => /^ال[\u0621-\u064A]/u.test(word));
     const distractors = pool.filter(word => word !== term && !fact.text.includes(word)).slice(index % 4, index % 4 + 3);
-    const location = `المصدر: ${referenceLabel(references[0]!)}`;
     if (distractors.length >= 2) {
       const options = [...distractors], correctIndex = index % (options.length + 1);
       options.splice(correctIndex, 0, term);
-      candidates.push(finish({ type: "multiple_choice", prompt: `أكمل العبارة بالكلمة التي وردت في نص المحاضرة:\n${blank}\n\n${location}`, difficulty: "easy", options, correctIndex, references }));
+      candidates.push(finish({ type: "multiple_choice", prompt: `أكمل العبارة بالكلمة التي وردت في نص المحاضرة:\n${blank}`, difficulty: "easy", options, correctIndex, references }));
     }
-    candidates.push(finish({ type: "fill", prompt: `اكتب الكلمة المحذوفة كما وردت في نص المحاضرة:\n${blank}\n\n${location}`, difficulty: "medium", acceptedAnswers: [term], references }));
-    const falseTerm = distractors[0];
-    if (falseTerm || index % 2 === 0) {
-      const unchanged = index % 2 === 0 || !falseTerm;
-      const statement = unchanged ? fact.text : fact.text.slice(0, start) + falseTerm + fact.text.slice(start + term.length);
-      // This explicitly tests quotation fidelity. It never asserts that a
-      // substituted sentence is a false scientific fact in the real world.
-      candidates.push(finish({ type: "true_false", prompt: `صح أم خطأ: وردت العبارة التالية في الفقرة المشار إليها بالنص نفسه:\n«${statement}»\n\n${location}`, difficulty: "easy", options: ["صح", "خطأ"], correctIndex: unchanged ? 0 : 1, references }));
-    }
+    candidates.push(finish({ type: "fill", prompt: `اكتب الكلمة المحذوفة كما وردت في نص المحاضرة:\n${blank}`, difficulty: "medium", acceptedAnswers: [term], references }));
+    // A literal assertion is not rewritten into a made-up scientific claim.
+    // False items below compare two explicit source definitions instead.
+    candidates.push(finish({ type: "true_false", prompt: `صح أم خطأ وفقًا للمحاضرة:\n«${fact.text}»`, difficulty: "easy", options: ["صح", "خطأ"], correctIndex: 0, references }));
   }
   const definitions = paragraphs.flatMap(paragraph => paragraph.text.split("\n").flatMap(text => {
-    const match = text.trim().match(/^([^:：]{3,65})[:：]\s*(.{20,350})$/u);
-    return match ? [{ left: match[1]!.trim(), right: match[2]!.trim(), paragraph, text: text.trim() }] : [];
+    const match = text.trim().match(/^([^:：—]{3,65})(?:[:：]|\s+—)\s*(.{20,350})$/u);
+    return match && readableSourcePassage(text) && words(match[1]!).length && !/^(?:أول|ثان|ثالث|رابع|خامس|مثال|المهمة|افعل|سترى|المصدر)/u.test(match[1]!.trim())
+      ? [{ left: match[1]!.trim(), right: match[2]!.trim(), paragraph, text: text.trim() }] : [];
   })).filter((definition, index, all) => all.findIndex(other => other.left === definition.left || other.right === definition.right) === index).slice(0, 4);
   if (definitions.length >= 2) candidates.push(finish({ type: "match", prompt: "طابق المصطلحات بتعريفاتها الحرفية في فقرات المحاضرة المشار إليها.", difficulty: "medium", pairs: definitions.map(({ left, right }) => ({ left, right })), references: definitions.map(definition => referenceFor(definition.paragraph, definition.text)) }));
+  for (const [index, definition] of definitions.entries()) {
+    const other = definitions.find(item => item.paragraph.fileId === definition.paragraph.fileId && item.left !== definition.left && item.right !== definition.right);
+    if (!other) continue;
+    const matched = index % 2 ? definition : other;
+    const references = [referenceFor(definition.paragraph, definition.text), ...(matched === definition ? [] : [referenceFor(matched.paragraph, matched.text)])];
+    candidates.unshift(finish({ type: "true_false", prompt: `صح أم خطأ: التعريف الآتي يخصّ المصطلح «${definition.left}»:\n«${matched.right}»`, difficulty: "medium", options: ["صح", "خطأ"], correctIndex: matched === definition ? 0 : 1, references }));
+  }
   for (const paragraph of paragraphs) {
     const lines = paragraph.text.split("\n").map(line => line.trim());
     const sequence = lines.flatMap(line => {
@@ -137,7 +149,7 @@ export function groundedQuestionCandidates(paragraphs: SourceParagraph[]): Groun
 }
 
 export function validGroundedQuestion(question: GroundedQuestion, paragraphs: SourceParagraph[]): boolean {
-  if (!question.references.length || !question.references.every(reference => validSourceReference(reference, paragraphs)) || hasBrokenSourceEncoding(JSON.stringify(question))) return false;
+  if (!question.references.length || !question.references.every(reference => validSourceReference(reference, paragraphs) && readableSourcePassage(reference.excerpt)) || hasBrokenSourceEncoding(JSON.stringify(question))) return false;
   const { candidateId, excerpt: provenExcerpt, explanation, ...bounded } = question;
   if (provenExcerpt !== question.references.map(reference => reference.excerpt).join("\n")) return false;
   if (candidateId !== digest(JSON.stringify(bounded)).slice(0, 24)
@@ -145,28 +157,24 @@ export function validGroundedQuestion(question: GroundedQuestion, paragraphs: So
   const excerpt = question.references[0]!.excerpt;
   if (question.type === "multiple_choice" || question.type === "fill") {
     const answer = question.type === "fill" ? question.acceptedAnswers?.[0] : question.options?.[question.correctIndex ?? -1];
-    const blank = question.prompt.slice(question.prompt.indexOf("\n") + 1, question.prompt.lastIndexOf("\n\nالمصدر:"));
+    const blank = question.prompt.slice(question.prompt.indexOf("\n") + 1);
     if (!answer || !blank || !exactSourceText(excerpt).includes(answer) || exactSourceText(blank.replace("________", answer)) !== exactSourceText(excerpt)) return false;
     return question.type === "fill" ? question.acceptedAnswers?.length === 1 : Boolean(question.options && new Set(question.options).size === question.options.length && question.options.every(option => paragraphs.some(paragraph => paragraph.fileId === question.references[0]!.fileId && paragraph.text.includes(option))));
   }
   if (question.type === "true_false") {
-    const statement = question.prompt.match(/\n«([\s\S]+)»\n\nالمصدر:/u)?.[1];
+    const statement = question.prompt.match(/\n«([\s\S]+)»$/u)?.[1];
     if (!statement || question.options?.join("|") !== "صح|خطأ") return false;
-    if (exactSourceText(statement) === exactSourceText(excerpt)) return question.correctIndex === 0;
-    if (question.correctIndex !== 1) return false;
-    // A false quotation changes exactly one source word to another word
-    // from the same file. Reject arbitrary outside statements, even if false.
-    return [...excerpt.matchAll(/[\p{L}\p{M}]+/gu)].some(match => {
-      if (!words(match[0]).length) return false;
-      const before = excerpt.slice(0, match.index), after = excerpt.slice(match.index + match[0].length);
-      if (!statement.startsWith(before) || !statement.endsWith(after)) return false;
-      const replacement = statement.slice(before.length, after.length ? -after.length : undefined);
-      return words(replacement).length === 1 && words(replacement)[0] === replacement && !excerpt.includes(replacement)
-        && paragraphs.some(paragraph => paragraph.fileId === question.references[0]!.fileId && paragraph.text.includes(replacement));
-    });
+    if (question.prompt.startsWith("صح أم خطأ وفقًا للمحاضرة:\n")) return question.references.length === 1 && usableQuestionPassage(excerpt) && exactSourceText(statement) === exactSourceText(excerpt) && question.correctIndex === 0;
+    const term = question.prompt.match(/^صح أم خطأ: التعريف الآتي يخصّ المصطلح «([^»]+)»:/u)?.[1];
+    const definition = excerpt.match(/^([^:：—]+)(?:[:：]|\s+—)\s*(.+)$/u);
+    if (!term || !definition || term !== definition[1]!.trim()) return false;
+    if (question.references.length === 1) return statement === definition[2]!.trim() && question.correctIndex === 0;
+    const other = question.references[1]!.excerpt.match(/^([^:：—]+)(?:[:：]|\s+—)\s*(.+)$/u);
+    return Boolean(question.references.length === 2 && question.correctIndex === 1 && other && other[1]!.trim() !== term && other[2]!.trim() !== definition[2]!.trim()
+      && statement === other[2]!.trim() && question.references[0]!.fileId === question.references[1]!.fileId);
   }
   if (question.type === "match") return Boolean(question.pairs && question.pairs.length === question.references.length && question.pairs.every((pair, index) => {
-    const match = question.references[index]!.excerpt.match(/^([^:：]+)[:：]\s*(.+)$/u);
+    const match = question.references[index]!.excerpt.match(/^([^:：—]+)(?:[:：]|\s+—)\s*(.+)$/u);
     return match && exactSourceText(pair.left) === exactSourceText(match[1]!) && exactSourceText(pair.right) === exactSourceText(match[2]!);
   }));
   if (question.type === "order") {
