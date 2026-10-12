@@ -1,3 +1,4 @@
+import { passivePdf } from "../helpers/passivePdf.js";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { Pool } from "pg";
@@ -15,7 +16,7 @@ import { createLecture, createLectureItem, createSubject, createUser } from "../
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-const VALID_PDF = Buffer.from("%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF");
+const VALID_PDF = passivePdf();
 const NOT_A_PDF = Buffer.from("<html><body>not a pdf</body></html>");
 
 async function resetDatabase() {

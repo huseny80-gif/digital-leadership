@@ -1,10 +1,11 @@
+import { passivePdf } from "../helpers/passivePdf.js";
 import { describe, expect, it, vi } from "vitest";
 import type { Pool } from "pg";
 import { FilesService } from "../../src/files/filesService.js";
 import type { FilesRepository } from "../../src/files/filesRepository.js";
 import type { StorageProvider } from "../../src/files/storageProvider.js";
 
-const VALID_PDF = Buffer.from("%PDF-1.4\n%%EOF");
+const VALID_PDF = passivePdf();
 
 function fakePool(): Pool {
   // Only `query` is used by writeAuditLog inside the success path; the

@@ -113,3 +113,10 @@ Current full order:
 25. `00000000000025_exam_instructor_guides.sql` — stores instructor discussion
     guides separately from learner-facing exam groups. Apply after 22. RLS
     denies all browser roles; the backend additionally requires admin access.
+
+26. `00000000000026_private_feedback_encryption.sql` — adds ciphertext fields
+    for participant messages, staff notes and submitted names. Apply after 20.
+    Backend startup encrypts legacy content under an advisory lock, preserving
+    IDs, timestamps and statuses. Preserve the existing guest signing secret:
+    encryption derives a separate key with HKDF; rotation requires migrating
+    ciphertext with the old and new keys, never replacing the secret blindly.

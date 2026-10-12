@@ -1,3 +1,4 @@
+import { passivePdf } from "../helpers/passivePdf.js";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { Pool } from "pg";
 import request from "supertest";
@@ -60,7 +61,7 @@ describe("durable automatic content imports", () => {
     expect(Number((await pool.query("select count(*) as n from lectures")).rows[0].n)).toBe(1);
   });
   it("stores the original PDF privately under its subject and lecture automatically", async () => {
-    const s = await seed(); const bytes = Buffer.from("%PDF-test-only-original-bytes");
+    const s = await seed(); const bytes = passivePdf("test-only-original-bytes");
     const job = await s.service.submitPdf({ actorId: s.actor, filename: "RiskManagement5.pdf", mimeType: "application/pdf", buffer: bytes });
     await s.service.processNext();
     const done = await s.service.get(job.id);
@@ -71,7 +72,7 @@ describe("durable automatic content imports", () => {
   });
   it("recovers a saved PDF whose extracted text contains zero characters without changing its bytes", async () => {
     const s = await seed();
-    const bytes = Buffer.from("%PDF-original-with-character-map");
+    const bytes = passivePdf("original-with-character-map");
     const dirty = source.replace(/([\p{L}])/gu, "$1\u0000");
     const oldQuiz = await createQuiz(pool, { subjectId: s.risk, title: "اختبار المخاطر", status: "published", createdBy: s.actor });
     const bank = await createQuestionBankWithAnswer(pool, { subjectId: s.risk, createdBy: s.actor });
@@ -122,7 +123,7 @@ describe("durable automatic content imports", () => {
     expect(Number((await pool.query("select count(*) as n from lectures")).rows[0].n)).toBe(1);
   });
   it("retains unreadable files and retries without inventing questions or publishing partial content", async () => {
-    const s = await seed(); const bytes = Buffer.from("%PDF-unreadable-document");
+    const s = await seed(); const bytes = passivePdf("unreadable-document");
     const failing = new ContentImportService(pool, s.storage, 10485760, { extract: async () => { throw new Error("insufficient_text"); } });
     const job = await failing.submitPdf({ actorId: s.actor, filename: "RiskManagement5.pdf", mimeType: "application/pdf", buffer: bytes });
     await failing.processNext(); expect((await failing.get(job.id)).status).toBe("failed");
@@ -131,7 +132,7 @@ describe("durable automatic content imports", () => {
     await s.service.retry(job.id); await s.service.processNext(); expect((await s.service.get(job.id)).status).toBe("completed");
   });
   it("accepts chunked uploads beyond a single frontend request and checks every byte", async () => {
-    const s = await seed(); const bytes = Buffer.alloc(UPLOAD_PART_BYTES + 80, 65); Buffer.from("%PDF-").copy(bytes);
+    const s = await seed(); const bytes = Buffer.alloc(UPLOAD_PART_BYTES + 80, 32); passivePdf("chunked").copy(bytes);
     const job = await s.service.startUpload({ actorId: s.actor, filename: "RiskManagement5.pdf", size: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") });
     await s.service.uploadPart(job.id, 0, bytes.subarray(0, UPLOAD_PART_BYTES), s.actor);
     await s.service.uploadPart(job.id, 0, bytes.subarray(0, UPLOAD_PART_BYTES), s.actor);
@@ -142,7 +143,7 @@ describe("durable automatic content imports", () => {
     expect((await s.service.startUpload({ actorId: s.actor, filename: "RiskManagement5.pdf", size: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") })).id).toBe(job.id);
   });
   it("rejects incomplete or misidentified upload parts", async () => {
-    const s = await seed(); const bytes = Buffer.from("%PDF-new-source");
+    const s = await seed(); const bytes = passivePdf("new-source");
     const job = await s.service.startUpload({ actorId: s.actor, filename: "RiskManagement5.pdf", size: bytes.length, sha256: "0".repeat(64) });
     await expect(s.service.uploadPart(job.id, 0, bytes.subarray(1), s.actor)).rejects.toThrow();
     await s.service.uploadPart(job.id, 0, bytes, s.actor); await s.service.finishUpload(job.id, s.actor); await s.service.processNext();

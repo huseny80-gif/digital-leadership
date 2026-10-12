@@ -10,7 +10,7 @@ import { assertReadableSourceText, hasBrokenSourceEncoding } from "./sourceTextQ
 /** All parsing is server-side. OCR language data ships with the dependencies;
  * no document bytes are sent to an external OCR service. */
 export async function extractPdfText(buffer: Buffer, heartbeat: () => Promise<void> = async () => {}): Promise<string> {
-  const parser = new PDFParse({ data: new Uint8Array(buffer) });
+  const parser = new PDFParse({ data: new Uint8Array(buffer), isEvalSupported: false });
   let worker: Awaited<ReturnType<typeof createWorker>> | undefined;
   try {
     const result = await parser.getText();

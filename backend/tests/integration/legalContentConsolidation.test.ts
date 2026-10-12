@@ -1,3 +1,4 @@
+import { passivePdf } from "../helpers/passivePdf.js";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { Pool } from "pg";
 import { consolidateLegalContent } from "../../src/contentAutomation/consolidateLegalContent.js";
@@ -172,7 +173,7 @@ describe("canonical Arabic legal course content", () => {
     const storage: StorageProvider = { name: "local-filesystem", upload: async (key, bytes) => { objects.set(key, bytes); }, read: async key => Buffer.from(objects.get(key)!), delete: async key => { objects.delete(key); }, getSignedUrl: async () => "https://example.invalid/file" };
     const text = "تتطلب الثقافة القانونية والتنظيمية احترام مبدأ المشروعية في القرار الإداري ومراعاة القواعد القانونية النافذة. يشمل الامتثال التنظيمي توثيق الإجراءات ومسؤولية الجهة العامة عن حماية البيانات الشخصية والخصوصية في المعاملات الإلكترونية والخدمات الحكومية الرقمية.";
     const imports = new ContentImportService(pool, storage, 10485760, { extract: async () => text });
-    const bytes = Buffer.from("%PDF-1.4\ncanonical legal upload fixture\n%%EOF");
+    const bytes = passivePdf("canonical legal upload fixture");
     const job = await imports.submitPdf({ actorId: actor, filename: "Legal1.pdf", mimeType: "application/pdf", buffer: bytes });
     await imports.processNext();
     expect(await imports.get(job.id)).toMatchObject({ status: "completed", filename: "المحاضرة الأولى قانونية.pdf", lectures: [{ id: masters.get(1), title: legalLectureTitle(1), number: 1 }] });

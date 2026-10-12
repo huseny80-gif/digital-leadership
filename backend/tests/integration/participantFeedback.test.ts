@@ -47,9 +47,11 @@ describe("private participant feedback", () => {
       expect(response.body).toEqual({ data: { received: true } });
       expect(response.headers["cache-control"]).toBe("private, no-store");
     }
-    const rows = (await pool.query("select author_kind,user_id,guest_session_id,submitted_name,message from participant_feedback order by author_kind")).rows;
+    const rows = (await pool.query("select author_kind,user_id,guest_session_id,submitted_name,message,message_ciphertext,submitted_name_ciphertext from participant_feedback order by author_kind")).rows;
     expect(rows).toHaveLength(2);
-    expect(rows[0]).toMatchObject({ author_kind: "guest", guest_session_id: s.guest, user_id: null, submitted_name: "مشاركة خاصة", message: "رأيي خاص ولا يُعرض للآخرين." });
+    expect(rows[0]).toMatchObject({ author_kind: "guest", guest_session_id: s.guest, user_id: null, submitted_name: null, message: "[encrypted]" });
+    expect(JSON.stringify(rows)).not.toMatch(/مشاركة خاصة|رأيي خاص/);
+    expect(rows[0].message_ciphertext).toMatch(/^v1\./); expect(rows[0].submitted_name_ciphertext).toMatch(/^v1\./);
     expect(rows[1]).toMatchObject({ author_kind: "user", user_id: s.alice, guest_session_id: null });
     await request(s.app).post("/api/v1/feedback").send(submission()).expect(401);
     await request(s.app).post("/api/v1/feedback").set("Cookie", "training_guest_session=forged").send(submission()).expect(401);
@@ -89,18 +91,19 @@ describe("private participant feedback", () => {
     await request(s.app).get("/api/v1/admin/users").set("Authorization", `Bearer ${s.trainerToken}`).expect(403);
   });
 
-  it("allows staff to review, archive, annotate and delete, auditing actions without private text", async () => {
+  it("allows staff to review and annotate but permits deletion only to an admin, auditing without private text", async () => {
     const s = await seed(); const id = await submitAndId(s);
     await request(s.app).patch(`/api/v1/feedback/manage/${id}`).set("Authorization", `Bearer ${s.trainerToken}`).send({ status: "reviewed", internalNote: "ملاحظة سرية للمدرب" }).expect(200);
     const response = await request(s.app).get("/api/v1/feedback/manage?status=reviewed").set("Authorization", `Bearer ${s.adminToken}`).expect(200);
     expect(response.body.data[0]).toMatchObject({ id, status: "reviewed", internalNote: "ملاحظة سرية للمدرب", message: "أقترح إضافة محاضرة تطبيقية جديدة." });
     await request(s.app).patch(`/api/v1/feedback/manage/${id}`).set("Authorization", `Bearer ${s.adminToken}`).send({ status: "archived", internalNote: "" }).expect(200);
     expect((await pool.query("select updated_by,internal_note from participant_feedback where id=$1", [id])).rows[0]).toMatchObject({ updated_by: s.admin, internal_note: "" });
-    await request(s.app).delete(`/api/v1/feedback/manage/${id}`).set("Authorization", `Bearer ${s.trainerToken}`).expect(204);
+    await request(s.app).delete(`/api/v1/feedback/manage/${id}`).set("Authorization", `Bearer ${s.trainerToken}`).expect(403);
+    await request(s.app).delete(`/api/v1/feedback/manage/${id}`).set("Authorization", `Bearer ${s.adminToken}`).expect(204);
     const audits = (await pool.query("select actor_user_id,action,metadata from audit_logs where entity_type='participant_feedback' order by created_at")).rows;
     expect(audits).toHaveLength(3);
     expect(audits[0]).toMatchObject({ actor_user_id: s.instructor, action: "feedback.updated", metadata: { status: "reviewed", noteUpdated: true } });
-    expect(audits[2]).toMatchObject({ actor_user_id: s.instructor, action: "feedback.deleted" });
+    expect(audits[2]).toMatchObject({ actor_user_id: s.admin, action: "feedback.deleted" });
     expect(JSON.stringify(audits)).not.toMatch(/ملاحظة سرية|أقترح|alice@example/);
     await request(s.app).delete(`/api/v1/feedback/manage/${id}`).set("Authorization", `Bearer ${s.adminToken}`).expect(404);
   });
@@ -167,9 +170,22 @@ describe("private participant feedback", () => {
     const s = await seed(); const id = await submitAndId(s);
     await request(s.app).patch(`/api/v1/feedback/manage/${id}`).set("Authorization", `Bearer ${s.trainerToken}`).send({ status: "reviewed", internalNote: "متابعة" }).expect(200);
     await ensureParticipantFeedbackSchema(pool); await ensureParticipantFeedbackSchema(pool);
-    expect((await pool.query("select status,internal_note,message from participant_feedback where id=$1", [id])).rows[0]).toMatchObject({ status: "reviewed", internal_note: "متابعة", message: "أقترح إضافة محاضرة تطبيقية جديدة." });
+    expect((await pool.query("select status,internal_note,message from participant_feedback where id=$1", [id])).rows[0]).toMatchObject({ status: "reviewed", internal_note: "", message: "[encrypted]" });
+    const inbox = await request(s.app).get("/api/v1/feedback/manage").set("Authorization", `Bearer ${s.adminToken}`).expect(200);
+    expect(inbox.body.data[0]).toMatchObject({ id, status: "reviewed", internalNote: "متابعة", message: "أقترح إضافة محاضرة تطبيقية جديدة." });
     expect((await pool.query("select count(*)::int as count from roles where name='instructor'")).rows[0].count).toBe(1);
     const grants = await pool.query("select has_table_privilege('authenticated','participant_feedback','SELECT') as learner,has_table_privilege('anon','participant_feedback','SELECT') as anonymous");
     expect(grants.rows[0]).toEqual({ learner: false, anonymous: false });
+  });
+
+  it("encrypts legacy private text without changing identifiers, timestamps or review state", async () => {
+    const s = await seed(); const id = await submitAndId(s);
+    await pool.query("update participant_feedback set message='رأي سابق خاص',internal_note='متابعة سابقة',submitted_name='اسم سابق',message_ciphertext=null,internal_note_ciphertext=null,submitted_name_ciphertext=null,status='reviewed' where id=$1", [id]);
+    const before = (await pool.query("select id,created_at,updated_at,status from participant_feedback where id=$1", [id])).rows[0];
+    await ensureParticipantFeedbackSchema(pool); await ensureParticipantFeedbackSchema(pool);
+    expect((await pool.query("select id,created_at,updated_at,status from participant_feedback where id=$1", [id])).rows[0]).toEqual(before);
+    expect(JSON.stringify((await pool.query("select message,internal_note,submitted_name,message_ciphertext from participant_feedback where id=$1", [id])).rows)).not.toMatch(/رأي سابق|متابعة سابقة|اسم سابق/);
+    const inbox = await request(s.app).get("/api/v1/feedback/manage").set("Authorization", `Bearer ${s.trainerToken}`).expect(200);
+    expect(inbox.body.data[0]).toMatchObject({ id, message: "رأي سابق خاص", internalNote: "متابعة سابقة", authorName: "اسم سابق", status: "reviewed" });
   });
 });

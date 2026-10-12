@@ -170,6 +170,13 @@ export function getEnv(): Env {
     );
   }
 
+  if (parsed.data.NODE_ENV === "production") {
+    for (const [name, value] of Object.entries({ WEB_BASE_URL: webBaseUrl, SUPABASE_URL: parsed.data.SUPABASE_URL })) {
+      if (!value) continue;
+      try { if (new URL(value).protocol === "https:") continue; } catch { /* rejected below */ }
+      throw new Error(`${name} must use HTTPS in production.`);
+    }
+  }
   cachedEnv = {
     ...parsed.data,
     LOCAL_STORAGE_SIGNING_SECRET: signingSecret,

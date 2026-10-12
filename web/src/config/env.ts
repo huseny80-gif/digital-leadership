@@ -31,6 +31,7 @@ export function getApiBaseUrl(): string {
       "API_BASE_URL (or NEXT_PUBLIC_API_BASE_URL) is not set. Copy .env.example to .env.local and fill it in — see ENVIRONMENT.md.",
     );
   }
+  if (process.env.NODE_ENV === "production" && new URL(value).protocol !== "https:") throw new Error("Production API_BASE_URL must use HTTPS.");
   return value;
 }
 
@@ -41,6 +42,7 @@ export function getSupabaseUrl(): string {
       "NEXT_PUBLIC_SUPABASE_URL is not set. Copy .env.example to .env.local and fill it in — see GOOGLE_OAUTH_SETUP.md.",
     );
   }
+  if (process.env.NODE_ENV === "production" && new URL(value).protocol !== "https:") throw new Error("Production Supabase URL must use HTTPS.");
   return value;
 }
 

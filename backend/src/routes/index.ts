@@ -9,7 +9,7 @@ import { assessmentsRoutes } from "../assessments/assessmentsRoutes.js";
 import { analyticsRoutes } from "../analytics/analyticsRoutes.js";
 import { adminRoutes } from "../admin/adminRoutes.js";
 import { trainingAccessRoutes } from "../trainingAccess/trainingAccessRoutes.js";
-import { requireAuthenticated } from "../middleware/authInstance.js";
+import { requireAuthenticated, requireAdmin } from "../middleware/authInstance.js";
 import { contentImportRoutes } from "../contentAutomation/contentImportRoutes.js";
 import { feedbackRoutes } from "../feedback/feedbackRoutes.js";
 import { learningRoutes } from "../learning/learningRoutes.js";
@@ -23,6 +23,8 @@ import { studyToolsRoutes } from "../studyTools/studyToolsRoutes.js";
  */
 export function apiV1Router(): Router {
   const router = Router();
+  // One boundary covers all admin mounts, including future child routers.
+  router.use("/admin", requireAdmin, (_req, res, next) => { res.set("Cache-Control", "private, no-store"); next(); });
 
   router.get("/me", requireAuthenticated, meHandler);
   router.use("/auth", authRoutes());

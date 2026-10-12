@@ -59,6 +59,7 @@ export function createAuthMiddleware(getRepository: () => UsersRepository) {
     try {
       const claims = await verifySupabaseToken(token);
       const user = await resolveOrProvisionUser(getRepository(), claims);
+      if (user.status !== "active") throw forbidden();
       req.user = user;
       next();
     } catch (err) {
@@ -73,6 +74,7 @@ export function createAuthMiddleware(getRepository: () => UsersRepository) {
       next(unauthenticated());
       return;
     }
+    if (req.user.status !== "active") { next(forbidden()); return; }
     next();
   }
 
@@ -87,7 +89,7 @@ export function createAuthMiddleware(getRepository: () => UsersRepository) {
         next(unauthenticated());
         return;
       }
-      if (!allowedRoles.includes(req.user.role)) {
+      if (req.user.status !== "active" || !allowedRoles.includes(req.user.role)) {
         next(forbidden());
         return;
       }

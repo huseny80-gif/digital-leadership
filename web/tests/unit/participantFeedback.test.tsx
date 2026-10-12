@@ -12,6 +12,12 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const item: ParticipantFeedback = { id: "private-1", category: "weakness", message: "<script>alert('private')</script>\nملاحظة خاصة", authorName: "مشارك", authorKind: "guest", status: "new", internalNote: "", createdAt: "2026-10-06T12:00:00Z", updatedAt: "2026-10-06T12:00:00Z" };
 const initial: PaginatedResult<ParticipantFeedback> = { data: [item], total: 1, page: 1, limit: 20 };
 
+it("hides destructive controls unless the server grants admin deletion", () => {
+  render(<ParticipantFeedbackInbox initial={initial} />);
+  expect(screen.queryByRole("button", { name: "حذف الرد" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "حفظ التحديث" })).toBeInTheDocument();
+});
+
 describe("share your opinion form", () => {
   it("explains confidentiality and has no participant-response list", () => {
     render(<FeedbackPage />);
@@ -63,7 +69,7 @@ describe("share your opinion form", () => {
 
 describe("staff participant-response inbox", () => {
   it("renders submitted text as escaped plaintext", () => {
-    const { container } = render(<ParticipantFeedbackInbox initial={initial} />);
+    const { container } = render(<ParticipantFeedbackInbox initial={initial} canDelete />);
     expect(container.querySelector(".feedback-message")?.textContent).toBe(item.message);
     expect(container.querySelector("script")).toBeNull();
     expect(screen.getByText("ردود خاصة لا يطّلع عليها سوى المدير والمدرب.")).toBeInTheDocument();
@@ -71,7 +77,7 @@ describe("staff participant-response inbox", () => {
   it("saves review status and a private internal note, then refreshes the actual server result", async () => {
     const updated = { ...item, status: "reviewed" as const, internalNote: "متابعة داخلية", updatedAt: "2026-10-06T13:00:00Z" };
     mockFetch.mockResolvedValueOnce(json({ data: { updated: true } })).mockResolvedValueOnce(json({ ...initial, data: [updated] }));
-    render(<ParticipantFeedbackInbox initial={initial} />);
+    render(<ParticipantFeedbackInbox initial={initial} canDelete />);
     fireEvent.change(screen.getByLabelText("حالة الرد"), { target: { value: "reviewed" } });
     fireEvent.change(screen.getByLabelText("ملاحظة داخلية للمدير والمدرب"), { target: { value: "متابعة داخلية" } });
     fireEvent.click(screen.getByRole("button", { name: "حفظ التحديث" }));
@@ -82,7 +88,7 @@ describe("staff participant-response inbox", () => {
   });
   it("requires explicit Arabic confirmation before deleting a response", async () => {
     mockFetch.mockResolvedValueOnce(new Response(null, { status: 204 })).mockResolvedValueOnce(json({ ...initial, data: [], total: 0 }));
-    render(<ParticipantFeedbackInbox initial={initial} />);
+    render(<ParticipantFeedbackInbox initial={initial} canDelete />);
     fireEvent.click(screen.getByRole("button", { name: "حذف الرد" }));
     expect(mockFetch).not.toHaveBeenCalled();
     fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "حذف" }));
@@ -91,7 +97,7 @@ describe("staff participant-response inbox", () => {
   });
   it("applies filters on the server and clears all private content if permission is revoked", async () => {
     mockFetch.mockResolvedValueOnce(json({ ...initial, data: [], total: 0 })).mockResolvedValueOnce(json({ error: { code: "forbidden" } }, 403));
-    render(<ParticipantFeedbackInbox initial={initial} />);
+    render(<ParticipantFeedbackInbox initial={initial} canDelete />);
     fireEvent.change(screen.getByLabelText("الحالة"), { target: { value: "archived" } });
     expect(await screen.findByText("لا توجد ردود ضمن هذه الخيارات.")).toBeInTheDocument();
     expect(String(mockFetch.mock.calls[0]?.[0])).toContain("status=archived");

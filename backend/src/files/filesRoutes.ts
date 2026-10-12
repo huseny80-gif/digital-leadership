@@ -15,6 +15,7 @@ import { LocalFilesystemStorageProvider } from "./localStorageProvider.js";
 import { verifyLocalSignedToken } from "./localSignedUrlToken.js";
 import { notFound } from "../lib/httpError.js";
 import { getContentImportService, wakeContentImportWorker } from "../contentAutomation/runtime.js";
+import { validateInputEnvelope } from "../middleware/security.js";
 
 const uploadBodySchema = z.object({
   subjectId: z.string().uuid(),
@@ -46,10 +47,14 @@ export function filesRoutes(): Router {
 
   const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: env.MAX_PDF_SIZE_BYTES, files: 1 },
+    limits: { fileSize: env.MAX_PDF_SIZE_BYTES, files: 1, fields: 8, parts: 9, fieldSize: 1024, fieldNameSize: 100 },
+    fileFilter: (_req, file, done) => {
+      if (file.mimetype !== "application/pdf" || !/\.pdf$/iu.test(file.originalname)) done(new ValidationError("Only PDF uploads are allowed."));
+      else done(null, true);
+    },
   });
 
-  router.post("/", requireAdmin, fileOperationRateLimiter, upload.single("file"), async (req, res, next) => {
+  router.post("/", requireAdmin, fileOperationRateLimiter, upload.single("file"), validateInputEnvelope, async (req, res, next) => {
     try {
       if (!req.file) {
         throw new ValidationError("A 'file' field with the PDF content is required.");
@@ -108,6 +113,7 @@ export function filesRoutes(): Router {
     requireUuidParam("fileId"),
     fileOperationRateLimiter,
     upload.single("file"),
+    validateInputEnvelope,
     async (req, res, next) => {
       try {
         if (!req.file) {

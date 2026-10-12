@@ -2,6 +2,7 @@ import Link from "next/link";
 import { libraryEntriesPresentation, libraryEntryPresentation } from "@digital-leadership/shared";
 import type { LibraryEntry, LibrarySection, SubjectLibrary } from "@shared/index";
 import { apiGet } from "@/lib/api/client";
+import { safeStudyHtml } from "@/lib/security/safeHtml";
 
 export const librarySections: Record<LibrarySection, string> = {
   lectures: "المحاضرات", summaries: "الملخصات", assignments: "الواجبات والأنشطة",
@@ -23,7 +24,7 @@ export function LibraryEntryContent({ entry: original, subjectId }: { entry: Lib
     {entry.url ? <p><a className="text-link" href={entry.url} target="_blank" rel="noopener noreferrer">فتح المرجع</a></p> : null}
     {entry.lectureId ? <p><Link className="text-link" href={"/subjects/" + subjectId + "/lectures/" + entry.lectureId}>فتح المحاضرة ومتابعة التقدم</Link></p> : null}
     {entry.assignmentId ? <p><Link className="text-link" href={"/subjects/" + subjectId + "/assignments/" + entry.assignmentId}>فتح التكليف</Link></p> : null}
-    {entry.files.map(file => file.inlineReferenceId ? <p key={file.id}><a className="text-link" href={"#library-document-" + file.inlineReferenceId}>{file.label} — عرض المصدر المشترك</a></p> : file.bodyHtml ? <details className="dl-library-document" id={"library-document-" + file.id} key={file.id} open><summary>{file.label}</summary><div className="dl-library-reader" dangerouslySetInnerHTML={{ __html: file.bodyHtml }} /></details> : <div className="dl-library-file" key={file.id}>
+    {entry.files.map(file => file.inlineReferenceId ? <p key={file.id}><a className="text-link" href={"#library-document-" + file.inlineReferenceId}>{file.label} — عرض المصدر المشترك</a></p> : file.bodyHtml ? <details className="dl-library-document" id={"library-document-" + file.id} key={file.id} open><summary>{file.label}</summary><div className="dl-library-reader" dangerouslySetInnerHTML={{ __html: safeStudyHtml(file.bodyHtml) }} /></details> : <div className="dl-library-file" key={file.id}>
       <a className="text-link" href={"/api/library/" + subjectId + "/" + file.id}>{file.label} — {file.filename}</a>
       <small>{(file.sizeBytes / 1024 / 1024).toFixed(2)} MB</small>
       {file.filename.toLowerCase().endsWith(".pdf") ? <details><summary>قراءة الملف</summary><iframe title={file.label} src={"/api/library/" + subjectId + "/" + file.id + "?inline=1"} /></details> : null}

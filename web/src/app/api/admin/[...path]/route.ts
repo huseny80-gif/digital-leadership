@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiGet, apiPost, apiPatch, apiDelete, ApiError } from "@/lib/api/client";
 import { getCurrentAccessToken } from "@/lib/auth/session";
+import { adminBackendPath, hasUnsafeOrigin, readLimitedBody, RequestSizeError } from "@/lib/security/requestSecurity";
 
 /**
  * A single same-origin BFF proxy for the entire Admin Console API surface
@@ -23,7 +24,9 @@ import { getCurrentAccessToken } from "@/lib/auth/session";
  */
 async function forward(method: "GET" | "POST" | "PATCH" | "DELETE", request: Request, path: string[]) {
   const search = new URL(request.url).search;
-  const backendPath = `/api/v1/admin/${path.join("/")}${search}`;
+  const backendPath = adminBackendPath(path, search);
+  if (!backendPath) return NextResponse.json({ error: { code: "validation_error", message: "Invalid administrative path." } }, { status: 400 });
+  if (hasUnsafeOrigin(request)) return NextResponse.json({ error: { code: "forbidden", message: "Cross-origin changes are not allowed." } }, { status: 403 });
 
   // `getCurrentAccessToken()` reads the Supabase session cookie and can
   // throw (not just return null) — e.g. if Supabase client construction
@@ -51,9 +54,10 @@ async function forward(method: "GET" | "POST" | "PATCH" | "DELETE", request: Req
 
     let jsonBody: unknown = {};
     try {
-      const text = await request.text();
+      const text = new TextDecoder().decode(await readLimitedBody(request, 2 * 1024 * 1024));
       jsonBody = text ? JSON.parse(text) : {};
-    } catch {
+    } catch (error) {
+      if (error instanceof RequestSizeError) return NextResponse.json({ error: { code: "payload_too_large", message: "Request exceeds the allowed size." } }, { status: 413 });
       return NextResponse.json({ error: { code: "validation_error", message: "A valid JSON body is required." } }, { status: 400 });
     }
 

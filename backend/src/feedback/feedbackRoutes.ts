@@ -3,7 +3,7 @@ import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { FEEDBACK_CATEGORIES, FEEDBACK_STATUSES } from "@digital-leadership/shared";
 import { requireLearnerPrincipal } from "../middleware/learnerPrincipal.js";
-import { requireAuthenticated } from "../middleware/authInstance.js";
+import { requireAuthenticated, requireAdmin } from "../middleware/authInstance.js";
 import { can } from "../authorization/rbac.js";
 import { forbidden } from "../lib/httpError.js";
 import { requireUuidParam, ValidationError } from "../lib/validation.js";
@@ -58,7 +58,7 @@ export function feedbackRoutes(): Router {
     } catch (error) { next(error); }
   });
 
-  router.delete("/feedback/manage/:feedbackId", privateResponse, requireAuthenticated, requireFeedbackManager, requireUuidParam("feedbackId"), async (req, res, next) => {
+  router.delete("/feedback/manage/:feedbackId", privateResponse, requireAdmin, requireUuidParam("feedbackId"), async (req, res, next) => {
     try { await repository().delete(req.params.feedbackId as string, req.user!.id); res.status(204).end(); }
     catch (error) { next(error); }
   });
