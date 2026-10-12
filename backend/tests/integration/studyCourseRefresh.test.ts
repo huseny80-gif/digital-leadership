@@ -1,3 +1,4 @@
+import { passivePdf } from "../helpers/passivePdf.js";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { Pool } from "pg";
 import { refreshStudyCourses } from "../../src/contentAutomation/refreshStudyCourses.js";
@@ -178,7 +179,7 @@ describe("source-based AI and cybersecurity course refresh", () => {
     const storage: StorageProvider = { name: "local-filesystem", upload: async (key, bytes) => { objects.set(key, bytes); }, read: async key => Buffer.from(objects.get(key)!), delete: async key => { objects.delete(key); }, getSignedUrl: async () => "https://example.invalid/file" };
     const text = "يساعد إطار NIST للأمن السيبراني على تنظيم حوكمة الأمن السيبراني في المؤسسة وتحديد الأصول والمخاطر المرتبطة بها. يشمل الإطار وظائف الحوكمة والتحديد والحماية والكشف والاستجابة والتعافي بهدف متابعة المخاطر وتحسين إجراءات الحماية. تعتمد المؤسسة ملفًا حاليًا وملفًا مستهدفًا لتحديد الفجوات وترتيب أولويات العمل وتوثيق التحسين المستمر لإدارة المخاطر السيبرانية.";
     const service = new ContentImportService(pool, storage, 10485760, { extract: async () => text });
-    const bytes = Buffer.from("%PDF-1.4\ncyber-third-fixture\n%%EOF");
+    const bytes = passivePdf("cyber-third-fixture");
     const job = await service.submitPdf({ actorId: actor, filename: "Cybersecurity3.pdf", mimeType: "application/pdf", buffer: bytes });
     await service.processNext();
     expect(await service.get(job.id)).toMatchObject({ status: "completed", subjectId: cyber.subjectId, filename: cyber.titleOf(3) + ".pdf", lectures: [{ id: masters.get("cs-l3"), title: cyber.titleOf(3), number: 3 }] });

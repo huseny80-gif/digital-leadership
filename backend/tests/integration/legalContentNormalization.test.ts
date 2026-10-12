@@ -1,3 +1,4 @@
+import { passivePdf } from "../helpers/passivePdf.js";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { Pool } from "pg";
 import { normalizeLegalContent } from "../../src/contentAutomation/normalizeLegalContent.js";
@@ -77,7 +78,7 @@ describe("in-place legal content normalization", () => {
 
   it("normalizes future Legal5 imports after classification and retains deduplication and original bytes", async () => {
     const actor = await seed();
-    const bytes = Buffer.from("%PDF-legal-source-fixture");
+    const bytes = passivePdf("legal-source-fixture");
     const objects = new Map<string, Buffer>();
     const storage: StorageProvider = {
       name: "local-filesystem", upload: async (key, data) => { objects.set(key, Buffer.from(data)); },

@@ -1,3 +1,4 @@
+import { passivePdf } from "../helpers/passivePdf.js";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { Pool } from "pg";
 import { separateLegalSixthLecture } from "../../src/contentAutomation/separateLegalSixthLecture.js";
@@ -127,7 +128,7 @@ describe("sixth legal lecture independence", () => {
     const { actor, fifth } = await seed();
     const sixth = (await separateLegalSixthLecture(pool)).lectureId!;
     const service = new ContentImportService(pool, memoryStorage(), 10485760, { extract: async () => sixthText });
-    const bytes = Buffer.from("%PDF-1.4\nsixth legal fixture\n%%EOF");
+    const bytes = passivePdf("sixth legal fixture");
     const job = await service.submitPdf({ actorId: actor, filename: "Legal6.pdf", title: legalLectureTitle(5), subjectId: LEGAL_SUBJECT_ID, lectureId: fifth, mimeType: "application/pdf", buffer: bytes });
     await service.processNext();
     expect(await service.get(job.id)).toMatchObject({ status: "completed", title: legalLectureTitle(6), filename: legalLectureTitle(6) + ".pdf", lectures: [{ id: sixth, number: 6 }] });

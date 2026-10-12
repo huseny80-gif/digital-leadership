@@ -1,3 +1,4 @@
+import { passivePdf } from "../helpers/passivePdf.js";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { Pool } from "pg";
 import { ContentImportService } from "../../src/contentAutomation/contentImportService.js";
@@ -45,7 +46,7 @@ async function seed(withFinquiz = false) {
   }
   const storage = new MemoryStorage();
   const service = new ContentImportService(pool, storage, 10485760, { extract: async () => text });
-  const bytes = Buffer.from("%PDF-ISO-27001-original-fixture");
+  const bytes = passivePdf("ISO-27001-original-fixture");
   // Reproduce an older completed upload explicitly placed in the wrong subject.
   const job = await service.submitPdf({ actorId: actor, subjectId: sourceId, filename: `${title}.pdf`, mimeType: "application/pdf", buffer: bytes });
   await service.processNext();

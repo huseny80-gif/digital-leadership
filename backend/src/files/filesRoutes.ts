@@ -15,6 +15,7 @@ import { LocalFilesystemStorageProvider } from "./localStorageProvider.js";
 import { verifyLocalSignedToken } from "./localSignedUrlToken.js";
 import { notFound } from "../lib/httpError.js";
 import { getContentImportService, wakeContentImportWorker } from "../contentAutomation/runtime.js";
+import { validateInputEnvelope } from "../middleware/security.js";
 
 const uploadBodySchema = z.object({
   subjectId: z.string().uuid(),
@@ -53,7 +54,7 @@ export function filesRoutes(): Router {
     },
   });
 
-  router.post("/", requireAdmin, fileOperationRateLimiter, upload.single("file"), async (req, res, next) => {
+  router.post("/", requireAdmin, fileOperationRateLimiter, upload.single("file"), validateInputEnvelope, async (req, res, next) => {
     try {
       if (!req.file) {
         throw new ValidationError("A 'file' field with the PDF content is required.");
@@ -112,6 +113,7 @@ export function filesRoutes(): Router {
     requireUuidParam("fileId"),
     fileOperationRateLimiter,
     upload.single("file"),
+    validateInputEnvelope,
     async (req, res, next) => {
       try {
         if (!req.file) {

@@ -47,6 +47,8 @@ describe("server security boundaries", () => {
       await request(s.app).post("/api/v1/files").set("Authorization", `Bearer ${s.tokens[0]}`).field("subjectId", s.subject).attach("file", bytes, { filename: "محاضرة.pdf", contentType: "application/pdf" }).expect(400);
     }
     expect((await pool.query("select count(*)::int n from files")).rows[0]!.n).toBe(0);
+    await request(s.app).post("/api/v1/files").set("Authorization", `Bearer ${s.tokens[0]}`).field("subjectId", s.subject).field("constructor", "pollution").attach("file", passivePdf(), { filename: "safe.pdf", contentType: "application/pdf" }).expect(400);
+    expect((await pool.query("select count(*)::int n from files")).rows[0]!.n).toBe(0);
   });
   it("treats SQL and XSS payloads as search data and rejects pollution keys safely", async () => {
     const s = await seed();

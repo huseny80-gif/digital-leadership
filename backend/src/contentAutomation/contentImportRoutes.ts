@@ -2,6 +2,7 @@ import { Router, raw } from "express";
 import multer from "multer";
 import { z } from "zod";
 import { requireAdmin } from "../middleware/authInstance.js";
+import { validateInputEnvelope } from "../middleware/security.js";
 import { requireUuidParam, ValidationError } from "../lib/validation.js";
 import { fileOperationRateLimiter } from "../middleware/rateLimit.js";
 import { getEnv } from "../config/env.js";
@@ -37,7 +38,7 @@ export function contentImportRoutes(): Router {
   router.post("/:importId/complete", requireUuidParam("importId"), async (req, res, next) => {
     try { const data = await getContentImportService().finishUpload(req.params.importId as string, req.user!.id); wakeContentImportWorker(); res.status(202).json({ data }); } catch (error) { next(error); }
   });
-  router.post("/", fileOperationRateLimiter, upload.single("file"), async (req, res, next) => {
+  router.post("/", fileOperationRateLimiter, upload.single("file"), validateInputEnvelope, async (req, res, next) => {
     try {
       const service = getContentImportService();
       let data;
