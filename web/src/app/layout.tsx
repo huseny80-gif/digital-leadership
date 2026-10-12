@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cairo, Tajawal } from "next/font/google";
+import { connection } from "next/server";
 import "./globals.css";
 import "./reference-dashboard.css";
 import "./quiz-training.css";
@@ -34,11 +35,14 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.webp" },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Per-request CSP nonces also cover public login/join pages. Static HTML
+  // cannot contain the current request's nonce.
+  await connection();
   return (
     <html lang="ar" dir="rtl" className={`${cairo.variable} ${tajawal.variable}`}>
       <body>{children}</body>

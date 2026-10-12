@@ -3,7 +3,7 @@ import type { FileMetadata, SignedFileUrl } from "@shared/index";
 import type { StorageProvider } from "./storageProvider.js";
 import { FilesRepository } from "./filesRepository.js";
 import { buildObjectKey, generateFileId, sanitizeFilename } from "./objectPath.js";
-import { validatePdfUpload } from "./pdfValidation.js";
+import { validateSafePdfUpload } from "./pdfValidation.js";
 import { ValidationError } from "../lib/validation.js";
 import { notFound, conflict } from "../lib/httpError.js";
 import { writeAuditLog } from "../lib/audit.js";
@@ -57,7 +57,7 @@ export class FilesService {
       throw notFound("Lecture");
     }
 
-    validatePdfUpload({
+    await validateSafePdfUpload({
       declaredMimeType: input.declaredMimeType,
       originalFilename: input.originalFilename,
       buffer: input.buffer,
@@ -181,7 +181,7 @@ export class FilesService {
     // subject/lecture body field on the replace request at all).
     const context = parseSubjectAndLectureFromObjectKey(oldFile.storageKey);
 
-    validatePdfUpload({
+    await validateSafePdfUpload({
       declaredMimeType: input.declaredMimeType,
       originalFilename: input.originalFilename,
       buffer: input.buffer,

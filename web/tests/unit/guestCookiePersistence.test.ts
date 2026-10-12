@@ -8,6 +8,22 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllEnvs(); });
 describe("returning guest browser persistence", () => {
+  it("forwards refreshed authentication cookies together with the current CSP nonce", async () => {
+    vi.mocked(createSupabaseMiddlewareClient).mockImplementation((request, response) => ({ auth: { getUser: async () => {
+      request.cookies.set("renewed-token", "current"); response.cookies.set("renewed-token", "current", { httpOnly: true, secure: true });
+      return { data: { user: { id: "authenticated" } } };
+    } } }) as unknown as ReturnType<typeof createSupabaseMiddlewareClient>);
+    const result = await proxy(new NextRequest("https://web-husen4.vercel.app/subjects"));
+    expect(result.headers.get("x-middleware-request-cookie")).toContain("renewed-token=current");
+    expect(result.cookies.get("renewed-token")).toMatchObject({ value: "current", httpOnly: true });
+    expect(result.headers.get("x-middleware-request-content-security-policy")).toBe(result.headers.get("content-security-policy"));
+  });
+  it("sets a fresh forwarded CSP for public pages and blocks browser cross-origin API changes", async () => {
+    const one = await proxy(new NextRequest("https://web-husen4.vercel.app/login")), two = await proxy(new NextRequest("https://web-husen4.vercel.app/login"));
+    expect(one.headers.get("content-security-policy")).toContain("nonce-"); expect(one.headers.get("content-security-policy")).not.toBe(two.headers.get("content-security-policy"));
+    const rejected = await proxy(new NextRequest("https://web-husen4.vercel.app/api/admin/subjects", { method: "POST", headers: { origin: "https://evil.example" } }));
+    expect(rejected.status).toBe(403);
+  });
   it("renews the same signed reference for a returning learner without changing access identity", async () => {
     vi.stubEnv("NODE_ENV", "production");
     const request = new NextRequest("https://web-husen4.vercel.app/subjects/risk", { headers: { cookie: "training_guest_session=same-session.signature" } });

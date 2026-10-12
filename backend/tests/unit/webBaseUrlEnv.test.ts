@@ -13,6 +13,12 @@ describe("WEB_BASE_URL production hardening", () => {
   beforeEach(() => {
     vi.resetModules();
   });
+  it("rejects a public plaintext production origin", async () => {
+    vi.stubEnv("NODE_ENV", "production"); vi.stubEnv("WEB_BASE_URL", "http://web-husen4.vercel.app");
+    vi.stubEnv("LOCAL_STORAGE_SIGNING_SECRET", "prod-storage-secret"); vi.stubEnv("GUEST_SESSION_SIGNING_SECRET", "prod-guest-secret");
+    try { const { getEnv } = await import("../../src/config/env.js"); expect(() => getEnv()).toThrow("WEB_BASE_URL must use HTTPS in production"); }
+    finally { vi.unstubAllEnvs(); }
+  });
 
   it("throws, not silently falls back to localhost, when unset in production", async () => {
     vi.stubEnv("NODE_ENV", "production");

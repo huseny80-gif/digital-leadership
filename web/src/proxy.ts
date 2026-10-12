@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseMiddlewareClient } from "@/lib/supabase/middlewareClient";
 import { isProtectedPath, isGuestReachablePath } from "@/lib/authGuard";
 import { GUEST_SESSION_COOKIE_MAX_AGE_SECONDS } from "@digital-leadership/shared";
+import { hasUnsafeOrigin } from "@/lib/security/requestSecurity";
+import { browserCsp } from "@/lib/security/contentSecurity";
 
 const GUEST_SESSION_COOKIE = "training_guest_session";
 
@@ -23,12 +25,27 @@ const GUEST_SESSION_COOKIE = "training_guest_session";
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (pathname.startsWith("/api/") && hasUnsafeOrigin(request)) {
+    return NextResponse.json({ error: { code: "forbidden", message: "Cross-origin changes are not allowed." } }, { status: 403, headers: { "Cache-Control": "no-store" } });
+  }
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const csp = browserCsp(nonce, process.env.NODE_ENV === "production");
+  const response = NextResponse.next();
+  const finish = (redirect?: NextResponse) => {
+    // Supabase may renew the request cookies during getUser(). Forward their
+    // current values, not a snapshot taken before the session refresh.
+    const headers = new Headers(request.headers);
+    headers.set("x-nonce", nonce); headers.set("Content-Security-Policy", csp);
+    const result = redirect ?? NextResponse.next({ request: { headers } });
+    for (const cookie of response.cookies.getAll()) result.cookies.set(cookie);
+    result.headers.set("Content-Security-Policy", csp);
+    return result;
+  };
 
   if (!isProtectedPath(pathname)) {
-    return NextResponse.next();
+    return finish();
   }
 
-  const response = NextResponse.next();
   const supabase = createSupabaseMiddlewareClient(request, response);
 
   const {
@@ -36,7 +53,7 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (user) {
-    return response;
+    return finish();
   }
 
   // ONE learner platform, multiple principals (task requirement): a
@@ -62,14 +79,14 @@ export async function proxy(request: NextRequest) {
       httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/",
       maxAge: GUEST_SESSION_COOKIE_MAX_AGE_SECONDS,
     });
-    return response;
+    return finish();
   }
 
   const loginUrl = new URL("/login", request.url);
   loginUrl.searchParams.set("redirectTo", pathname);
-  return NextResponse.redirect(loginUrl);
+  return finish(NextResponse.redirect(loginUrl));
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/subjects/:path*", "/admin/:path*", "/profile/:path*", "/quizzes/:path*", "/about/:path*", "/feedback/:path*", "/participant-feedback/:path*"],
+  matcher: ["/((?!_next/|favicon.ico|robots.txt|sitemap.xml|assets/).*)"],
 };

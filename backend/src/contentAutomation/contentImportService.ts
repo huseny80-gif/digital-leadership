@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 import type { ContentImport, ImportedLecture } from "@shared/index";
 import type { StorageProvider } from "../files/storageProvider.js";
-import { validatePdfUpload } from "../files/pdfValidation.js";
+import { validateSafePdfUpload } from "../files/pdfValidation.js";
 import { buildObjectKey, sanitizeFilename } from "../files/objectPath.js";
 import { ValidationError } from "../lib/validation.js";
 import { notFound } from "../lib/httpError.js";
@@ -99,7 +99,7 @@ export class ContentImportService {
     return job;
   }
   async submitPdf(input: { actorId: string; filename: string; mimeType: string; buffer: Buffer; title?: string } & Context): Promise<ContentImport> {
-    validatePdfUpload({ buffer: input.buffer, declaredMimeType: input.mimeType, originalFilename: input.filename, maxSizeBytes: this.maxBytes });
+    await validateSafePdfUpload({ buffer: input.buffer, declaredMimeType: input.mimeType, originalFilename: input.filename, maxSizeBytes: this.maxBytes });
     const hash = hashSource(input.buffer, input);
     const duplicate = await this.existing(hash);
     if (duplicate) return duplicate;
@@ -163,7 +163,7 @@ export class ContentImportService {
       for (let part = 0; part < job.upload_parts; part++) chunks.push(await this.storage.read(`${key}.part-${part}`));
       const bytes = Buffer.concat(chunks);
       if (bytes.length !== Number(job.upload_size) || hashSource(bytes, {}) !== job.source_hash) throw new Error("upload_checksum_mismatch");
-      validatePdfUpload({ buffer: bytes, declaredMimeType: "application/pdf", originalFilename: job.filename ?? "lecture.pdf", maxSizeBytes: this.maxBytes });
+      await validateSafePdfUpload({ buffer: bytes, declaredMimeType: "application/pdf", originalFilename: job.filename ?? "lecture.pdf", maxSizeBytes: this.maxBytes });
       return { filename: job.filename ?? "lecture.pdf", bytes };
     }
     return { filename: job.filename ?? "lecture.pdf", bytes: await this.storage.read(key) };

@@ -13,7 +13,11 @@ export function contentImportRoutes(): Router {
   const router = Router();
   router.use(requireAdmin);
   router.use((_req, res, next) => { res.setHeader("Cache-Control", "private, no-store"); next(); });
-  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: getEnv().MAX_PDF_SIZE_BYTES, files: 1 } });
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: getEnv().MAX_PDF_SIZE_BYTES, files: 1, fields: 4, parts: 5, fieldSize: 2 * 1024 * 1024, fieldNameSize: 100 },
+    fileFilter: (_req, file, done) => {
+      if (file.mimetype !== "application/pdf" || !/\.pdf$/iu.test(file.originalname)) done(new ValidationError("Only PDF uploads are allowed."));
+      else done(null, true);
+    } });
   router.get("/", async (_req, res, next) => { try { res.json({ data: await getContentImportService().list() }); } catch (error) { next(error); } });
   router.get("/limits", (_req, res) => { res.json({ data: { maxPdfBytes: getEnv().MAX_PDF_SIZE_BYTES, partBytes: 2 * 1024 * 1024, maxTextCharacters: 500_000 } }); });
   router.post("/uploads", fileOperationRateLimiter, async (req, res, next) => {

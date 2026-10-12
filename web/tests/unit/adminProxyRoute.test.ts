@@ -31,6 +31,11 @@ beforeEach(() => {
 });
 
 describe("Admin BFF proxy (/api/admin/[...path])", () => {
+  it("rejects cross-origin changes and path traversal before reading a session or forwarding", async () => {
+    const origin = await POST(new Request("http://test/api/admin/subjects", { method: "POST", headers: { origin: "https://evil.example" } }), ctx(["subjects"]));
+    const traversal = await GET(new Request("http://test/api/admin/subjects"), ctx(["..", "users"]));
+    expect(origin.status).toBe(403); expect(traversal.status).toBe(400); expect(mockGetToken).not.toHaveBeenCalled(); expect(mockApiPost).not.toHaveBeenCalled(); expect(mockApiGet).not.toHaveBeenCalled();
+  });
   it("401s every method without calling the backend when there is no session", async () => {
     mockGetToken.mockResolvedValue(null);
 

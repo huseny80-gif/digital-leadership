@@ -6,6 +6,7 @@ import { authenticate } from "./middleware/authInstance.js";
 import { resolveGuestSession } from "./middleware/guestSessionInstance.js";
 import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimit.js";
 import { getEnv } from "./config/env.js";
+import { transportSecurity, validateInputEnvelope } from "./middleware/security.js";
 
 /**
  * Builds the Express application without starting a listener, so tests can
@@ -36,6 +37,8 @@ export function createApp(): Express {
   // deliberately not `true`, which would trust every hop in an
   // attacker-supplied header chain.
   app.set("trust proxy", 1);
+  app.disable("x-powered-by");
+  app.use(transportSecurity(env.NODE_ENV === "production"));
 
   // CORS (API_SECURITY.md "CORS"): explicit allow-list from environment,
   // never a wildcard, for an API that serves authenticated requests
@@ -52,6 +55,7 @@ export function createApp(): Express {
   app.use("/api/v1/admin/content-imports", express.json({ limit: "2mb" }));
   app.use("/api/v1/study-tools/print", express.json({ limit: "1mb" }));
   app.use(express.json());
+  app.use(validateInputEnvelope);
   app.use(authenticate);
   // Mirrors `authenticate` exactly: only ever *attaches* `req.guestSession`
   // when a valid signed guest-session cookie is present, never rejects by
