@@ -1,15 +1,17 @@
 import { randomUUID } from "node:crypto";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Pool } from "pg";
 import { createUser, createLecture } from "../helpers/seedFixtures.js";
 import { manifest, subjectMapping } from "../../src/finquiz/catalog.js";
 import { ExamMaterialService } from "../../src/examMaterials/examMaterialService.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-beforeEach(async () => {
+async function resetFixture() {
   if (!new URL(process.env.DATABASE_URL!).pathname.endsWith("_test")) throw new Error("Requires an isolated test database");
   await pool.query("truncate users,audit_logs restart identity cascade");
-});
+}
+beforeEach(resetFixture);
+afterEach(resetFixture);
 afterAll(async () => { await pool.end(); });
 async function seed() {
   const admin = await createUser(pool, { email: "legal-review@example.test", providerSubject: "legal-review", roleName: "admin" });
