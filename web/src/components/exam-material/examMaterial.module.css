@@ -256,3 +256,9 @@
 .sourceCitation summary:focus-visible, .instructorPanel > summary:focus-visible { outline: 2px solid #91ecf4; outline-offset: 3px; border-radius: 6px; }
 @media (max-width: 760px) { .analysisCards { grid-template-columns: minmax(0, 1fr); } .analysisPanel, .instructorPanel { margin: .7rem; } .analysisPanel { padding: .9rem; } .analysisStats > span { flex: 1; justify-content: space-between; } .instructorPanel > summary { flex-wrap: wrap; font-size: .9rem; } }
 @media (prefers-reduced-motion: reduce) { .instructorPanel > summary::after { transition: none; } }
+
+.decisionReview { margin-block: .75rem; padding: .85rem; border: 1px solid var(--border-color, #7898ad40); border-radius: 12px; background: #173d4b10; }
+.decisionReview > summary { cursor: pointer; font-weight: 700; color: var(--text-primary); }
+.decisionReview p, .decisionReview dd { line-height: 1.9; overflow-wrap: anywhere; }
+.decisionReview dt { margin-block-start: .75rem; font-weight: 700; }
+.decisionReview dd { margin-inline: 0; margin-block: .3rem; }

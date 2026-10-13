@@ -25,7 +25,7 @@ import { hasBrokenSourceEncoding } from "../../src/contentAutomation/sourceTextQ
 import { academicSpeechCache, AcademicSpeechUnavailable } from "../../src/examMaterials/academicSpeech.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const source = "تتضمن إدارة المخاطر تحديد الأحداث المحتملة وتحليل الاحتمالية والأثر قبل اختيار خطة الاستجابة المناسبة لحماية أهداف المؤسسة.\nتساعد مصفوفة المخاطر على ترتيب الأولويات وتوجيه الموارد نحو المخاطر ذات التأثير المرتفع بصورة منتظمة داخل المؤسسة.\nيجب توثيق الإجراءات ومراجعة النتائج مع فريق العمل لتحديث خطة المخاطر ومتابعة فعالية الاستجابة والتحسين المستمر.";
+const source = "تتضمن إدارة المخاطر تحديد الأحداث المحتملة وتحليل الاحتمالية والأثر قبل اختيار خطة الاستجابة المناسبة لحماية أهداف المؤسسة.\nتساعد مصفوفة المخاطر على ترتيب الأولويات وتوجيه الموارد نحو المخاطر ذات التأثير المرتفع بصورة منتظمة داخل المؤسسة.\nيجب توثيق الإجراءات ومراجعة النتائج مع فريق العمل لتحديث خطة المخاطر ومتابعة فعالية الاستجابة والتحسين المستمر.\n\nيجب توثيق موافقة مالك الخطر قبل اعتماد خطة الاستجابة المؤسسية.\n\nيجب مراجعة نتائج الاستجابة مع الفريق قبل تحديث سجل المخاطر المؤسسية.";
 beforeAll(async () => {
   if (!new URL(process.env.DATABASE_URL!).pathname.endsWith("_test")) throw new Error("Requires isolated test database");
   await ensureExamMaterialSchema(pool);
@@ -98,9 +98,9 @@ describe("independent exam material archives", () => {
     expect(group.summary.sections.map(l => l.id)).toEqual(s.lectures.slice(0, 3));
     expect(JSON.stringify(group.summary)).not.toContain("محتوى المحاضرة 4");
     const questions = (await request(s.app).get(`/api/v1/quizzes/${group.quizId}/questions`).set("Cookie", s.cookie).expect(200)).body.data;
-    expect(questions.length).toBeGreaterThan(8);
-    expect(new Set(questions.map((q: { questionType: string }) => q.questionType))).toEqual(new Set(["multiple_choice", "true_false", "fill", "match", "order"]));
-    expect(JSON.stringify(questions)).not.toMatch(/is_correct|isCorrect|correct_order_index|explanation|source_excerpt|acceptedAnswers/);
+    expect(questions.length).toBe(6);
+    expect(new Set(questions.map((q: { questionType: string }) => q.questionType))).toEqual(new Set(["multiple_choice"]));
+    expect(JSON.stringify(questions)).not.toMatch(/is_correct|isCorrect|correct_order_index|explanation|source_excerpt|acceptedAnswers|caseReferences|assessment|rationale/);
     expect(questions.every((q: { id: string }) => !s.originals.includes(q.id))).toBe(true);
     expect((await pool.query("select * from questions where id=any($1::uuid[]) order by id", [s.originals])).rows).toEqual(before);
     expect((await pool.query("select * from question_options where question_id=any($1::uuid[]) order by id", [s.originals])).rows).toEqual(optionsBefore);
@@ -157,6 +157,10 @@ describe("independent exam material archives", () => {
     const report = (await request(s.app).get(bundle).set("Cookie", s.cookie).expect(200)).body.data.knowledgeGaps;
     expect(report).toMatchObject({ attemptId: attempt.id, incorrectAnswers: 1, unansweredQuestions: group.questionCount - 1, unmappedQuestions: 0 });
     expect(report.gaps.some((gap: { wrongQuestionIds: string[] }) => gap.wrongQuestionIds.includes(wrong.question_id))).toBe(true);
+    const decision = report.gaps.flatMap((gap: { decisions?: Array<{ questionId: string; selectedOption: string; expectedOption: string; reason: string }> }) => gap.decisions ?? []).find((item: { questionId: string }) => item.questionId === wrong.question_id);
+    expect(decision).toBeDefined();
+    expect(decision.selectedOption).toBe((await pool.query("select option_text from question_options where id=$1", [wrong.id])).rows[0].option_text);
+    expect(decision.reason.length).toBeGreaterThan(20);
     expect(report.gaps.every((gap: { references: Array<{ startLine: number; endLine: number; excerpt: string }> }) => gap.references.every(reference => reference.startLine > 0 && reference.endLine >= reference.startLine && reference.excerpt.length > 30))).toBe(true);
     await request(s.app).get(bundle).set("Authorization", `Bearer ${s.tokens[2]}`).expect(404);
   });
@@ -231,7 +235,7 @@ describe("independent exam material archives", () => {
     await createLectureItem(pool, { lectureId: s.lectures[0]!, itemType: "summary", title: "ملخص موجز", status: "published", createdBy: s.admin, bodyText: source });
     await createExamSourceFile(pool, { lectureId: s.lectures[0]!, title: "النص الكامل", createdBy: s.admin, text: `## تطبيقات إدارة المخاطر\n${full.join("\n")}\n## التصعيد وحدود الصلاحية\n${lateTopic}` });
     const group = await s.generate([s.lectures[0]!]);
-    expect(group.summary.version).toBe(5);
+    expect(group.summary.version).toBe(6);
     const section = group.summary.sections[0]!;
     expect(group.summary.sections).toHaveLength(1);
     for (const paragraph of full) expect(section.text).toContain(paragraph);
@@ -564,7 +568,7 @@ describe("advanced exam review and challenge protection", () => {
       const parsed = await parser.getText(), text = parsed.text.normalize("NFKC");
       // PDF extractors can insert whitespace within shaped Arabic glyph runs.
       const compact = text.replace(/\s+/g, "");
-      expect(parsed.pages.length).toBeGreaterThan(5); expect(text).toContain("FINAL_SOURCE_PARAGRAPH"); expect(compact).toContain("خريطةالمفاهيم"); expect(compact).toContain("الأسئلةالتدريبية"); expect(compact).toContain("رتّبالبنود");
+      expect(parsed.pages.length).toBeGreaterThan(5); expect(text).toContain("FINAL_SOURCE_PARAGRAPH"); expect(compact).toContain("خريطةالمفاهيم"); expect(compact).toContain("الأسئلةالتدريبية"); expect(compact).toContain("اعتمادخطةالاستجابةالمؤسسية");
       expect(text).not.toContain("الإجابة الصحيحة"); expect(text).not.toContain("correctOptionIds");
     } finally { await parser.destroy(); }
     await pool.query("update lectures set status='draft' where id=$1", [s.lectures[0]]);

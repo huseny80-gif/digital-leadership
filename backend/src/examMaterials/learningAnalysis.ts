@@ -1,5 +1,6 @@
 import type { AttemptAnswer, ExamInstructorGuide, ExamKnowledgeGap, ExamKnowledgeGapReport, ExamLectureSnapshot, QuestionForAttempt, SubmitAnswerAck } from "@shared/index";
 import { groundingVersion, referenceFor, type GroundedQuestion, type SourceParagraph, type SourceReference } from "./sourceGrounding.js";
+import { analyticalPolicy, type AnalyticalAssessment } from "./caseAssessment.js";
 
 /** Read only the proof written by the strict generator. Historical/freeform
  * excerpts never become a fabricated paragraph/line reference. */
@@ -16,6 +17,23 @@ export function storedSourceReferences(rubric: unknown): SourceReference[] {
   return rubric.sourceReferences.length <= 8 && rubric.sourceReferences.every(valid) ? rubric.sourceReferences : [];
 }
 
+/** Decision analysis is private grading metadata. Reject a partial rubric or
+ * an option explanation that is not supported by the archived source proof. */
+export function storedAnalyticalAssessment(rubric: unknown): AnalyticalAssessment | undefined {
+  const references = storedSourceReferences(rubric);
+  if (!references.length || !rubric || typeof rubric !== "object" || !("assessment" in rubric)) return;
+  const value = rubric.assessment as AnalyticalAssessment | undefined;
+  const text = (item: unknown, maximum: number) => typeof item === "string" && item.trim().length > 0 && item.length <= maximum;
+  const supported = (items: unknown): items is SourceReference[] => Array.isArray(items) && items.length > 0 && items.length <= 8
+    && items.every(item => references.some(reference => JSON.stringify(reference) === JSON.stringify(item)));
+  if (!value || value.policy !== analyticalPolicy || !["decision", "diagnosis", "prioritization"].includes(value.skill)
+    || !text(value.criterion, 500) || !supported(value.caseReferences) || !Array.isArray(value.options) || value.options.length < 3 || value.options.length > 4
+    || value.options.filter(option => option?.isCorrect === true).length !== 1
+    || value.options.some(option => !option || typeof option.isCorrect !== "boolean" || !text(option.text, 2000) || !text(option.rationale, 3000) || !supported(option.references))
+    || new Set(value.options.map(option => option.text)).size !== value.options.length) return;
+  return value;
+}
+
 const sourceTopic = (excerpt: string) => {
   const definition = excerpt.match(/^([^:：\n]{3,65})[:：]/u)?.[1];
   return definition ?? (excerpt.length > 90 ? excerpt.slice(0, 87).trim() + "…" : excerpt.trim());
@@ -23,7 +41,7 @@ const sourceTopic = (excerpt: string) => {
 
 export function knowledgeGapReport(input: {
   attemptId: string; questions: QuestionForAttempt[]; answers: AttemptAnswer[]; feedback: SubmitAnswerAck[];
-  sources: Array<{ questionId: string; lectureId: string; lectureTitle: string; references: SourceReference[] }>;
+  sources: Array<{ questionId: string; lectureId: string; lectureTitle: string; references: SourceReference[]; assessment?: AnalyticalAssessment | undefined }>;
 }): ExamKnowledgeGapReport {
   const answered = new Set(input.answers.map(answer => answer.questionId));
   const incorrect = new Set(input.feedback.filter(feedback => feedback.isCorrect === false).map(feedback => feedback.questionId));
@@ -37,13 +55,28 @@ export function knowledgeGapReport(input: {
     if (!source?.references.length) { unmappedQuestions++; continue; }
     // Count a failed question once, even if a matching question spans several
     // definitions. Its supporting paragraphs remain separately reviewable.
-    const key = source.lectureId + ":" + source.references.map(reference => reference.paragraphId).sort().join(":");
+    const assessment = source.assessment;
+    const key = source.lectureId + ":" + (assessment ? assessment.skill + ":" + assessment.criterion : source.references.map(reference => reference.paragraphId).sort().join(":"));
     let gap = groups.get(key);
     if (!gap) {
-      gap = { id: key, lectureId: source.lectureId, lectureTitle: source.lectureTitle, topic: sourceTopic(source.references[0]!.excerpt), wrongQuestionIds: [], unansweredQuestionIds: [], references: [...source.references] };
+      gap = { id: key, lectureId: source.lectureId, lectureTitle: source.lectureTitle, topic: assessment?.criterion ?? sourceTopic(source.references[0]!.excerpt), wrongQuestionIds: [], unansweredQuestionIds: [], references: [...source.references] };
       groups.set(key, gap);
     }
     (wrong ? gap.wrongQuestionIds : gap.unansweredQuestionIds).push(question.id);
+    if (wrong && assessment) {
+      // Resolve the submitted ID through this question's actual options. Never
+      // assume an array position: option ordering may change in the viewer.
+      const selectedId = input.answers.find(answer => answer.questionId === question.id)?.selectedOptionId;
+      const selectedText = question.options?.find(option => option.id === selectedId)?.optionText;
+      const selected = assessment.options.find(option => option.text === selectedText && !option.isCorrect);
+      const expected = assessment.options.find(option => option.isCorrect);
+      const optionTexts = question.options?.map(option => option.optionText);
+      if (selected && expected && optionTexts?.length === assessment.options.length && assessment.options.every(option => optionTexts.includes(option.text))) {
+        const references = [...selected.references, ...expected.references].filter((reference, index, all) => all.findIndex(other => other.paragraphId === reference.paragraphId && other.excerpt === reference.excerpt) === index);
+        (gap.decisions ??= []).push({ questionId: question.id, scenario: question.prompt, selectedOption: selected.text, expectedOption: expected.text,
+          reason: selected.rationale, criterion: assessment.criterion, skill: assessment.skill, references });
+      }
+    }
     for (const reference of source.references) if (!gap.references.some(existing => existing.paragraphId === reference.paragraphId && existing.excerpt === reference.excerpt)) gap.references.push(reference);
   }
   return { attemptId: input.attemptId, incorrectAnswers, unansweredQuestions, unmappedQuestions, gaps: [...groups.values()].sort((a, b) => b.wrongQuestionIds.length - a.wrongQuestionIds.length || b.unansweredQuestionIds.length - a.unansweredQuestionIds.length) };
@@ -64,10 +97,10 @@ export function instructorDebriefGuide(groupId: string, sources: Array<{ lecture
       selected.add(reference.paragraphId);
       // Revalidate the quote against the original paragraph before archiving.
       const verified = referenceFor(paragraph, reference.excerpt);
-      const topic = paragraph.heading === "العرض الأكاديمي للمحاضرة" ? sourceTopic(reference.excerpt) : paragraph.heading;
+      const topic = question.assessment?.criterion ?? (paragraph.heading === "العرض الأكاديمي للمحاضرة" ? sourceTopic(reference.excerpt) : paragraph.heading);
       items.push({ id: verified.paragraphId, lectureId: source.lecture.id, lectureTitle: source.lecture.title, topic,
-        expectedGap: "قد يحتاج المتدرب إلى توضيح المعنى الدقيق لهذه الفقرة والتمييز بين عناصرها وشروطها في سياق المحاضرة.",
-        discussionQuestion: `كيف تشرح العبارة «${verified.excerpt}» وتوضح عناصرها اعتمادًا على الفقرة المشار إليها في المحاضرة؟`, references: [verified] });
+        expectedGap: question.assessment ? `قد يحتاج المتدرب إلى التمييز بين البدائل وفق معيار «${topic}»، وشرح سبب ملاءمة القرار للموقف.` : "قد يحتاج المتدرب إلى توضيح المعنى الدقيق لهذه الفقرة والتمييز بين عناصرها وشروطها في سياق المحاضرة.",
+        discussionQuestion: question.assessment ? `${question.prompt}\nناقش أثر كل بديل في استيفاء الضابط «${verified.excerpt}»، وعلّل القرار اعتمادًا على المصدر.` : `كيف تشرح العبارة «${verified.excerpt}» وتوضح عناصرها اعتمادًا على الفقرة المشار إليها في المحاضرة؟`, references: question.assessment ? question.references : [verified] });
       if (selected.size >= 3) break;
     }
   }

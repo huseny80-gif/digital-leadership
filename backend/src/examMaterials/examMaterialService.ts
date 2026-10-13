@@ -12,8 +12,9 @@ import type { GeneratedQuestion } from "../contentAutomation/questionGeneration.
 import { hasBrokenSourceEncoding } from "../contentAutomation/sourceTextQuality.js";
 import { compileExamSummary, lectureSelectionLabel, studyOnlyExamSummary } from "./summary.js";
 import { LectureSourceFiles } from "./lectureSourceFiles.js";
-import { assertSourceBoundSummary, groundedQuestionCandidates, prioritizeGroundedCandidates, groundingVersion, type GroundedQuestion } from "./sourceGrounding.js";
-import { instructorDebriefGuide, knowledgeGapReport, storedSourceReferences } from "./learningAnalysis.js";
+import { assertSourceBoundSummary, groundedQuestionCandidates, validGroundedQuestion, prioritizeGroundedCandidates, groundingVersion, type GroundedQuestion } from "./sourceGrounding.js";
+import { instructorDebriefGuide, knowledgeGapReport, storedSourceReferences, storedAnalyticalAssessment } from "./learningAnalysis.js";
+import { analyticalPolicy } from "./caseAssessment.js";
 import { examGroupVisible } from "./visibility.js";
 import { generateExamReviewArtifacts, examChallengeSeconds } from "@digital-leadership/shared";
 import type { ExamExperienceMode, QuizAttempt, QuestionForAttempt } from "@shared/index";
@@ -41,10 +42,10 @@ function validQuestion(q: SourceQuestion): boolean {
   if (q.question_type === "match") return q.pairs.length >= 2 && q.pairs.every(p => p.left_text.trim() && p.right_text.trim());
   return q.items.length >= 2 && new Set(q.items.map(i => i.correct_order_index)).size === q.items.length && q.items.every(i => i.item_text.trim());
 }
-function generatedSource(q: GeneratedQuestion & Pick<GroundedQuestion, "references">, lectureId: string): SourceQuestion {
+function generatedSource(q: GeneratedQuestion & Pick<GroundedQuestion, "references" | "assessment">, lectureId: string): SourceQuestion {
   return {
     lecture_id: lectureId, question_type: q.type, prompt: q.prompt, points: 1, explanation: q.explanation,
-    rubric: { grounding: groundingVersion, sourceReferences: q.references }, difficulty: q.difficulty, kind: q.kind ?? null, source_excerpt: q.excerpt,
+    rubric: { grounding: groundingVersion, sourceReferences: q.references, assessment: q.assessment }, difficulty: q.difficulty, kind: q.kind ?? null, source_excerpt: q.excerpt,
     options: (q.options ?? []).map((option_text, order_index) => ({ option_text, order_index, is_correct: order_index === q.correctIndex })),
     accepted: (q.acceptedAnswers ?? []).map((answer_text, order_index) => ({ answer_text, order_index })),
     pairs: (q.pairs ?? []).map((p, order_index) => ({ left_text: p.left, right_text: p.right, order_index })),
@@ -162,6 +163,7 @@ export class ExamMaterialService {
         questionId: question.id, lectureId: question.lecture_id,
         lectureTitle: group.lectures.find(lecture => lecture.id === question.lecture_id)?.title ?? "المحاضرة الأصلية",
         references: storedSourceReferences(question.rubric),
+        assessment: storedAnalyticalAssessment(question.rubric),
       })) });
     }
     return { quiz: group.quiz, attempt, answers, feedback, result, ...(knowledgeGaps ? { knowledgeGaps } : {}), serverTime: new Date().toISOString(), questions: questions.map(q => {
@@ -212,7 +214,7 @@ export class ExamMaterialService {
     }));
     const summary = compileExamSummary(subject.title, sections);
     assertSourceBoundSummary(summary, fileSources.map(source => ({ lectureId: source.lecture.id, paragraphs: source.paragraphs })));
-    summary.grounding = { policy: groundingVersion, sources: fileSources.flatMap(source => source.documents.map(document => ({
+    summary.grounding = { policy: groundingVersion, assessmentPolicy: analyticalPolicy, sources: fileSources.flatMap(source => source.documents.map(document => ({
       lectureId: source.lecture.id, fileId: document.id, filename: document.filename, sha256: document.sha256,
     }))) };
     const perLecture = Math.min(12, Math.floor(200 / selected.length));
@@ -220,9 +222,10 @@ export class ExamMaterialService {
     const guideSources: Parameters<typeof instructorDebriefGuide>[1] = [];
     for (const source of fileSources) {
       const candidates = groundedQuestionCandidates(source.paragraphs);
+      if (!candidates.every(question => validGroundedQuestion(question, source.paragraphs))) throw new ValidationError("تعذر إثبات مناسبة بدائل التقييم للمصدر. لم يُنشر الاختبار.");
       const prioritized = await prioritizeGroundedCandidates(candidates, source.paragraphs);
       const chosen = balancedQuestions(prioritized.map(question => generatedSource(question, source.lecture.id)), perLecture);
-      if (!chosen.length) throw new ValidationError(`لا يتوفر نص كافٍ لإنشاء أسئلة موثقة من ملف «${source.lecture.title}». أرفق ملفًا واضحًا يتضمن محتوى المحاضرة.`);
+      if (!chosen.length) throw new ValidationError(`لا يتضمن ملف «${source.lecture.title}» موقفًا تحليليًا معتمدًا أو ضابطًا صريحًا يتيح تقييم البدائل دون التباس. أضف حالة تطبيقية موثقة أو ضابطًا واضحًا إلى المصدر؛ لن تُولد أسئلة حفظ أو إجابات مفترضة.`);
       questions.push(...chosen);
       const section = sections.find(section => section.id === source.lecture.id)!;
       guideSources.push({ lecture: { id: section.id, title: section.title, number: section.number }, paragraphs: source.paragraphs, candidates: prioritized });

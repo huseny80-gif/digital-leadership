@@ -57,4 +57,18 @@ describe("source-bound review interfaces", () => {
     const signal = fetchMock.mock.calls[0]![1].signal as AbortSignal;
     expect(signal.aborted).toBe(false); view.unmount(); expect(signal.aborted).toBe(true);
   });
+  it("reveals analytical decision feedback and precise proof on demand", () => {
+    const analytical: ExamKnowledgeGapReport = { ...report, gaps: [{ ...report.gaps[0]!, decisions: [{ questionId: "q1", scenario: "قيّم خطة المسؤول للاستجابة للخطر.",
+      selectedOption: "اعتماد الخطة قبل توثيق الموافقة.", expectedOption: "توثيق الموافقة قبل اعتماد الخطة.",
+      reason: "تؤخر الخطة الإجراء الذي اشترطه المصدر قبل الاعتماد.", criterion: "ترتيب التوثيق والاعتماد", skill: "prioritization", references: [reference] }] }] };
+    render(<ExamKnowledgeGaps subjectId="subject" report={analytical} />);
+    const toggle = screen.getByText("تحليل قرارك · ترتيب الإجراءات");
+    expect(toggle.closest("details")).not.toHaveAttribute("open");
+    fireEvent.click(toggle);
+    expect(toggle.closest("details")).toHaveAttribute("open");
+    expect(screen.getByText("اعتماد الخطة قبل توثيق الموافقة.")).toBeVisible();
+    expect(screen.getByText("توثيق الموافقة قبل اعتماد الخطة.")).toBeVisible();
+    expect(screen.getByText("تؤخر الخطة الإجراء الذي اشترطه المصدر قبل الاعتماد.")).toBeVisible();
+  });
+
 });

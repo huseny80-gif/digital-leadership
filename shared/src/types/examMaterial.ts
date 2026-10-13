@@ -17,6 +17,7 @@ export interface ExamMaterialSummary {
   /** Original file digests bind this revision to its actual lecture sources. */
   grounding?: {
     policy: "strict-file-extraction-v1";
+    assessmentPolicy?: "source-case-assessment-v1";
     sources: Array<{ lectureId: string; fileId: string; filename: string; sha256: string }>;
   };
 }
@@ -106,6 +107,17 @@ export interface ExamKnowledgeGap {
   wrongQuestionIds: string[];
   unansweredQuestionIds: string[];
   references: ExamContextReference[];
+  /** Actual wrong decisions only; never inferred from an unanswered question. */
+  decisions?: Array<{
+    questionId: string;
+    scenario: string;
+    selectedOption: string;
+    expectedOption: string;
+    reason: string;
+    criterion: string;
+    skill: "decision" | "diagnosis" | "prioritization";
+    references: ExamContextReference[];
+  }>;
 }
 export interface ExamKnowledgeGapReport {
   attemptId: string;

@@ -12,6 +12,17 @@ export function ExamKnowledgeGaps({ report, subjectId }: { report: ExamKnowledge
     <div className={styles.analysisCards}>{report.gaps.map(gap => <article key={`${gap.lectureId}:${gap.id}`} className={styles.analysisCard}>
       <span className={styles.eyebrow}>{gap.lectureTitle}</span><h4>{gap.topic}</h4>
       <div className={styles.gapCounts}>{gap.wrongQuestionIds.length ? <span data-tone="review">{gap.wrongQuestionIds.length} إجابة غير صحيحة</span> : null}{gap.unansweredQuestionIds.length ? <span>{gap.unansweredQuestionIds.length} سؤال لم تُجب عنه</span> : null}</div>
+      {gap.decisions?.map(decision => <details key={decision.questionId} className={styles.decisionReview}>
+        <summary>تحليل قرارك · {decision.skill === "diagnosis" ? "تشخيص المشكلة" : decision.skill === "prioritization" ? "ترتيب الإجراءات" : "اختيار القرار"}</summary>
+        <p>{decision.scenario}</p>
+        <dl>
+          <dt>القرار الذي اخترته</dt><dd>{decision.selectedOption}</dd>
+          <dt>سبب عدم ملاءمته</dt><dd>{decision.reason}</dd>
+          <dt>المعيار الذي يحتاج إلى مراجعة</dt><dd>{decision.criterion}</dd>
+          <dt>القرار المستوفي للمعيار</dt><dd>{decision.expectedOption}</dd>
+        </dl>
+        {decision.references.map((reference, index) => <ExamSourceCitation key={`${reference.paragraphId}:${index}`} reference={reference} />)}
+      </details>)}
       {gap.references.map((reference, index) => <ExamSourceCitation key={`${reference.paragraphId}:${index}`} reference={reference} />)}
       <Link className={styles.sourceLink} href={`/subjects/${subjectId}/lectures/${gap.lectureId}`}>فتح المحاضرة الأصلية <PlatformIcon name="arrow" /></Link>
     </article>)}</div>

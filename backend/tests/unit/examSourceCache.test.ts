@@ -7,6 +7,7 @@ import { actualFileText, scopeSharedSource } from "../../src/examMaterials/lectu
 import { assertSourceBoundSummary, groundedQuestionCandidates, sourceParagraphs, validGroundedQuestion } from "../../src/examMaterials/sourceGrounding.js";
 import { compileExamSummary } from "../../src/examMaterials/summary.js";
 
+const cases = JSON.parse(await readFile(new URL("analyticalCases.json", catalogRoot), "utf8")) as { cases: Array<{ sha256: string; prompt: string }> };
 const hash = (value: Buffer | string) => createHash("sha256").update(value).digest("hex");
 const cache = JSON.parse(await readFile(new URL("extractedSources.json", catalogRoot), "utf8")) as {
   version: string; sources: Array<{ sha256: string; textSha256: string; text: string }>;
@@ -21,7 +22,7 @@ describe("original PDF extraction provenance across the five subjects", () => {
     expect(source.text).not.toMatch(/الوايمرات|زعرارات|راهل كلور|تشتفل|بعي\s+عن/);
     const paragraphs = sourceParagraphs({ id: "aea44816c87b86f1a4c73888", filename: "المحاضرة الثانية في الذكاء الاصطناعي.pdf", ...source });
     const questions = groundedQuestionCandidates(paragraphs);
-    expect(questions.length).toBeGreaterThanOrEqual(12);
+    expect(questions.length).toBeGreaterThanOrEqual(2);
     for (const question of questions) {
       expect(question.prompt).not.toMatch(/academic-cv|github|<<|>>|المصدر:|الوايمرات|زعرارات/);
       expect(question.references.every(reference => !/github|academic-cv|<<|>>/.test(reference.excerpt))).toBe(true);
@@ -38,7 +39,7 @@ describe("original PDF extraction provenance across the five subjects", () => {
   });
   for (const source of cache.sources) {
     const asset = Object.values(manifest.assets).find(item => item.sha256 === source.sha256 && !item.bodyHtml);
-    it(`verifies exact file/text hashes and literal questions: ${asset?.filename ?? source.sha256}`, async () => {
+    it(`verifies exact file/text hashes and analytical cases: ${asset?.filename ?? source.sha256}`, async () => {
       expect(asset).toBeDefined();
       const bytes = await readAsset(asset!, catalogRoot);
       expect(hash(bytes)).toBe(source.sha256); expect(hash(source.text)).toBe(source.textSha256);
@@ -51,6 +52,8 @@ describe("original PDF extraction provenance across the five subjects", () => {
       expect(() => assertSourceBoundSummary(summary, [{ lectureId: lecture.id, paragraphs }])).not.toThrow();
       const questions = groundedQuestionCandidates(paragraphs);
       expect(questions.length).toBeGreaterThan(0);
+      for (const reviewed of cases.cases.filter(item => item.sha256 === source.sha256)) expect(questions.some(question => question.prompt === reviewed.prompt)).toBe(true);
+      expect(questions.every(question => question.type === "multiple_choice" && question.kind === "analytical_case")).toBe(true);
       expect(questions.every(question => validGroundedQuestion(question, paragraphs))).toBe(true);
     });
   }

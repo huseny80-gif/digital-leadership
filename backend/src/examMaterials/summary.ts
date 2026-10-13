@@ -16,7 +16,7 @@ export function plainStudyText(value: string): string {
     .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/[ \t]+/g, " "));
 }
 
-export const examSummaryVersion = 5;
+export const examSummaryVersion = 6;
 const normalizedTitle = (value: string) => value.normalize("NFKC")
   .replace(/األ|اإل|اال/g, "ال")
   .replace(/[\u064B-\u065F\u0670\u0640]/g, "").replace(/[أإآ]/g, "ا")
