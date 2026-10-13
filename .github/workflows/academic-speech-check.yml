@@ -1,0 +1,28 @@
+name: Academic podcast smoke
+on:
+  push:
+    paths:
+      - "backend/src/examMaterials/academicSpeech.ts"
+      - "backend/scripts/checkAcademicSpeech.mjs"
+      - ".github/workflows/academic-speech-check.yml"
+  pull_request:
+    paths:
+      - "backend/src/examMaterials/academicSpeech.ts"
+      - "backend/scripts/checkAcademicSpeech.mjs"
+      - ".github/workflows/academic-speech-check.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  speech:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace=backend
+      - run: node backend/scripts/checkAcademicSpeech.mjs
