@@ -43,7 +43,7 @@ export function StartQuizButton({
         setStatus("error");
         return;
       }
-      router.push(`${routeBasePath}/${quizId}/attempt/${body.data.id}`);
+      router.push(`${routeBasePath}/${body.data.quizId}/attempt/${body.data.id}`);
     } catch {
       setStatus("error");
     }

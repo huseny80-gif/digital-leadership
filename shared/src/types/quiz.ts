@@ -24,6 +24,8 @@ export interface Quiz {
   timeLimitSeconds: number | null;
   /** Optional reminder deadline; practice remains available afterwards. */
   dueAt?: string | null;
+  /** A newer edition exists; historical attempts still use this quiz. */
+  supersededBy?: string;
   status: "draft" | "published";
 }
 

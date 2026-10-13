@@ -40,7 +40,7 @@ export function sourceParagraphs(document: ExamSourceDocument, lineOffset = 0): 
   for (const line of studyContentLines(document.text)) {
     // Screenshot labels are useful context, but must not be inserted into
     // the wrapped Arabic sentence alongside them.
-    if (/^[\sA-Za-z0-9٠-٩+_.(),:/–—-]+$/u.test(line.text) && /[A-Za-z]{3}/u.test(line.text) && line.text.length < 100) {
+    if (/^[\sA-Za-z0-9٠-٩+_.(),:/–—-]+$/u.test(line.text) && /[A-Za-z]/u.test(line.text) && line.text.length < 100) {
       flush(); paragraph.push(line); flush(); continue;
     }
     const title = line.text.trim().match(/^#{1,6}\s+(.+)$/u)?.[1] ?? sourceHeading(line.text);

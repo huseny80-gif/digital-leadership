@@ -10,7 +10,7 @@ import { logger } from "../lib/logger.js";
 import { classifySubject, splitLectures, type SubjectCandidate, type LectureSection } from "./sourceAnalysis.js";
 import { extractPdfText } from "./pdfText.js";
 import { cleanSourceText } from "./sourceText.js";
-import { generateQuestions, type GeneratedQuestion } from "./questionGeneration.js";
+import { generateQuestions, generatedSourcePolicy, type GeneratedQuestion } from "./questionGeneration.js";
 import { reviewedAiPdf } from "./aiAssessmentReviewCatalog.js";
 import { assertReadableSourceText } from "./sourceTextQuality.js";
 import { LEGAL_SUBJECT_ID, legalLectureNumber, legalLectureTitle, replaceLegalLabels } from "./legalLectureLabels.js";
@@ -334,7 +334,8 @@ export class ContentImportService {
 
   private async insertQuestion(client: PoolClient, bankId: string, lectureId: string, job: ImportRow, q: GeneratedQuestion): Promise<string> {
     const id = randomUUID();
-    await client.query("insert into questions(id,question_bank_id,question_type,prompt,points,created_by,lecture_id,difficulty,kind,source_import_id,source_excerpt,explanation,rubric) values($1,$2,$3,$4,1,$5,$6,$7,$8,$9,$10,$11,$12::jsonb)", [id, bankId, q.type, q.prompt, job.created_by, lectureId, q.difficulty, q.kind ?? null, job.id, q.excerpt, q.explanation, q.rubric ? JSON.stringify(q.rubric) : null]);
+    const rubric = q.references?.length ? { sourcePolicy: generatedSourcePolicy, sourceReferences: q.references, assessment: q.assessment, points: q.rubric ?? [] } : q.rubric;
+    await client.query("insert into questions(id,question_bank_id,question_type,prompt,points,created_by,lecture_id,difficulty,kind,source_import_id,source_excerpt,explanation,rubric) values($1,$2,$3,$4,1,$5,$6,$7,$8,$9,$10,$11,$12::jsonb)", [id, bankId, q.type, q.prompt, job.created_by, lectureId, q.difficulty, q.kind ?? null, job.id, q.excerpt, q.explanation, rubric ? JSON.stringify(rubric) : null]);
     for (const [index, option] of (q.options ?? []).entries()) await client.query("insert into question_options(question_id,option_text,is_correct,order_index) values($1,$2,$3,$4)", [id, option, index === q.correctIndex, index]);
     for (const [index, answer] of (q.acceptedAnswers ?? []).entries()) await client.query("insert into question_accepted_answers(question_id,answer_text,order_index) values($1,$2,$3)", [id, answer, index]);
     for (const [index, pair] of (q.pairs ?? []).entries()) await client.query("insert into question_pairs(question_id,left_text,right_text,order_index) values($1,$2,$3,$4)", [id, pair.left, pair.right, index]);
@@ -349,7 +350,9 @@ export class ContentImportService {
     if (previous) {
       await client.query(`insert into quiz_questions(quiz_id,question_id,order_index,points_override)
         select $1,qq.question_id,qq.order_index,qq.points_override from quiz_questions qq join questions q on q.id=qq.question_id
-        where qq.quiz_id=$2 and q.deleted_at is null and not exists(select 1 from content_imports i where i.id=q.source_import_id and (($3::uuid is not null and i.lecture_item_id=$3) or ($4::uuid is not null and i.file_id=$4)))`, [id, previous.id, job.lecture_item_id, job.replaces_file_id]);
+        where qq.quiz_id=$2 and q.deleted_at is null and not exists(select 1 from content_imports i where i.id=q.source_import_id and (($3::uuid is not null and i.lecture_item_id=$3) or ($4::uuid is not null and i.file_id=$4)))
+        and not(coalesce(q.rubric->>'courseReview'='file-verified-course-assessments-v1',false) and ($3::uuid is not null or $4::uuid is not null)
+          and q.lecture_id in(select lecture_id from questions where id=any($5::uuid[])))`, [id, previous.id, job.lecture_item_id, job.replaces_file_id, ids]);
       await client.query("update quizzes set superseded_by=$2 where id=$1", [previous.id, id]);
     }
     const offset = Number((await client.query<{ n: number }>("select coalesce(max(order_index),-1)+1 as n from quiz_questions where quiz_id=$1", [id])).rows[0]!.n);

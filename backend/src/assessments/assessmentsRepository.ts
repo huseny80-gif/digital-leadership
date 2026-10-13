@@ -21,6 +21,7 @@ export interface AttemptExperienceOptions { mode: "learning" | "challenge"; time
 /** Source rubrics contain {text, keywords}; never display them through
  * String(object), JSON or heuristic grading. Plain legacy text is also supported. */
 export function normalizeAnswerRubric(value: unknown): AnswerRubricPoint[] {
+  if (value && typeof value === "object" && "sourcePolicy" in value && value.sourcePolicy === "provided-text-assessment-v2" && "points" in value && Array.isArray(value.points)) value = value.points;
   const entries = Array.isArray(value) ? value : value == null ? [] : [value];
   return entries.flatMap(entry => {
     if (typeof entry === "string") return entry.trim() ? [{ text: entry, keywords: [] }] : [];
@@ -141,6 +142,7 @@ interface QuizRow {
   time_limit_seconds: number | null;
   due_at: Date | null;
   status: "draft" | "published";
+  superseded_by?: string | null;
 }
 
 function toQuiz(row: QuizRow): Quiz {
@@ -153,6 +155,7 @@ function toQuiz(row: QuizRow): Quiz {
     timeLimitSeconds: row.time_limit_seconds,
     ...(row.due_at ? { dueAt: row.due_at.toISOString() } : {}),
     status: row.status,
+    ...(row.superseded_by ? { supersededBy: row.superseded_by } : {}),
   };
 }
 
@@ -216,7 +219,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
   async listQuizzesForSubject(subjectId: string, isAdmin: boolean): Promise<Quiz[]> {
     const visibility = quizVisibilityClause(isAdmin);
     const result = await this.pool.query<QuizRow>(
-      `select q.id, q.subject_id, q.lecture_id, q.title, q.description, q.time_limit_seconds, q.due_at, q.status
+      `select q.id, q.subject_id, q.lecture_id, q.title, q.description, q.time_limit_seconds, q.due_at, q.status, q.superseded_by
        from quizzes q
        ${QUIZ_VISIBILITY_JOIN}
        where q.subject_id = $1 and q.deleted_at is null and s.deleted_at is null and q.superseded_by is null ${visibility}
@@ -229,7 +232,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
   async getQuizById(quizId: string, isAdmin: boolean): Promise<Quiz | null> {
     const visibility = quizVisibilityClause(isAdmin);
     const result = await this.pool.query<QuizRow>(
-      `select q.id, q.subject_id, q.lecture_id, q.title, q.description, q.time_limit_seconds, q.due_at, q.status
+      `select q.id, q.subject_id, q.lecture_id, q.title, q.description, q.time_limit_seconds, q.due_at, q.status, q.superseded_by
        from quizzes q
        ${QUIZ_VISIBILITY_JOIN}
        where q.id = $1 and q.deleted_at is null and s.deleted_at is null ${visibility}`,

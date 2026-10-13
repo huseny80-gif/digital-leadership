@@ -82,7 +82,16 @@ export class AssessmentsService {
     // Visibility check only — any learner (registered or guest) may
     // start an attempt on any quiz they can see; there is no further
     // subject-scoping now that guest access is platform-wide.
-    await this.getQuizOrThrow(quizId, isAdmin);
+    let quiz = await this.getQuizOrThrow(quizId, isAdmin);
+    const visited = new Set<string>();
+    while (quiz.supersededBy) {
+      if (visited.has(quiz.id) || visited.size >= 100) throw conflict("تعذر تحديد أحدث نسخة من الاختبار.");
+      visited.add(quiz.id);
+      const next = await this.getQuizOrThrow(quiz.supersededBy, isAdmin);
+      if (next.subjectId !== quiz.subjectId || next.lectureId !== quiz.lectureId) throw conflict("تعذر تحديد نسخة مطابقة لهذا الاختبار.");
+      quiz = next;
+    }
+    quizId = quiz.id;
     const existing = await this.repository.findInProgressAttempt(quizId, principal, options);
     if (existing && !this.challengeExpired(existing)) return existing;
     if (existing) await this.repository.finalizeChallengeAttempt!(existing.id);

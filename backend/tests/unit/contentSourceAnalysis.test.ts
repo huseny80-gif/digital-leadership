@@ -25,11 +25,15 @@ describe("automatic subject and lecture classification", () => {
   });
 });
 describe("grounded source question generation", () => {
-  it("builds answerable choice/fill/match/essay questions and source feedback", () => {
+  it("builds complete concept alternatives and sourced analysis without word blanks", () => {
     const questions = generateSourceQuestions(text, "المخاطر");
-    expect(questions.map(q => q.type)).toEqual(expect.arrayContaining(["multiple_choice", "fill", "match", "open"]));
+    expect(questions.map(q => q.type)).toEqual(expect.arrayContaining(["multiple_choice", "match", "open"]));
+    expect(questions.some(q => q.type === "fill" || /___|أكمل العبارة/u.test(q.prompt))).toBe(false);
     for (const question of questions) {
-      if (question.type === "multiple_choice") expect(question.excerpt).toContain(question.options![question.correctIndex!]!);
+      if (question.type === "multiple_choice") {
+        expect(question.excerpt).toContain(question.options![question.correctIndex!]!);
+        expect(question.options!.every(option => option.length > 30 && text.includes(option))).toBe(true);
+      }
       if (question.type === "fill") expect(question.excerpt).toContain(question.acceptedAnswers![0]!);
       if (question.type === "open") expect(question.rubric?.every(point => text.includes(point.text))).toBe(true);
     }
@@ -41,9 +45,10 @@ describe("grounded source question generation", () => {
   });
   it("rejects invented answer material or malformed model questions", () => {
     const excerpt = text.split("\n")[0]!;
-    const valid = { type: "fill", prompt: "أكمل العبارة كما وردت في المحاضرة", difficulty: "easy", excerpt, explanation: excerpt, acceptedAnswers: ["المخاطر"] };
-    expect(validGeneratedQuestion(valid, text)).toBe(true);
-    expect(validGeneratedQuestion({ ...valid, acceptedAnswers: ["اختراع غير موجود"] }, text)).toBe(false);
+    const valid = generateSourceQuestions(text, "المخاطر").find(q => q.type === "multiple_choice")!;
+    expect(validGeneratedQuestion(valid, text, "المخاطر")).toBe(true);
+    expect(validGeneratedQuestion({ ...valid, options: ["اختراع غير موجود", ...valid.options!.slice(1)] }, text, "المخاطر")).toBe(false);
+    expect(validGeneratedQuestion({ type: "fill", prompt: "أكمل العبارة كما وردت في المحاضرة", difficulty: "easy", excerpt, explanation: excerpt, acceptedAnswers: ["المخاطر"] }, text)).toBe(false);
     expect(validGeneratedQuestion({ ...valid, excerpt: "مصدر لا يرد في المحاضرة ويحتوي على معلومة مختلقة تمامًا" }, text)).toBe(false);
     expect(validGeneratedQuestion({ ...valid, type: "open", rubric: [{ text: "معلومة مختلقة", keywords: [] }] }, text)).toBe(false);
   });

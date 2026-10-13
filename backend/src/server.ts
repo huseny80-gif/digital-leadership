@@ -26,6 +26,7 @@ import { runIndependentContentReviews, runStartupMaintenance } from "./lib/start
 import { probeAcademicSpeech } from "./examMaterials/academicSpeech.js";
 import { probeLegalAcademicReadings } from "./examMaterials/legalAcademicReadings.js";
 import { probePublishedLegalReviews } from "./examMaterials/legalAcademicReviewProbe.js";
+import { reviewCourseAssessments } from "./contentAutomation/reviewCourseAssessments.js";
 
 initMonitoring();
 
@@ -62,6 +63,7 @@ async function refreshPublishedContent() {
   logger.info({ ...sixth, sourcesQueued: generationSources.length }, "legal_sixth_lecture_separated");
   logger.info({ courses: await refreshStudyCourses(getPool()) }, "study_courses_content_refreshed");
   await runIndependentContentReviews([
+    { name: "course_assessments", run: async () => { logger.info(await reviewCourseAssessments(getPool()), "course_assessments_source_verified"); } },
     { name: "onedrive_sources", run: async () => { logger.info(await reviewOneDriveSources(getPool()), "onedrive_sources_reviewed"); } },
     { name: "risk_content", run: async () => { logger.info(await reviewRiskContent(getPool()), "risk_content_source_reviewed"); } },
     { name: "exam_archives", run: async () => { logger.info(await refreshAcademicSummaries(getPool()), "academic_exam_summaries_refreshed"); } },

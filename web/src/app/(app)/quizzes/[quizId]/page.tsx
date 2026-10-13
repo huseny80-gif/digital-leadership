@@ -1,4 +1,5 @@
 import type { Quiz } from "@shared/index";
+import { redirect } from "next/navigation";
 import { apiGet, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { ErrorState, NotFoundState } from "@/components/ui/States";
@@ -35,6 +36,8 @@ export default async function QuizDetailPage({ params }: { params: Promise<{ qui
   if (errorMessage) {
     return <section><QuizNavigation /><ErrorState message={errorMessage} retryHref={`/quizzes/${quizId}`} /></section>;
   }
+
+  if (quiz?.supersededBy) redirect(`/quizzes/${quiz.supersededBy}`);
 
   return (
     <section>

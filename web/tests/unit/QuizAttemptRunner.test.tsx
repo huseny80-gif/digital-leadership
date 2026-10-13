@@ -275,7 +275,7 @@ describe("finalization, retry and timers", () => {
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/quizzes/quiz-1/result/attempt-1")); expect(fetchMock).toHaveBeenCalledTimes(1);
   });
   it.each(["↻ إعادة الاختبار", "🗑 مسح التقدم"])("%s preserves the previous attempt then starts a fresh one", async label => {
-    const fetchMock = vi.fn().mockResolvedValueOnce(reply({})).mockResolvedValueOnce(reply({ id: "attempt-2" })); vi.stubGlobal("fetch", fetchMock); renderQuiz(); fireEvent.click(screen.getByRole("button", { name: label }));
+    const fetchMock = vi.fn().mockResolvedValueOnce(reply({})).mockResolvedValueOnce(reply({ id: "attempt-2", quizId: "quiz-1" })); vi.stubGlobal("fetch", fetchMock); renderQuiz(); fireEvent.click(screen.getByRole("button", { name: label }));
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/quizzes/quiz-1/attempt/attempt-2"));
     expect(fetchMock.mock.calls.map(call => call[0])).toEqual(["/api/attempts/attempt-1/submit", "/api/quizzes/quiz-1/attempts"]);
   });

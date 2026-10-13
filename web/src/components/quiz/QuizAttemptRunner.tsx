@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer, QuizAttempt } from "@shared/index";
 import { QuizNavigation } from "./QuizNavigation";
 import { readQuizDraft, writeQuizDraft, type AnswerState } from "./quizDraft";
@@ -272,7 +273,7 @@ export function QuizAttemptRunner({
         next = body.data;
       }
       if (onRestart) await onRestart(next);
-      else router.push(`${routeBasePath}/${quiz.id}/attempt/${next.id}`);
+      else router.push(`${routeBasePath}/${next.quizId}/attempt/${next.id}`);
       navigated = true;
     } catch {
       setSubmitError("تعذر بدء محاولة جديدة. حاول مرة أخرى.");
@@ -287,6 +288,10 @@ export function QuizAttemptRunner({
     <section className="finquiz-training" aria-label={reviewMode ? "مراجعة الإجابات" : "الاختبار التفاعلي"}>
       {filteredQuestions.length ? <FloatingPdfButton label="طباعة الأسئلة PDF" getDocument={() => questionPrintDocument(quiz.title, filteredQuestions)} /> : null}
       <QuizNavigation quiz={quiz} backHref={backHref ?? `${routeBasePath}/${quiz.id}`} />
+      {quiz.supersededBy ? <aside className="state-block" aria-label="نسخة الاختبار المحدّثة">
+        <p>تتوفر نسخة محدّثة بأسئلة مدققة مقابل ملفات المحاضرات. محاولتك الحالية وإجاباتك السابقة محفوظة.</p>
+        <Link className="btn" href={`${routeBasePath}/${quiz.supersededBy}`}>فتح الاختبار المدقق</Link>
+      </aside> : null}
       <div className="quiz-head">
         {reviewMode ? <h2>مراجعة الإجابات — {displayTitle ?? quiz.title}</h2> : <h1>{displayTitle ?? quiz.title}</h1>}
         {quiz.description ? <p>{quiz.description}</p> : null}
