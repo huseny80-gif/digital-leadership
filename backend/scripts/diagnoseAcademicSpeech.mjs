@@ -4,7 +4,7 @@ const client="6A5AA1D4EAFF4E9FB37E23D68491D6F4";
 async function probe(voice, variant, skew=0) {
  const now=Date.now()+skew, ticks=BigInt(Math.floor((now/1000+11644473600)/300)*300)*10000000n;
  const hash=createHash("sha256").update(ticks+client).digest("hex").toUpperCase(), id=randomBytes(16).toString("hex");
- const url="wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken="+client+"&ConnectionId="+id+"&Sec-MS-GEC="+hash+"&Sec-MS-GEC-Version=1-143.0.3650.75";
+ const url="wss://api.msedgeservices.com/tts/cognitiveservices/websocket/v1?Ocp-Apim-Subscription-Key="+client+"&ConnectionId="+id+"&Sec-MS-GEC="+hash+"&Sec-MS-GEC-Version=1-143.0.3650.75";
  return new Promise(resolve=>{
  const ws=new WebSocket(url,{handshakeTimeout:10000,maxPayload:2097152,headers:{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",Origin:"chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold","Cache-Control":"no-cache",Pragma:"no-cache","Accept-Language":"en-US,en;q=0.9",Cookie:"muid="+randomBytes(16).toString("hex").toUpperCase()+";"}});
  let bytes=0, done=false;
