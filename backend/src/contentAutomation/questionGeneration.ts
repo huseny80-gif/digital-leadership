@@ -82,7 +82,13 @@ function approvedQuestions(text: string, title: string): GeneratedQuestion[] {
   }
   // No fact/rule supports a reliable automatic decision? Ask for a sourced
   // analysis, with self/manual review; never invent alternatives to fill a quota.
-  const reviewUnits = paragraphs.flatMap(paragraph => [paragraph.text, ...paragraph.text.split(/(?<=[.!؟؛])\s+/u)].map(text => ({ paragraph, text: text.trim() })))
+  const reviewUnits = paragraphs.flatMap(paragraph => {
+    const sentences = paragraph.text.split(/(?<=[.!؟؛])\s+/u).map(text => text.trim()).filter(Boolean);
+    // Review either complete independent sentences or the intact paragraph,
+    // never both: an encompassing quotation would repeat its own questions.
+    const units = sentences.length > 1 && sentences.every(usableQuestionPassage) ? sentences : [paragraph.text];
+    return units.map(text => ({ paragraph, text: text.trim() }));
+  })
     .filter((unit, index, all) => usableQuestionPassage(unit.text) && all.findIndex(other => other.text === unit.text) === index).slice(0, 3);
   for (const { paragraph, text: passage } of reviewUnits) {
     const reference = referenceFor(paragraph, passage);

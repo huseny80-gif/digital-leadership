@@ -42,7 +42,16 @@ describe("durable automatic content imports", () => {
     const job = await s.service.submitText({ actorId: s.actor, text: source, title: "المحاضرة الخامسة" });
     expect(job.status).toBe("queued"); expect(await s.service.processNext()).toBe(true);
     const completed = await s.service.get(job.id);
-    expect(completed.status).toBe("completed"); expect(completed.subjectId).toBe(s.risk); expect(completed.lectures[0]?.number).toBe(5); expect(completed.questionCount).toBeGreaterThan(3);
+    expect(completed.status).toBe("completed"); expect(completed.subjectId).toBe(s.risk); expect(completed.lectures[0]?.number).toBe(5); expect(completed.questionCount).toBe(3);
+    const generated = (await pool.query("select question_type,source_excerpt,rubric,explanation from questions where lecture_id=$1", [completed.lectures[0]!.id])).rows;
+    expect(generated).toHaveLength(3);
+    for (const question of generated) {
+      expect(question.question_type).toBe("open");
+      expect(source).toContain(question.source_excerpt);
+      expect(question.explanation).toContain("لا تُصحَّح تلقائيًا");
+      expect(question.rubric.sourcePolicy).toBe("provided-text-assessment-v2");
+      expect(question.rubric.sourceReferences[0].excerpt).toBe(question.source_excerpt);
+    }
     const repo = new PgAssessmentsRepository(pool);
     expect((await repo.listQuestionsForAttempt(oldQuiz)).map(q => q.id)).toEqual([bank.questionId]);
     const available = await repo.listQuizzesForSubject(s.risk, false);
@@ -87,7 +96,7 @@ describe("durable automatic content imports", () => {
     const done = await service.get(job.id);
     expect(done.status).toBe("completed");
     expect(done.subjectId).toBe(s.risk);
-    expect(done.questionCount).toBeGreaterThan(3);
+    expect(done.questionCount).toBe(3);
     expect((await service.readSource(job.id)).bytes).toEqual(bytes);
     const item = (await pool.query("select body_text from lecture_items where lecture_id=$1", [done.lectures[0]!.id])).rows[0];
     expect(item.body_text.trim()).toBe(source);

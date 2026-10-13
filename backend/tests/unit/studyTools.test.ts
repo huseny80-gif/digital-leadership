@@ -23,14 +23,28 @@ describe("source-grounded study assistant", () => {
     const unknown = await assistant.reply({ message: "ما مواصفات سفينة الفضاء المريخية؟", mode: "answer" });
     expect(unknown.text).toContain("لم أجد"); expect(unknown.citations).toEqual([]);
   });
-  it("summarizes provided text, rejects unreadable extracts, and creates immediate review questions with grounded keys", async () => {
+  it("summarizes readable text and uses sourced self-review when automatic choices are unsupported", async () => {
     const assistant = new StudyAssistant(reader());
     const summary = await assistant.reply({ message: "لخص النص الدراسي", text: source.text, mode: "summary" });
     expect(summary.citations[0]!.title).toBe("النص الذي أرسلته"); expect(summary.citations[0]!.href).toBeNull();
     await expect(assistant.reply({ message: "لخص", text: "�".repeat(100), mode: "summary" })).rejects.toMatchObject({ status: 400 });
     const review = await assistant.reply({ message: "أسئلة مراجعة", subjectId: source.subjectId, mode: "quiz" });
-    expect(review.quiz.length).toBeGreaterThan(0);
-    for (const question of review.quiz) expect(source.text).toContain(question.options[question.correctIndex]);
+    expect(review.quiz).toEqual([]);
+    expect(review.text).toContain("لا تُصحَّح تلقائيًا");
+    expect(review.text).toContain("حلّل الفكرة");
+    for (const passage of source.text.split("\n")) expect(review.text).toContain(passage);
+    expect(review.citations[0]!.href).toBe(source.href);
+  });
+  it("creates immediate concept questions only when every complete alternative is supported", async () => {
+    const definitions = "الاحتمالية: درجة توقع وقوع الحدث خلال فترة زمنية محددة بناءً على المعلومات المتاحة.\nالأثر: حجم النتائج التي تترتب على وقوع الحدث بالنسبة إلى أهداف المؤسسة.\nالاستجابة: الإجراءات التي يختارها الفريق لمعالجة الخطر وتقليل نتائجه السلبية المحتملة.";
+    const review = await new StudyAssistant(reader()).reply({ message: "أسئلة مراجعة", text: definitions, mode: "quiz" });
+    expect(review.quiz).toHaveLength(3);
+    for (const question of review.quiz) {
+      expect(question.prompt).not.toMatch(/___|أكمل العبارة/u);
+      expect(question.options).toHaveLength(3);
+      for (const option of question.options) expect(definitions).toContain(option);
+      expect(question.explanation).toContain(question.options[question.correctIndex]);
+    }
   });
   it("accepts an AI response only with real source quotes and falls back on fabricated citations or provider failures", async () => {
     vi.stubEnv("CONTENT_AI_API_KEY", "test-key-not-a-secret");

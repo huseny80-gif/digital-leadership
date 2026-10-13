@@ -30,6 +30,17 @@ describe("source assessment quality", () => {
     expect(questions[0]!.rubric![0]!.text).toBe(source);
     expect(questions[0]!.explanation).toContain("لا تُصحَّح تلقائيًا");
   });
+  it("does not repeat an encompassing paragraph alongside its own sourced analysis questions", () => {
+    const sentences = [
+      "تتضمن إدارة المخاطر تحديد الأحداث المحتملة وتحليل الاحتمالية والأثر قبل اختيار خطة الاستجابة المناسبة لحماية أهداف المؤسسة.",
+      "تساعد مصفوفة المخاطر على ترتيب الأولويات وتوجيه الموارد نحو المخاطر ذات التأثير المرتفع بصورة منتظمة داخل المؤسسة.",
+      "يجب توثيق الإجراءات ومراجعة النتائج مع فريق العمل لتحديث خطة المخاطر ومتابعة فعالية الاستجابة والتحسين المستمر.",
+    ];
+    const questions = generateSourceQuestions(sentences.join("\n"), title);
+    expect(questions.every(question => question.type === "open")).toBe(true);
+    expect(questions.map(question => question.excerpt)).toEqual(sentences);
+    for (const question of questions) expect(question.references![0]!.excerpt).toBe(question.excerpt);
+  });
   it("keeps isolated OCR letters out of the Arabic source assertion with its original line position", () => {
     const doc = { id: "source-1", filename: "المحاضرة الثالثة قانونية.pdf", sha256: "a".repeat(64), text: "Ng 1\nوبالتالي فإن التوقيع الإلكتروني ليس بالضرورة صورة لتوقيع الشخص بخط يده." };
     const paragraph = sourceParagraphs(doc).find(p => p.text.includes("التوقيع الإلكتروني"))!;

@@ -51,10 +51,15 @@ export class StudyAssistant {
     if (input.mode === "quiz") {
       const text = selected.map(passage => passage.text).join("\n");
       let quiz: StudyAssistantResponse["quiz"] = [];
+      let analysis: string[] = [];
       try {
-        quiz = generateSourceQuestions(text, citations[0]!.title).filter(question => question.type === "multiple_choice" && question.options && question.correctIndex !== undefined).slice(0, 3).map(question => ({ id: randomUUID(), prompt: question.prompt, options: question.options!, correctIndex: question.correctIndex!, explanation: question.explanation }));
+        const questions = generateSourceQuestions(text, citations[0]!.title);
+        quiz = questions.filter(question => question.type === "multiple_choice" && question.options && question.correctIndex !== undefined).slice(0, 3).map(question => ({ id: randomUUID(), prompt: question.prompt, options: question.options!, correctIndex: question.correctIndex!, explanation: question.explanation }));
+        analysis = questions.filter(question => question.type === "open").slice(0, 3).map(question => question.prompt);
       } catch { /* A short source must never produce guessed questions. */ }
-      return { text: quiz.length ? "هذه أسئلة مراجعة مستندة إلى النص. اختر إجابتك لعرض التصحيح والتفسير." : "لا يكفي هذا النص لإنشاء اختيار متعدد موثوق. أرسل نصًا أطول أو حدّد محاضرة تحتوي على شرح أكثر تفصيلًا.", citations, quiz, method: "source" };
+      return { text: quiz.length ? "هذه أسئلة مراجعة مستندة إلى النص. اختر إجابتك لعرض التصحيح والتفسير." : analysis.length
+        ? `لا يدعم هذا المقطع بدائل كافية لاختبار اختيار متعدد موثوق. هذه تمارين تحليلية للمراجعة الذاتية أو مع المدرب، ولا تُصحَّح تلقائيًا:\n\n${analysis.join("\n\n")}`
+        : "لا يكفي هذا النص لإنشاء اختيار متعدد موثوق. أرسل نصًا أطول أو حدّد محاضرة تحتوي على شرح أكثر تفصيلًا.", citations, quiz, method: "source" };
     }
     const fallback: StudyAssistantResponse = {
       text: `${input.mode === "summary" ? "ملخص للمقاطع ذات الصلة من المصادر المختارة:" : "ورد في محتوى المنصة ما يلي:"}\n\n${selected.map(passage => `${passage.text}\n— ${passage.source.title}`).join("\n\n")}`,

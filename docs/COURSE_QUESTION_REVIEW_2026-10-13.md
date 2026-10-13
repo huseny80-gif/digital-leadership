@@ -12,6 +12,11 @@ reference comes from the supplied text. Unreadable OCR does not receive a
 fabricated answer. Open analysis is explicitly self/manually reviewed. Models
 can order approved question IDs only; they cannot change a stem, option, key,
 condition or rationale. The validator checks the entire canonical program.
+The study assistant presents sourced analysis when there are no justified
+automatic choices. Import tests verify those literal passages and private
+references instead of demanding a minimum quota of multiple-choice questions.
+Analysis selects intact paragraphs or their complete sentences without
+repeating the encompassing paragraph alongside its own questions.
 
 For existing managed course quizzes in the five catalog subjects, startup
 publishes new editions from file-verified analytical cases and provable rules.
