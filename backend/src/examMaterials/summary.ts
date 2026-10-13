@@ -2,6 +2,7 @@ import type { ExamLectureSnapshot, ExamMaterialSummary, ExamSummaryTopic, ExamSu
 import { cleanSourceText } from "../contentAutomation/sourceText.js";
 import { hasBrokenSourceEncoding } from "../contentAutomation/sourceTextQuality.js";
 import { ValidationError } from "../lib/validation.js";
+import { isSourceLayoutNoise, readableSourcePassage } from "./sourceReadability.js";
 
 /** Keep source wording and paragraph boundaries. No generated factual claims. */
 export function plainStudyText(value: string): string {
@@ -15,7 +16,7 @@ export function plainStudyText(value: string): string {
     .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/[ \t]+/g, " "));
 }
 
-export const examSummaryVersion = 4;
+export const examSummaryVersion = 5;
 const normalizedTitle = (value: string) => value.normalize("NFKC")
   .replace(/األ|اإل|اال/g, "ال")
   .replace(/[\u064B-\u065F\u0670\u0640]/g, "").replace(/[أإآ]/g, "ا")
@@ -74,6 +75,7 @@ export function studyContentLines(value: string): Array<{ line: number; text: st
   for (const [index, line] of lines.entries()) {
     if (index < coverEnd) continue;
     const trimmed = line.trim();
+    if (isSourceLayoutNoise(trimmed) || !readableSourcePassage(trimmed)) continue;
     const heading = trimmed.match(/^(#{1,6})\s+(.+)$/u);
     const title = heading?.[2] ?? trimmed;
     const depth = heading?.[1]?.length ?? (sourceHeading(trimmed) || isAdministrativeTitle(title) ? 1 : null);
@@ -92,6 +94,7 @@ export function studyContentLines(value: string): Array<{ line: number; text: st
     if (/^(?:--\s*\d+\s+of\s+\d+\s*--|(?:صفحة|Page)\s*\d+(?:\s*(?:من|of|\/)\s*\d+)?|[©®].*|جميع الحقوق محفوظة.*)$/iu.test(trimmed)) continue;
     if (/^(?:(?:إعداد|اعداد)(?:\s+وتقديم)?|تقديم|إلقاء|القاء|المحاضر|اسم المحاضر|تاريخ المحاضرة|مدة المحاضرة|زمن المحاضرة|البريد الإلكتروني)\s*[:：]/u.test(trimmed)) continue;
     if (/^(?:د\.|أ\.\s*د\.|ا\.\s*د\.)\s*\S/u.test(trimmed) && trimmed.length < 180 && /(?:المعهد|جامعة|كلية|https?:\/\/|@)/u.test(trimmed)) continue;
+    if (/^محاضرات\s+الذكاء\s+الاصطناعي\s+وتحليل\s+البيانات\s*[—–-]/u.test(trimmed) && lines.filter(other => other.trim() === trimmed).length >= 2) continue;
     if (trimmed.length < 180 && /[—–|]\s*الاستاذ الدكتور/u.test(normalizedTitle(trimmed)) && lines.filter(other => other.trim() === trimmed).length >= 2) continue;
     result.push({ line: index + 1, text: line });
   }

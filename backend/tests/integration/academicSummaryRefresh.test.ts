@@ -14,6 +14,26 @@ beforeEach(async () => {
 afterAll(async () => { await pool.end(); });
 
 describe("existing academic exam review publication", () => {
+  it("revises already-grounded version-four groups once while retaining their quiz and attempt records", async () => {
+    const actor = await createUser(pool, { email: "readable-review@example.test", providerSubject: "readable-review", roleName: "admin" });
+    const subject = await createSubject(pool, { title: "الذكاء الاصطناعي", status: "published", createdBy: actor });
+    const lecture = await createLecture(pool, { subjectId: subject, title: "المحاضرة الثانية", orderIndex: 2, status: "published", createdBy: actor });
+    await createExamSourceFile(pool, { lectureId: lecture, title: "المحاضرة الأصلية", createdBy: actor, text: "## نافذة السياق\nتضم نافذة السياق المعلومات المتاحة داخل المحادثة، ويجب مراجعة الملفات الأصلية والتحقق من صحة النتائج قبل استخدامها في القرارات المؤسسية." });
+    const service = new ExamMaterialService(pool);
+    const old = await service.generate(subject, [lecture], randomUUID(), actor);
+    await pool.query("update exam_material_groups set summary=jsonb_set(summary,'{version}','4') where id=$1", [old.id]);
+    const snapshot = (await pool.query("select * from exam_material_groups where id=$1", [old.id])).rows[0];
+    const attempt = (await pool.query("insert into quiz_attempts(quiz_id,user_id,status,score) values($1,$2,'graded',1) returning *", [old.quizId, actor])).rows[0]!;
+    const refreshed = await refreshAcademicSummaries(pool);
+    expect(refreshed).toMatchObject({ published: 1, alreadyCurrent: 0, issues: [] });
+    expect((await pool.query("select * from exam_material_groups where id=$1", [old.id])).rows[0]).toEqual(snapshot);
+    expect((await pool.query("select * from quiz_attempts where id=$1", [attempt.id])).rows[0]).toEqual(attempt);
+    const current = await service.index(subject, false, { page: 1, limit: 100, offset: 0 });
+    expect(current.groups).toHaveLength(1);
+    expect(current.groups[0]!.id).not.toBe(old.id);
+    expect((await service.detail(subject, current.groups[0]!.id, false)).summary.version).toBe(5);
+    expect(await refreshAcademicSummaries(pool)).toMatchObject({ published: 0, alreadyCurrent: 1, issues: [] });
+  });
   it("publishes current summaries for legacy selections without rewriting snapshots, answers or attempts, then repeats safely", async () => {
     const actor = await createUser(pool, { email: "academic-review@example.test", providerSubject: "academic-review", roleName: "admin" });
     const subject = await createSubject(pool, { title: "إدارة المخاطر", status: "published", createdBy: actor });
@@ -51,7 +71,7 @@ describe("existing academic exam review publication", () => {
     expect(current.groups[0]!.lectures.map(l => l.id)).toEqual([lectures[1]]);
     for (const review of result.reviews) {
       const detail = await service.detail(subject, review.currentId, false);
-      expect(detail.summary.version).toBe(4);
+      expect(detail.summary.version).toBe(5);
       expect(detail.summary.sections.every(section => section.topics?.some(topic => topic.title === "التصعيد والمتابعة"))).toBe(true);
     }
     expect(await refreshAcademicSummaries(pool)).toMatchObject({ published: 0, alreadyCurrent: 2, issues: [] });

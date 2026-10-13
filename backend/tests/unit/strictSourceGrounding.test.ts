@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { STRICT_SOURCE_INSTRUCTION, groundedQuestionCandidates, prioritizeGroundedCandidates, sourceParagraphs, validGroundedQuestion, validSourceReference } from "../../src/examMaterials/sourceGrounding.js";
 import { actualFileText, scopeSharedSource } from "../../src/examMaterials/lectureSourceFiles.js";
 import { compileExamSummary } from "../../src/examMaterials/summary.js";
+import { readableSourcePassage, usableQuestionPassage } from "../../src/examMaterials/sourceReadability.js";
 
 const text = `## الاحتمالية والأثر
 الاحتمالية: إمكان وقوع الحدث خلال المدة المحددة، ولا تعني التأكد من وقوعه أو افتراض حدوثه دون دليل.
@@ -23,6 +24,28 @@ const paragraphs = sourceParagraphs(document);
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe("strict grounding to original lecture files", () => {
+  it("keeps citation metadata out of question prose and never fabricates sentences by swapping words", () => {
+    const candidates = groundedQuestionCandidates(paragraphs);
+    for (const question of candidates) {
+      expect(question.prompt).not.toMatch(/المصدر:|الأسطر|الفقرة|وردت العبارة التالية/);
+      if (question.type === "true_false" && question.prompt.startsWith("صح أم خطأ وفقًا للمحاضرة:")) {
+        expect(question.prompt).toContain(`«${question.references[0]!.excerpt}»`);
+        expect(question.correctIndex).toBe(0);
+      }
+      if (question.type === "true_false" && question.correctIndex === 1) {
+        expect(question.references).toHaveLength(2);
+        expect(question.prompt).toContain(question.references[1]!.excerpt.split(/[:：]/u)[1]!.trim());
+      }
+    }
+  });
+  it("rejects bare URLs, OCR fragments, welded words and incomplete statements without guessing corrections", () => {
+    for (const noise of ["ameerkhadi.github.is/academic-cv-website/aif/week1", "جولة داخل الشاشات << >>", "ا ل م ح ا ض ر ة غير واضحة في الملف.", "النموذجاللغويالكبيرالاحتمالي يتضمن كلمات ملتصقة."]) {
+      expect(readableSourcePassage(noise)).toBe(false);
+    }
+    for (const noise of ["تعرض الواجهة sss و Med مع بيانات للمستخدم داخل منصة التعليم.", "يتطلب استخدام البيانات تحديد الصلاحيات والمسؤوليات قبل اتخاذ القرار"]) expect(usableQuestionPassage(noise)).toBe(false);
+    expect(usableQuestionPassage("لا تجوز مشاركة البيانات الشخصية دون إذن، ويجب توثيق الصلاحيات قبل إتاحة الملفات داخل المؤسسة.")).toBe(true);
+    expect(groundedQuestionCandidates(sourceParagraphs({ ...document, text: "ameerkhadi.github.is/academic-cv-website/aif/week1" }))).toEqual([]);
+  });
   it("constructs only provable literal questions, including all five automatic formats", () => {
     const candidates = groundedQuestionCandidates(paragraphs);
     expect(new Set(candidates.map(question => question.type))).toEqual(new Set(["multiple_choice", "fill", "true_false", "match", "order"]));

@@ -35,7 +35,9 @@ export async function extractPdfText(buffer: Buffer, heartbeat: () => Promise<vo
         if (image) {
           const ocr = await worker.recognize(Buffer.from(image.data));
           const recognized = cleanSourceText(ocr.data.text);
-          if (!hasBrokenSourceEncoding(recognized) && ocr.data.confidence >= (broken ? 65 : 35) && (broken || recognized.length > text.length)) text = recognized;
+          // Low confidence OCR used to turn dotless font glyphs into invented
+          // Arabic/Latin words. An unclear source must fail, not be guessed.
+          if (!hasBrokenSourceEncoding(recognized) && ocr.data.confidence >= 85 && (broken || recognized.length > text.length)) text = recognized;
         }
       }
       assertReadableSourceText(text);
