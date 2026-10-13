@@ -25,4 +25,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build --workspace=backend
+      - name: Install MP3 decoder
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
       - run: node backend/scripts/checkAcademicSpeech.mjs
