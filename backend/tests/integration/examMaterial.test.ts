@@ -132,8 +132,8 @@ describe("independent exam material archives", () => {
     await request(s.app).get(url).set("Cookie", s.cookie).expect(401);
     for (const token of s.tokens.slice(1)) await request(s.app).get(url).set("Authorization", `Bearer ${token}`).expect(403);
     const guide = (await request(s.app).get(url).set("Authorization", `Bearer ${s.tokens[0]}`).expect(200)).body.data;
-    expect(guide.groupId).toBe(group.id); expect(guide.items.length).toBeGreaterThan(0);
-    expect(guide.items.every((item: { discussionQuestion: string; references: Array<{ excerpt: string }> }) => item.discussionQuestion.includes(item.references[0]!.excerpt))).toBe(true);
+    expect(guide.groupId).toBe(group.id); expect(guide.generator).toBe("source-verified-instructor-v2"); expect(guide.sourceScope).toBe("current-lecture-files"); expect(guide.items.length).toBeGreaterThan(0);
+    expect(guide.items.every((item: { discussionQuestion: string; references: Array<{ excerpt: string }> }) => !item.discussionQuestion.includes(item.references[0]!.excerpt))).toBe(true);
     expect(JSON.stringify((await request(s.app).get(`${s.path}/${group.id}`).set("Cookie", s.cookie).expect(200)).body.data)).not.toMatch(/expectedGap|discussionQuestion|instructorGuide/);
     await request(s.app).get(`/api/v1/admin/subjects/${s.other}/exam-material/${group.id}/instructor-guide`).set("Authorization", `Bearer ${s.tokens[0]}`).expect(404);
     const client = await pool.connect();

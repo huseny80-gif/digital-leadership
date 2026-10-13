@@ -33,8 +33,9 @@ describe("source-bound learner gaps and private instructor debrief", () => {
     expect(guide.items.length).toBeGreaterThan(0);
     expect(new Set(guide.items.map(item => item.id)).size).toBe(guide.items.length);
     for (const item of guide.items) {
-      expect(item.expectedGap).toContain("قد يحتاج");
-      expect(item.discussionQuestion).toContain(item.references[0]!.excerpt);
+      expect(item.expectedGap).toBe(candidates[0]!.assessment!.options.find(option => option.isCorrect)!.rationale);
+      expect(item.discussionQuestion).not.toContain(item.references[0]!.excerpt);
+      expect(item.discussionQuestion).toContain(item.topic);
       expect(paragraphs.some(paragraph => paragraph.text.includes(item.references[0]!.excerpt))).toBe(true);
     }
   });

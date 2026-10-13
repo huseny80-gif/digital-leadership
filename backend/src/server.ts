@@ -20,6 +20,7 @@ import { refreshStudyCourses } from "./contentAutomation/refreshStudyCourses.js"
 import { reviewOneDriveSources } from "./contentAutomation/reviewOneDriveSources.js";
 import { ensureExamMaterialSchema } from "./examMaterials/schema.js";
 import { reviewRiskContent } from "./contentAutomation/reviewRiskContent.js";
+import { refreshInstructorGuides } from "./examMaterials/refreshInstructorGuides.js";
 import { refreshAcademicSummaries } from "./examMaterials/refreshAcademicSummaries.js";
 import { runIndependentContentReviews, runStartupMaintenance } from "./lib/startupMaintenance.js";
 import { probeAcademicSpeech } from "./examMaterials/academicSpeech.js";
@@ -62,6 +63,7 @@ async function refreshPublishedContent() {
     { name: "onedrive_sources", run: async () => { logger.info(await reviewOneDriveSources(getPool()), "onedrive_sources_reviewed"); } },
     { name: "risk_content", run: async () => { logger.info(await reviewRiskContent(getPool()), "risk_content_source_reviewed"); } },
     { name: "exam_archives", run: async () => { logger.info(await refreshAcademicSummaries(getPool()), "academic_exam_summaries_refreshed"); } },
+    { name: "instructor_guides", run: async () => { logger.info(await refreshInstructorGuides(getPool()), "instructor_guides_source_verified"); } },
   ], (stage, error) => {
     // Log a safe machine reason, never SQL values, private file text or tokens.
     const reason = error instanceof Error && /^[a-z0-9_]{1,100}$/u.test(error.message) ? error.message : undefined;

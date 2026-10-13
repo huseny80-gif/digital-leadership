@@ -129,12 +129,17 @@ export interface ExamKnowledgeGapReport {
 /** Never embedded in a learner-facing group/summary/attempt payload. */
 export interface ExamInstructorGuide {
   groupId: string;
-  generator: "strict-source-extractive-v1";
+  generator: "strict-source-extractive-v1" | "source-verified-instructor-v2";
+  /** Teaching preparation uses the currently verified lecture files, including
+   * when viewed alongside an older, immutable quiz revision. */
+  sourceScope?: "current-lecture-files";
+  unavailableLectures?: Array<{ lectureId: string; lectureTitle: string }>;
   items: Array<{
     id: string;
     lectureId: string;
     lectureTitle: string;
     topic: string;
+    scenario?: string;
     expectedGap: string;
     discussionQuestion: string;
     references: ExamContextReference[];

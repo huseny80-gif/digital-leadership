@@ -1,5 +1,5 @@
-import type { AttemptAnswer, ExamInstructorGuide, ExamKnowledgeGap, ExamKnowledgeGapReport, ExamLectureSnapshot, QuestionForAttempt, SubmitAnswerAck } from "@shared/index";
-import { groundingVersion, referenceFor, type GroundedQuestion, type SourceParagraph, type SourceReference } from "./sourceGrounding.js";
+import type { AttemptAnswer, ExamKnowledgeGap, ExamKnowledgeGapReport, QuestionForAttempt, SubmitAnswerAck } from "@shared/index";
+import { groundingVersion, type SourceReference } from "./sourceGrounding.js";
 import { analyticalPolicy, type AnalyticalAssessment } from "./caseAssessment.js";
 
 /** Read only the proof written by the strict generator. Historical/freeform
@@ -82,27 +82,5 @@ export function knowledgeGapReport(input: {
   return { attemptId: input.attemptId, incorrectAnswers, unansweredQuestions, unmappedQuestions, gaps: [...groups.values()].sort((a, b) => b.wrongQuestionIds.length - a.wrongQuestionIds.length || b.unansweredQuestionIds.length - a.unansweredQuestionIds.length) };
 }
 
-/** Expected teaching priorities are suggestions, not a claim that students
- * actually failed. Questions quote original passages; no answer or outside
- * concept is invented. Candidate ranking may use the guarded AI selector. */
-export function instructorDebriefGuide(groupId: string, sources: Array<{ lecture: ExamLectureSnapshot; paragraphs: SourceParagraph[]; candidates: GroundedQuestion[] }>): ExamInstructorGuide {
-  const items: ExamInstructorGuide["items"] = [];
-  for (const source of sources) {
-    const selected = new Set<string>();
-    for (const question of source.candidates) {
-      const reference = question.references[0];
-      if (!reference || selected.has(reference.paragraphId)) continue;
-      const paragraph = source.paragraphs.find(paragraph => paragraph.id === reference.paragraphId);
-      if (!paragraph) continue;
-      selected.add(reference.paragraphId);
-      // Revalidate the quote against the original paragraph before archiving.
-      const verified = referenceFor(paragraph, reference.excerpt);
-      const topic = question.assessment?.criterion ?? (paragraph.heading === "العرض الأكاديمي للمحاضرة" ? sourceTopic(reference.excerpt) : paragraph.heading);
-      items.push({ id: verified.paragraphId, lectureId: source.lecture.id, lectureTitle: source.lecture.title, topic,
-        expectedGap: question.assessment ? `قد يحتاج المتدرب إلى التمييز بين البدائل وفق معيار «${topic}»، وشرح سبب ملاءمة القرار للموقف.` : "قد يحتاج المتدرب إلى توضيح المعنى الدقيق لهذه الفقرة والتمييز بين عناصرها وشروطها في سياق المحاضرة.",
-        discussionQuestion: question.assessment ? `${question.prompt}\nناقش أثر كل بديل في استيفاء الضابط «${verified.excerpt}»، وعلّل القرار اعتمادًا على المصدر.` : `كيف تشرح العبارة «${verified.excerpt}» وتوضح عناصرها اعتمادًا على الفقرة المشار إليها في المحاضرة؟`, references: question.assessment ? question.references : [verified] });
-      if (selected.size >= 3) break;
-    }
-  }
-  return { groupId, generator: "strict-source-extractive-v1", items };
-}
+/** Kept as a stable import for existing callers. */
+export { instructorDebriefGuide } from "./instructorGuide.js";

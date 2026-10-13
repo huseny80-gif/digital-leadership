@@ -179,10 +179,32 @@ export class ExamMaterialService {
 
   /** Called exclusively behind requireAdmin; never part of a public detail. */
   async instructorGuide(subjectId: string, groupId: string): Promise<ExamInstructorGuide> {
-    await this.detail(subjectId, groupId, true);
-    const stored = await this.pool.query<{ guide: ExamInstructorGuide }>("select guide from exam_instructor_guides where group_id=$1", [groupId]);
-    if (!stored.rows[0]) throw notFound("لا يوجد دليل موثق لهذه المراجعة. أنشئ مراجعة محدّثة للمحاضرات.");
-    return stored.rows[0].guide;
+    const group = (await this.pool.query<GroupRow>(`select g.* ${groupJoin} where g.subject_id=$1 and g.id=$2 and ${groupWhere(true)}`, [subjectId, groupId])).rows[0];
+    if (!group) throw notFound("Exam material");
+    const selected = (await this.publishedLectures(subjectId)).filter(lecture => group.lecture_ids.includes(lecture.id));
+    if (!selected.length || selected.length !== group.lecture_ids.length) throw new ValidationError("تعذر التحقق من ملفات المحاضرات المحددة لإعداد دليل المدير.");
+    const library = await this.library.get(subjectId, false);
+    const { sources, links } = await this.sourceFiles.read(subjectId, selected, library);
+    // Never serve saved v1 prose, even inside an old bookmarked archive.
+    // Teaching preparation is explicitly bound to today's verified files;
+    // the historical summary, quiz, answers and scores remain untouched.
+    const guide = instructorDebriefGuide(groupId, sources.map(source => ({
+      lecture: { id: source.lecture.id, title: source.lecture.title, number: source.lecture.orderIndex },
+      paragraphs: source.paragraphs, candidates: groundedQuestionCandidates(source.paragraphs),
+    })));
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      await client.query("select pg_advisory_xact_lock(hashtext($1))", [`instructor-guide:${groupId}`]);
+      const subject = await client.query("select id from subjects where id=$1 and status='published' and deleted_at is null for share", [subjectId]);
+      const current = await client.query<{ id: string; updated_at: Date }>("select id,updated_at from lectures where subject_id=$1 and id=any($2::uuid[]) and status='published' and deleted_at is null order by id for share", [subjectId, selected.map(lecture => lecture.id)]);
+      if (!subject.rowCount || current.rowCount !== selected.length || current.rows.some(row => selected.find(lecture => lecture.id === row.id)!.updatedAt !== row.updated_at.toISOString())) throw conflict("تغيرت المحاضرات أثناء تدقيق الدليل. أعد تحميله.");
+      await this.sourceFiles.assertUnchanged(client, selected, links);
+      await client.query("insert into exam_instructor_guides(group_id,guide) values($1,$2::jsonb) on conflict(group_id) do update set guide=excluded.guide", [groupId, JSON.stringify(guide)]);
+      await client.query("commit");
+    } catch (error) { await client.query("rollback"); throw error; }
+    finally { client.release(); }
+    return guide;
   }
 
   async reviewPackage(subjectId: string, groupId: string, isAdmin: boolean): Promise<{ group: ExamMaterialDetail; questions: QuestionForAttempt[] }> {

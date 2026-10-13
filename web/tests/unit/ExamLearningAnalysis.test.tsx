@@ -6,7 +6,7 @@ import { ExamKnowledgeGaps } from "@/components/exam-material/ExamKnowledgeGaps"
 
 const reference: ExamContextReference = { paragraphId: "a".repeat(24), fileId: "original", filename: "المحاضرة الأولى مخاطر.pdf", sha256: "b".repeat(64), number: 3, startLine: 17, endLine: 20,
   excerpt: "لا يُعد الخطر مقبولًا إذا تجاوز الأثر 25%، ولا تجوز الاستجابة دون موافقة مالك الخطر." };
-const guide: Guide = { groupId: "group", generator: "strict-source-extractive-v1", items: [{ id: reference.paragraphId, lectureId: "lecture", lectureTitle: "المحاضرة الأولى مخاطر", topic: "شروط القرار",
+const guide: Guide = { groupId: "group", generator: "source-verified-instructor-v2", sourceScope: "current-lecture-files", items: [{ id: reference.paragraphId, lectureId: "lecture", lectureTitle: "المحاضرة الأولى مخاطر", topic: "شروط القرار",
   expectedGap: "قد يحتاج المتدرب إلى توضيح شروط القرار في النص.", discussionQuestion: `كيف تفسّر العبارة «${reference.excerpt}»؟`, references: [reference] }] };
 const report: ExamKnowledgeGapReport = { attemptId: "mine", incorrectAnswers: 2, unansweredQuestions: 1, unmappedQuestions: 0,
   gaps: [{ id: "gap", lectureId: "lecture", lectureTitle: "المحاضرة الأولى مخاطر", topic: "شروط القرار", wrongQuestionIds: ["q1", "q2"], unansweredQuestionIds: ["q3"], references: [reference] }] };
@@ -69,6 +69,37 @@ describe("source-bound review interfaces", () => {
     expect(screen.getByText("اعتماد الخطة قبل توثيق الموافقة.")).toBeVisible();
     expect(screen.getByText("توثيق الموافقة قبل اعتماد الخطة.")).toBeVisible();
     expect(screen.getByText("تؤخر الخطة الإجراء الذي اشترطه المصدر قبل الاعتماد.")).toBeVisible();
+  });
+
+  it("rejects a legacy or wrong-group response instead of showing saved extraction debris", async () => {
+    const damaged = { ...guide, generator: "strict-source-extractive-v1", items: [{ ...guide.items[0]!, discussionQuestion: "io/academic-cv-website/ai/week1 Id Zz Slo" }] };
+    const fetchMock = vi.fn().mockResolvedValueOnce(reply(damaged)).mockResolvedValueOnce(reply({ ...guide, groupId: "other" })); vi.stubGlobal("fetch", fetchMock);
+    render(<ExamInstructorGuide subjectId="subject" groupId="group" />); fireEvent.click(screen.getByText("دليل المناقشة الذكي للمدير"));
+    await screen.findByRole("alert"); expect(screen.queryByText(damaged.items[0]!.discussionQuestion)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "إعادة المحاولة" }));
+    await screen.findByRole("alert"); expect(screen.queryByText(guide.items[0]!.discussionQuestion)).not.toBeInTheDocument();
+  });
+  it("resets the expanded panel and aborts the previous archive when selection changes", async () => {
+    let resolveFirst!: (value: unknown) => void;
+    const fresh = { ...guide, groupId: "new-group", items: [{ ...guide.items[0]!, discussionQuestion: "كيف تناقش ضوابط المصدر في المجموعة الجديدة؟" }] };
+    const fetchMock = vi.fn().mockImplementationOnce(() => new Promise(resolve => { resolveFirst = resolve; })).mockResolvedValueOnce(reply(fresh)); vi.stubGlobal("fetch", fetchMock);
+    const view = render(<ExamInstructorGuide subjectId="subject" groupId="group" />); fireEvent.click(screen.getByText("دليل المناقشة الذكي للمدير"));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const signal = fetchMock.mock.calls[0]![1].signal as AbortSignal;
+    view.rerender(<ExamInstructorGuide subjectId="subject" groupId="new-group" />);
+    expect(signal.aborted).toBe(true); expect(screen.getByText("دليل المناقشة الذكي للمدير").closest("details")).not.toHaveAttribute("open");
+    fireEvent.click(screen.getByText("دليل المناقشة الذكي للمدير")); await screen.findByText(fresh.items[0]!.discussionQuestion);
+    resolveFirst(reply(guide));
+    await waitFor(() => expect(screen.queryByText(guide.items[0]!.discussionQuestion)).not.toBeInTheDocument());
+    expect(fetchMock.mock.calls[1]![0]).toContain("new-group/instructor-guide");
+  });
+  it("revalidates on request and reports unreadable lecture evidence without inventing a topic", async () => {
+    const fresh = { ...guide, items: [], unavailableLectures: [{ lectureId: "unclear", lectureTitle: "المحاضرة غير الواضحة" }] };
+    const fetchMock = vi.fn().mockResolvedValueOnce(reply(guide)).mockResolvedValueOnce(reply(fresh)); vi.stubGlobal("fetch", fetchMock);
+    render(<ExamInstructorGuide subjectId="subject" groupId="group" />); fireEvent.click(screen.getByText("دليل المناقشة الذكي للمدير")); await screen.findByText(guide.items[0]!.discussionQuestion);
+    fireEvent.click(screen.getByRole("button", { name: "إعادة تدقيق الدليل" }));
+    await screen.findByText(/لم يُعتمد محور مناقشة/); expect(screen.getByText(/المحاضرة غير الواضحة/)).toBeInTheDocument();
+    expect(screen.queryByText(guide.items[0]!.discussionQuestion)).not.toBeInTheDocument(); expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
 });
