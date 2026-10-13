@@ -264,7 +264,9 @@ describe("independent exam material archives", () => {
     const group = await s.generate([s.lectures[0]!]);
     expect(group.summary.sections[0]!.text).toContain(scientific);
     expect(JSON.stringify(group.summary)).not.toMatch(/QUESTION_APPENDIX_ONLY|ANSWER_APPENDIX_ONLY|ANSWER_FILE_ONLY|التمرين التفاعلي/);
-    expect(group.questionCount).toBeGreaterThan(2);
+    // Only the two proven operational cases; an answer appendix never pads
+    // the assessment with additional memory questions.
+    expect(group.questionCount).toBe(2);
     const saved = structuredClone(group.summary);
     saved.version = 2;
     saved.sections[0]!.topics!.push({ title: "الإجابات النموذجية والتعاليل", text: "SAVED_ANSWER_APPENDIX" });
