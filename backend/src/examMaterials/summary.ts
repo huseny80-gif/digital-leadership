@@ -3,6 +3,7 @@ import { cleanSourceText } from "../contentAutomation/sourceText.js";
 import { hasBrokenSourceEncoding } from "../contentAutomation/sourceTextQuality.js";
 import { ValidationError } from "../lib/validation.js";
 import { isSourceLayoutNoise, readableSourcePassage } from "./sourceReadability.js";
+import { studyLayoutLines } from "@digital-leadership/shared";
 
 /** Keep source wording and paragraph boundaries. No generated factual claims. */
 export function plainStudyText(value: string): string {
@@ -72,7 +73,8 @@ export function studyContentLines(value: string): Array<{ line: number; text: st
     && !prefix.some(line => /^(?:المقدمة|مقدمة|التعريف|المفهوم|مدخل)(?:\s|$|[:：])/u.test(normalizedTitle(line))) ? firstChapter : 0;
   const result: Array<{ line: number; text: string }> = [];
   let excludedDepth: number | null = null;
-  for (const [index, line] of lines.entries()) {
+  for (const { line: sourceLine, text: line } of studyLayoutLines(lines.join("\n"))) {
+    const index = sourceLine - 1;
     if (index < coverEnd) continue;
     const trimmed = line.trim();
     if (isSourceLayoutNoise(trimmed) || !readableSourcePassage(trimmed)) continue;

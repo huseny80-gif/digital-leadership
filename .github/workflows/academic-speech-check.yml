@@ -4,11 +4,21 @@ on:
     paths:
       - "backend/src/examMaterials/academicSpeech.ts"
       - "backend/scripts/checkAcademicSpeech.mjs"
+      - "backend/scripts/checkLegalAcademicReadings.mjs"
+      - "backend/src/examMaterials/legalAcademicReadings.ts"
+      - "backend/content/finquiz/legalAcademicReadings.json"
+      - "shared/src/academicNarration.ts"
+      - "shared/src/studyLayout.ts"
       - ".github/workflows/academic-speech-check.yml"
   pull_request:
     paths:
       - "backend/src/examMaterials/academicSpeech.ts"
       - "backend/scripts/checkAcademicSpeech.mjs"
+      - "backend/scripts/checkLegalAcademicReadings.mjs"
+      - "backend/src/examMaterials/legalAcademicReadings.ts"
+      - "backend/content/finquiz/legalAcademicReadings.json"
+      - "shared/src/academicNarration.ts"
+      - "shared/src/studyLayout.ts"
       - ".github/workflows/academic-speech-check.yml"
   workflow_dispatch:
 permissions:
@@ -30,3 +40,4 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends ffmpeg
       - run: node backend/scripts/checkAcademicSpeech.mjs
+      - run: node backend/scripts/checkLegalAcademicReadings.mjs

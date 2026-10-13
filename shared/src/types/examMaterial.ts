@@ -2,7 +2,11 @@ import type { Lecture, Subject } from "./content.js";
 import type { Quiz, QuizAttempt, QuestionForAttempt, AttemptAnswer, SubmitAnswerAck, QuizAttemptResult } from "./quiz.js";
 
 export interface ExamLectureSnapshot { id: string; title: string; number: number }
-export interface ExamSummaryTopic { title: string; text: string; details?: string }
+export interface ExamSummaryTopic {
+  title: string; text: string; details?: string;
+  /** Physical one-based page in the original PDF, including cover pages. */
+  sourcePages?: Array<{ fileId: string; filename: string; sha256: string; page: number }>;
+}
 export interface ExamSummarySection extends ExamLectureSnapshot {
   text: string;
   keyPoints: string[];
@@ -18,6 +22,7 @@ export interface ExamMaterialSummary {
   grounding?: {
     policy: "strict-file-extraction-v1";
     assessmentPolicy?: "source-case-assessment-v1";
+    summaryPolicy?: "visually-verified-legal-excerpts-v1";
     sources: Array<{ lectureId: string; fileId: string; filename: string; sha256: string }>;
   };
 }

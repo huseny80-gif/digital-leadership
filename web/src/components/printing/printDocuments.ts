@@ -1,5 +1,5 @@
 import type { ExamMaterialSummary, LibraryEntry, QuestionForAttempt, StudyPrintBlock, StudyPrintDocument } from "@shared/index";
-import { examSummaryPresentation, libraryEntriesPresentation, uniqueStudyText } from "@digital-leadership/shared";
+import { examSummaryPresentation, examTopicSourceLabel, libraryEntriesPresentation, uniqueStudyText } from "@digital-leadership/shared";
 
 const letters = ["أ", "ب", "ج", "د", "هـ", "و"];
 const questionTypes = { multiple_choice: "اختيار من متعدد", true_false: "صح أو خطأ", fill: "إكمال", match: "مطابقة", order: "ترتيب", open: "سؤال مقالي أو سيناريو", short_answer: "إجابة قصيرة" };
@@ -49,6 +49,7 @@ export function examSummaryPrintDocument(summary: ExamMaterialSummary): StudyPri
     if (section.topics?.length) section.topics.forEach(topic => {
       add(blocks, topic.title, true); add(blocks, topic.text);
       if (topic.details) { add(blocks, "تفاصيل المحور وتطبيقاته", true); add(blocks, topic.details); }
+      const reference = examTopicSourceLabel(topic); if (reference) add(blocks, reference);
     });
     else add(blocks, section.text);
     if (section.concepts?.length) { add(blocks, "المفاهيم والمصطلحات الأساسية", true); section.concepts.forEach(concept => add(blocks, `${concept.term}: ${concept.definition}`)); }

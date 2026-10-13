@@ -1,5 +1,6 @@
 import type { ExamAudioChapter, ExamMaterialSummary, ExamNarrationSegment, ExamSummarySection } from "./types/examMaterial.js";
 import { examSectionPresentation } from "./studyPresentation.js";
+import { cleanStudyLayout } from "./studyLayout.js";
 
 export const ACADEMIC_NARRATION_VERSION = "academic-ar-v1";
 export const ACADEMIC_VOICES = [
@@ -22,11 +23,15 @@ const terms: Record<string, string> = {
   "الخوارزمية": "الخَوارِزْمِيَّة", "الخوارزميات": "الخَوارِزْمِيّات",
   "المحاكاة": "المُحاكاة", "النماذج": "النَّماذِج", "التعلم": "التَّعَلُّم",
   "السيبراني": "السَّيْبَرانيّ", "التنظيمية": "التَّنْظيمِيَّة", "القانونية": "القانونِيَّة",
+  "المشروعية": "المَشْرُوعِيَّة", "الاختصاص": "الاِخْتِصاص", "الإثبات": "الإِثْبات",
+  "الحجية": "الحُجِّيَّة", "حجية": "حُجِّيَّة", "المشرع": "المُشَرِّع", "المحل": "المَحَلّ",
+  "المتبوع": "المَتْبُوع", "التابع": "التّابِع", "التعويض": "التَّعْوِيض", "التوقيع": "التَّوْقِيع",
+  "الأتمتة": "الأَتْمَتَة", "الشفافية": "الشَّفافِيَّة", "الرقابة": "الرَّقابَة",
 };
 const abbreviations: Record<string, string> = { AI: "إيه آي", API: "إيه بي آي", PDF: "بي دي إف", GPT: "جي بي تي", ISO: "آيزو", ICT: "آي سي تي", IoT: "آي أو تي" };
 
 export function prepareAcademicSpeech(source: string): string {
-  return source.normalize("NFKC")
+  return cleanStudyLayout(source).normalize("NFKC")
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069\u0640]/g, "")
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
@@ -41,6 +46,10 @@ export function prepareAcademicSpeech(source: string): string {
     .replace(/(^|[^\p{L}\p{M}])حكم(?=\s+القانون(?:[^\p{L}\p{M}]|$))/gu, "$1حُكْم")
     .replace(/(^|[^\p{L}\p{M}])تعلم(?=\s+(?:الآلة|الآلي)(?:[^\p{L}\p{M}]|$))/gu, "$1تَعَلُّم")
     .replace(/(^|[^\p{L}\p{M}])النظم(?=\s+(?:القانونية|الإدارية|الذكية|المعلوماتية)(?:[^\p{L}\p{M}]|$))/gu, "$1النُّظُم")
+    .replace(/(هوية\s+)الموقع(?=\s+وبيان\s+موافقته)/gu, "$1المُوَقِّع")
+    .replace(/(التوقيع\s+ب)الموقع(?=\s+وحده)/gu, "$1المُوَقِّع")
+    .replace(/(سيطرة\s+)الموقع(?=\s+على\s+وسيلة\s+إنشاء\s+التوقيع)/gu, "$1المُوَقِّع")
+    .replace(/(طابع\s+متفرد\s+يدل\s+على\s+نسبته\s+إلى\s+)الموقع/gu, "$1المُوَقِّع")
     .replace(/[\p{Script=Arabic}\p{M}]+/gu, word => terms[word] ?? (/^[وفبك]/.test(word) && terms[word.slice(1)] ? word[0] + terms[word.slice(1)]! : word))
     .replace(/\b(?:AI|API|PDF|GPT|ISO|ICT|IoT)\b/g, word => abbreviations[word]!)
     .replace(/\s+/g, " ").replace(/\s+([،.;:!?؟؛])/g, "$1").trim();

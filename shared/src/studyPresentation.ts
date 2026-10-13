@@ -67,9 +67,14 @@ export function examSectionPresentation(section: ExamSummarySection): ExamSummar
     const context = contexts.get(title)!;
     const text = context.prose.retain(topic.text), details = topic.details ? context.prose.retain(topic.details) : "";
     if (!text && !details) continue;
-    if (context.topic) context.topic.details = [context.topic.details, text, details].filter(Boolean).join("\n\n");
+    if (context.topic) {
+      context.topic.details = [context.topic.details, text, details].filter(Boolean).join("\n\n");
+      const pages = [...(context.topic.sourcePages ?? []), ...(topic.sourcePages ?? [])];
+      if (pages.length) context.topic.sourcePages = [...new Map(pages.map(page => [`${page.fileId}:${page.sha256}:${page.page}`, { ...page }])).values()];
+    }
     else {
-      context.topic = { title: topic.title, text: text || details, ...(text && details ? { details } : {}) };
+      context.topic = { title: topic.title, text: text || details, ...(text && details ? { details } : {}),
+        ...(topic.sourcePages?.length ? { sourcePages: topic.sourcePages.map(page => ({ ...page })) } : {}) };
       topics.push(context.topic);
     }
     body.remember(text); body.remember(details);
@@ -87,6 +92,15 @@ export function examSectionPresentation(section: ExamSummarySection): ExamSummar
 }
 export function examSummaryPresentation(summary: ExamMaterialSummary): ExamMaterialSummary {
   return { ...summary, sections: summary.sections.map(examSectionPresentation) };
+}
+
+export function examTopicSourceLabel(topic: Pick<ExamSummaryTopic, "sourcePages">): string {
+  const files = new Map<string, { filename: string; pages: Set<number> }>();
+  for (const reference of topic.sourcePages ?? []) {
+    const id = `${reference.fileId}:${reference.sha256}`, file = files.get(id) ?? { filename: reference.filename, pages: new Set<number>() };
+    file.pages.add(reference.page); files.set(id, file);
+  }
+  return [...files.values()].map(file => `${file.filename} — صفحات ملف PDF: ${[...file.pages].sort((a, b) => a - b).join("، ")}`).join("؛ ");
 }
 
 function libraryDocumentText(html: string): string {

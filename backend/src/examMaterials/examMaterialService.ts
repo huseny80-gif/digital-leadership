@@ -17,6 +17,7 @@ import { instructorDebriefGuide, knowledgeGapReport, storedSourceReferences, sto
 import { analyticalPolicy } from "./caseAssessment.js";
 import { examGroupVisible } from "./visibility.js";
 import { generateExamReviewArtifacts, examChallengeSeconds } from "@digital-leadership/shared";
+import { reviewedLegalSummary } from "./legalAcademicReadings.js";
 import type { ExamExperienceMode, QuizAttempt, QuestionForAttempt } from "@shared/index";
 
 interface GroupMetadataRow {
@@ -124,7 +125,7 @@ export class ExamMaterialService {
       this.latestRevision(subjectId, row.lecture_ids, isAdmin),
       this.assessments.getQuizOrThrow(row.quiz_id, isAdmin),
     ]);
-    const summary = studyOnlyExamSummary(row.summary);
+    const summary = await reviewedLegalSummary(studyOnlyExamSummary(row.summary));
     return { ...groupMetadata(row), revisionCount: currentRevision.revisionCount!, currentRevision, summary, quiz, review: generateExamReviewArtifacts(summary, row.title) };
   }
 
@@ -234,11 +235,12 @@ export class ExamMaterialService {
       number: lecture.orderIndex > 0 ? lecture.orderIndex : allLectures.indexOf(lecture) + 1 || position + 1,
       text: paragraphs.map(paragraph => `## ${paragraph.heading}\n\n${paragraph.text}`).join("\n\n"),
     }));
-    const summary = compileExamSummary(subject.title, sections);
+    let summary = compileExamSummary(subject.title, sections);
     assertSourceBoundSummary(summary, fileSources.map(source => ({ lectureId: source.lecture.id, paragraphs: source.paragraphs })));
     summary.grounding = { policy: groundingVersion, assessmentPolicy: analyticalPolicy, sources: fileSources.flatMap(source => source.documents.map(document => ({
       lectureId: source.lecture.id, fileId: document.id, filename: document.filename, sha256: document.sha256,
     }))) };
+    summary = await reviewedLegalSummary(summary);
     const perLecture = Math.min(12, Math.floor(200 / selected.length));
     const questions: SourceQuestion[] = [];
     const guideSources: Parameters<typeof instructorDebriefGuide>[1] = [];

@@ -24,6 +24,8 @@ import { refreshInstructorGuides } from "./examMaterials/refreshInstructorGuides
 import { refreshAcademicSummaries } from "./examMaterials/refreshAcademicSummaries.js";
 import { runIndependentContentReviews, runStartupMaintenance } from "./lib/startupMaintenance.js";
 import { probeAcademicSpeech } from "./examMaterials/academicSpeech.js";
+import { probeLegalAcademicReadings } from "./examMaterials/legalAcademicReadings.js";
+import { probePublishedLegalReviews } from "./examMaterials/legalAcademicReviewProbe.js";
 
 initMonitoring();
 
@@ -88,4 +90,14 @@ app.listen(env.PORT, "0.0.0.0", () => {
     if (voices.every(voice => voice.ready)) logger.info({ voices }, "academic_narration_provider_checked");
     else logger.warn({ voices }, "academic_narration_provider_checked");
   });
+  if (env.NODE_ENV === "production") void probeLegalAcademicReadings().then(
+    async review => {
+      logger.info(review, "legal_academic_readings_verified");
+      if (env.DATABASE_URL) {
+        try { logger.info(await probePublishedLegalReviews(getPool()), "published_legal_academic_reviews_checked"); }
+        catch { logger.warn({ policy: review.policy }, "published_legal_academic_review_check_failed"); }
+      }
+    },
+    () => logger.error({ policy: "visually-verified-legal-excerpts-v1" }, "legal_academic_readings_verification_failed"),
+  );
 });
