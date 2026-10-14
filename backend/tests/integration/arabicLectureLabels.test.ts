@@ -56,6 +56,7 @@ describe("Arabic labels follow source identities and subject folders", () => {
     const actor = await seed();
     const first = finquizRecordId("lecture:ai-l1"), legal = finquizRecordId("lecture:lg-l1");
     const independent = await createLecture(pool, { subjectId: subjectMapping["ai-data"]!, title: "Legal1", status: "draft", createdBy: actor });
+    const generic = await createLecture(pool, { subjectId: subjectMapping["innovation-project-management"]!, title: "lecture2", orderIndex: 0, status: "draft", createdBy: actor });
     const file = await createFile(pool, { storageKey: "cross-subject-file.pdf", uploadedBy: actor });
     await pool.query("update files set original_filename='Legal1.pdf' where id=$1", [file]);
     for (const lectureId of [first, legal]) await createLectureItem(pool, { lectureId, itemType: "pdf", title: "مصدر مشترك", fileId: file, status: "published", createdBy: actor });
@@ -64,6 +65,7 @@ describe("Arabic labels follow source identities and subject folders", () => {
     const second = await normalizeArabicLectureLabels(pool);
     expect(second.courses.every(course => Object.values(course.changed).every(count => count === 0))).toBe(true);
     expect((await pool.query("select title,status from lectures where id=$1", [independent])).rows[0]).toEqual({ title: "Legal1", status: "draft" });
+    expect((await pool.query("select title,status,order_index from lectures where id=$1", [generic])).rows[0]).toEqual({ title: "المحاضرة الثانية في الابتكار وإدارة المشاريع", status: "draft", order_index: 0 });
     expect((await pool.query("select original_filename from files where id=$1", [file])).rows[0].original_filename).toBe("Legal1.pdf");
     expect((await pool.query("select title from lectures where id=$1", [first])).rows[0].title).toBe("مقدمة مخصصة للمدرّب");
     expect((await pool.query("select status from lectures where id=$1", [finquizRecordId("lecture:cs-l2")])).rows[0].status).toBe("draft");

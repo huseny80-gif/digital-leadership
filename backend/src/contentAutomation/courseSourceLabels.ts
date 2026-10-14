@@ -54,13 +54,20 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
   const numberOf = (value: string) => {
     const text = normalizeText(cleanArabicDisplayLabel(value)).replace(/\.(?:pdf|pptx)$/i, "").trim();
     const ordinal = ordinals.map((_, index) => normalizeText(titleOf(index + 1))).indexOf(text) + 1;
-    return legacyNumber(text) ?? aliases.get(text) ?? (ordinal || null);
+    // Generic uploads are scoped by the already verified parent folder. The
+    // label changes, never the lecture identity, publication state or content.
+    const generic = /^(?:lecture|المحاضرة|محاضرة)[\s_-]*(?:رقم\s*)?([1-9]|10)$/u.exec(text);
+    const bareOrdinal = /^(?:المحاضرة|محاضرة)[\s_-]+/u.test(text)
+      ? ordinals.map(normalizeText).indexOf(text.replace(/^(?:المحاضرة|محاضرة)[\s_-]+/u, "")) + 1 : 0;
+    return legacyNumber(text) ?? aliases.get(text) ?? (ordinal || bareOrdinal || (generic ? Number(generic[1]) : null));
   };
   const label = (value: string) => {
     value = cleanArabicDisplayLabel(value);
     const extension = value.match(/\.(pdf|pptx)$/i)?.[0] ?? "";
     const stem = normalizeText(value).replace(/\.(?:pdf|pptx)$/i, "").trim();
     if (slug === "ai-data" && guides.has(stem)) return guides.get(stem)! + extension;
+    const combinedCyber = /^(?:(ملخص|اختبار)[:\s]+)?المحاضرة الاولي في حوكمة الامن السيبراني\s*&\s*2$/u.exec(stem);
+    if (slug === "cybersecurity-governance" && combinedCyber) return (combinedCyber[1] ? combinedCyber[1] + " المحاضرتين" : "المحاضرتان") + " الأولى والثانية في حوكمة الأمن السيبراني" + extension;
     const number = numberOf(value);
     if (number) return titleOf(number) + extension;
     const pattern = slug === "ai-data"
@@ -70,6 +77,7 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
       : slug === "innovation-project-management" ? /(?<![\p{L}\p{N}])(?:Innovation|Project(?:\s*Management)?)[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
       : /(?<![\p{L}\p{N}])Cybersecurity[\s_-]*([1-9]|10)(?![\p{L}\p{N}])/giu;
     let result = value.replace(pattern, (_, digit: string) => titleOf(Number(normalizeText(digit))));
+    if (slug !== "ai-data") result = result.replace(/(?<![\p{L}\p{N}])Lecture[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu, (_, digit: string) => titleOf(Number(digit)));
     if (slug === "risk-management") for (const lecture of source.lectures) {
       for (const alias of [lecture.title, ...(lecture.legacyTitles ?? [])]) if (!legacyNumber(alias)) result = result.replaceAll(alias, titleOf(lecture.number));
     }
