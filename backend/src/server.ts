@@ -29,6 +29,7 @@ import { probePublishedLegalReviews } from "./examMaterials/legalAcademicReviewP
 import { reviewCourseAssessments } from "./contentAutomation/reviewCourseAssessments.js";
 import { refreshCatalogStudyMaterials } from "./contentAutomation/refreshCatalogStudyMaterials.js";
 import { normalizeArabicLectureLabels } from "./contentAutomation/normalizeArabicLectureLabels.js";
+import { separateCyberRiskSixthLecture } from "./contentAutomation/separateCyberRiskSixthLecture.js";
 
 initMonitoring();
 
@@ -65,6 +66,7 @@ async function refreshPublishedContent() {
   logger.info({ ...sixth, sourcesQueued: generationSources.length }, "legal_sixth_lecture_separated");
   logger.info({ courses: await refreshStudyCourses(getPool()) }, "study_courses_content_refreshed");
   await runIndependentContentReviews([
+    { name: "cyber_risk_sixth", run: async () => { logger.info(await separateCyberRiskSixthLecture(getPool()), "cyber_risk_sixth_lecture_separated"); } },
     { name: "catalog_study_materials", run: async () => { logger.info(await refreshCatalogStudyMaterials(getPool()), "catalog_study_materials_refreshed"); } },
     { name: "onedrive_sources", run: async () => { logger.info(await reviewOneDriveSources(getPool()), "onedrive_sources_reviewed"); } },
     { name: "risk_content", run: async () => { logger.info(await reviewRiskContent(getPool()), "risk_content_source_reviewed"); } },

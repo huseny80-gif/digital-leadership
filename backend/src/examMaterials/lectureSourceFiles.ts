@@ -9,6 +9,7 @@ import { splitLectures } from "../contentAutomation/sourceAnalysis.js";
 import { getStorageProvider } from "../files/storageProviderFactory.js";
 import { conflict } from "../lib/httpError.js";
 import { ValidationError } from "../lib/validation.js";
+import { cyberRiskPrivateSourceId } from "../contentAutomation/cyberRiskSixthSource.js";
 import { isAssessmentAppendixTitle, plainStudyText } from "./summary.js";
 import { sourceParagraphs, type ExamSourceDocument, type SourceParagraph } from "./sourceGrounding.js";
 
@@ -111,7 +112,7 @@ export class LectureSourceFiles {
           throw new ValidationError(`تعذرت قراءة ملف «${asset.filename}» الخاص بـ«${lecture.title}» قراءة موثوقة. أعد رفع ملف نصي أو PDF واضح؛ لا يُستخدم الملخص أو بنك الأسئلة بدلًا من الملف.`);
         }
       }
-      for (const link of (scope === "catalog" ? [] : links).filter(link => link.lecture_id === lecture.id && !isAssessmentAppendixTitle(link.title) && !isAssessmentAppendixTitle(link.original_filename))) {
+      for (const link of (scope === "catalog" && lecture.catalogSourceId !== cyberRiskPrivateSourceId ? [] : links).filter(link => link.lecture_id === lecture.id && !isAssessmentAppendixTitle(link.title) && !isAssessmentAppendixTitle(link.original_filename))) {
         try {
           const storage = getStorageProvider();
           if (!storage.read) throw new Error("private_source_read_unavailable");

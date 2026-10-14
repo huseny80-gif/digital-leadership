@@ -20,7 +20,7 @@ describe("FilesService upload consistency (PHASE 08 §10, tests 24/25)", () => {
     const oldKey = `subjects/${subjectId}/lectures/unassigned/11111111-1111-4111-8111-111111111111/old.pdf`;
     const insertFile = vi.fn(async input => input);
     const repository = { subjectExists: vi.fn().mockResolvedValue(true), lectureExistsUnderSubject: vi.fn().mockResolvedValue(true),
-      insertFile, getFileById: vi.fn().mockResolvedValue({ status: "active", storageKey: oldKey }), repointLectureItems: vi.fn(), archiveFile: vi.fn() } as unknown as FilesRepository;
+      insertFile, getFileById: vi.fn().mockResolvedValue({ status: "active", storageKey: oldKey }), getCurrentPlacement: vi.fn().mockResolvedValue(null), repointLectureItems: vi.fn(), archiveFile: vi.fn() } as unknown as FilesRepository;
     const service = new FilesService(fakePool(), repository, storage, 1024, 300);
     const filename = "المحاضرة الأولى قانونية.pdf";
     const input = { originalFilename: Buffer.from(filename, "utf8").toString("latin1"), declaredMimeType: "application/pdf", buffer: VALID_PDF, uploadedBy: "22222222-2222-4222-8222-222222222222" };
@@ -31,6 +31,19 @@ describe("FilesService upload consistency (PHASE 08 §10, tests 24/25)", () => {
       expect(metadata.storageKey).toMatch(/^subjects\/[0-9a-f-]+\/lectures\/unassigned\/[0-9a-f-]+\/[a-z0-9._-]+$/u);
     }
     expect(insertFile.mock.calls[0]![0].storageKey).not.toBe(insertFile.mock.calls[1]![0].storageKey);
+  });
+
+  it("stores a replacement under cyber lecture six instead of the old fifth lecture's object key", async () => {
+    const subjectId = "bc861a76-620d-4646-81ca-c49d24665b75", fifthId = "fd9c6149-f849-4f17-9731-b535341704aa", lectureId = "11111111-3333-4333-8333-111111111111";
+    const oldKey = `subjects/${subjectId}/lectures/${fifthId}/11111111-1111-4111-8111-111111111111/lecture5.pdf`;
+    const storage: StorageProvider = { name: "local-filesystem", upload: vi.fn(), getSignedUrl: vi.fn(), delete: vi.fn() };
+    const insertFile = vi.fn(async input => input);
+    const repository = { getFileById: vi.fn().mockResolvedValue({ status: "active", storageKey: oldKey }), getCurrentPlacement: vi.fn().mockResolvedValue({ subjectId, lectureId }),
+      insertFile, repointLectureItems: vi.fn(), archiveFile: vi.fn() } as unknown as FilesRepository;
+    await new FilesService(fakePool(), repository, storage, 1024, 300).replaceFile("11111111-1111-4111-8111-111111111111", { originalFilename: "Lecture6.pdf", declaredMimeType: "application/pdf", buffer: VALID_PDF, uploadedBy: "22222222-2222-4222-8222-222222222222" });
+    expect(insertFile.mock.calls[0]![0].storageKey).toContain(`subjects/${subjectId}/lectures/${lectureId}/`);
+    expect(insertFile.mock.calls[0]![0].originalFilename).toBe("المحاضرة السادسة في حوكمة الأمن السيبراني.pdf");
+    expect(storage.delete).not.toHaveBeenCalled();
   });
   it("24/25. deletes the just-uploaded storage object if the metadata insert fails, and rethrows", async () => {
     const uploadedKeys: string[] = [];

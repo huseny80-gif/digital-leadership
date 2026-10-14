@@ -177,11 +177,9 @@ export class FilesService {
       throw notFound("File");
     }
 
-    // Re-derive the same subject/lecture context the old file was
-    // uploaded under, by inspecting the old object key rather than
-    // trusting a client-supplied value for this (there is no
-    // subject/lecture body field on the replace request at all).
-    const context = parseSubjectAndLectureFromObjectKey(oldFile.storageKey);
+    // Resolve current server-side ownership first: a subject correction must
+    // not send subsequent versions back to the folder in the old object key.
+    const context = await this.repository.getCurrentPlacement(oldFileId) ?? parseSubjectAndLectureFromObjectKey(oldFile.storageKey);
 
     await validateSafePdfUpload({
       declaredMimeType: input.declaredMimeType,

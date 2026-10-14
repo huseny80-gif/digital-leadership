@@ -90,6 +90,15 @@ export class FilesRepository {
     return { ...toFileMetadata(row), storageKey: row.storage_key };
   }
 
+  /** A relocated lecture keeps its old object key. New versions belong to
+   * its current folder; a file shared across subjects has no single owner. */
+  async getCurrentPlacement(fileId: string): Promise<{ subjectId: string; lectureId: string | null } | null> {
+    const rows = (await this.pool.query<{ subject_id: string; lecture_id: string }>(`select distinct l.subject_id,l.id as lecture_id
+      from lecture_items i join lectures l on l.id=i.lecture_id where i.file_id=$1 and i.deleted_at is null and l.deleted_at is null`, [fileId])).rows;
+    if (!rows.length || new Set(rows.map(row => row.subject_id)).size !== 1) return null;
+    return { subjectId: rows[0]!.subject_id, lectureId: rows.length === 1 ? rows[0]!.lecture_id : null };
+  }
+
   /** True if a non-admin caller may read this file, via the content
    * visibility chain (Phase 7's exact predicate, reused unmodified). */
   async isFileVisibleToNonAdmin(fileId: string): Promise<boolean> {
