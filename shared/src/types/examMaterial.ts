@@ -23,6 +23,8 @@ export interface ExamMaterialSummary {
     policy: "strict-file-extraction-v1";
     assessmentPolicy?: "source-case-assessment-v1";
     summaryPolicy?: "visually-verified-legal-excerpts-v1";
+    /** An automatic curriculum review explicitly selects its approved PDFs. */
+    sourceScope?: "catalog-primary";
     sources: Array<{ lectureId: string; fileId: string; filename: string; sha256: string }>;
   };
 }

@@ -10,12 +10,16 @@ import { analyticalQuestionCandidates } from "../examMaterials/caseAssessment.js
 import { groundingVersion, validGroundedQuestion, type GroundedQuestion } from "../examMaterials/sourceGrounding.js";
 import { generatedSourcePolicy } from "./questionGeneration.js";
 
-export const courseAssessmentReviewPolicy = "file-verified-course-assessments-v1";
+export const courseAssessmentReviewPolicy = "file-verified-course-assessments-v2";
 const weakFormat = /_{3,}|أكمل\s+(?:العبارة|النص)|الكلمة\s+المحذوفة|CamScanner|المسح الضوئي\s+ب/u;
 type Plan = { lecture: Lecture; questions: GroundedQuestion[]; links: Awaited<ReturnType<LectureSourceFiles["read"]>>["links"] };
-const nativeQuestionIds = (subjectId: string) => manifest.subjects.find(subject => subjectMapping[subject.id] === subjectId)?.quizzes.flatMap(quiz => quiz.questions.map(question => finquizRecordId("question:" + question.id))) ?? [];
+const nativeQuestionIds = (subjectId: string) => manifest.subjects.find(subject => subjectMapping[subject.id] === subjectId)?.quizzes.flatMap(quiz => quiz.questions.flatMap(question => [
+  finquizRecordId("question:" + question.id),
+  ...(quiz.sourceReview ? [finquizRecordId(`${quiz.sourceReview}:question:${question.id}:${createHash("sha256").update(JSON.stringify(question)).digest("hex")}`)] : []),
+])) ?? [];
 const unreviewedMembership = `exists(select 1 from quiz_questions qq join questions q on q.id=qq.question_id where qq.quiz_id=z.id and q.deleted_at is null and
   (q.id=any($2::uuid[]) or q.prompt ~ '_{3,}|أكمل[[:space:]]+(العبارة|النص)|CamScanner|المسح الضوئي[[:space:]]+ب'
+   or q.rubric->>'courseReview'='file-verified-course-assessments-v1'
    or (q.source_import_id is not null and coalesce(q.rubric->>'sourcePolicy','')<>$3)))`;
 async function needsReview(pool: Pool | PoolClient, subjectId: string) {
   return Boolean((await pool.query(`select z.id from quizzes z where z.subject_id=$1 and z.purpose='course' and z.superseded_by is null and z.deleted_at is null and ${unreviewedMembership} limit 1`, [subjectId, nativeQuestionIds(subjectId), generatedSourcePolicy])).rowCount);
@@ -41,7 +45,10 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
     const plans: Plan[] = [], unavailableLectures: Array<{ number: number; reason: string }> = [];
     for (const lecture of lectures) {
       try {
-        const { sources, links } = await reader.read(subjectId, [lecture], catalog);
+        // This managed curriculum edition selects the verified catalog PDFs.
+        // Instructor uploads remain untouched and ordinary manual generation
+        // still validates every selected attachment through the default reader.
+        const { sources, links } = await reader.read(subjectId, [lecture], catalog, "catalog");
         const paragraphs = sources[0]!.paragraphs;
         const questions = analyticalQuestionCandidates(paragraphs).filter(question => validGroundedQuestion(question, paragraphs)).sort((a, b) => a.candidateId.localeCompare(b.candidateId));
         plans.push({ lecture, questions, links });
@@ -91,6 +98,17 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
         await client.query("update quizzes set superseded_by=$2 where id=$1", [previous.id, id]);
         await client.query(`update content_imports set result_lectures=(select jsonb_agg(case when entry->>'quizId'=$1 then jsonb_set(entry,'{quizId}',to_jsonb($2::text)) else entry end order by ordinal)
           from jsonb_array_elements(result_lectures) with ordinality entries(entry,ordinal)),updated_at=now() where subject_id=$3 and result_lectures @> $4::jsonb`, [previous.id, id, subjectId, JSON.stringify([{ quizId: previous.id }])]);
+        changed = true;
+      }
+      for (const plan of plans) {
+        const questionIds = ids.get(plan.lecture.id) ?? [];
+        if (!questionIds.length) continue;
+        const existing = await client.query("select 1 from quizzes where subject_id=$1 and lecture_id=$2 and purpose='course' and superseded_by is null and deleted_at is null and status='published' limit 1", [subjectId, plan.lecture.id]);
+        if (existing.rowCount) continue;
+        const digest = createHash("sha256").update(JSON.stringify(questionIds)).digest("hex");
+        const id = finquizRecordId(`${courseAssessmentReviewPolicy}:lecture-quiz:${plan.lecture.id}:${digest}`);
+        await client.query("insert into quizzes(id,subject_id,lecture_id,title,description,status,created_by) values($1,$2,$3,$4,$5,'published',$6)", [id, subjectId, plan.lecture.id, `اختبار ${plan.lecture.title}`, "أسئلة تحليلية موثقة بملف المحاضرة الأصلي.", subject.createdBy]);
+        for (const [order, questionId] of questionIds.entries()) await client.query("insert into quiz_questions(quiz_id,question_id,order_index) values($1,$2,$3)", [id, questionId, order]);
         changed = true;
       }
       await client.query("insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'course_assessments.source_reviewed','subject',$2,$3::jsonb)", [subject.createdBy, subjectId, JSON.stringify({ policy: courseAssessmentReviewPolicy, verifiedLectures: plans.length, questions: plans.reduce((n, plan) => n + plan.questions.length, 0), unavailableLectures })]);

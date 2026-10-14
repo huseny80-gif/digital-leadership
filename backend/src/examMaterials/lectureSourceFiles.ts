@@ -82,7 +82,7 @@ export function scopeSharedSource(document: ExamSourceDocument, lecture: Pick<Le
 export class LectureSourceFiles {
   constructor(private readonly pool: Pool, private readonly library: LibraryService) {}
 
-  async read(subjectId: string, lectures: Lecture[], library: SubjectLibrary): Promise<{ sources: LectureFileSources[]; links: FileLink[] }> {
+  async read(subjectId: string, lectures: Lecture[], library: SubjectLibrary, scope: "all" | "catalog" = "all"): Promise<{ sources: LectureFileSources[]; links: FileLink[] }> {
     const links = (await this.pool.query<FileLink>(fileLinksSql, [lectures.map(lecture => lecture.id)])).rows;
     const sources: LectureFileSources[] = [];
     for (const lecture of lectures) {
@@ -111,7 +111,7 @@ export class LectureSourceFiles {
           throw new ValidationError(`تعذرت قراءة ملف «${asset.filename}» الخاص بـ«${lecture.title}» قراءة موثوقة. أعد رفع ملف نصي أو PDF واضح؛ لا يُستخدم الملخص أو بنك الأسئلة بدلًا من الملف.`);
         }
       }
-      for (const link of links.filter(link => link.lecture_id === lecture.id && !isAssessmentAppendixTitle(link.title) && !isAssessmentAppendixTitle(link.original_filename))) {
+      for (const link of (scope === "catalog" ? [] : links).filter(link => link.lecture_id === lecture.id && !isAssessmentAppendixTitle(link.title) && !isAssessmentAppendixTitle(link.original_filename))) {
         try {
           const storage = getStorageProvider();
           if (!storage.read) throw new Error("private_source_read_unavailable");

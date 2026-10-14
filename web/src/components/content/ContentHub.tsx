@@ -15,9 +15,11 @@ export async function ContentHub({ subjects, view, query = "" }: { subjects: Sub
   for (let offset = 0; offset < subjects.length; offset += 5) {
     await Promise.all(subjects.slice(offset, offset + 5).map(async (subject) => {
       try {
+        const reviewedLectures = new Set<string>();
         if (["summaries", "files", "search"].includes(view)) {
           try {
             const library = (await apiGet<SubjectLibrary>(`/api/v1/subjects/${subject.id}/library`)).data;
+            for (const row of library.entries) if (row.section === "summaries" && row.lectureId && row.files.some(file => file.id.startsWith("source-study-") && file.bodyHtml)) reviewedLectures.add(row.lectureId);
             const files = new Set<string>();
             for (const row of library.entries) {
               const href = `/subjects/${subject.id}/library?section=${row.section}&entry=${encodeURIComponent(row.id)}`;
@@ -42,7 +44,8 @@ export async function ContentHub({ subjects, view, query = "" }: { subjects: Sub
             for (let start = 0; start < lectures.data.length; start += 5) {
               await Promise.all(lectures.data.slice(start, start + 5).map(async (lecture) => {
                 const items = await apiGetPaginated<LectureItemResponse>(`/api/v1/lectures/${lecture.id}/items?page=1&limit=100`);
-                entries.push(...items.data.filter((item) => view === "summaries" ? item.itemType === "summary" : view === "files" ? item.itemType === "pdf" : ["summary", "pdf"].includes(item.itemType)).map((item) => ({ id: `item-${item.id}`, title: item.title, subjectTitle: subject.title, href: `/subjects/${subject.id}/lectures/${lecture.id}`, icon: item.itemType === "pdf" ? "folder" : "document" })));
+                entries.push(...items.data.filter(item => !(item.itemType === "summary" && reviewedLectures.has(lecture.id)))
+                  .filter((item) => view === "summaries" ? item.itemType === "summary" : view === "files" ? item.itemType === "pdf" : ["summary", "pdf"].includes(item.itemType)).map((item) => ({ id: `item-${item.id}`, title: item.title, subjectTitle: subject.title, href: `/subjects/${subject.id}/lectures/${lecture.id}`, icon: item.itemType === "pdf" ? "folder" : "document" })));
               }));
             }
           }

@@ -99,7 +99,11 @@ export default async function LectureDetailPage({
   const currentIndex = siblingLectures.findIndex((l) => l.id === lectureId);
   const libraryEntries = await getLectureLibraryEntries(lecture!.subjectId, lecture!.id);
   const summaryEntries = libraryEntries.filter(entry => entry.section === "summaries");
-  const summaryItems = items.filter(item => item.itemType === "summary" && item.bodyText).map(item => ({ title: item.title, text: item.bodyText! }));
+  const hasReviewedSummary = summaryEntries.some(entry => entry.files.some(file => file.id.startsWith("source-study-") && file.bodyHtml));
+  // The current academic reading replaces older summary display copies.
+  // Saved instructor items remain available through their management API.
+  const currentItems = hasReviewedSummary ? items.filter(item => item.itemType !== "summary") : items;
+  const summaryItems = currentItems.filter(item => item.itemType === "summary" && item.bodyText).map(item => ({ title: item.title, text: item.bodyText! }));
   const hasPosition = currentIndex !== -1 && siblingLectures.length > 0;
   const previousLecture = hasPosition && currentIndex > 0 ? siblingLectures[currentIndex - 1] : null;
   const nextLecture =
@@ -123,7 +127,7 @@ export default async function LectureDetailPage({
         {subjectTitle}
         {hasPosition ? ` · Lecture ${currentIndex + 1} of ${siblingLectures.length}` : null}
       </p>
-      {lecture!.description ? <p className="page-subheading">{lecture!.description}</p> : null}
+      {!hasReviewedSummary && lecture!.description ? <p className="page-subheading">{lecture!.description}</p> : null}
 
       {progress ? <LectureCompleteToggle lectureId={lectureId} initialCompleted={progress.completed} /> : null}
 
@@ -131,11 +135,11 @@ export default async function LectureDetailPage({
         Back to subject
       </Link>
 
-      {items.length === 0 && libraryEntries.length === 0 ? (
+      {currentItems.length === 0 && libraryEntries.length === 0 ? (
         <EmptyState title="No content yet" message="Content for this lecture will appear here once published." />
-      ) : items.length > 0 ? (
+      ) : currentItems.length > 0 ? (
         <ul className="item-list" style={{ listStyle: "none", padding: 0 }}>
-          {items.map((item) => (
+          {currentItems.map((item) => (
             <LectureItemCard key={item.id} item={item} />
           ))}
         </ul>

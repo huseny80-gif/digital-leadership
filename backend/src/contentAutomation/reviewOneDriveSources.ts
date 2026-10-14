@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import type { Pool } from "pg";
 import { catalogRoot, manifest, subjectMapping } from "../finquiz/catalog.js";
 import { readAsset } from "../finquiz/assetFiles.js";
-import { finquizRecordId, findSourceLecture, normalizeCatalogTitle } from "../finquiz/recordIdentity.js";
+import { finquizRecordId, findSourceLecture, normalizeCatalogTitle, catalogSourceBindingSql } from "../finquiz/recordIdentity.js";
 import { insertAnswerRows } from "../finquiz/synchronizeCore.js";
 
 export interface SourceReview {
@@ -14,7 +14,7 @@ export interface SourceReview {
 export const oneDriveSourceReview = JSON.parse(readFileSync(new URL("../../content/onedrive-source-review-2026-10-08.json", import.meta.url), "utf8")) as SourceReview;
 const types: Record<string, string> = { mcq: "multiple_choice", tf: "true_false", open: "open", fill: "fill", match: "match", order: "order" };
 const digest = (value: string | Buffer) => createHash("sha256").update(value).digest("hex");
-interface LectureRow { id: string; title: string; order_index: number; description: string | null }
+interface LectureRow { id: string; title: string; order_index: number; description: string | null; catalogSourceId?: string }
 interface CourseAudit { publishedLectures: number; currentQuestions: number; currentQuizzes: number; incorrectSubjectLinks: number; emptyPublishedQuizzes: number; unmappedCurrentQuestions: number }
 
 /** Verify the exact original PDFs, including consecutive stored parts,
@@ -45,6 +45,7 @@ export async function reviewOneDriveSources(pool: Pool, review: SourceReview = o
   const client = await pool.connect();
   const changed = { lectureLabels: 0, fileLabels: 0, linkedQuestions: 0, questions: 0, quizEditions: 0 };
   const result: Array<{ slug: string; sourceFiles: number; boundLectures: number; reviewedQuizzes: number; missingLectureIds: string[]; audit: CourseAudit }> = [];
+  const issues: Array<{ slug: string; sourceLectureId: string; code: string }> = [];
   try {
     await client.query("begin");
     await client.query("set local lock_timeout = '30s'");
@@ -56,7 +57,7 @@ export async function reviewOneDriveSources(pool: Pool, review: SourceReview = o
       await client.query("select pg_advisory_xact_lock(hashtext($1))", [subjectId]);
       const owner = (await client.query<{ created_by: string }>("select created_by from subjects where id=$1 and deleted_at is null", [subjectId])).rows[0]?.created_by;
       if (!owner) throw new Error("reviewed_subject_missing");
-      const rows = (await client.query<LectureRow>("select id,title,order_index,description from lectures where subject_id=$1 and deleted_at is null order by created_at,id for update", [subjectId])).rows;
+      const rows = (await client.query<LectureRow>(`select l.id,l.title,l.order_index,l.description,${catalogSourceBindingSql} as "catalogSourceId" from lectures l where l.subject_id=$1 and l.deleted_at is null order by l.created_at,l.id for update of l`, [subjectId])).rows;
       const lectures = new Map<string, string>();
       for (const lecture of source.lectures) {
         const row = findSourceLecture(lecture, rows);
@@ -91,7 +92,9 @@ export async function reviewOneDriveSources(pool: Pool, review: SourceReview = o
       for (const reviewed of reviews) {
         const quiz = source.quizzes.find(quiz => quiz.id === reviewed.quizId)!;
         const lectureId = lectures.get(reviewed.lectureId);
-        if (!lectureId) throw new Error("reviewed_lecture_missing");
+        // A hidden/deleted source slot must not roll back the valid source
+        // editions in every other course or resurrect an instructor deletion.
+        if (!lectureId) { issues.push({ slug: source.id, sourceLectureId: reviewed.lectureId, code: "reviewed_lecture_missing" }); continue; }
         const bankId = finquizRecordId(review.key + ":bank:" + reviewed.quizId);
         await client.query("insert into question_banks(id,subject_id,title,created_by) values($1,$2,$3,$4) on conflict(id) do nothing", [bankId, subjectId, quiz.title, owner]);
         const ids: string[] = [];
@@ -130,7 +133,7 @@ export async function reviewOneDriveSources(pool: Pool, review: SourceReview = o
     }
     if (Object.values(changed).some(value => value > 0)) await client.query("insert into audit_logs(action,entity_type,metadata) values('course_content.onedrive_sources_reviewed','source_review',$1::jsonb)", [JSON.stringify({ key: review.key, changed, courses: result, sourceFiles: review.files.map(file => ({ assetId: file.assetId, sha256: file.sha256 })), sourceQuestions: review.quizzes.map(item => ({ quizId: item.quizId, assetId: item.assetId, questionDigest: item.questionDigest })) })]);
     await client.query("commit");
-    return { key: review.key, changed, sourceFiles: review.files.length, courses: result };
+    return { key: review.key, changed, sourceFiles: review.files.length, courses: result, issues };
   } catch (error) { await client.query("rollback"); throw error; }
   finally { client.release(); }
 }

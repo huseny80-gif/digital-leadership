@@ -185,7 +185,7 @@ export class ExamMaterialService {
     const selected = (await this.publishedLectures(subjectId)).filter(lecture => group.lecture_ids.includes(lecture.id));
     if (!selected.length || selected.length !== group.lecture_ids.length) throw new ValidationError("تعذر التحقق من ملفات المحاضرات المحددة لإعداد دليل المدير.");
     const library = await this.library.get(subjectId, false);
-    const { sources, links } = await this.sourceFiles.read(subjectId, selected, library);
+    const { sources, links } = await this.sourceFiles.read(subjectId, selected, library, group.summary.grounding?.sourceScope === "catalog-primary" ? "catalog" : "all");
     // Never serve saved v1 prose, even inside an old bookmarked archive.
     // Teaching preparation is explicitly bound to today's verified files;
     // the historical summary, quiz, answers and scores remain untouched.
@@ -217,7 +217,7 @@ export class ExamMaterialService {
     }) };
   }
 
-  async generate(subjectId: string, lectureIds: string[], requestId: string, actorId: string): Promise<ExamMaterialDetail> {
+  async generate(subjectId: string, lectureIds: string[], requestId: string, actorId: string, scope: "all" | "catalog" = "all"): Promise<ExamMaterialDetail> {
     // Fast replay after a lost HTTP response. Same selection with a NEW request
     // deliberately creates a new archive; retrying a request never duplicates it.
     const replay = await this.pool.query<GroupRow>("select * from exam_material_groups where created_by=$1 and request_id=$2", [actorId, requestId]);
@@ -229,7 +229,7 @@ export class ExamMaterialService {
     const library = await this.library.get(subjectId, false);
     // File/OCR work and optional model selection happen before database locks.
     // Only original file bytes are evidence, never descriptions or old keys.
-    const { sources: fileSources, links } = await this.sourceFiles.read(subjectId, selected, library);
+    const { sources: fileSources, links } = await this.sourceFiles.read(subjectId, selected, library, scope);
     const sections = fileSources.map(({ lecture, paragraphs }, position) => ({
       id: lecture.id, title: lecture.title,
       number: lecture.orderIndex > 0 ? lecture.orderIndex : allLectures.indexOf(lecture) + 1 || position + 1,
@@ -240,6 +240,7 @@ export class ExamMaterialService {
     summary.grounding = { policy: groundingVersion, assessmentPolicy: analyticalPolicy, sources: fileSources.flatMap(source => source.documents.map(document => ({
       lectureId: source.lecture.id, fileId: document.id, filename: document.filename, sha256: document.sha256,
     }))) };
+    if (scope === "catalog") summary.grounding.sourceScope = "catalog-primary";
     summary = await reviewedLegalSummary(summary);
     const perLecture = Math.min(12, Math.floor(200 / selected.length));
     const questions: SourceQuestion[] = [];

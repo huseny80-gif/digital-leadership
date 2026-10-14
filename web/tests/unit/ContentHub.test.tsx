@@ -35,4 +35,11 @@ describe("content navigation and search", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("تعذّر تحميل بعض المحتوى");
     expect(screen.queryByText(/private database/)).not.toBeInTheDocument();
   });
+  it("shows the current source summary once without retaining a superseded display copy", async () => {
+    vi.mocked(apiGet).mockResolvedValue({ data: { entries: [{ id: "current", title: "الملخص الأكاديمي الحالي", section: "summaries", lectureId: "l1", files: [{ id: "source-study-a-summary", bodyHtml: "<p>المحتوى المعتمد</p>" }] }] } });
+    api.mockImplementation(async path => ({ data: path.includes("/lectures?") ? [{ id: "l1", title: "المحاضرة الأولى" }] : [{ id: "old-summary", itemType: "summary", title: "ملخص قديم مشوّه" }], page: 1, total: 1, limit: 100 }));
+    render(await ContentHub({ subjects: [subject], view: "summaries" }));
+    expect(screen.getByRole("link", { name: /الملخص الأكاديمي الحالي/ })).toBeInTheDocument();
+    expect(screen.queryByText(/ملخص قديم مشوّه/)).not.toBeInTheDocument();
+  });
 });

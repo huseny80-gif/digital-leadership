@@ -22,6 +22,7 @@ export interface SourceSubject {
   resources: SourceRow[]; updates: SourceRow[];
   quizzes: Array<{ id: string; title: string; status: string; description?: string; sourceReview?: string; lectureId?: string; questions: Array<Record<string, unknown>> }>;
 }
+export type SourceLecture = SourceSubject["lectures"][number];
 export interface CatalogManifest { sourceCommit: string; counts: Record<string, number>; subjects: SourceSubject[]; assets: Record<string, SourceAsset> }
 export const catalogRoot = new URL("../../content/finquiz/", import.meta.url);
 export const manifest = JSON.parse(readFileSync(new URL("catalog.json", catalogRoot), "utf8")) as CatalogManifest;
@@ -96,7 +97,41 @@ export class LibraryService {
       if (asset.subjectSlug !== source.id || referenced.has(asset.id)) continue;
       entries.push({ id: "asset-" + asset.id, title: asset.filename, section: "resources", files: [{ id: asset.id, filename: asset.filename, label: asset.filename, sizeBytes: asset.sizeBytes, ...(asset.bodyHtml ? { bodyHtml: asset.bodyHtml } : {}) }], unavailableFiles: [] });
     }
-    return { subjectId, entries, sourceQuestionCount: source.quizzes.reduce((n, q) => n + q.questions.length, 0) };
+    // Import after manifest initialization: the source reader also uses the
+    // catalog for file identity. Visible lecture IDs still gate every result.
+    const { catalogStudyContent } = await import("./catalogStudyContent.js");
+    const unavailableSources = new Set<string>();
+    const verified = await Promise.all(source.lectures.map(async lecture => {
+      const lectureId = lectureIds.get(lecture.id);
+      const asset = Object.values(manifest.assets).find(asset => asset.subjectSlug === source.id && !asset.bodyHtml
+        && asset.filename.toLowerCase().endsWith(".pdf") && lecture.files?.some(file => file.url === asset.path));
+      if (!lectureId || !asset) return null;
+      try { return { lectureId, source: lecture, content: await catalogStudyContent(lecture, asset) }; }
+      catch { unavailableSources.add(lectureId); return null; }
+    }));
+    const complete = verified.filter(item => item !== null);
+    const completedIds = new Set(complete.map(item => item.lectureId));
+    const currentEntries = entries.filter(entry => !(entry.section === "summaries" && entry.lectureId && (completedIds.has(entry.lectureId) || unavailableSources.has(entry.lectureId))));
+    for (const entry of currentEntries) if (entry.section === "lectures" && entry.lectureId && unavailableSources.has(entry.lectureId)) {
+      entry.files = entry.files.filter(file => !file.bodyHtml);
+      for (const key of ["description", "objectives", "keyPoints", "concepts", "terms"] as const) delete entry[key];
+      entry.unavailableFiles.push("تعذّر التحقق من الملف الأصلي؛ لا يُعرض ملخص قديم بدلًا منه");
+    }
+    for (const item of complete) {
+      const lectureEntry = currentEntries.find(entry => entry.id === item.source.id && entry.section === "lectures");
+      if (!lectureEntry) continue;
+      // Retire the catalog's earlier generated HTML from the current view.
+      // Download IDs, physical PDF bytes and instructor-authored items stay.
+      lectureEntry.files = lectureEntry.files.filter(file => !file.bodyHtml);
+      for (const key of ["description", "objectives", "keyPoints", "concepts", "terms"] as const) delete lectureEntry[key];
+      lectureEntry.files.push({ id: `source-study-${item.content.assetId}-lecture`, filename: `${item.source.title} — المحتوى الدراسي.html`,
+        label: "محتوى المحاضرة المستند إلى الملف الأصلي", sizeBytes: Buffer.byteLength(item.content.lectureHtml), bodyHtml: item.content.lectureHtml });
+      const previous = entries.find(entry => entry.section === "summaries" && entry.lectureId === item.lectureId);
+      currentEntries.push({ id: previous?.id ?? `source-study-${item.source.id}-summary`, title: `ملخص ${item.source.title}`, section: "summaries", lectureId: item.lectureId,
+        files: [...lectureEntry.files.filter(file => !file.bodyHtml), { id: `source-study-${item.content.assetId}-summary`, filename: `${item.source.title} — الملخص الأكاديمي.html`, label: "الملخص الأكاديمي",
+          sizeBytes: Buffer.byteLength(item.content.summaryHtml), bodyHtml: item.content.summaryHtml }], unavailableFiles: [] });
+    }
+    return { subjectId, entries: currentEntries, sourceQuestionCount: source.quizzes.reduce((n, q) => n + q.questions.length, 0) };
   }
 
   async file(subjectId: string, id: string, isAdmin: boolean) {

@@ -1,6 +1,6 @@
 import type { Pool, PoolClient } from "pg";
 import { manifest, subjectMapping } from "./catalog.js";
-import { finquizRecordId as id, findSourceLecture } from "./recordIdentity.js";
+import { finquizRecordId as id, findSourceLecture, catalogSourceBindingSql } from "./recordIdentity.js";
 
 const types: Record<string, string> = { mcq: "multiple_choice", tf: "true_false", fill: "fill", match: "match", order: "order", open: "open" };
 const normalized = (value: string) => value.normalize("NFKC").replace(/[\u064B-\u065F\u0670]/g, "").replace(/[أإآ]/g, "ا");
@@ -19,7 +19,7 @@ export async function synchronizeFinquizCore(pool: Pool) {
       const subject = await client.query<{ created_by: string }>("select created_by from subjects where id = $1 and deleted_at is null", [subjectId]);
       const owner = subject.rows[0]?.created_by;
       if (!owner) throw new Error("Approved subject is missing: " + source.id);
-      const lectures = await client.query<{ id: string; title: string }>("select id,title from lectures where subject_id = $1 and deleted_at is null", [subjectId]);
+      const lectures = await client.query<{ id: string; title: string; catalogSourceId?: string }>(`select l.id,l.title,${catalogSourceBindingSql} as "catalogSourceId" from lectures l where l.subject_id = $1 and l.deleted_at is null`, [subjectId]);
       for (const lecture of source.lectures) {
         if (findSourceLecture(lecture, lectures.rows)) continue;
         const result = await client.query("insert into lectures (id, subject_id, title, description, order_index, status, created_by) values ($1,$2,$3,$4,$5,$6,$7) on conflict (id) do nothing", [id("lecture:" + lecture.id), subjectId, lecture.title, lecture.description ?? null, lecture.number, lecture.status ?? "draft", owner]);

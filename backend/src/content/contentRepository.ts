@@ -1,6 +1,7 @@
 import type { Pool } from "pg";
 import type { Assignment, FileMetadata, Lecture, LectureItemResponse, LectureProgress, Subject, SubjectProgress } from "@shared/index";
 import type { PaginationParams } from "../lib/validation.js";
+import { catalogSourceBindingSql } from "../finquiz/recordIdentity.js";
 
 /**
  * Data-access boundary for educational content (DATABASE_DESIGN.md §2-3).
@@ -68,6 +69,7 @@ interface LectureRow {
   created_by: string;
   created_at: Date;
   updated_at: Date;
+  catalog_source_id?: string | null;
 }
 
 interface LectureItemRow {
@@ -128,6 +130,7 @@ function toLecture(row: LectureRow): Lecture {
     createdBy: row.created_by,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
+    ...(row.catalog_source_id ? { catalogSourceId: row.catalog_source_id } : {}),
   };
 }
 
@@ -223,7 +226,7 @@ export class PgContentRepository implements ContentRepository {
   async listLecturesForSubject(subjectId: string, isAdmin: boolean, pagination: PaginationParams) {
     const visibilityClause = isAdmin ? "" : "and l.status = 'published'";
     const rows = await this.pool.query<LectureRow>(
-      `select l.id, l.subject_id, l.title, l.description, l.order_index, l.status, l.created_by, l.created_at, l.updated_at
+      `select l.id, l.subject_id, l.title, l.description, l.order_index, l.status, l.created_by, l.created_at, l.updated_at, ${catalogSourceBindingSql} as catalog_source_id
        from lectures l
        where l.subject_id = $1 and l.deleted_at is null ${visibilityClause}
        order by l.order_index asc, l.title asc
@@ -242,7 +245,7 @@ export class PgContentRepository implements ContentRepository {
     // publishing a lecture under a still-draft subject must not leak it.
     const visibilityClause = isAdmin ? "" : "and l.status = 'published' and s.status = 'published'";
     const result = await this.pool.query<LectureRow>(
-      `select l.id, l.subject_id, l.title, l.description, l.order_index, l.status, l.created_by, l.created_at, l.updated_at
+      `select l.id, l.subject_id, l.title, l.description, l.order_index, l.status, l.created_by, l.created_at, l.updated_at, ${catalogSourceBindingSql} as catalog_source_id
        from lectures l
        join subjects s on s.id = l.subject_id
        where l.id = $1 and l.deleted_at is null and s.deleted_at is null ${visibilityClause}`,

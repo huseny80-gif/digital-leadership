@@ -23,7 +23,12 @@ describe("Finquiz educational library", () => {
     expect(manifest.counts).toEqual({ lectures: 25, summaries: 31, assignments: 52, quizzes: 14, references: 10, resources: 30, updates: 31, questions: 295 });
     for (const source of manifest.subjects) {
       const library = await new LibraryService(contentFor(source.id) as unknown as ContentService).get(subjectMapping[source.id]!, false);
-      for (const section of ["lectures", "summaries", "assignments", "references", "updates"] as const) expect(library.entries.filter(e => e.section === section)).toHaveLength(source[section].filter(row => row.status === "published").length);
+      for (const section of ["lectures", "assignments", "references", "updates"] as const) expect(library.entries.filter(e => e.section === section)).toHaveLength(source[section].filter(row => row.status === "published").length);
+      for (const lecture of source.lectures.filter(row => row.status === "published" && row.files?.some(file => file.url?.endsWith(".pdf")))) {
+        const summaries = library.entries.filter(entry => entry.section === "summaries" && entry.lectureId === lecture.id);
+        expect(summaries).toHaveLength(1);
+        expect(summaries[0]!.files.some(file => file.id.startsWith("source-study-") && file.bodyHtml)).toBe(true);
+      }
       expect(JSON.stringify(library)).not.toMatch(/"(answer|rubric|is_correct|question_options)"/);
       for (const entry of library.entries) for (const file of entry.files) if (file.bodyHtml) expect(file.bodyHtml).not.toMatch(/<script|<style|\son\w+=|\sstyle=|\sclass=|javascript:/i);
     }
@@ -42,7 +47,7 @@ describe("Finquiz educational library", () => {
     content.listLecturesForSubjectOrThrow.mockResolvedValue({ items: source.lectures.map(l => ({ id: finquizRecordId("lecture:" + l.id), title: "عنوان عدّله المدرّب" })) });
     const service = new LibraryService(content as unknown as ContentService);
     const library = await service.get(subjectMapping["legal-regulatory"]!, false);
-    expect(library.entries.filter(e => e.section === "summaries")).toHaveLength(10);
+    expect(library.entries.filter(e => e.section === "summaries")).toHaveLength(6);
     const fourth = library.entries.find(e => e.id === "lg-s2")!;
     expect(fourth.lectureId).toBe(finquizRecordId("lecture:lg-l2"));
     expect(fourth.files[0]!.filename).toBe("المحاضرة الرابعة قانونية.pdf");

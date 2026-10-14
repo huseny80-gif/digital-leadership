@@ -38,6 +38,8 @@ export interface Lecture {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  /** Stable approved source identity, retained when the display title changes. */
+  catalogSourceId?: string;
 }
 
 export type LectureItemType = "pdf" | "summary" | "assignment" | "exercise";
