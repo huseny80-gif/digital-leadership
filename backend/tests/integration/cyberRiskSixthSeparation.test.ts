@@ -37,7 +37,7 @@ async function sourcePdf(text: string): Promise<Buffer> {
 }
 async function seed(status = "published") {
   const actor = await createUser(pool, { email: "cyber-risk-sixth@example.test", providerSubject: "cyber-risk-sixth", roleName: "admin" });
-  for (const [id, title] of [[subjectId, "حوكمة الأمن السيبراني"], [riskSubject, "إدارة المخاطر"]]) await pool.query("insert into subjects(id,title,status,created_by) values($1,$2,'published',$3)", [id, title, actor]);
+  for (const [slug, id] of Object.entries(subjectMapping)) await pool.query("insert into subjects(id,title,status,created_by) values($1,$2,'published',$3)", [id, slug, actor]);
   await synchronizeFinquizCore(pool);
   const fifth = finquizRecordId("lecture:cs-l5"), sixth = finquizRecordId(cyberRiskSixthPolicy + ":lecture");
   const unrelated = await createLecture(pool, { subjectId: riskSubject, title: "المحاضرة السادسة مخاطر", orderIndex: 6, status: "published", createdBy: actor });

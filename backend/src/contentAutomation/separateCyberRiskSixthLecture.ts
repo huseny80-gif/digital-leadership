@@ -81,7 +81,7 @@ export async function separateCyberRiskSixthLecture(pool: Pool, storage: Storage
     const occupied = await client.query("select id from lectures where subject_id=$1 and order_index=6 and deleted_at is null", [subjectId]);
     if (occupied.rowCount) throw new Error("cyber_risk_sixth_occupied");
     const published = parent.status === "published" && selected.some(link => link.status === "published");
-    await client.query("insert into lectures(id,subject_id,title,description,order_index,status,created_by) values($1,$2,$3,$4,6,$5,$6)", [newLectureId, subjectId, cyberRiskSixthTitle, "إدارة المخاطر السيبرانية. نُقلت من ملفها الأصلي الملحق بالمحاضرة الخامسة مع إبقاء مادة COBIT خامسة.", published ? "published" : "draft", fifth.created_by]);
+    await client.query("insert into lectures(id,subject_id,title,description,order_index,status,created_by) values($1,$2,$3,$4,6,$5,$6)", [newLectureId, subjectId, cyberRiskSixthTitle, "إدارة المخاطر السيبرانية.", published ? "published" : "draft", fifth.created_by]);
     await client.query("update lecture_items set lecture_id=$2,title=$3 where id=any($1::uuid[])", [selected.map(link => link.id), newLectureId, cyberRiskSixthTitle]);
     for (const fileId of fileIds) await client.query(`update files f set original_filename=$2 where f.id=$1
       and not exists(select 1 from lecture_items i where i.file_id=f.id and i.lecture_id<>$3 and i.deleted_at is null)`, [fileId, cyberRiskSixthTitle + ".pdf", newLectureId]);
