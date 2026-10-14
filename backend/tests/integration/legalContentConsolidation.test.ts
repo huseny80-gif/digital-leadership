@@ -100,7 +100,10 @@ describe("canonical Arabic legal course content", () => {
     expect((await pool.query("select * from question_items where question_id=$1 order by id", [order.questionId])).rows).toEqual(orderKeys);
     expect((await pool.query("select storage_key,checksum from files where id=$1", [files[1]])).rows[0]).toEqual({ storage_key: "source/Legal1.pdf", checksum: "a".repeat(64) });
     const library = await new LibraryService(new ContentService(content)).get(LEGAL_SUBJECT_ID, false);
-    expect(library.entries.filter(entry => entry.section === "summaries")).toHaveLength(10);
+    const currentSummaries = library.entries.filter(entry => entry.section === "summaries");
+    expect(currentSummaries).toHaveLength(6);
+    expect(new Set(currentSummaries.map(entry => entry.lectureId)).size).toBe(6);
+    expect(currentSummaries.every(entry => entry.files.some(file => file.id.startsWith("source-study-") && file.bodyHtml))).toBe(true);
     expect(library.entries.find(entry => entry.id === "lg-s2")!.lectureId).toBe(masters.get(4));
     expect((await synchronizeFinquizCore(pool)).inserted).toEqual({ lectures: 0, assignments: 0, quizzes: 0, questions: 0 });
     expect(Object.values((await consolidateLegalContent(pool)).changed).every(count => count === 0)).toBe(true);
