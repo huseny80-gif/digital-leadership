@@ -15,6 +15,7 @@ import { reviewedAiPdf } from "./aiAssessmentReviewCatalog.js";
 import { assertReadableSourceText } from "./sourceTextQuality.js";
 import { LEGAL_SUBJECT_ID, legalLectureNumber, legalLectureTitle, replaceLegalLabels } from "./legalLectureLabels.js";
 import { courseLabelsForSubject } from "./courseSourceLabels.js";
+import { cleanArabicDisplayLabel, displayFilename } from "./arabicDisplayLabels.js";
 
 type ImportRow = {
   id: string; created_by: string; source_hash: string; title: string; filename: string | null;
@@ -56,6 +57,8 @@ export class ContentImportService {
   }
   async startUpload(input: { actorId: string; filename: string; size: number; sha256: string; title?: string }): Promise<ContentImport> {
     if (!/\.pdf$/i.test(input.filename) || !Number.isInteger(input.size) || input.size <= 0 || input.size > this.maxBytes || !/^[a-f0-9]{64}$/.test(input.sha256)) throw new ValidationError("اختر ملف PDF ضمن الحجم المسموح.");
+    if (input.filename.length > 240 || /[/\\]/u.test(input.filename) || [...input.filename].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) throw new ValidationError("اسم ملف PDF غير صالح.");
+    input = { ...input, filename: displayFilename(input.filename), ...(input.title ? { title: cleanArabicDisplayLabel(input.title) } : {}) };
     const hash = hashContext(input.sha256, {});
     const duplicate = await this.existing(hash);
     if (duplicate) return duplicate;
@@ -100,6 +103,7 @@ export class ContentImportService {
   }
   async submitPdf(input: { actorId: string; filename: string; mimeType: string; buffer: Buffer; title?: string } & Context): Promise<ContentImport> {
     await validateSafePdfUpload({ buffer: input.buffer, declaredMimeType: input.mimeType, originalFilename: input.filename, maxSizeBytes: this.maxBytes });
+    input = { ...input, filename: displayFilename(input.filename), ...(input.title ? { title: cleanArabicDisplayLabel(input.title) } : {}) };
     const hash = hashSource(input.buffer, input);
     const duplicate = await this.existing(hash);
     if (duplicate) return duplicate;
@@ -118,7 +122,7 @@ export class ContentImportService {
   async submitText(input: { actorId: string; text: string; title?: string } & Context): Promise<ContentImport> {
     const text = cleanSourceText(input.text).trim();
     if (text.length > 500_000 || text.split(/\s+/).length < 25) throw new ValidationError("أدخل نص المحاضرة كاملًا؛ يلزم 25 كلمة على الأقل لتوليد أسئلة موثّقة.");
-    const title = (input.title ? cleanSourceText(input.title).trim() : "") || text.split(/\n/)[0]!.slice(0, 120);
+    const title = (input.title ? cleanArabicDisplayLabel(input.title) : "") || text.split(/\n/)[0]!.slice(0, 120);
     const hash = hashSource(text, input);
     const result = await this.pool.query<{ id: string }>(
       `insert into content_imports(created_by,source_hash,title,source_text,subject_id,lecture_id,lecture_item_id)

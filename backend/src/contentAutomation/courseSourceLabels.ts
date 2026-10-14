@@ -1,5 +1,6 @@
 import { manifest, subjectMapping, type SourceSubject } from "../finquiz/catalog.js";
 import { normalizeText } from "./sourceAnalysis.js";
+import { cleanArabicDisplayLabel } from "./arabicDisplayLabels.js";
 
 const ordinals = ["الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة", "السادسة", "السابعة", "الثامنة", "التاسعة", "العاشرة"];
 export const coursePresentationCorrections: Record<string, string> = {
@@ -35,7 +36,7 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
   const titleOf = (number: number) => {
     const ordinal = ordinals[number - 1];
     if (!ordinal) throw new Error("invalid_course_lecture_number");
-    return slug === "risk-management" ? `المحاضرة ${ordinal} مخاطر` : `المحاضرة ${ordinal} في ${topic}`;
+    return slug === "risk-management" ? `المحاضرة ${ordinal} مخاطر` : slug === "legal-regulatory" ? `المحاضرة ${ordinal} قانونية` : `المحاضرة ${ordinal} في ${topic}`;
   };
   // These reviewed uploads already exist in the deployed AI course. They are
   // matching aliases, not new manifest records or fabricated source files.
@@ -43,19 +44,20 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
   if (slug === "ai-data") for (const number of [3, 4]) {
     if (!source.lectures.some(lecture => lecture.number === number)) source.lectures.push({ id: `ai-reviewed-${number}`, number, title: titleOf(number), legacyTitles: [`مقرر الذكاء الاصطناعي${number}`, `Lecture ${number}`] });
   }
-  const aliases = new Map(source.lectures.filter(lecture => lecture.id !== "cs-iso-roadmap").flatMap(lecture => [lecture.title, ...(lecture.legacyTitles ?? [])].map(title => [normalizeText(title), lecture.number] as const)));
+  const aliases = new Map(source.lectures.filter(lecture => lecture.id !== "cs-iso-roadmap" && lecture.id !== "ip-l2").flatMap(lecture => [lecture.title, ...(lecture.legacyTitles ?? [])].map(title => [normalizeText(title), lecture.number] as const)));
   const legacyNumber = (value: string) => {
-    const text = normalizeText(value).replace(/\.(?:pdf|pptx)$/i, "").trim();
-    const expression = slug === "ai-data" ? /^(?:ai|lecture|مقرر\s*الذكاء الاصطناعي|الذكاء الاصطناعي)[\s_-]*([1-9]|10)$/ : slug === "risk-management" ? /^(?:risk(?:\s*management)?)[\s_-]*([1-3])$/ : /^(?:cybersecurity|cyber\s*security|مقرر\s*(?:حوكمة\s*)?الامن السيبراني|(?:حوكمة\s*)?الامن السيبراني)[\s_-]*([1-9]|10)$/;
+    const text = normalizeText(cleanArabicDisplayLabel(value)).replace(/\.(?:pdf|pptx)$/i, "").trim();
+    const expression = slug === "ai-data" ? /^(?:ai|lecture|مقرر\s*الذكاء الاصطناعي|الذكاء الاصطناعي)[\s_-]*([1-9]|10)$/ : slug === "risk-management" ? /^(?:risk(?:\s*management)?)[\s_-]*([1-3])$/ : slug === "legal-regulatory" ? /^legal[\s_-]*([1-6])$/ : slug === "innovation-project-management" ? /^(?:innovation|project(?:\s*management)?)[\s_-]*([1-9]|10)$/ : /^(?:cybersecurity|cyber\s*security|مقرر\s*(?:حوكمة\s*)?الامن السيبراني|(?:حوكمة\s*)?الامن السيبراني)[\s_-]*([1-9]|10)$/;
     const match = expression.exec(text);
     return match ? Number(match[1]) : null;
   };
   const numberOf = (value: string) => {
-    const text = normalizeText(value).replace(/\.(?:pdf|pptx)$/i, "").trim();
+    const text = normalizeText(cleanArabicDisplayLabel(value)).replace(/\.(?:pdf|pptx)$/i, "").trim();
     const ordinal = ordinals.map((_, index) => normalizeText(titleOf(index + 1))).indexOf(text) + 1;
     return legacyNumber(text) ?? aliases.get(text) ?? (ordinal || null);
   };
   const label = (value: string) => {
+    value = cleanArabicDisplayLabel(value);
     const extension = value.match(/\.(pdf|pptx)$/i)?.[0] ?? "";
     const stem = normalizeText(value).replace(/\.(?:pdf|pptx)$/i, "").trim();
     if (slug === "ai-data" && guides.has(stem)) return guides.get(stem)! + extension;
@@ -64,8 +66,10 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
     const pattern = slug === "ai-data"
       ? /(?<![\p{L}\p{N}])(?:Ai|Lecture|مقرر\s*الذكاء الاصطناعي)[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
       : slug === "risk-management" ? /(?<![\p{L}\p{N}])Risk(?:\s*Management)?[\s_-]*([1-3])(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
+      : slug === "legal-regulatory" ? /(?<![\p{L}\p{N}])Legal[\s_-]*([1-6١-٦۱-۶])(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
+      : slug === "innovation-project-management" ? /(?<![\p{L}\p{N}])(?:Innovation|Project(?:\s*Management)?)[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
       : /(?<![\p{L}\p{N}])Cybersecurity[\s_-]*([1-9]|10)(?![\p{L}\p{N}])/giu;
-    let result = value.replace(pattern, (_, digit: string) => titleOf(Number(digit)));
+    let result = value.replace(pattern, (_, digit: string) => titleOf(Number(normalizeText(digit))));
     if (slug === "risk-management") for (const lecture of source.lectures) {
       for (const alias of [lecture.title, ...(lecture.legacyTitles ?? [])]) if (!legacyNumber(alias)) result = result.replaceAll(alias, titleOf(lecture.number));
     }
@@ -74,4 +78,7 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
   return { slug, subjectId: subjectMapping[slug]!, source, titleOf, numberOf, legacyNumber, label };
 }
 export const refreshedCourseLabels = [makeLabels("ai-data", "الذكاء الاصطناعي"), makeLabels("cybersecurity-governance", "حوكمة الأمن السيبراني"), makeLabels("risk-management", "مخاطر")];
-export function courseLabelsForSubject(subjectId: string) { return refreshedCourseLabels.find(profile => profile.subjectId === subjectId); }
+// Extending presentation support must not expand the older consolidation job.
+export const allCourseLabels = [...refreshedCourseLabels, makeLabels("legal-regulatory", "الثقافة القانونية والتنظيمية"), makeLabels("innovation-project-management", "الابتكار وإدارة المشاريع")];
+export function courseLabelsForSubject(subjectId: string) { return allCourseLabels.find(profile => profile.subjectId === subjectId); }
+export function courseDisplayLabel(subjectId: string, value: string): string { return courseLabelsForSubject(subjectId)?.label(value) ?? cleanArabicDisplayLabel(value); }

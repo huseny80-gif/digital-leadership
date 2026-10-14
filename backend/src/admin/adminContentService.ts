@@ -4,6 +4,7 @@ import type { AdminContentRepository } from "./adminContentRepository.js";
 import { notFound } from "../lib/httpError.js";
 import { ValidationError } from "../lib/validation.js";
 import { writeAuditLog } from "../lib/audit.js";
+import { courseDisplayLabel } from "../contentAutomation/courseSourceLabels.js";
 
 /**
  * Admin business logic for the content hierarchy (PHASE 09C). Every
@@ -64,7 +65,7 @@ export class AdminContentService {
     // against a real row (PHASE 09C "Lecture Management").
     const subjectExists = await this.repository.subjectExists(input.subjectId);
     if (!subjectExists) throw new ValidationError("The specified subject does not exist.");
-    const lecture = await this.repository.createLecture({ ...input, createdBy: actorUserId });
+    const lecture = await this.repository.createLecture({ ...input, title: courseDisplayLabel(input.subjectId, input.title), createdBy: actorUserId });
     await writeAuditLog(this.pool, { actorUserId, action: "lecture.created", entityType: "lecture", entityId: lecture.id, metadata: { subjectId: input.subjectId } });
     return lecture;
   }
@@ -74,6 +75,10 @@ export class AdminContentService {
     fields: { title?: string; description?: string | null; orderIndex?: number; status?: PublicationStatus },
     actorUserId: string,
   ): Promise<Lecture> {
+    if (fields.title !== undefined) {
+      const current = await this.getLectureOrThrow(id);
+      fields = { ...fields, title: courseDisplayLabel(current.subjectId, fields.title) };
+    }
     const updated = await this.repository.updateLecture(id, fields);
     if (!updated) throw notFound("Lecture");
     await writeAuditLog(this.pool, { actorUserId, action: "lecture.updated", entityType: "lecture", entityId: id, metadata: { fields: Object.keys(fields) } });

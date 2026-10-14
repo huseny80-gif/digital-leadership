@@ -1,9 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { correctCoursePresentation, refreshedCourseLabels } from "../../src/contentAutomation/courseSourceLabels.js";
+import { allCourseLabels, courseDisplayLabel, correctCoursePresentation, refreshedCourseLabels } from "../../src/contentAutomation/courseSourceLabels.js";
+import { cleanArabicDisplayLabel, displayFilename } from "../../src/contentAutomation/arabicDisplayLabels.js";
 
 const [ai, cyber, risk] = refreshedCourseLabels;
 
 describe("source-based Arabic course names", () => {
+  it("labels legal and innovation sources within their own folder only", () => {
+    const legal = allCourseLabels.find(profile => profile.slug === "legal-regulatory")!;
+    const innovation = allCourseLabels.find(profile => profile.slug === "innovation-project-management")!;
+    expect(legal.label("⁨Legal 6⁩.pdf")).toBe("المحاضرة السادسة قانونية.pdf");
+    expect(legal.label("ملخص Legal٢")).toBe("ملخص المحاضرة الثانية قانونية");
+    expect(innovation.label("Innovation2.pdf")).toBe("المحاضرة الثانية في الابتكار وإدارة المشاريع.pdf");
+    expect(ai!.label("Legal1.pdf")).toBe("Legal1.pdf");
+    expect(legal.label("Illegal1.pdf")).toBe("Illegal1.pdf");
+    expect(innovation.label("دورة حياة المشروع والقيود الثلاثية — محتوى تدريبي إضافي")).toBe("دورة حياة المشروع والقيود الثلاثية — محتوى تدريبي إضافي");
+  });
+
+  it("recovers Arabic multipart filenames without corrupting valid Arabic or accented names", () => {
+    const name = "المحاضرة الأولى قانونية.pdf";
+    expect(displayFilename(Buffer.from(name, "utf8").toString("latin1"))).toBe(name);
+    expect(displayFilename(name)).toBe(name);
+    expect(cleanArabicDisplayLabel("François Øresund.pdf")).toBe("François Øresund.pdf");
+    expect(cleanArabicDisplayLabel("المحاضرة الأ\u200fولى  قانونية")).toBe("المحاضرة الأولى قانونية");
+    expect(courseDisplayLabel(allCourseLabels.find(profile => profile.slug === "legal-regulatory")!.subjectId, Buffer.from("Legal1.pdf").toString("latin1"))).toBe(name);
+    expect(displayFilename("../مجلد/المحاضرة الأولى.pdf")).toBe("المحاضرة الأولى.pdf");
+    expect(displayFilename("م".repeat(250) + ".pdf")).toHaveLength(200);
+  });
   it("recognizes old file names and the inspected NIST lecture as the third lecture", () => {
     expect(ai!.label("مقرر الذكاء الاصطناعي4.pdf")).toBe("المحاضرة الرابعة في الذكاء الاصطناعي.pdf");
     expect(ai!.label("اختبار Lecture 4")).toBe("اختبار المحاضرة الرابعة في الذكاء الاصطناعي");

@@ -7,6 +7,8 @@ import { validateSafePdfUpload } from "./pdfValidation.js";
 import { ValidationError } from "../lib/validation.js";
 import { notFound, conflict } from "../lib/httpError.js";
 import { writeAuditLog } from "../lib/audit.js";
+import { displayFilename } from "../contentAutomation/arabicDisplayLabels.js";
+import { courseDisplayLabel } from "../contentAutomation/courseSourceLabels.js";
 
 export interface UploadFileInput {
   subjectId: string;
@@ -79,7 +81,7 @@ export class FilesService {
       const file = await this.repository.insertFile({
         id: fileId,
         storageKey: objectKey,
-        originalFilename: safeFilename,
+        originalFilename: courseDisplayLabel(input.subjectId, displayFilename(input.originalFilename)),
         mimeType: "application/pdf",
         sizeBytes: input.buffer.length,
         uploadedBy: input.uploadedBy,
@@ -198,7 +200,7 @@ export class FilesService {
       const newFile = await this.repository.insertFile({
         id: newFileId,
         storageKey: objectKey,
-        originalFilename: safeFilename,
+        originalFilename: courseDisplayLabel(context.subjectId, displayFilename(input.originalFilename)),
         mimeType: "application/pdf",
         sizeBytes: input.buffer.length,
         uploadedBy: input.uploadedBy,
