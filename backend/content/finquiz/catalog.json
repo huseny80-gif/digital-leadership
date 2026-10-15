@@ -3596,15 +3596,15 @@
         },
         {
           "id": "ip-l6",
-          "number": 6,
-          "title": "المحاضرة السادسة في الابتكار وإدارة المشاريع",
+          "number": 5,
+          "title": "المحاضرة الخامسة في الابتكار وإدارة المشاريع",
           "status": "published",
           "description": "القيادة وأنماطها المعاصرة: القيادة الرقمية والمستدامة والتكامل بينهما.",
           "files": [
             {
               "type": "pdf",
-              "label": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-              "url": "files/innovation-project-management/المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf"
+              "label": "المحاضرة الخامسة في الابتكار وإدارة المشاريع.pdf",
+              "url": "files/innovation-project-management/المحاضرة الخامسة في الابتكار وإدارة المشاريع.pdf"
             }
           ]
         }
@@ -3902,7 +3902,7 @@
         {
           "id": "ip-s6-primary",
           "lectureId": "ip-l6",
-          "title": "ملخص المحاضرة السادسة في الابتكار وإدارة المشاريع",
+          "title": "ملخص المحاضرة الخامسة في الابتكار وإدارة المشاريع",
           "status": "published",
           "description": "القيادة وأنماطها المعاصرة: القيادة الرقمية والمستدامة والتكامل بينهما."
         }
@@ -9439,9 +9439,9 @@
     },
     "98a4e8c5f6a72d7206bbc4f5": {
       "id": "98a4e8c5f6a72d7206bbc4f5",
-      "path": "files/innovation-project-management/المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "path": "files/innovation-project-management/المحاضرة الخامسة في الابتكار وإدارة المشاريع.pdf",
       "subjectSlug": "innovation-project-management",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "filename": "المحاضرة الخامسة في الابتكار وإدارة المشاريع.pdf",
       "sizeBytes": 491921,
       "sha256": "c549a1727941f8e8cd95d29fbbe8c67e3ad037a2b309d9edca822531aeb2790e"
     }

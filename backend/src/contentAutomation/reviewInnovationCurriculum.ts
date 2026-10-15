@@ -169,5 +169,5 @@ export async function reviewInnovationCurriculum(pool: Pool, storage: StoragePro
   }
   return { policy: innovationReviewPolicy, subjectId: innovationSubjectId, labelsUpdated: labels.length, hiddenTemplates, consolidation,
     lectures: lectures.map(lecture => ({ id: lecture.id, title: lecture.title, number: lecture.orderIndex })), verified,
-    availableNumbers, missingNumbers: [1, 2, 3, 4, 5, 6].filter(number => !availableNumbers.includes(number)), groupId, assessments, issues };
+    availableNumbers, missingNumbers: source.lectures.filter(lecture => !lecture.demo && lecture.status === "published").map(lecture => lecture.number).filter(number => !availableNumbers.includes(number)), groupId, assessments, issues };
 }

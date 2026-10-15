@@ -8,10 +8,10 @@ import { analyticalQuestionCandidates } from "../../src/examMaterials/caseAssess
 import { assertSourceBoundSummary, sourceParagraphs, validGroundedQuestion } from "../../src/examMaterials/sourceGrounding.js";
 
 const course = manifest.subjects.find(course => course.id === "innovation-project-management")!;
-describe("independent fourth and sixth innovation originals", () => {
+describe("independent fourth and renumbered fifth innovation originals", () => {
   it.each([
     { number: 4, sha: "d0f9d4d0e612bb257d0e95415003e1529e41922e03b784a89820e6234007a333", count: 9, concepts: ["زحف النطاق", "دورة حياة المشروع", "إدارة المخاطر التقنية", "الدروس المستفادة"] },
-    { number: 6, sha: "c549a1727941f8e8cd95d29fbbe8c67e3ad037a2b309d9edca822531aeb2790e", count: 10, concepts: ["القيادة الديمقراطية", "القيادة الخادمة", "القيادة الرقمية", "القيادة المستدامة", "الحوكمة الرشيدة"] },
+    { number: 5, sha: "c549a1727941f8e8cd95d29fbbe8c67e3ad037a2b309d9edca822531aeb2790e", count: 10, concepts: ["القيادة الديمقراطية", "القيادة الخادمة", "القيادة الرقمية", "القيادة المستدامة", "الحوكمة الرشيدة"] },
   ])("binds lecture $number summaries and every assessment alternative to the unchanged original", async ({ number, sha, count, concepts }) => {
     const lecture = course.lectures.find(lecture => lecture.number === number)!;
     const asset = Object.values(manifest.assets).find(asset => lecture.files?.some(file => file.url === asset.path))!;
@@ -35,8 +35,13 @@ describe("independent fourth and sixth innovation originals", () => {
     expect(analyticalQuestionCandidates(paragraphs.map(paragraph => ({ ...paragraph, sha256: "f".repeat(64) })))).toHaveLength(0);
   }, 30000);
 
-  it("does not manufacture a fifth lecture from the mislabeled duplicate PDF", () => {
-    expect(course.lectures.map(lecture => lecture.number)).toEqual([1, 2, 3, 4, 6]);
+  it("uses the former sixth original as fifth while retaining its permanent identities", () => {
+    expect(course.lectures.map(lecture => lecture.number)).toEqual([1, 2, 3, 4, 5]);
+    const fifth = course.lectures.find(lecture => lecture.number === 5)!;
+    expect(fifth.id).toBe("ip-l6");
+    expect(fifth.title).toBe("المحاضرة الخامسة في الابتكار وإدارة المشاريع");
+    expect(manifest.assets["98a4e8c5f6a72d7206bbc4f5"]!.filename).toBe(fifth.title + ".pdf");
+    expect(fifth.files![0]!.url).toBe(manifest.assets["98a4e8c5f6a72d7206bbc4f5"]!.path);
     const fourth = course.lectures.find(lecture => lecture.number === 4)!;
     const assets = Object.values(manifest.assets).filter(asset => asset.sha256 === "d0f9d4d0e612bb257d0e95415003e1529e41922e03b784a89820e6234007a333");
     expect(assets).toHaveLength(1);
