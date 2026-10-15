@@ -106,7 +106,13 @@
   margin-inline: auto;
   font-size: 17px;
   line-height: 2;
+  direction: rtl;
+  text-align: start;
+  word-break: normal;
+  letter-spacing: normal;
 }
+.dl-workspace .dl-library-reader p { white-space: normal; unicode-bidi: plaintext; }
+.dl-workspace .dl-library-reader [dir="auto"] { unicode-bidi: isolate; }
 .dl-workspace[data-theme="dark"]
   :is(
     .dl-library-reader,

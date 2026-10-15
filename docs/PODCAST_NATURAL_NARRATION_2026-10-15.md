@@ -7,7 +7,7 @@ playback preserves pitch and defaults to the provider's natural speed (1×).
 Saved listener speed and voice preferences remain respected.
 
 Narration now groups headings and paragraphs into a connected clip of up to
-1,800 characters instead of making a separate request for every heading,
+1,400 characters instead of making a separate request for every heading,
 paragraph and 650-character fragment. Sentence boundaries come first, then
 clause boundaries. A forced split of a long sentence does not add a full stop
 or an artificial pause. Short headings stay beside their following paragraph

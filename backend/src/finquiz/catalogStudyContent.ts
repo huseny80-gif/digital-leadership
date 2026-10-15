@@ -9,7 +9,9 @@ import { compileExamSummary } from "../examMaterials/summary.js";
 import { reviewedLegalSummary } from "../examMaterials/legalAcademicReadings.js";
 
 export const catalogStudyPolicy = "source-study-library-v1-2026-10-14";
+export const catalogStudyRenderPolicy = "verified-readable-study-v2";
 export interface CatalogStudyContent {
+  renderPolicy: typeof catalogStudyRenderPolicy;
   assetId: string; sha256: string; lectureHtml: string; summaryHtml: string;
   summary: ExamMaterialSummary; paragraphCount: number; topicCount: number;
 }
@@ -35,7 +37,7 @@ export function catalogStudyContent(lecture: SourceLecture, asset: SourceAsset):
 
 async function checkedContent(lecture: SourceLecture, asset: SourceAsset): Promise<CatalogStudyContent> {
   const candidate = prepared.get(lecture.id);
-  if (!candidate || candidate.content.assetId !== asset.id || candidate.content.sha256 !== asset.sha256) return compileCatalogStudyContent(lecture, asset);
+  if (!candidate || candidate.content.renderPolicy !== catalogStudyRenderPolicy || candidate.content.assetId !== asset.id || candidate.content.sha256 !== asset.sha256) return compileCatalogStudyContent(lecture, asset);
   const bytes = await readAsset(asset, catalogRoot);
   if (bytes.length !== asset.sizeBytes || createHash("sha256").update(bytes).digest("hex") !== asset.sha256
     || createHash("sha256").update(JSON.stringify(candidate.content)).digest("hex") !== candidate.digest
@@ -56,11 +58,17 @@ export async function compileCatalogStudyContent(lecture: SourceLecture, asset: 
   assertSourceBoundSummary(summary, [{ lectureId: lecture.id, paragraphs }]);
   summary.grounding = { policy: groundingVersion, sources: [{ lectureId: lecture.id, fileId: asset.id, filename: asset.filename, sha256: extracted.sha256 }] };
   summary = await reviewedLegalSummary(summary);
-  const source = `<p><strong>المصدر:</strong> ${escape(asset.filename)}</p>`;
-  const lectureHtml = `<article><h2>${escape(lecture.title)}</h2>${source}${paragraphs.map((paragraph, index) =>
-    `<section>${index === 0 || paragraphs[index - 1]!.heading !== paragraph.heading ? `<h3>${escape(paragraph.heading)}</h3>` : ""}<p>${escape(paragraph.text)}</p><small>الفقرة ${paragraph.number} — الأسطر ${paragraph.startLine}–${paragraph.endLine}</small></section>`).join("")}</article>`;
+  const source = `<p><strong>المصدر:</strong> <span dir="auto">${escape(asset.filename)}</span></p>`;
   const topics = summary.sections[0]!.topics ?? [];
-  const summaryHtml = `<article><h2>ملخص ${escape(lecture.title)}</h2>${source}${topics.map(topic =>
-    `<section><h3>${escape(topic.title)}</h3>${topic.text.split(/\n{2,}/u).filter(Boolean).map(text => `<p>${escape(text)}</p>`).join("")}${topic.sourcePages?.length ? `<small>الصفحات ${topic.sourcePages.map(page => page.page).join("، ")}</small>` : ""}</section>`).join("")}</article>`;
-  return { assetId: asset.id, sha256: extracted.sha256, lectureHtml, summaryHtml, summary, paragraphCount: paragraphs.length, topicCount: topics.length };
+  const academicTopics = topics.map(topic =>
+    `<section><h3>${escape(topic.title)}</h3>${topic.text.split(/\n{2,}/u).filter(Boolean).map(text => `<p>${escape(text)}</p>`).join("")}${topic.sourcePages?.length ? `<small>الصفحات ${[...new Set(topic.sourcePages.map(page => page.page))].sort((a, b) => a - b).join("، ")}</small>` : ""}</section>`).join("");
+  // Legal PDFs have visually verified, page-bound readings. Showing their raw
+  // OCR beside those readings reintroduced detached glyphs and scan captions.
+  // The complete unchanged PDF remains available; never guess damaged words.
+  const reviewed = summary.grounding?.summaryPolicy === "visually-verified-legal-excerpts-v1";
+  const lectureBody = reviewed ? `<p>قراءة أكاديمية موثّقة من صفحات المحاضرة. يتوفر الملف الأصلي الكامل في تبويب PDF.</p>${academicTopics}` : paragraphs.map((paragraph, index) =>
+    `<section>${index === 0 || paragraphs[index - 1]!.heading !== paragraph.heading ? `<h3>${escape(paragraph.heading)}</h3>` : ""}<p>${escape(paragraph.text)}</p><small>الفقرة ${paragraph.number} — الأسطر ${paragraph.startLine}–${paragraph.endLine}</small></section>`).join("");
+  const lectureHtml = `<article dir="rtl"><h2>${escape(lecture.title)}</h2>${source}${lectureBody}</article>`;
+  const summaryHtml = `<article dir="rtl"><h2>ملخص ${escape(lecture.title)}</h2>${source}${academicTopics}</article>`;
+  return { renderPolicy: catalogStudyRenderPolicy, assetId: asset.id, sha256: extracted.sha256, lectureHtml, summaryHtml, summary, paragraphCount: paragraphs.length, topicCount: topics.length };
 }

@@ -86,7 +86,12 @@ describe("reviewed legal study content and narration", () => {
     const text = chapters.flatMap(chapter => chapter.chunks).join("\n");
     expect(text).not.toMatch(/المسح الضوئي|6800568008|CamScanner|صفحات ملف|الأسئلة|الإجابة النموذجية|ملاحظة قديمة/);
     expect(text.match(/رقم 40 لسنة 1951/g)).toHaveLength(1);
-    expect(chapters.every(chapter => chapter.segments!.some(segment => segment.kind === "heading" && segment.pauseAfterMs >= 900))).toBe(true);
+    for (const [index, chapter] of chapters.entries()) {
+      const spoken = chapter.chunks.join("\n\n");
+      for (const topic of result.sections[index]!.topics!) expect(spoken).toContain(prepareAcademicSpeech(topic.title));
+      expect(chapter.segments!.some(segment => segment.kind === "body")).toBe(true);
+      expect(chapter.segments!.at(-1)!.pauseAfterMs).toBeGreaterThanOrEqual(900);
+    }
     const presentation = examSummaryPresentation(result);
     expect(presentation.sections[0]!.topics![0]!.sourcePages).toEqual(result.sections[0]!.topics![0]!.sourcePages);
     expect(examTopicSourceLabel(presentation.sections[0]!.topics![0]!)).toContain("صفحات ملف PDF: 1");

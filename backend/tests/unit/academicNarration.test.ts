@@ -27,6 +27,7 @@ describe("conservative academic spoken text", () => {
     expect(summary).toEqual(original); expect(chapters.map(chapter => chapter.id)).toEqual(["introduction", "lecture"]);
     const segments = chapters[1]!.segments!;
     expect(segments).toHaveLength(1);
+    expect(segments[0]!.kind).toBe("body");
     expect(segments[0]!.text).toBe("الحَوْكَمَة.\n\nعِلْم البيانات.\n\nالتَّعَلُّم مهم. لا يمكن إهمال المتابعة.\n\nتفصيل إضافي.");
     expect(segments.at(-1)?.pauseAfterMs).toBe(900);
     expect(chapters[1]!.chunks).toEqual(segments.map(segment => segment.text));

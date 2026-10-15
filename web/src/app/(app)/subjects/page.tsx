@@ -5,6 +5,7 @@ import { EmptyState, ErrorState } from "@/components/ui/States";
 import { SubjectCard } from "@/components/content/SubjectCard";
 import { ContentHub, contentViews, type ContentView } from "@/components/content/ContentHub";
 import { getSubjectTheme, subjectThemes } from "@/components/content/subjectTheme";
+import { StudyDirectoryTabs } from "@/components/content/StudyDirectoryTabs";
 
 export const metadata = { title: "المواد الدراسية | القيادة الرقمية" };
 
@@ -38,6 +39,7 @@ export default async function SubjectsPage({ searchParams }: { searchParams?: Pr
     <section>
       <h1 className="page-heading">المواد الدراسية</h1>
       <p className="page-subheading">اختر المادة للاطلاع على محاضراتها وملخصاتها واختباراتها.</p>
+      <StudyDirectoryTabs />
 
       {errorMessage ? <ErrorState message={errorMessage} retryHref="/subjects" /> : null}
 

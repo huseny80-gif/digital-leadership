@@ -18,7 +18,13 @@ describe("current academic content from the approved PDFs", () => {
       expect(content.summaryHtml).not.toMatch(/<script|<style|\son\w+=|اختبار ذاتي موثّق|عدد الأسئلة|تم المسح الضوئي|CamScanner/u);
       expect(content.summaryHtml).toContain("المصدر:");
       expect(content.summary.sections[0]!.text.length).toBeGreaterThan(100);
-      if (course.id === "legal-regulatory") expect(content.summary.grounding!.summaryPolicy).toBe("visually-verified-legal-excerpts-v1");
+      if (course.id === "legal-regulatory") {
+        expect(content.summary.grounding!.summaryPolicy).toBe("visually-verified-legal-excerpts-v1");
+        expect(content.lectureHtml).toContain("قراءة أكاديمية موثّقة");
+        expect(content.lectureHtml).toContain("الصفحات ");
+        expect(content.lectureHtml).not.toMatch(/العرض الأكاديمي للمحاضرة|الأسطر|\b(?:BEST|Fr|SH|Cel|Hv|Jie)\b|CamScanner|6800568008/u);
+        for (const topic of content.summary.sections[0]!.topics!) expect(content.lectureHtml).toContain(topic.text.split("\n\n")[0]!.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"));
+      }
       checked++;
     }
     expect(checked).toBe({ "ai-data": 6, "legal-regulatory": 6, "cybersecurity-governance": 5, "innovation-project-management": 5, "risk-management": 3 }[course.id]);

@@ -58,7 +58,7 @@ describe("neural academic podcast", () => {
     fireEvent.ended(player()); expect(screen.getByRole("status")).toHaveTextContent("جاهز");
   });
   it("continues with the buffered next clip without waiting for another synthesis request", async () => {
-    requests.mockResolvedValue(new Response(new Blob(["mp3"], { type: "audio/mpeg" }), { headers: { "Content-Type": "audio/mpeg" } }));
+    requests.mockResolvedValue(new Response(new Uint8Array([255, 251, 1, 2]), { headers: { "Content-Type": "audio/mpeg" } }));
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
     const view = renderPlayer(); await act(async () => {});
     fireEvent.click(screen.getByRole("button", { name: "تشغيل المراجعة" }));

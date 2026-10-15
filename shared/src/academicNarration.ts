@@ -4,7 +4,7 @@ import { cleanStudyLayout } from "./studyLayout.js";
 
 export const ACADEMIC_NARRATION_VERSION = "academic-ar-v2-connected";
 export const DEFAULT_ACADEMIC_PLAYBACK_RATE = 1;
-export const ACADEMIC_SPEECH_SEGMENT_LIMIT = 1800;
+export const ACADEMIC_SPEECH_SEGMENT_LIMIT = 1400;
 export const ACADEMIC_VOICES = [
   { id: "ar-IQ-BasselNeural", name: "باسل", gender: "male", locale: "ar-IQ", country: "عراقي" },
   { id: "ar-IQ-RanaNeural", name: "رنا", gender: "female", locale: "ar-IQ", country: "عراقي" },
@@ -88,7 +88,7 @@ export function academicAudioChapters(summary: ExamMaterialSummary): ExamAudioCh
       // The provider accepts voice/prosody only, not custom break tags. Read
       // complete paragraphs together and let punctuation shape the delivery;
       // the player schedules a pause only at the boundary of the whole clip.
-      segments.push({ kind: connected[0]!.kind, text: connected.map(part => part.text).join("\n\n"), pauseAfterMs: connected[connected.length - 1]!.pauseAfterMs });
+      segments.push({ kind: connected.some(part => part.kind === "body") ? "body" : connected[0]!.kind, text: connected.map(part => part.text).join("\n\n"), pauseAfterMs: connected[connected.length - 1]!.pauseAfterMs });
       connected = [];
     }
     for (const [kind, source] of parts) {
