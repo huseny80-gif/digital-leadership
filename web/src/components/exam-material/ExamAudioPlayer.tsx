@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ExamAudioChapter } from "@shared/index";
-import { ACADEMIC_VOICES, DEFAULT_ACADEMIC_VOICE, type AcademicVoiceId } from "@digital-leadership/shared";
+import { ACADEMIC_VOICES, DEFAULT_ACADEMIC_VOICE, DEFAULT_ACADEMIC_PLAYBACK_RATE, type AcademicVoiceId } from "@digital-leadership/shared";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import styles from "./examMaterial.module.css";
 
@@ -11,12 +11,12 @@ const PREFERENCES = "digital-leadership:academic-audio";
 type Status = "stopped" | "playing" | "paused";
 interface PauseGap { next: number; remaining: number; started: number; timer: ReturnType<typeof setTimeout> | null }
 
-/** Neural narration with separate real voices, prepared academic text and
+/** Neural narration with distinct synthesized voices, prepared academic text and
  * measured pauses, independent of installed device speech-synthesis voices. */
 export function ExamAudioPlayer({ chapters, subjectId, groupId }: { chapters: ExamAudioChapter[]; subjectId: string; groupId: string }) {
   const entries = useMemo(() => chapters.flatMap(chapter => (chapter.segments ?? chapter.chunks.map(text => ({ kind: "body" as const, text, pauseAfterMs: 350 }))).map((segment, index) => ({ ...segment, index, chapterId: chapter.id, title: chapter.title }))), [chapters]);
   const [voiceId, setVoiceId] = useState<AcademicVoiceId>(DEFAULT_ACADEMIC_VOICE);
-  const [rate, setRate] = useState(1.1);
+  const [rate, setRate] = useState(DEFAULT_ACADEMIC_PLAYBACK_RATE);
   const [status, setStatus] = useState<Status>("stopped");
   const [buffering, setBuffering] = useState(false);
   const [position, setPosition] = useState(0);
@@ -135,12 +135,12 @@ export function ExamAudioPlayer({ chapters, subjectId, groupId }: { chapters: Ex
   return <section className={styles.audioPlayer} aria-label="بودكاست المراجعة الصوتية">
     <audio ref={audio} preload="none" aria-label="صوت المراجعة الأكاديمية" className={styles.hiddenAudio} />
     <div className={styles.sectionHead}><div><span className={styles.eyebrow}>استمع إلى الملخص</span><h3><PlatformIcon name="headphones" /> بودكاست المراجعة</h3></div><span className={styles.badge}>نحو {minutes} دقيقة</span></div>
-    <p className={styles.muted}>إلقاء أكاديمي رزِين، ونطق واضح، وفواصل بين العناوين والمحاور.</p>
-    <div className={styles.narrationBadges}><span>{selectedVoice.locale === "ar-IQ" ? "فصحى بلكنة عراقية" : `فصحى · صوت ${selectedVoice.country}`}</span><span>أصوات رجالية ونسائية</span></div>
+    <p className={styles.muted}>قراءة مترابطة للفقرات، بإيقاع طبيعي ووقفات بين العناوين والمحاور.</p>
+    <div className={styles.narrationBadges}><span>{selectedVoice.locale === "ar-IQ" ? "فصحى بلكنة عراقية" : `فصحى · صوت ${selectedVoice.country}`}</span><span>صوت مولّد بالذكاء الاصطناعي</span></div>
     <div className={styles.audioControls}>
       <button type="button" className={styles.action} disabled={!entries.length} onClick={status === "playing" ? pause : play}><PlatformIcon name={status === "playing" ? "pause" : "play"} />{status === "playing" ? "إيقاف مؤقت" : status === "paused" ? "استئناف" : "تشغيل المراجعة"}</button>
       <button type="button" className={styles.quiet} disabled={status === "stopped"} onClick={stop}>إيقاف</button>
-      <label>سرعة الإلقاء<select aria-label="سرعة الإلقاء" value={rate} onChange={event => chooseRate(Number(event.target.value))}>{RATES.map(value => <option key={value} value={value}>{value}×{value === 1.1 ? " · متوازن" : ""}</option>)}</select></label>
+      <label>سرعة الإلقاء<select aria-label="سرعة الإلقاء" value={rate} onChange={event => chooseRate(Number(event.target.value))}>{RATES.map(value => <option key={value} value={value}>{value}×{value === DEFAULT_ACADEMIC_PLAYBACK_RATE ? " · طبيعي" : ""}</option>)}</select></label>
       <label>الصوت<select aria-label="الصوت العربي" value={voiceId} onChange={event => chooseVoice(event.target.value as AcademicVoiceId)}>{(["male", "female"] as const).map(gender => <optgroup key={gender} label={gender === "male" ? "أصوات رجالية" : "أصوات نسائية"}>{ACADEMIC_VOICES.filter(voice => voice.gender === gender).map(voice => <option key={voice.id} value={voice.id}>{voice.name} — {gender === "female" ? voice.country.replace(/ي$/, "ية") : voice.country} ({gender === "male" ? "رجل" : "امرأة"})</option>)}</optgroup>)}</select></label>
     </div>
     {error ? <p className={styles.error} role="alert">{error}</p> : null}

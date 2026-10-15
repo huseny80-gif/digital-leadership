@@ -2,7 +2,9 @@ import type { ExamAudioChapter, ExamMaterialSummary, ExamNarrationSegment, ExamS
 import { examSectionPresentation } from "./studyPresentation.js";
 import { cleanStudyLayout } from "./studyLayout.js";
 
-export const ACADEMIC_NARRATION_VERSION = "academic-ar-v1";
+export const ACADEMIC_NARRATION_VERSION = "academic-ar-v2-connected";
+export const DEFAULT_ACADEMIC_PLAYBACK_RATE = 1;
+export const ACADEMIC_SPEECH_SEGMENT_LIMIT = 1800;
 export const ACADEMIC_VOICES = [
   { id: "ar-IQ-BasselNeural", name: "باسل", gender: "male", locale: "ar-IQ", country: "عراقي" },
   { id: "ar-IQ-RanaNeural", name: "رنا", gender: "female", locale: "ar-IQ", country: "عراقي" },
@@ -55,15 +57,20 @@ export function prepareAcademicSpeech(source: string): string {
     .replace(/\s+/g, " ").replace(/\s+([،.;:!?؟؛])/g, "$1").trim();
 }
 
-/** Prefer sentence boundaries; never drop a long sentence or its last words. */
-export function academicSpeechSegments(text: string, limit = 650): string[] {
+/** Preserve sentence context, then prefer clause boundaries for a long
+ * sentence. Never manufacture punctuation at an arbitrary word boundary. */
+export function academicSpeechSegments(text: string, limit = ACADEMIC_SPEECH_SEGMENT_LIMIT): string[] {
   const result: string[] = []; let current = "";
+  function append(value: string) {
+    if (current && current.length + value.length + 1 > limit) { result.push(current); current = ""; }
+    current += `${current ? " " : ""}${value}`;
+  }
   for (const sentence of text.split(/(?<=[.!?؟؛])\s+|\n+/u).filter(Boolean)) {
     if (current && current.length + sentence.length + 1 > limit) { result.push(current); current = ""; }
-    if (sentence.length <= limit) current += `${current ? " " : ""}${sentence}`;
-    else for (const word of sentence.split(/\s+/)) {
-      if (current && current.length + word.length + 1 > limit) { result.push(current); current = ""; }
-      current += `${current ? " " : ""}${word}`;
+    if (sentence.length <= limit) append(sentence);
+    else for (const clause of sentence.split(/(?<=[،,:])\s+/u)) {
+      if (clause.length <= limit) append(clause);
+      else for (const word of clause.split(/\s+/)) append(word);
     }
   }
   if (current) result.push(current);
@@ -73,9 +80,40 @@ export function academicSpeechSegments(text: string, limit = 650): string[] {
 export function academicAudioChapters(summary: ExamMaterialSummary): ExamAudioChapter[] {
   const chapters: ExamAudioChapter[] = [];
   function chapter(id: string, title: string, lectureId: string | null, parts: Array<[ExamNarrationSegment["kind"], string]>) {
-    const segments: ExamNarrationSegment[] = parts.flatMap(([kind, text]) => academicSpeechSegments(prepareAcademicSpeech(text)).map(value => ({ kind, text: /[.!?؟؛:]$/.test(value) ? value : `${value}.`, pauseAfterMs: kind === "title" ? 1200 : kind === "heading" ? 900 : 350 })));
+    const segments: ExamNarrationSegment[] = [];
+    let connected: ExamNarrationSegment[] = [];
+    const length = () => connected.reduce((sum, part) => sum + part.text.length, 0) + Math.max(0, connected.length - 1) * 2;
+    function flush() {
+      if (!connected.length) return;
+      // The provider accepts voice/prosody only, not custom break tags. Read
+      // complete paragraphs together and let punctuation shape the delivery;
+      // the player schedules a pause only at the boundary of the whole clip.
+      segments.push({ kind: connected[0]!.kind, text: connected.map(part => part.text).join("\n\n"), pauseAfterMs: connected[connected.length - 1]!.pauseAfterMs });
+      connected = [];
+    }
+    for (const [kind, source] of parts) {
+      const prepared = prepareAcademicSpeech(source);
+      if (!prepared) continue;
+      // A full source paragraph may need its final stop. A fragment of that
+      // paragraph must retain its continuing intonation, not gain a period.
+      const complete = /[.!?؟؛:]$/.test(prepared) ? prepared : `${prepared}.`;
+      const heading = connected[connected.length - 1];
+      const chunkLimit = kind === "body" && heading && heading.kind !== "body" && heading.text.length < 600 ? ACADEMIC_SPEECH_SEGMENT_LIMIT - heading.text.length - 2 : ACADEMIC_SPEECH_SEGMENT_LIMIT;
+      const chunks = academicSpeechSegments(complete, chunkLimit);
+      chunks.forEach((text, index) => {
+        if (connected.length && length() + text.length + 2 > ACADEMIC_SPEECH_SEGMENT_LIMIT) {
+          // Keep a short heading beside its following paragraph when possible.
+          const heading = connected[connected.length - 1]!;
+          if (heading.kind !== "body" && heading.text.length + text.length + 2 <= ACADEMIC_SPEECH_SEGMENT_LIMIT) { connected.pop(); flush(); connected.push(heading); }
+          else flush();
+        }
+        connected.push({ kind, text, pauseAfterMs: index < chunks.length - 1 ? 0 : kind === "title" ? 650 : kind === "heading" ? 450 : 180 });
+      });
+    }
+    flush();
     if (!segments.length) return;
-    segments[segments.length - 1]!.pauseAfterMs = 1400;
+    const last = segments[segments.length - 1]!;
+    last.pauseAfterMs = 900;
     chapters.push({ id, title, lectureId, chunks: segments.map(segment => segment.text), segments });
   }
   if (summary.introduction.trim()) chapter("introduction", "مقدمة المراجعة", null, [["title", "مقدمة المراجعة"], ["body", summary.introduction]]);

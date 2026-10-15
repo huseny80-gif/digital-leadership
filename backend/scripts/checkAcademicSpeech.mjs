@@ -10,7 +10,7 @@ import { synthesizeAcademicSpeech } from "../dist/examMaterials/academicSpeech.j
 const directory = await mkdtemp(join(tmpdir(), "academic-speech-check-"));
 try {
   for (const voice of ACADEMIC_VOICES) {
-    const bytes = await synthesizeAcademicSpeech("منصة القِيادَة الرَّقْمِيَّة. مُراجَعَة أكاديمية. حَوْكَمَة المَخاطِر.", voice.id);
+    const bytes = await synthesizeAcademicSpeech("منصة القِيادَة الرَّقْمِيَّة.\n\nمُراجَعَة أكاديمية.\n\nحَوْكَمَة المَخاطِر.", voice.id);
     const filename = join(directory, `${voice.id}.mp3`);
     await writeFile(filename, bytes);
     const media = JSON.parse(execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration:stream=codec_name,sample_rate,channels", "-of", "json", filename], { encoding: "utf8", timeout: 10000 }));

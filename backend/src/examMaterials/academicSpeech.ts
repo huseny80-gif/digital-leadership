@@ -31,7 +31,7 @@ export function academicSpeechSsml(text: string, voiceId: AcademicVoiceId): stri
   return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${voice.locale}"><voice name="${voice.id}"><prosody pitch="+0Hz" rate="+0%" volume="+0%">${xml(text)}</prosody></voice></speak>`;
 }
 
-/** Actual neural MP3, never a pitch-shifted imitation of another person. */
+/** Neural synthesized narration, not a recording made by a real person. */
 export async function synthesizeAcademicSpeech(text: string, voiceId: AcademicVoiceId): Promise<Buffer> {
   const ssml = academicSpeechSsml(text, voiceId);
   try { return await synthesizeOnce(ssml); }
@@ -149,7 +149,7 @@ export const academicSpeechCache = new AcademicSpeechCache();
 export async function probeAcademicSpeech() {
   return Promise.all(ACADEMIC_VOICES.filter(voice => voice.locale === "ar-IQ").map(async voice => {
     try {
-      const audio = await synthesizeAcademicSpeech("منصة القِيادَة الرَّقْمِيَّة. مُراجَعَة أكاديمية.", voice.id);
+      const audio = await synthesizeAcademicSpeech("منصة القِيادَة الرَّقْمِيَّة.\n\nمُراجَعَة أكاديمية.\n\nحَوْكَمَة المَخاطِر.", voice.id);
       return { voice: voice.id, ready: true, bytes: audio.length };
     } catch (error) {
       return { voice: voice.id, ready: false, bytes: 0, reason: error instanceof AcademicSpeechUnavailable ? error.reason : "transport_error", ...(error instanceof AcademicSpeechUnavailable && error.providerStatus ? { providerStatus: error.providerStatus } : {}) };

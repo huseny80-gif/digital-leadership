@@ -28,8 +28,8 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-describe("actual neural academic podcast", () => {
-  it("offers six real persons including Iraqi male/female voices without device TTS", async () => {
+describe("neural academic podcast", () => {
+  it("offers six synthetic voices at natural speed including Iraqi male/female voices without device TTS", async () => {
     renderPlayer(); await act(async () => {});
     const options = screen.getAllByRole("option").filter(option => option.getAttribute("value")?.endsWith("Neural"));
     expect(options).toHaveLength(6);
@@ -37,7 +37,8 @@ describe("actual neural academic podcast", () => {
     expect(screen.getByRole("option", { name: "رنا — عراقية (امرأة)" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "تشغيل المراجعة" }));
     expect(player().getAttribute("src")).toBe(`/api/exam-material/${subjectId}/${groupId}/audio.mp3?chapter=${chapterId}&segment=0&voice=ar-IQ-BasselNeural`);
-    expect(player().playbackRate).toBe(1.1); expect(player().preservesPitch).toBe(true);
+    expect(player().playbackRate).toBe(1); expect(player().preservesPitch).toBe(true);
+    expect(screen.getByText("صوت مولّد بالذكاء الاصطناعي")).toBeInTheDocument();
     fireEvent.playing(player()); expect(screen.getByRole("status")).toHaveTextContent("قيد التشغيل");
     fireEvent.click(screen.getByRole("button", { name: "إيقاف مؤقت" }));
     fireEvent.click(screen.getByRole("button", { name: "استئناف" }));
@@ -55,6 +56,19 @@ describe("actual neural academic podcast", () => {
     act(() => vi.advanceTimersByTime(1)); expect(play).toHaveBeenCalledTimes(2);
     expect(player().src).toContain("segment=1");
     fireEvent.ended(player()); expect(screen.getByRole("status")).toHaveTextContent("جاهز");
+  });
+  it("continues with the buffered next clip without waiting for another synthesis request", async () => {
+    requests.mockResolvedValue(new Response(new Blob(["mp3"], { type: "audio/mpeg" }), { headers: { "Content-Type": "audio/mpeg" } }));
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+    const view = renderPlayer(); await act(async () => {});
+    fireEvent.click(screen.getByRole("button", { name: "تشغيل المراجعة" }));
+    await act(async () => {});
+    expect(URL.createObjectURL).toHaveBeenCalledOnce();
+    fireEvent.ended(player());
+    act(() => vi.advanceTimersByTime(900));
+    expect(player().getAttribute("src")).toBe("blob:narration");
+    expect(play).toHaveBeenCalledTimes(2); expect(requests).toHaveBeenCalledOnce();
+    view.unmount(); expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:narration");
   });
   it("changes speed without restarting, switches the actual voice and aborts old prefetches", async () => {
     renderPlayer(); await act(async () => {});

@@ -6,7 +6,7 @@ import { requireAdmin } from "../middleware/authInstance.js";
 import { requireLearnerPrincipal } from "../middleware/learnerPrincipal.js";
 import { parsePagination, requireUuidParam, ValidationError } from "../lib/validation.js";
 import { forbidden, HttpError, notFound } from "../lib/httpError.js";
-import { academicNarrationChapters, academicNarrationText, ACADEMIC_VOICES, ACADEMIC_NARRATION_VERSION, type AcademicVoiceId } from "@digital-leadership/shared";
+import { academicNarrationChapters, academicNarrationText, ACADEMIC_VOICES, ACADEMIC_NARRATION_VERSION, DEFAULT_ACADEMIC_PLAYBACK_RATE, type AcademicVoiceId } from "@digital-leadership/shared";
 import { ExamMaterialService } from "./examMaterialService.js";
 import { examReviewPdf } from "./examReviewPdf.js";
 import { academicSpeechCache, AcademicSpeechUnavailable } from "./academicSpeech.js";
@@ -75,7 +75,7 @@ export function examMaterialRoutes(): Router {
   router.get("/subjects/:subjectId/exam-material/:groupId/review-narration.json", requireLearnerPrincipal, requireUuidParam("subjectId"), requireUuidParam("groupId"), exportLimit, async (req, res, next) => {
     try {
       const source = await service().detail(req.params.subjectId as string, req.params.groupId as string, req.user?.role === "admin");
-      res.json({ data: { title: source.title, rate: 1.1, language: "ar-IQ", voices: ACADEMIC_VOICES, chapters: academicNarrationChapters(source.summary) } });
+      res.json({ data: { title: source.title, rate: DEFAULT_ACADEMIC_PLAYBACK_RATE, language: "ar-IQ", voices: ACADEMIC_VOICES, chapters: academicNarrationChapters(source.summary) } });
     } catch (error) { next(error); }
   });
   router.get("/subjects/:subjectId/exam-material/:groupId/audio.mp3", requireLearnerPrincipal, requireUuidParam("subjectId"), requireUuidParam("groupId"), audioLimit, async (req, res, next) => {
