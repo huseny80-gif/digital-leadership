@@ -101,4 +101,33 @@ describe("publish file-verified course questions without rewriting learner histo
     expect(questions).toHaveLength(10);
     expect(questions.some(q => q.lectureId === unknown || q.lectureId === s.lectures[1])).toBe(false);
   }, 30000);
+
+  it("expands managed editions for a newly approved source once, preserving old attempts, manual questions and point overrides", async () => {
+    const s = await seed();
+    await pool.query("update lectures set status='draft' where id=$1", [s.lectures[5]]);
+    await reviewCourseAssessments(pool, [subjectId]);
+    const root = (await s.repository.listQuizzesForSubject(subjectId, false)).find(q => !q.lectureId)!;
+    const before = (await pool.query("select * from quiz_questions where quiz_id=$1 order by order_index", [root.id])).rows;
+    expect(before).toHaveLength(10);
+    await pool.query("update quiz_questions set points_override=3 where quiz_id=$1 and question_id=$2", [root.id, before[0].question_id]);
+    const originalAttempt = (await pool.query("select * from quiz_attempts where id=$1", [s.attempt.id])).rows[0];
+    const manual = (await pool.query("insert into quizzes(subject_id,title,status,created_by) values($1,'مناقشة خاصة بالمدرب','published',$2) returning id", [subjectId, s.admin])).rows[0].id;
+    const custom = (await pool.query("insert into questions(question_bank_id,question_type,prompt,points,created_by) values($1,'open','ناقش التطبيق القانوني في مؤسستك.',1,$2) returning id", [s.bank, s.admin])).rows[0].id;
+    await pool.query("insert into quiz_questions(quiz_id,question_id,order_index) values($1,$2,0)", [manual, custom]);
+    await pool.query("update lectures set status='published' where id=$1", [s.lectures[5]]);
+    await reviewCourseAssessments(pool, [subjectId], "approved-sixth-original");
+    const current = (await s.repository.listQuizzesForSubject(subjectId, false)).find(q => !q.lectureId && q.id !== manual)!;
+    expect(current.id).not.toBe(root.id);
+    const questions = await s.repository.listQuestionsForAttempt(current.id);
+    expect(questions).toHaveLength(12);
+    expect(new Set(questions.map(q => q.lectureId))).toEqual(new Set(s.lectures));
+    expect((await pool.query("select points_override from quiz_questions where quiz_id=$1 and question_id=$2", [current.id, before[0].question_id])).rows[0].points_override).toBe(3);
+    expect((await pool.query("select count(*)::int n from quiz_questions where quiz_id=$1", [root.id])).rows[0].n).toBe(10);
+    expect((await pool.query("select * from quiz_attempts where id=$1", [s.attempt.id])).rows[0]).toEqual(originalAttempt);
+    expect((await pool.query("select superseded_by from quizzes where id=$1", [manual])).rows[0].superseded_by).toBeNull();
+    const count = (await pool.query("select count(*)::int n from quizzes")).rows[0].n;
+    await reviewCourseAssessments(pool, [subjectId], "approved-sixth-original");
+    await reviewCourseAssessments(pool, [subjectId], "same-content-new-review");
+    expect((await pool.query("select count(*)::int n from quizzes")).rows[0].n).toBe(count);
+  }, 30000);
 });

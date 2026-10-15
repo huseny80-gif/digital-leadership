@@ -5,6 +5,7 @@ import { courseLabelsForSubject } from "./courseSourceLabels.js";
 import { cleanArabicDisplayLabel } from "./arabicDisplayLabels.js";
 import { normalizeText } from "./sourceAnalysis.js";
 import { consolidateCourseContent } from "./consolidateLegalContent.js";
+import { reviewCourseAssessments } from "./reviewCourseAssessments.js";
 import { manifest, subjectMapping, LibraryService } from "../finquiz/catalog.js";
 import { catalogSourceBindingSql, findSourceLecture, finquizRecordId } from "../finquiz/recordIdentity.js";
 import { catalogStudyContent } from "../finquiz/catalogStudyContent.js";
@@ -158,13 +159,15 @@ export async function reviewInnovationCurriculum(pool: Pool, storage: StoragePro
     } catch { issues.push({ lectureId: lecture.id, code: "original_pdf_unavailable" }); }
   }
   const availableNumbers = [...new Set(verified.map(lecture => lecture.number))].sort((a, b) => a - b);
+  const digest = createHash("sha256").update(JSON.stringify(verified)).digest("hex");
+  const assessments = verified.length && !consolidation.duplicateNumbers.length
+    ? await reviewCourseAssessments(pool, [innovationSubjectId], innovationReviewPolicy + ":" + digest) : null;
   let groupId: string | null = null;
   if (verified.length && !consolidation.duplicateNumbers.length) {
-    const digest = createHash("sha256").update(JSON.stringify(verified)).digest("hex");
     try { groupId = (await new ExamMaterialService(pool).generate(innovationSubjectId, verified.map(lecture => lecture.id), finquizRecordId(innovationReviewPolicy + ":" + digest), subject.created_by)).id; }
     catch { issues.push({ lectureId: "course", code: "exam_review_unavailable" }); }
   }
   return { policy: innovationReviewPolicy, subjectId: innovationSubjectId, labelsUpdated: labels.length, hiddenTemplates, consolidation,
     lectures: lectures.map(lecture => ({ id: lecture.id, title: lecture.title, number: lecture.orderIndex })), verified,
-    availableNumbers, missingNumbers: [1, 2, 3, 4, 5, 6].filter(number => !availableNumbers.includes(number)), groupId, issues };
+    availableNumbers, missingNumbers: [1, 2, 3, 4, 5, 6].filter(number => !availableNumbers.includes(number)), groupId, assessments, issues };
 }

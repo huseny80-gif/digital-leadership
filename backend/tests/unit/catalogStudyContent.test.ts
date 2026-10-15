@@ -21,7 +21,7 @@ describe("current academic content from the approved PDFs", () => {
       if (course.id === "legal-regulatory") expect(content.summary.grounding!.summaryPolicy).toBe("visually-verified-legal-excerpts-v1");
       checked++;
     }
-    expect(checked).toBe({ "ai-data": 6, "legal-regulatory": 6, "cybersecurity-governance": 5, "innovation-project-management": 3, "risk-management": 3 }[course.id]);
+    expect(checked).toBe({ "ai-data": 6, "legal-regulatory": 6, "cybersecurity-governance": 5, "innovation-project-management": 5, "risk-management": 3 }[course.id]);
   }, 30000);
   it("rejects a changed original instead of recycling its earlier summary", async () => {
     const lecture = manifest.subjects[0]!.lectures[0]!;

@@ -71,9 +71,12 @@ describe("innovation lectures one through six and marked duplicate cleanup", () 
     const options = (await pool.query("select * from question_options where question_id=$1 order by id", [s.bank.questionId])).rows;
     const result = await reviewInnovationCurriculum(pool);
     expect(result.consolidation?.changed).toMatchObject({ lecturesArchived: 3, duplicateItemsArchived: 1, quizzesRelinked: 1, completionsCarried: 1 });
-    expect(result).toMatchObject({ availableNumbers: [1, 2, 3], missingNumbers: [4, 5, 6], issues: [] });
+    expect(result).toMatchObject({ availableNumbers: [1, 2, 3, 4, 6], missingNumbers: [5], issues: [] });
     expect(result.groupId).toBeTruthy();
-    expect((await pool.query("select title from lectures where subject_id=$1 and deleted_at is null and status='published' order by order_index", [subjectId])).rows.map(row => row.title)).toEqual(["الأولى", "الثانية", "الثالثة"].map(ordinal => `المحاضرة ${ordinal} في الابتكار وإدارة المشاريع`));
+    const root = (await pool.query("select z.id,count(q.id)::int questions,count(distinct q.lecture_id)::int lectures from quizzes z join quiz_questions qq on qq.quiz_id=z.id join questions q on q.id=qq.question_id where z.subject_id=$1 and z.purpose='course' and z.lecture_id is null and z.superseded_by is null and z.deleted_at is null group by z.id", [subjectId])).rows;
+    expect(root).toHaveLength(1);
+    expect(root[0]).toMatchObject({ questions: 22, lectures: 5 });
+    expect((await pool.query("select title from lectures where subject_id=$1 and deleted_at is null and status='published' order by order_index", [subjectId])).rows.map(row => row.title)).toEqual(["الأولى", "الثانية", "الثالثة", "الرابعة", "السادسة"].map(ordinal => `المحاضرة ${ordinal} في الابتكار وإدارة المشاريع`));
     expect((await pool.query("select count(*)::int n from lectures where id=any($1::uuid[]) and deleted_at is not null", [[s.old, ...s.empty]])).rows[0].n).toBe(3);
     expect(await s.storage.read(s.original.key)).toEqual(s.original.bytes);
     expect((await pool.query("select * from quiz_attempts where id=$1", [s.attempt.id])).rows[0]).toEqual(s.attempt);
@@ -81,22 +84,23 @@ describe("innovation lectures one through six and marked duplicate cleanup", () 
     expect((await pool.query("select lecture_id from quizzes where id=$1", [s.quiz])).rows[0].lecture_id).toBe(s.canonical);
     const repeated = await reviewInnovationCurriculum(pool);
     expect(repeated.consolidation?.changed.lecturesArchived).toBe(0); expect(repeated.groupId).toBe(result.groupId);
+    expect((await pool.query("select count(*)::int n from quizzes where subject_id=$1 and purpose='course' and lecture_id is null and superseded_by is null and deleted_at is null", [subjectId])).rows[0].n).toBe(1);
     expect((await synchronizeFinquizCore(pool)).inserted.lectures).toBe(0);
   }, 60000);
 
-  it("recognizes real uploaded fourth, fifth and sixth PDFs, normalizes their labels, and preserves an unpublished sixth", async () => {
+  it("keeps an independent fifth upload private while the verified fourth and sixth remain available", async () => {
     const s = await seed();
     const ids = new Map<number, string>();
-    for (const number of [4, 5, 6]) {
-      const lecture = await createLecture(pool, { subjectId, title: `Lecture${number}`, orderIndex: 0, status: number === 6 ? "draft" : "published", createdBy: s.actor });
+    for (const number of [5]) {
+      const lecture = await createLecture(pool, { subjectId, title: `Lecture${number}`, orderIndex: 0, status: "draft", createdBy: s.actor });
       ids.set(number, lecture);
       const bytes = await pdf(`Innovation lecture ${number}. Digital project leaders identify stakeholder needs, define measurable objectives, evaluate alternative solutions and record decisions. Teams test a prototype with users before approving implementation. The review compares actual results with the agreed objectives and documents the evidence, limitations and responsibilities for the next project stage.`);
-      await attach(s.storage, s.actor, lecture, bytes, `Innovation${number}.pdf`, number === 6 ? "draft" : "published");
+      await attach(s.storage, s.actor, lecture, bytes, `Innovation${number}.pdf`, "draft");
     }
     const result = await reviewInnovationCurriculum(pool);
-    expect(result.availableNumbers).toEqual([1, 2, 3, 4, 5]); expect(result.missingNumbers).toEqual([6]);
-    expect((await pool.query("select title,order_index,status from lectures where id=$1", [ids.get(6)])).rows[0]).toEqual({ title: "المحاضرة السادسة في الابتكار وإدارة المشاريع", order_index: 6, status: "draft" });
-    const fourth = (await pool.query("select f.original_filename,f.storage_key from files f join lecture_items i on i.file_id=f.id where i.lecture_id=$1", [ids.get(4)])).rows[0];
-    expect(fourth.original_filename).toBe("المحاضرة الرابعة في الابتكار وإدارة المشاريع.pdf"); expect(fourth.storage_key).toContain("Innovation4.pdf");
+    expect(result.availableNumbers).toEqual([1, 2, 3, 4, 6]); expect(result.missingNumbers).toEqual([5]);
+    expect((await pool.query("select title,order_index,status from lectures where id=$1", [ids.get(5)])).rows[0]).toEqual({ title: "المحاضرة الخامسة في الابتكار وإدارة المشاريع", order_index: 5, status: "draft" });
+    const fifth = (await pool.query("select f.original_filename,f.storage_key from files f join lecture_items i on i.file_id=f.id where i.lecture_id=$1", [ids.get(5)])).rows[0];
+    expect(fifth.original_filename).toBe("المحاضرة الخامسة في الابتكار وإدارة المشاريع.pdf"); expect(fifth.storage_key).toContain("Innovation5.pdf");
   }, 60000);
 });

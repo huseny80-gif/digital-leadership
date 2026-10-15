@@ -21,20 +21,27 @@ const unreviewedMembership = `exists(select 1 from quiz_questions qq join questi
   (q.id=any($2::uuid[]) or q.prompt ~ '_{3,}|أكمل[[:space:]]+(العبارة|النص)|CamScanner|المسح الضوئي[[:space:]]+ب'
    or q.rubric->>'courseReview'='file-verified-course-assessments-v1'
    or (q.source_import_id is not null and coalesce(q.rubric->>'sourcePolicy','')<>$3)))`;
+// Refresh only editions owned entirely by the platform. An instructor's manual
+// questions must never be overwritten when a new original lecture is added.
+const managedMembership = `exists(select 1 from quiz_questions qq join questions q on q.id=qq.question_id where qq.quiz_id=z.id and q.deleted_at is null)
+  and not exists(select 1 from quiz_questions qq join questions q on q.id=qq.question_id where qq.quiz_id=z.id and q.deleted_at is null
+    and q.source_import_id is null and coalesce(q.rubric->>'courseReview','')<>$5)`;
 async function needsReview(pool: Pool | PoolClient, subjectId: string) {
   return Boolean((await pool.query(`select z.id from quizzes z where z.subject_id=$1 and z.purpose='course' and z.superseded_by is null and z.deleted_at is null and ${unreviewedMembership} limit 1`, [subjectId, nativeQuestionIds(subjectId), generatedSourcePolicy])).rowCount);
 }
 
 /** Publish new course editions; old memberships, keys, attempts and exam
  * archives remain immutable. Source reads happen before transaction locks. */
-export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.values(subjectMapping)) {
+export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.values(subjectMapping), sourceRevision?: string) {
   const content = new ContentService(new PgContentRepository(pool)), library = new LibraryService(content);
   const reader = new LectureSourceFiles(pool, library), courses = [];
   for (const subjectId of subjectIds) {
     const exists = await pool.query("select id from subjects where id=$1 and status='published' and deleted_at is null", [subjectId]);
     if (!exists.rowCount) continue;
     const subject = await content.getSubjectOrThrow(subjectId, false);
-    const currentAudit = await pool.query("select id from audit_logs where action='course_assessments.source_reviewed' and entity_id=$1 and metadata->>'policy'=$2", [subjectId, courseAssessmentReviewPolicy]);
+    const auditSql = "select id from audit_logs where action='course_assessments.source_reviewed' and entity_id=$1 and metadata->>'policy'=$2 and ($3::text is null or metadata->>'sourceRevision'=$3)";
+    const auditParams = [subjectId, courseAssessmentReviewPolicy, sourceRevision ?? null];
+    const currentAudit = await pool.query(auditSql, auditParams);
     if (currentAudit.rowCount && !await needsReview(pool, subjectId)) { courses.push(await courseAssessmentAudit(pool, subjectId, false)); continue; }
     const catalog = await library.get(subjectId, false), lectures: Lecture[] = [];
     for (let page = 1; ; page++) {
@@ -63,7 +70,7 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
       await client.query("begin");
       await client.query("set local lock_timeout='30s'");
       await client.query("select pg_advisory_xact_lock(hashtext($1))", [subjectId]);
-      const done = await client.query("select id from audit_logs where action='course_assessments.source_reviewed' and entity_id=$1 and metadata->>'policy'=$2", [subjectId, courseAssessmentReviewPolicy]);
+      const done = await client.query(auditSql, auditParams);
       if (done.rowCount && !await needsReview(client, subjectId)) { await client.query("commit"); courses.push(await courseAssessmentAudit(pool, subjectId, false)); continue; }
       const parent = await client.query("select id from subjects where id=$1 and status='published' and deleted_at is null for share", [subjectId]);
       if (!parent.rowCount) throw new Error("source_changed");
@@ -72,7 +79,9 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
         if (!row || row.updated_at.toISOString() !== plan.lecture.updatedAt) throw new Error("source_changed");
         await reader.assertUnchanged(client, [plan.lecture], plan.links);
       }
-      const quizzes = (await client.query<{ id: string; lecture_id: string | null }>(`select z.id,z.lecture_id from quizzes z where z.purpose='course' and z.subject_id=$1 and z.superseded_by is null and z.deleted_at is null and ${unreviewedMembership} order by z.id for update`, [subjectId, nativeQuestionIds(subjectId), generatedSourcePolicy])).rows;
+      const quizzes = (await client.query<{ id: string; lecture_id: string | null }>(`select z.id,z.lecture_id from quizzes z where z.purpose='course' and z.subject_id=$1 and z.superseded_by is null and z.deleted_at is null and
+        (${unreviewedMembership} or ($4::boolean and (${managedMembership}))) order by z.id for update`,
+      [subjectId, nativeQuestionIds(subjectId), generatedSourcePolicy, Boolean(sourceRevision && !done.rowCount), courseAssessmentReviewPolicy])).rows;
       const bankId = finquizRecordId(`${courseAssessmentReviewPolicy}:bank:${subjectId}`);
       await client.query("insert into question_banks(id,subject_id,title,description,created_by) values($1,$2,$3,$4,$5) on conflict(id) do nothing", [bankId, subjectId, `تقييم موثق: ${subject.title}`, courseAssessmentReviewPolicy, subject.createdBy]);
       const ids = new Map<string, string[]>();
@@ -89,12 +98,15 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
       }
       for (const previous of quizzes) {
         const questionIds = previous.lecture_id ? ids.get(previous.lecture_id) ?? [] : plans.flatMap(plan => ids.get(plan.lecture.id) ?? []);
+        const membership = (await client.query<{ question_id: string; points_override: number | null }>("select question_id,points_override from quiz_questions where quiz_id=$1 order by order_index", [previous.id])).rows;
+        if (membership.length === questionIds.length && membership.every(row => questionIds.includes(row.question_id))) continue;
+        const overrides = new Map(membership.map(row => [row.question_id, row.points_override]));
         const digest = createHash("sha256").update(JSON.stringify(questionIds)).digest("hex");
         const id = finquizRecordId(`${courseAssessmentReviewPolicy}:quiz:${previous.id}:${digest}`);
         await client.query(`insert into quizzes(id,subject_id,lecture_id,title,description,time_limit_seconds,status,created_by,due_at)
           select $1,subject_id,lecture_id,title,$3,time_limit_seconds,case when $4 then status else 'draft' end,created_by,due_at from quizzes where id=$2`,
         [id, previous.id, "أسئلة تحليلية موثقة بملفات المحاضرات، مع تصحيح وتفسير مستندين إلى المصدر.", questionIds.length > 0]);
-        for (const [order, questionId] of questionIds.entries()) await client.query("insert into quiz_questions(quiz_id,question_id,order_index) values($1,$2,$3)", [id, questionId, order]);
+        for (const [order, questionId] of questionIds.entries()) await client.query("insert into quiz_questions(quiz_id,question_id,order_index,points_override) values($1,$2,$3,$4)", [id, questionId, order, overrides.get(questionId) ?? null]);
         await client.query("update quizzes set superseded_by=$2 where id=$1", [previous.id, id]);
         await client.query(`update content_imports set result_lectures=(select jsonb_agg(case when entry->>'quizId'=$1 then jsonb_set(entry,'{quizId}',to_jsonb($2::text)) else entry end order by ordinal)
           from jsonb_array_elements(result_lectures) with ordinality entries(entry,ordinal)),updated_at=now() where subject_id=$3 and result_lectures @> $4::jsonb`, [previous.id, id, subjectId, JSON.stringify([{ quizId: previous.id }])]);
@@ -111,7 +123,7 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
         for (const [order, questionId] of questionIds.entries()) await client.query("insert into quiz_questions(quiz_id,question_id,order_index) values($1,$2,$3)", [id, questionId, order]);
         changed = true;
       }
-      await client.query("insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'course_assessments.source_reviewed','subject',$2,$3::jsonb)", [subject.createdBy, subjectId, JSON.stringify({ policy: courseAssessmentReviewPolicy, verifiedLectures: plans.length, questions: plans.reduce((n, plan) => n + plan.questions.length, 0), unavailableLectures })]);
+      await client.query("insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'course_assessments.source_reviewed','subject',$2,$3::jsonb)", [subject.createdBy, subjectId, JSON.stringify({ policy: courseAssessmentReviewPolicy, ...(sourceRevision ? { sourceRevision } : {}), verifiedLectures: plans.length, questions: plans.reduce((n, plan) => n + plan.questions.length, 0), unavailableLectures })]);
       await client.query("commit");
     } catch (error) { await client.query("rollback"); throw error; }
     finally { client.release(); }

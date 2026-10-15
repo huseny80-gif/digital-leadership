@@ -55,6 +55,6 @@ describe("original PDF extraction provenance across the five subjects", () => {
       for (const reviewed of cases.cases.filter(item => item.sha256 === source.sha256)) expect(questions.some(question => question.prompt === reviewed.prompt)).toBe(true);
       expect(questions.every(question => question.type === "multiple_choice" && question.kind === "analytical_case")).toBe(true);
       expect(questions.every(question => validGroundedQuestion(question, paragraphs))).toBe(true);
-    });
+    }, 30000);
   }
 });
