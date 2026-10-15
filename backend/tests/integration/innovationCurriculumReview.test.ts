@@ -107,7 +107,9 @@ describe("innovation current lecture numbering and marked duplicate cleanup", ()
     expect(repeated.consolidation?.changed.lecturesArchived).toBe(0); expect(repeated.groupId).toBe(result.groupId);
     expect((await pool.query("select count(*)::int n from quizzes where subject_id=$1 and purpose='course' and lecture_id is null and superseded_by is null and deleted_at is null", [subjectId])).rows[0].n).toBe(1);
     expect((await synchronizeFinquizCore(pool)).inserted.lectures).toBe(0);
-  }, 60000);
+    // Two complete five-PDF refreshes plus grading migration can exceed a
+    // minute on shared CI runners; retain every assertion with a bounded cap.
+  }, 120000);
 
   it("preserves an additional draft sixth while the approved course remains numbered one through five", async () => {
     const s = await seed();
