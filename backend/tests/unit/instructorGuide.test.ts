@@ -18,8 +18,8 @@ describe("verified academic instructor preparation", () => {
     const first = lecture("المحاضرة الأولى في الذكاء الاصطناعي.pdf"), second = lecture("المحاضرة الثانية في الذكاء الاصطناعي.pdf");
     const guide = instructorDebriefGuide("archived-group", [first, second]);
     expect(guide).toMatchObject({ generator: instructorGuidePolicy, sourceScope: "current-lecture-files", unavailableLectures: [] });
-    expect(guide.items).toHaveLength(4);
-    expect(new Set(guide.items.map(item => item.topic)).size).toBe(4);
+    expect(guide.items).toHaveLength(6);
+    expect(new Set(guide.items.map(item => item.topic)).size).toBe(6);
     for (const item of guide.items) {
       expect(item.discussionQuestion).toContain(item.topic);
       expect(item.discussionQuestion).not.toMatch(/كيف تشرح العبارة|academic-cv|website|github|\bId\b|\bZz\b|\bSlo\b|الأسطر|الفقرة/);
