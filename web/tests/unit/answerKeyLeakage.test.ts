@@ -5,7 +5,7 @@ import { join } from "node:path";
 /**
  * PHASE 09B "Answer-Key Leakage Test" (mandatory), extended in PHASE 09C.
  * Initial questions never contain answer keys. After a validated answer,
- * the two owned feedback views may consume SubmitAnswerAck.isCorrect.
+ * the owned feedback views may consume server-returned correctness.
  * This scans the rest of the learner source for unexpected correctness
  * access; runtime HTTP tests verify the before/after boundary itself.
  *
@@ -32,8 +32,10 @@ import { join } from "node:path";
  */
 const ADMIN_ONLY_PATH_SEGMENT = `${join("app", "(app)", "admin")}`;
 // The user explicitly enabled feedback after an answer is recorded.
-// Only these two views consume that owned, post-answer feedback DTO.
-const POST_ANSWER_VIEWS = [join("components", "quiz", "QuizAttemptRunner.tsx"), join("quizzes", "[quizId]", "result", "[attemptId]", "page.tsx")];
+// Weekly revision papers also consume checked feedback; their initial DTO
+// excludes all keys (weeklyCyberExams.test.ts), and WeeklyExams.test.ts checks
+// the submitted-choice/feedback boundary and explicit model-answer action.
+const POST_ANSWER_VIEWS = [join("components", "quiz", "QuizAttemptRunner.tsx"), join("quizzes", "[quizId]", "result", "[attemptId]", "page.tsx"), join("components", "exam-material", "WeeklyExams.tsx")];
 function listFiles(dir: string): string[] {
   const entries = readdirSync(dir, { withFileTypes: true });
   return entries.flatMap((entry) => {
@@ -47,7 +49,7 @@ function listFiles(dir: string): string[] {
 }
 
 describe("no answer-key field in LEARNER-facing web client source", () => {
-  it("correctness is consumed only by admin management or the two owned post-answer views", () => {
+  it("correctness is consumed only by admin management or the owned feedback views", () => {
     const srcDir = join(__dirname, "..", "..", "src");
     const offenders = listFiles(srcDir)
       .filter((file) => /\.(ts|tsx)$/.test(file))
