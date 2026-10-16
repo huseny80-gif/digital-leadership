@@ -42,7 +42,7 @@ describe("study assistant widget", () => {
     finish(reply(response));
     await waitFor(() => expect(screen.queryByText("سؤال دراسي خاص")).not.toBeInTheDocument());
     expect(screen.queryByText(response.text)).not.toBeInTheDocument();
-    expect(screen.getByText("كيف أساعدك في الدراسة؟")).toBeInTheDocument();
+    expect(screen.getByText("أهلاً بك، كيف يمكنني مساعدتك")).toBeInTheDocument();
   });
 });
 describe("report selection, preview and download", () => {

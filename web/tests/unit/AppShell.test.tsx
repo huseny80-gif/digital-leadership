@@ -13,6 +13,8 @@ beforeEach(() => { route.pathname = "/dashboard"; localStorage.clear(); });
 describe("reference application shell", () => {
   it.each([{ isAdmin: false, isInstructor: false, staff: false }, { isAdmin: true, isInstructor: false, staff: true }, { isAdmin: false, isInstructor: true, staff: true }])("shows feedback navigation for the current role: %o", props => {
     render(<AppShell {...props} userEmail="user@example.com"><p>Content</p></AppShell>);
+    if (!props.staff) fireEvent.click(screen.getByRole("button", { name: "تصفح المنصة" }));
+    else expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     const sidebar = within(screen.getByRole("complementary", { name: "Sidebar" }));
     expect(sidebar.getByRole("link", { name: "شاركنا رأيك" })).toHaveAttribute("href", "/feedback");
     if (props.staff) expect(sidebar.getByRole("link", { name: "آراء المشاركين" })).toHaveAttribute("href", "/participant-feedback");
@@ -21,6 +23,7 @@ describe("reference application shell", () => {
   it.each(["/quizzes/quiz-1/attempt/attempt-1", "/quizzes/quiz-1/result/attempt-1"])("leaves %s through document links in the sidebar and mobile tabs", pathname => {
     route.pathname = pathname;
     render(<AppShell isAdmin={false} userEmail="learner@example.com"><p>Quiz content</p></AppShell>);
+    fireEvent.click(screen.getByRole("button", { name: "تصفح المنصة" }));
     const sidebar = within(screen.getByRole("complementary", { name: "Sidebar" }));
     const bottom = within(screen.getByRole("navigation", { name: "Bottom" }));
     for (const nav of [sidebar, bottom]) {
@@ -47,6 +50,8 @@ describe("reference application shell", () => {
 
   it("does not expose registered account actions to guests", () => {
     render(<AppShell isAdmin={false} userEmail={null} guestSession={{ displayName: "Guest" } as GuestTrainingSession}><p>Guest content</p></AppShell>);
+    expect(screen.getByRole("dialog", { name: "أهلاً بك، كيف يمكنني مساعدتك" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "تصفح المنصة" }));
     fireEvent.click(screen.getByRole("button", { name: "قائمة الحساب" }));
     expect(screen.queryByRole("link", { name: "الإدارة" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "الملف الشخصي" })).not.toBeInTheDocument();
@@ -57,6 +62,7 @@ describe("reference application shell", () => {
 
   it("opens in dark mode and preserves an explicit light theme preference", () => {
     const { container } = render(<AppShell isAdmin={false} userEmail="learner@example.com"><p>Content</p></AppShell>);
+    fireEvent.click(screen.getByRole("button", { name: "تصفح المنصة" }));
     expect(container.firstElementChild).toHaveAttribute("data-theme", "dark");
     expect(screen.getByRole("button", { name: "تفعيل الوضع الفاتح" })).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(screen.getByRole("button", { name: "تفعيل الوضع الفاتح" }));

@@ -6,15 +6,17 @@ import type { StudyAssistantMode, StudyAssistantRequest, StudyAssistantResponse,
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import { StudyReviewQuiz } from "./StudyReviewQuiz";
 import { studyRequest } from "./request";
+import { StudyAssistantWelcome, STUDY_ASSISTANT_GREETING } from "./StudyAssistantWelcome";
 import styles from "./studyTools.module.css";
 
 interface Message { id: string; role: "user" | "assistant"; text: string; response?: StudyAssistantResponse }
 const modes: Array<{ id: StudyAssistantMode; label: string }> = [{ id: "answer", label: "اسأل عن مفهوم" }, { id: "summary", label: "لخّص" }, { id: "quiz", label: "أسئلة مراجعة" }];
-export function StudyAssistantWidget() {
+export function StudyAssistantWidget({ welcomeOnEntry = false }: { welcomeOnEntry?: boolean }) {
   const pathname = usePathname();
   const contextSubject = pathname.match(/^\/subjects\/([a-f0-9-]{36})(?:\/|$)/i)?.[1];
   const id = useId();
   const [open, setOpen] = useState(false);
+  const [welcoming, setWelcoming] = useState(welcomeOnEntry);
   const [catalog, setCatalog] = useState<StudyCatalog | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [catalogRetry, setCatalogRetry] = useState(0);
@@ -68,6 +70,11 @@ export function StudyAssistantWidget() {
   function clear() { active.current?.abort(); busyRef.current = false; setBusy(false); setMessages([]); setError(null); lastRequest.current = null; input.current?.focus(); }
 
   return <div className={styles.assistant} dir="rtl">
+    {welcoming ? <StudyAssistantWelcome onChoose={destination => {
+      setWelcoming(false);
+      if (destination === "assistant") setOpen(true);
+      else requestAnimationFrame(() => (document.getElementById("main-content") ?? trigger.current)?.focus());
+    }} /> : null}
     {open ? <section id={id} role="dialog" aria-modal="false" aria-labelledby={`${id}-title`} className={styles.drawer}>
       <header className={styles.drawerHeader}><span className={styles.assistantSymbol}><PlatformIcon name="assistant" /></span><div><h2 id={`${id}-title`}>مساعدك الدراسي</h2><p>إجابات ومراجعات مستندة إلى المحتوى</p></div><button type="button" className={styles.iconButton} aria-label="إغلاق المساعد الدراسي" onClick={() => { setOpen(false); requestAnimationFrame(() => trigger.current?.focus()); }}><PlatformIcon name="close" /></button></header>
       <div className={styles.chatContext}><label htmlFor={`${id}-subject`}>المادة الدراسية</label><select id={`${id}-subject`} value={subjectId} disabled={busy} onChange={event => setSubject(event.target.value)}><option value="">جميع المواد المنشورة</option>{catalog?.subjects.map(course => <option value={course.id} key={course.id}>{course.title}</option>)}</select>
@@ -75,7 +82,7 @@ export function StudyAssistantWidget() {
         <div className={styles.modeButtons} aria-label="نوع المساعدة">{modes.map(item => <button type="button" key={item.id} aria-pressed={mode === item.id} disabled={busy} onClick={() => { setMode(item.id); if (item.id !== "summary") setPasted(false); }}>{item.label}</button>)}</div>
       </div>
       <div className={styles.messages} role="log" aria-live="polite" aria-label="محادثة المساعد الدراسي">
-        {!messages.length ? <div className={styles.chatWelcome}><PlatformIcon name="book" /><h3>كيف أساعدك في الدراسة؟</h3><p>اكتب سؤالًا عن محاضرة، أو اطلب تلخيصًا، أو جرّب أسئلة مراجعة. تظهر المصادر مع الإجابة.</p></div> : null}
+        {!messages.length ? <div className={styles.chatWelcome}><PlatformIcon name="assistant" /><h3>{STUDY_ASSISTANT_GREETING}</h3><p>اكتب سؤالًا عن محاضرة، أو اطلب تلخيصًا، أو جرّب أسئلة مراجعة. تظهر المصادر مع الإجابة.</p></div> : null}
         {messages.map(message => <article key={message.id} className={styles.message} data-role={message.role}><strong>{message.role === "user" ? "أنت" : "المساعد الدراسي"}</strong><p>{message.text}</p>
           {message.response?.quiz.length ? <StudyReviewQuiz questions={message.response.quiz} /> : null}
           {message.response?.citations.length ? <details className={styles.citations}><summary>المصادر ({message.response.citations.length})</summary>{message.response.citations.map((citation, index) => <div key={`${citation.sourceId}-${index}`}>{citation.href ? <Link href={citation.href} onClick={() => setOpen(false)}>{citation.title}</Link> : <strong>{citation.title}</strong>}<blockquote>{citation.excerpt}</blockquote></div>)}</details> : null}
@@ -90,6 +97,6 @@ export function StudyAssistantWidget() {
         <div className={styles.composerActions}><button type="submit" className={styles.action} disabled={busy || draft.trim().length < (pasted ? 70 : 2)}>إرسال <PlatformIcon name="arrow" /></button><button type="button" className={styles.quiet} onClick={clear} disabled={!messages.length && !busy}>مسح المحادثة</button><small>{draft.length}/{pasted ? 12000 : 2000}</small></div>
       </form>
     </section> : null}
-    <button ref={trigger} type="button" className={styles.floatingButton} aria-label={open ? "إغلاق المساعد الدراسي" : "فتح المساعد الدراسي"} aria-expanded={open} aria-controls={id} onClick={() => setOpen(value => !value)}><PlatformIcon name={open ? "close" : "assistant"} /><span>مساعدك الدراسي</span></button>
+    {!welcoming ? <button ref={trigger} type="button" className={styles.floatingButton} aria-label={open ? "إغلاق المساعد الدراسي" : "فتح المساعد الدراسي"} aria-expanded={open} aria-controls={id} onClick={() => setOpen(value => !value)}><PlatformIcon name={open ? "close" : "assistant"} /><span>مساعدك الدراسي</span></button> : null}
   </div>;
 }

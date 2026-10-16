@@ -94,9 +94,9 @@ export function AppShell({ children, isAdmin, isInstructor = false, userEmail, u
       </div>
     </header>
     {navigationOpen ? <button type="button" className="dl-sidebar-backdrop" aria-label="إغلاق القائمة" onClick={() => setNavigationOpen(false)} /> : null}
-    <div className="app-body"><Sidebar items={items} onNavigate={() => setNavigationOpen(false)} /><main id="main-content" className="app-main">{children}</main></div>
+    <div className="app-body"><Sidebar items={items} onNavigate={() => setNavigationOpen(false)} /><main id="main-content" className="app-main" tabIndex={-1}>{children}</main></div>
     <Footer items={items} accountLinks={isGuest ? [] : undefined} />
     <BottomNav items={items.filter((item) => ["home", "book", "quiz", "feedback", "info"].includes(item.icon ?? ""))} />
-    <StudyAssistantWidget />
+    <StudyAssistantWidget welcomeOnEntry={!isAdmin && !isInstructor} />
   </div></LearningProvider>;
 }
