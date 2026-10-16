@@ -8,6 +8,18 @@ const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const ctx = (path: string[]) => ({ params: Promise.resolve({ path }) });
 beforeEach(() => { vi.mocked(apiGet).mockReset(); vi.mocked(apiPost).mockReset(); vi.mocked(apiGetDownload).mockReset(); });
 describe("exam material authenticated GET proxy", () => {
+  it("forwards academic paper requests and only the optional owned-attempt reference", async () => {
+    vi.mocked(apiGet).mockResolvedValue({ data: {} });
+    const response = await GET(new Request(`http://test/api/exam-material?attemptId=${id}`), ctx([id, id, "academic-paper"]));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(apiGet).toHaveBeenLastCalledWith(`/api/v1/subjects/${id}/exam-material/${id}/academic-paper?attemptId=${id}`);
+    for (const query of ["includeAnswers=true", "role=admin", "ownerId=other", "attemptId=bad", `attemptId=${id}&attemptId=${id}`]) {
+      vi.mocked(apiGet).mockClear();
+      expect((await GET(new Request(`http://test/api/exam-material?${query}`), ctx([id, id, "academic-paper"]))).status).toBe(400);
+      expect(apiGet).not.toHaveBeenCalled();
+    }
+  });
   it("forwards only course archives and owned attempts with private cache headers", async () => {
     vi.mocked(apiGet).mockResolvedValue({ data: {} });
     const response = await GET(new Request("http://test/api/exam-material?limit=20&page=2"), ctx([id]));

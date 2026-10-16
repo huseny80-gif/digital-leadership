@@ -10,6 +10,7 @@ import { examHref, examRequest } from "./request";
 import { ExamGroupTitle } from "./ExamGroupTitle";
 import { ExamKnowledgeGaps } from "./ExamKnowledgeGaps";
 import { ExamChallengeRunner } from "./ExamChallengeRunner";
+import { ExamAcademicPaper } from "./ExamAcademicPaper";
 import styles from "./examMaterial.module.css";
 
 export function ExamMaterialQuiz({ group }: { group: ExamMaterialDetail }) {
@@ -61,14 +62,14 @@ export function ExamMaterialQuiz({ group }: { group: ExamMaterialDetail }) {
   const current = data?.attempt.id === attemptId ? data : null;
   if (busy) return <p className={styles.notice} role="status">جارٍ تحميل الاختبار…</p>;
   if (error) return <div className={styles.notice} role="alert"><p>{error}</p><button className={styles.action} onClick={() => attemptId ? setRetry(v => v + 1) : void start()}>إعادة المحاولة</button></div>;
-  if (!current) return <div className={styles.quizIntro}>
+  if (!current) return <><div className={styles.quizIntro}>
     <span className={styles.largeIcon}><PlatformIcon name="quiz" /></span>
     <h3>الاختبار التفاعلي المتقدم</h3>
     <p>{group.questionCount} سؤالًا من المحاضرات المختارة. اختر تجربة المراجعة المناسبة لك.</p>
     <fieldset className={styles.experienceModes}><legend className={styles.srOnly}>وضع الاختبار</legend><label data-selected={mode === "learning"}><input type="radio" name="exam-mode" value="learning" checked={mode === "learning"} onChange={() => setMode("learning")} /><PlatformIcon name="book" /><strong>وضع التعلم</strong><span>تصحيح فوري وتعليل بعد كل سؤال. راجع وتدرّب بالوتيرة التي تناسبك.</span></label><label data-selected={mode === "challenge"}><input type="radio" name="exam-mode" value="challenge" checked={mode === "challenge"} onChange={() => setMode("challenge")} /><PlatformIcon name="clock" /><strong>وضع التحدي</strong><span>محاكاة بوقت محدد ({Math.ceil(examChallengeSeconds(group.questionCount) / 60)} دقيقة)، مع التقييم والتصحيح عند النهاية.</span></label></fieldset>
     <p>تُحفظ محاولة مستقلة لكل وضع؛ يبدأ وقت التحدي عند الضغط على بدء الاختبار.</p>
     <button className={styles.action} onClick={() => void start()}>بدء الاختبار أو متابعة المحاولة</button>
-  </div>;
+  </div><ExamAcademicPaper subjectId={group.subjectId} groupId={group.id} /></>;
   return <div className={styles.quiz}>
     {current.result ? <div className={styles.result} role="status" aria-label="نتيجة الاختبار">
       <div className={styles.score}>{Math.round(current.result.percentage)}<small>%</small></div>
@@ -77,5 +78,6 @@ export function ExamMaterialQuiz({ group }: { group: ExamMaterialDetail }) {
     {current.result && current.attempt.mode === "challenge" ? <div className={styles.readiness} data-tone={examReadiness(current.result.percentage).tone}><h4>{examReadiness(current.result.percentage).label}</h4><p>{examReadiness(current.result.percentage).advice}</p><small>تقدير تدريبي مبني على نتيجة هذه المحاولة، وليس ضمانًا لنتيجة الامتحان الرسمي.</small><button type="button" className={styles.quiet} onClick={() => window.history.replaceState(null, "", examHref(group.subjectId, group.id, "quiz"))}>اختيار وضع آخر</button></div> : null}
     {current.knowledgeGaps && current.attempt.status === "graded" ? <ExamKnowledgeGaps report={current.knowledgeGaps} subjectId={group.subjectId} /> : null}
     {current.attempt.mode === "challenge" && current.attempt.status === "in_progress" ? <ExamChallengeRunner key={current.attempt.id} bundle={current} onFinished={refreshResult} onLeave={() => window.history.replaceState(null, "", examHref(group.subjectId, group.id, "quiz"))} /> : <QuizAttemptRunner key={`${current.attempt.id}:${current.attempt.status}`} quiz={current.quiz} displayTitle={<ExamGroupTitle title={current.quiz.title} />} questions={current.questions} attemptId={current.attempt.id} initialAnswers={current.answers} initialFeedback={current.feedback} startedAt={current.attempt.startedAt} reviewMode={current.attempt.status !== "in_progress"} backHref={examHref(group.subjectId, group.id, "summary")} onFinished={refreshResult} onRestart={restarted} startAttempt={() => createAttempt(current.attempt.mode ?? "learning")} />}
+    {current.attempt.mode !== "challenge" || current.attempt.status !== "in_progress" ? <ExamAcademicPaper subjectId={group.subjectId} groupId={group.id} attemptId={current.attempt.status === "graded" ? current.attempt.id : undefined} /> : null}
   </div>;
 }

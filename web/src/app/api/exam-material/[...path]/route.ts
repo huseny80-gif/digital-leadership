@@ -13,18 +13,20 @@ export async function GET(request: Request, context: Context) {
   const audio = path.length === 3 && uuid.test(path[0]!) && uuid.test(path[1]!) && path[2] === "audio.mp3";
   const narrationText = path.length === 3 && uuid.test(path[0]!) && uuid.test(path[1]!) && path[2] === "review-narration.txt";
   const narrationJson = path.length === 3 && uuid.test(path[0]!) && uuid.test(path[1]!) && path[2] === "review-narration.json";
+  const academicPaper = path.length === 3 && uuid.test(path[0]!) && uuid.test(path[1]!) && path[2] === "academic-paper";
   const allowed = (path.length === 1 && uuid.test(path[0]!))
     || (path.length === 2 && path.every(p => uuid.test(p)))
-    || revisions || download || audio || narrationText || narrationJson
+    || revisions || download || audio || narrationText || narrationJson || academicPaper
     || (path.length === 4 && uuid.test(path[0]!) && uuid.test(path[1]!) && path[2] === "attempts" && uuid.test(path[3]!));
   if (!allowed) return NextResponse.json({ error: { code: "not_found", message: "المحتوى غير متاح." } }, { status: 404, headers });
   const query = new URL(request.url).searchParams;
   const paginated = path.length === 1 || revisions;
   const audioValid = audio && query.size === 3 && ["chapter", "segment", "voice"].every(key => query.getAll(key).length === 1) && (query.get("chapter") === "introduction" || uuid.test(query.get("chapter") ?? "")) && /^(?:0|[1-9]\d{0,4})$/.test(query.get("segment") ?? "") && ACADEMIC_VOICES.some(voice => voice.id === query.get("voice"));
   const range = request.headers.get("range");
-  if (audio ? !audioValid || (range !== null && !/^bytes=\d*-\d*$/.test(range)) : [...query.keys()].some(key => !["page", "limit"].includes(key)) || (!paginated && query.size)) return NextResponse.json({ error: { code: "validation_error", message: "بيانات الطلب غير صالحة." } }, { status: 400, headers });
+  const paperValid = query.size === 0 || query.size === 1 && query.getAll("attemptId").length === 1 && uuid.test(query.get("attemptId") ?? "");
+  if (academicPaper ? !paperValid : audio ? !audioValid || (range !== null && !/^bytes=\d*-\d*$/.test(range)) : [...query.keys()].some(key => !["page", "limit"].includes(key)) || (!paginated && query.size)) return NextResponse.json({ error: { code: "validation_error", message: "بيانات الطلب غير صالحة." } }, { status: 400, headers });
   const suffix = path.slice(1).join("/");
-  const qs = paginated && query.size ? `?${query}` : "";
+  const qs = (paginated || academicPaper) && query.size ? `?${query}` : "";
   try {
     if (audio) {
       const response = await apiGetDownload(`/api/v1/subjects/${path[0]}/exam-material/${path[1]}/audio.mp3?${query}`, range ? { range } : undefined);

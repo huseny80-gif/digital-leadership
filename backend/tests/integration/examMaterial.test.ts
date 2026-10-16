@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { Pool } from "pg";
 import { PDFParse } from "pdf-parse";
 import request from "supertest";
-import type { ExamMaterialDetail, ExamMaterialAttempt } from "@shared/index";
+import type { AcademicExamPaper, ExamMaterialDetail, ExamMaterialAttempt } from "@shared/index";
 import { createExamSourceFile } from "../helpers/examSourceFile.js";
 import { createApp } from "../../src/app.js";
 import { ensureExamMaterialSchema } from "../../src/examMaterials/schema.js";
@@ -73,6 +73,42 @@ async function seed() {
 }
 
 describe("independent exam material archives", () => {
+  it("formats curriculum-bound academic papers and releases marking schemes only to admins or the graded attempt owner", async () => {
+    const s = await seed(), group = await s.generate(s.lectures.slice(0, 3));
+    const url = `${s.path}/${group.id}/academic-paper`;
+    await request(s.app).get(url).expect(401);
+    for (const headers of [{ Authorization: `Bearer ${s.tokens[1]}` }, { Cookie: s.cookie }, { Authorization: `Bearer ${s.tokens[3]}` }]) {
+      const response = await request(s.app).get(url).set(headers).expect(200);
+      expect(response.headers["cache-control"]).toBe("private, no-store");
+      const paper = response.body.data as AcademicExamPaper;
+      expect(paper.questions).toHaveLength(group.questionCount);
+      expect(paper.distribution.map(item => item.type)).toEqual(["multiple_choice", "short_answer", "case_study"]);
+      expect(paper.distribution.every(item => item.count > 0)).toBe(true);
+      expect(paper.totalPoints).toBe(24);
+      expect(JSON.stringify(paper)).not.toMatch(/"(answerKey|modelAnswer|rubric|rationale|isCorrect|excerpt|correctOptionIndex)"/);
+    }
+    const admin = (await request(s.app).get(url).set("Authorization", `Bearer ${s.tokens[0]}`).expect(200)).body.data as AcademicExamPaper;
+    expect(admin.answerKey).toHaveLength(group.questionCount);
+    expect(admin.answerKey!.every(answer => answer.rubric.every(item => item.references.length > 0))).toBe(true);
+    await request(s.app).get(`${url}?includeAnswers=true`).set("Cookie", s.cookie).expect(400);
+    const attempt = (await request(s.app).post(`${s.path}/${group.id}/attempts`).set("Cookie", s.cookie).send({ mode: "challenge" }).expect(201)).body.data;
+    const owned = `${url}?attemptId=${attempt.id}`;
+    expect((await request(s.app).get(owned).set("Cookie", s.cookie).expect(200)).body.data).not.toHaveProperty("answerKey");
+    await request(s.app).post(`/api/v1/attempts/${attempt.id}/submit`).set("Cookie", s.cookie).expect(200);
+    expect((await request(s.app).get(owned).set("Cookie", s.cookie).expect(200)).body.data.answerKey).toHaveLength(group.questionCount);
+    await request(s.app).get(owned).set("Authorization", `Bearer ${s.tokens[2]}`).expect(404);
+    await request(s.app).get(`/api/v1/subjects/${s.other}/exam-material/${group.id}/academic-paper`).set("Cookie", s.cookie).expect(404);
+    const another = await s.generate([s.lectures[3]!]);
+    await request(s.app).get(`${s.path}/${another.id}/academic-paper?attemptId=${attempt.id}`).set("Cookie", s.cookie).expect(404);
+  });
+
+  it("refuses an academic paper when archived grading prose or a question was altered outside its verified source program", async () => {
+    const s = await seed(), group = await s.generate([s.lectures[0]!]);
+    await pool.query("update questions set prompt='سؤال مختلق عن موضوع لا يوجد في المحاضرة' where id=(select question_id from quiz_questions where quiz_id=$1 limit 1)", [group.quizId]);
+    const response = await request(s.app).get(`${s.path}/${group.id}/academic-paper`).set("Authorization", `Bearer ${s.tokens[0]}`).expect(400);
+    expect(response.body.error.message).toContain("أدلة مكتملة");
+    expect(response.body).not.toHaveProperty("data");
+  });
   it("selects only published sources, permits only admins to generate, and validates every input", async () => {
     const s = await seed();
     const url = `/api/v1/admin/subjects/${s.subject}/exam-material`;

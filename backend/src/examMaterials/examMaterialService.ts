@@ -19,6 +19,7 @@ import { examGroupVisible } from "./visibility.js";
 import { generateExamReviewArtifacts, examChallengeSeconds } from "@digital-leadership/shared";
 import { reviewedLegalSummary } from "./legalAcademicReadings.js";
 import type { ExamExperienceMode, QuizAttempt, QuestionForAttempt } from "@shared/index";
+import { buildAcademicExam, type AcademicExamSourceQuestion } from "./academicExam.js";
 
 interface GroupMetadataRow {
   id: string; subject_id: string; title: string; sequence: number; created_at: Date;
@@ -127,6 +128,23 @@ export class ExamMaterialService {
     ]);
     const summary = await reviewedLegalSummary(studyOnlyExamSummary(row.summary));
     return { ...groupMetadata(row), revisionCount: currentRevision.revisionCount!, currentRevision, summary, quiz, review: generateExamReviewArtifacts(summary, row.title) };
+  }
+
+  async academicPaper(subjectId: string, groupId: string, principal: AssessmentPrincipal, isAdmin: boolean, attemptId?: string) {
+    const group = await this.detail(subjectId, groupId, isAdmin);
+    let includeAnswerKey = isAdmin;
+    if (attemptId) {
+      const attempt = await this.assessments.getAttemptOrThrow(attemptId, principal);
+      if (attempt.quizId !== group.quizId) throw notFound("Quiz attempt");
+      includeAnswerKey ||= attempt.status === "graded";
+    }
+    const questions = (await this.pool.query<AcademicExamSourceQuestion>(`select q.id,q.lecture_id as "lectureId",q.prompt,q.rubric,
+      coalesce((select json_agg(json_build_object('text',o.option_text,'isCorrect',o.is_correct) order by o.order_index,o.id)
+        from question_options o where o.question_id=q.id),'[]'::json) as options
+      from quiz_questions qq join questions q on q.id=qq.question_id
+      where qq.quiz_id=$1 and q.deleted_at is null order by qq.order_index,q.id`, [group.quizId])).rows;
+    if (questions.length !== group.questionCount) throw conflict("تغيرت أسئلة المراجعة. حدّث الصفحة أو أعد توليد المجموعة.");
+    return buildAcademicExam({ groupId, title: group.title, lectures: group.lectures, grounding: group.summary.grounding, questions }, includeAnswerKey);
   }
 
   async history(subjectId: string, groupId: string, isAdmin: boolean, pagination: PaginationParams): Promise<ExamMaterialHistory> {

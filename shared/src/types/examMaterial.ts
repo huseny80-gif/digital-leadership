@@ -96,6 +96,41 @@ export interface ExamMaterialAttempt {
   knowledgeGaps?: ExamKnowledgeGapReport;
 }
 
+export type AcademicExamQuestionType = "multiple_choice" | "short_answer" | "case_study";
+export interface AcademicExamQuestion {
+  id: string;
+  type: AcademicExamQuestionType;
+  lectureId: string;
+  lectureTitle: string;
+  prompt: string;
+  instructions: string;
+  points: number;
+  options: string[];
+  /** Locations establish provenance without revealing the answer quotation. */
+  sources: Array<Omit<ExamContextReference, "excerpt">>;
+}
+export interface AcademicExamAnswer {
+  questionId: string;
+  modelAnswer: string;
+  explanation: string;
+  correctOptionIndex?: number;
+  rubric: Array<{ criterion: string; expected: string; points: number; references: ExamContextReference[] }>;
+  optionReviews: Array<{ text: string; rationale: string; references: ExamContextReference[] }>;
+}
+export interface AcademicExamPaper {
+  policy: "strict-academic-exam-v1";
+  groupId: string;
+  title: string;
+  questionSectionTitle: string;
+  answerSectionTitle: string;
+  totalPoints: number;
+  distribution: Array<{ type: AcademicExamQuestionType; count: number; points: number }>;
+  questions: AcademicExamQuestion[];
+  /** Server omits this entirely until administrator access or a completed,
+   * owned attempt. Written-response marks are a human grading guide. */
+  answerKey?: AcademicExamAnswer[];
+}
+
 export interface ExamContextReference {
   paragraphId: string;
   fileId: string;

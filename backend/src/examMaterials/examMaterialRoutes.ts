@@ -12,6 +12,7 @@ import { examReviewPdf } from "./examReviewPdf.js";
 import { academicSpeechCache, AcademicSpeechUnavailable } from "./academicSpeech.js";
 
 const generateSchema = z.object({ lectureIds: z.array(z.string().uuid()).min(1).max(50).refine(ids => new Set(ids).size === ids.length), requestId: z.string().uuid() }).strict();
+const academicPaperQuery = z.object({ attemptId: z.string().uuid().optional() }).strict();
 const attemptSchema = z.object({ mode: z.enum(["learning", "challenge"]) }).strict();
 const audioSchema = z.object({ chapter: z.union([z.literal("introduction"), z.string().uuid()]), segment: z.string().regex(/^(?:0|[1-9]\d{0,4})$/).transform(Number), voice: z.string().refine(id => ACADEMIC_VOICES.some(voice => voice.id === id)) }).strict();
 export function examMaterialRoutes(): Router {
@@ -23,6 +24,7 @@ export function examMaterialRoutes(): Router {
   });
   const service = () => new ExamMaterialService(getPool());
   const exportLimit = rateLimit({ windowMs: 60_000, limit: 10, standardHeaders: true, legacyHeaders: false, keyGenerator: req => req.user ? `user:${req.user.id}` : `guest:${req.guestSession!.id}`, message: { error: { code: "rate_limited", message: "يرجى الانتظار دقيقة قبل تصدير حزمة أخرى." } } });
+  const paperLimit = rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: true, legacyHeaders: false, keyGenerator: req => req.user ? `user:${req.user.id}` : `guest:${req.guestSession!.id}`, message: { error: { code: "rate_limited", message: "يرجى الانتظار قليلًا قبل إعداد ورقة أخرى." } } });
   const audioLimit = rateLimit({ windowMs: 60_000, limit: 90, standardHeaders: true, legacyHeaders: false, keyGenerator: req => req.user ? `user:${req.user.id}` : `guest:${req.guestSession!.id}`, message: { error: { code: "rate_limited", message: "يرجى الانتظار قليلاً قبل تشغيل مقاطع إضافية." } } });
   router.post("/admin/subjects/:subjectId/exam-material", requireAdmin, requireUuidParam("subjectId"), async (req, res, next) => {
     try {
@@ -46,6 +48,15 @@ export function examMaterialRoutes(): Router {
   router.get("/subjects/:subjectId/exam-material/:groupId/revisions", requireLearnerPrincipal, requireUuidParam("subjectId"), requireUuidParam("groupId"), async (req, res, next) => {
     try { res.json({ data: await service().history(req.params.subjectId as string, req.params.groupId as string, req.user?.role === "admin", parsePagination(req.query)) }); }
     catch (error) { next(error); }
+  });
+  router.get("/subjects/:subjectId/exam-material/:groupId/academic-paper", requireLearnerPrincipal, requireUuidParam("subjectId"), requireUuidParam("groupId"), paperLimit, async (req, res, next) => {
+    try {
+      const parsed = academicPaperQuery.safeParse(req.query);
+      if (!parsed.success) throw new ValidationError("بيانات الورقة الامتحانية غير صالحة.");
+      const principal = req.user ? { kind: "user" as const, userId: req.user.id } : { kind: "guest" as const, guestSessionId: req.guestSession!.id };
+      res.set("Cache-Control", "private, no-store");
+      res.json({ data: await service().academicPaper(req.params.subjectId as string, req.params.groupId as string, principal, req.user?.role === "admin", parsed.data.attemptId) });
+    } catch (error) { next(error); }
   });
   router.post("/subjects/:subjectId/exam-material/:groupId/attempts", requireLearnerPrincipal, requireUuidParam("subjectId"), requireUuidParam("groupId"), async (req, res, next) => {
     try {
