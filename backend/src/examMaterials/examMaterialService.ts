@@ -18,6 +18,7 @@ import { analyticalPolicy } from "./caseAssessment.js";
 import { examGroupVisible } from "./visibility.js";
 import { generateExamReviewArtifacts, examChallengeSeconds } from "@digital-leadership/shared";
 import { reviewedLegalSummary } from "./legalAcademicReadings.js";
+import { currentAcademicReadings } from "./currentAcademicReadings.js";
 import type { ExamExperienceMode, QuizAttempt, QuestionForAttempt } from "@shared/index";
 import { buildAcademicExam, type AcademicExamSourceQuestion } from "./academicExam.js";
 
@@ -126,7 +127,7 @@ export class ExamMaterialService {
       this.latestRevision(subjectId, row.lecture_ids, isAdmin),
       this.assessments.getQuizOrThrow(row.quiz_id, isAdmin),
     ]);
-    const summary = await reviewedLegalSummary(studyOnlyExamSummary(row.summary));
+    const summary = await currentAcademicReadings(studyOnlyExamSummary(row.summary));
     return { ...groupMetadata(row), revisionCount: currentRevision.revisionCount!, currentRevision, summary, quiz, review: generateExamReviewArtifacts(summary, row.title) };
   }
 

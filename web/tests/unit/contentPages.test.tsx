@@ -277,6 +277,25 @@ describe("SubjectAssignmentsPage", () => {
 });
 
 describe("LectureDetailPage", () => {
+  it("shows the sixth cyber lecture's source-backed explanation and summary with its actual lecture number", async () => {
+    const lecture = { id: "sixth", subjectId: "cyber", title: "المحاضرة السادسة في حوكمة الأمن السيبراني", description: null, orderIndex: 6, status: "published", createdBy: "admin", createdAt: "", updatedAt: "" };
+    mockApiGet.mockImplementation(async (path: string) => {
+      if (path.endsWith("/library")) return { data: { subjectId: "cyber", sourceQuestionCount: 1, entries: [
+        { id: "reading", title: "الشرح الدراسي", section: "lectures", lectureId: "sixth", files: [{ id: "source-study-upload-sixth-lectures", filename: "شرح.html", label: "الشرح الدراسي من ملف المحاضرة", sizeBytes: 100, bodyHtml: "<p>يجب تحديد الأصول والتهديدات وتقدير أثر المخاطر.</p>" }], unavailableFiles: [] },
+        { id: "summary", title: "الملخص الأكاديمي", section: "summaries", lectureId: "sixth", files: [{ id: "source-study-upload-sixth-summaries", filename: "ملخص.html", label: "الملخص الأكاديمي", sizeBytes: 100, bodyHtml: "<p>تتضمن المعالجة توثيق المسؤوليات ومتابعة فعالية الضوابط.</p>" }], unavailableFiles: [] },
+      ] } };
+      if (path.endsWith("/progress")) throw new Error("No progress in fixture");
+      if (path === "/api/v1/subjects/cyber") return { data: { title: "حوكمة الأمن السيبراني" } };
+      return { data: lecture };
+    });
+    mockApiGetPaginated.mockImplementation(async (path: string) => ({ data: path.endsWith("items?page=1&limit=100") ? [] : [lecture], page: 1, limit: 100, total: 1 }));
+    render(await LectureDetailPage({ params: Promise.resolve({ subjectId: "cyber", lectureId: "sixth" }) }));
+    expect(screen.getByText("يجب تحديد الأصول والتهديدات وتقدير أثر المخاطر.")).toBeInTheDocument();
+    expect(screen.queryByText("تتضمن المعالجة توثيق المسؤوليات ومتابعة فعالية الضوابط.")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "عرض ملخص المحاضرة" })).toHaveAttribute("href", "/subjects/cyber/summaries#summary");
+    expect(screen.getByText(/رقم المحاضرة: [6٦]/u)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "الرجوع إلى المادة" })).toHaveAttribute("href", "/subjects/cyber");
+  });
   it("6. loads lecture items", async () => {
     mockApiGet.mockResolvedValue({ data: { id: "l1", subjectId: "s1", title: "Intro", description: null, orderIndex: 0, status: "published", createdBy: "a", createdAt: "", updatedAt: "" } });
     mockApiGetPaginated.mockResolvedValue({

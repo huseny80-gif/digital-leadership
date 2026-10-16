@@ -7,9 +7,11 @@ import { actualFileText, scopeSharedSource } from "../examMaterials/lectureSourc
 import { sourceParagraphs, assertSourceBoundSummary, groundingVersion } from "../examMaterials/sourceGrounding.js";
 import { compileExamSummary } from "../examMaterials/summary.js";
 import { reviewedLegalSummary } from "../examMaterials/legalAcademicReadings.js";
+import { proofreadArabicHtml } from "@digital-leadership/shared";
+import { sourceReadingHtml } from "./studyReadingHtml.js";
 
 export const catalogStudyPolicy = "source-study-library-v1-2026-10-14";
-export const catalogStudyRenderPolicy = "verified-readable-study-v2";
+export const catalogStudyRenderPolicy = "verified-readable-study-v3-proofread";
 export interface CatalogStudyContent {
   renderPolicy: typeof catalogStudyRenderPolicy;
   assetId: string; sha256: string; lectureHtml: string; summaryHtml: string;
@@ -66,9 +68,7 @@ export async function compileCatalogStudyContent(lecture: SourceLecture, asset: 
   // OCR beside those readings reintroduced detached glyphs and scan captions.
   // The complete unchanged PDF remains available; never guess damaged words.
   const reviewed = summary.grounding?.summaryPolicy === "visually-verified-legal-excerpts-v1";
-  const lectureBody = reviewed ? `<p>قراءة أكاديمية موثّقة من صفحات المحاضرة. يتوفر الملف الأصلي الكامل في تبويب PDF.</p>${academicTopics}` : paragraphs.map((paragraph, index) =>
-    `<section>${index === 0 || paragraphs[index - 1]!.heading !== paragraph.heading ? `<h3>${escape(paragraph.heading)}</h3>` : ""}<p>${escape(paragraph.text)}</p><small>الفقرة ${paragraph.number} — الأسطر ${paragraph.startLine}–${paragraph.endLine}</small></section>`).join("");
-  const lectureHtml = `<article dir="rtl"><h2>${escape(lecture.title)}</h2>${source}${lectureBody}</article>`;
-  const summaryHtml = `<article dir="rtl"><h2>ملخص ${escape(lecture.title)}</h2>${source}${academicTopics}</article>`;
+  const lectureHtml = proofreadArabicHtml(reviewed ? `<article dir="rtl"><h2>${escape(lecture.title)}</h2>${source}<p>قراءة أكاديمية موثّقة من صفحات المحاضرة. يتوفر الملف الأصلي الكامل في تبويب PDF.</p>${academicTopics}</article>` : sourceReadingHtml(lecture.title, paragraphs));
+  const summaryHtml = proofreadArabicHtml(`<article dir="rtl"><h2>ملخص ${escape(lecture.title)}</h2>${source}${academicTopics}</article>`);
   return { renderPolicy: catalogStudyRenderPolicy, assetId: asset.id, sha256: extracted.sha256, lectureHtml, summaryHtml, summary, paragraphCount: paragraphs.length, topicCount: topics.length };
 }

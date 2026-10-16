@@ -6,10 +6,15 @@ import { PDFParse } from "pdf-parse";
 import { createWorker, OEM } from "tesseract.js";
 import { cleanSourceText } from "./sourceText.js";
 import { assertReadableSourceText, hasBrokenSourceEncoding } from "./sourceTextQuality.js";
+import { academicPdfLayout } from "./pdfAcademicLayout.js";
 
 /** All parsing is server-side. OCR language data ships with the dependencies;
  * no document bytes are sent to an external OCR service. */
 export async function extractPdfText(buffer: Buffer, heartbeat: () => Promise<void> = async () => {}): Promise<string> {
+  const layout = await academicPdfLayout(buffer);
+  if (layout && !hasBrokenSourceEncoding(layout.text) && layout.text.split(/\s+/u).length >= 25) {
+    await heartbeat(); return cleanSourceText(layout.text).slice(0, 500_000);
+  }
   const parser = new PDFParse({ data: new Uint8Array(buffer), isEvalSupported: false });
   let worker: Awaited<ReturnType<typeof createWorker>> | undefined;
   try {

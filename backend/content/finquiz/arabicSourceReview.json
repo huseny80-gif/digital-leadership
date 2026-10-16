@@ -1,0 +1,235 @@
+{
+  "policy": "academic-arabic-display-v1-2026-10-16",
+  "sources": [
+    {
+      "assetId": "c71268af93d9b8497abc489d",
+      "filename": "المحاضرة الأولى في حوكمة الأمن السيبراني.pdf",
+      "sha256": "f9d4c4665e3b3ed6084ead681d222c9397063600fd92e74735ee09b091e418ae",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "366a668b0fb8c2ae43e13458111f23b5c813aa2d16523767ed1381178e043f01",
+      "textSha256": "366a668b0fb8c2ae43e13458111f23b5c813aa2d16523767ed1381178e043f01",
+      "characters": 10995
+    },
+    {
+      "assetId": "df0946f8b2c16118ff75b278",
+      "filename": "المحاضرة الثالثة في حوكمة الأمن السيبراني.pdf",
+      "sha256": "0c91653e8afe2aa80f910c9040c5a994f59d3bed6f9ae16184915fc654ab1828",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "81c075841f05161e8152d89e977f2298ef664f8a02cc56d8e4f41d523ebba2b9",
+      "textSha256": "81c075841f05161e8152d89e977f2298ef664f8a02cc56d8e4f41d523ebba2b9",
+      "characters": 6365
+    },
+    {
+      "assetId": "cd732cc944d300fd90c2dcef",
+      "filename": "المحاضرة الرابعة في حوكمة الأمن السيبراني.pdf",
+      "sha256": "b2c10f2ccae2d4102ff73a0a7cfcfcaad5511a0cecac42e04ffff9f5cd6b15bd",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "d7d4ca6509e7f48938571bab679c4031f1d064f0994b583bd062458c45416ca3",
+      "textSha256": "d7d4ca6509e7f48938571bab679c4031f1d064f0994b583bd062458c45416ca3",
+      "characters": 3645
+    },
+    {
+      "assetId": "a624fbabd29bd6a74a1e935f",
+      "filename": "المحاضرة الأولى في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "1e265fd185ba2a5dc34f83589128f773f41a728d2e0ed3988beed2a55545e45e",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "a0558657a0204b47c0a15ceb08d5a2c780c53a5eb8c0aeb1e0dfff548f1fa6f8",
+      "textSha256": "a0558657a0204b47c0a15ceb08d5a2c780c53a5eb8c0aeb1e0dfff548f1fa6f8",
+      "characters": 11966
+    },
+    {
+      "assetId": "484c6f6d4483112946ebd69e",
+      "filename": "المحاضرة الثانية في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "4e5dc50d3aba76aa941f431b384d5246a9e4ebf7346d150b9fe39e6b5f5998db",
+      "method": "pdfjs-visual-line-layout",
+      "pageCount": 3,
+      "previousTextSha256": "35a697c0a8da3680737efcf7e62240fed457eb5a81ec6e5d99607a7cf5e4cada",
+      "textSha256": "234a205dc9bb54f4d675a074c92810b225d95dc2b0376da19278d44c32abec13",
+      "characters": 6467
+    },
+    {
+      "assetId": "b1c2cc21669185e438746c07",
+      "filename": "المحاضرة الثالثة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "b51002203f61a96ef1e24ef9e17e026ba800de7627d4018ac0cd8859cec99d13",
+      "method": "pdfjs-visual-line-layout",
+      "pageCount": 7,
+      "previousTextSha256": "150f16797e900f48750bdd88fc3a6311983636211973ac8716f22d5080e3a0a0",
+      "textSha256": "83ec1a784a39bfbdaca7428187cf3b5d8479aecd9072ef5766991c4dd2656140",
+      "characters": 8232
+    },
+    {
+      "assetId": "1456a88cd727ffc413c645aa",
+      "filename": "المحاضرة الأولى قانونية.pdf",
+      "sha256": "da41ca3230a60d9457fd824aafa430a8cae50cfa4254b54d463dfe6f925f6525",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "db41236bc97e497be95968e97b5460b545db55c58dfb127cfd582154150d566d",
+      "textSha256": "db41236bc97e497be95968e97b5460b545db55c58dfb127cfd582154150d566d",
+      "characters": 13775
+    },
+    {
+      "assetId": "5ab63552fd79facf68dee57e",
+      "filename": "المحاضرة الثانية قانونية.pdf",
+      "sha256": "39071aab222754463ca122e0b7569f83cb4465c17e25695d5f66f545cdb4805d",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "36fade5a8f4d6a1af57b7a9a218bde1842518b0bb329050ceba74635d77b468d",
+      "textSha256": "36fade5a8f4d6a1af57b7a9a218bde1842518b0bb329050ceba74635d77b468d",
+      "characters": 20574
+    },
+    {
+      "assetId": "c2f47ec82523116f7819477e",
+      "filename": "المحاضرة الثالثة قانونية.pdf",
+      "sha256": "4eab73b57ce72e440204ff2f03e72ebce455da0dc6279e788260fc270553b3e3",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "acde473f7a068c1c26b99489b7bf949c597c7d0257a41db2dbd7c8b627af9588",
+      "textSha256": "acde473f7a068c1c26b99489b7bf949c597c7d0257a41db2dbd7c8b627af9588",
+      "characters": 13304
+    },
+    {
+      "assetId": "1cb74939aacb16a36bcb2b89",
+      "filename": "المحاضرة الرابعة قانونية.pdf",
+      "sha256": "5dd095f391eead84c648efbe328c21d4e4cd0dee381de206eb60b1ab2dc721a4",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "7cd524db8c08475f734ef9025cb4cf389f6185e0864ea51ccb43eabbda1ba5a3",
+      "textSha256": "7cd524db8c08475f734ef9025cb4cf389f6185e0864ea51ccb43eabbda1ba5a3",
+      "characters": 10486
+    },
+    {
+      "assetId": "e46bb191dbde187f6b413242",
+      "filename": "المحاضرة الأولى مخاطر.pdf",
+      "sha256": "f567de9bd8df8d0bbd6606bed669499854d539a0da55cfeafb526383f7b8f7ec",
+      "method": "pdfjs-visual-line-layout",
+      "pageCount": 12,
+      "previousTextSha256": "631fd2ae463a7e199e11764330b725da5479936d35f662f9f6c44a06b1570f29",
+      "textSha256": "81600a0ce2166e908ccce0149008881ff4796fb8df6cd17334cf33c6251e6d32",
+      "characters": 23629
+    },
+    {
+      "assetId": "3a44c117f0a2b82d4e092537",
+      "filename": "المحاضرة الثانية مخاطر.pdf",
+      "sha256": "55341ea2a940428c8fc3212ac6b9c57bf991daf1987f9f4c0766e98befba19f2",
+      "method": "pdfjs-visual-line-layout",
+      "pageCount": 13,
+      "previousTextSha256": "6d614701132dc6aa749ef2a2d37ae9a950703d958e3b31e073de3d4753421662",
+      "textSha256": "d4da121422e17cfaac8483f79d9a38b1d7ec034b5cc30bfcdba0f53739cdcede",
+      "characters": 30792
+    },
+    {
+      "assetId": "26478f3055fb003aa26150e9",
+      "filename": "المحاضرة الثالثة مخاطر.pdf",
+      "sha256": "ea9b8f2a66c5a50627529720e4b81788cbdd8bba3b4e62d6053efa6072635af9",
+      "method": "pdfjs-visual-line-layout",
+      "pageCount": 11,
+      "previousTextSha256": "ea7e3e37d1f22f5c71d674a7c8f3e63b4212c4c1e31f3cae4e293d9c3445b419",
+      "textSha256": "b2be269524d3da5164f6422528855d358b2b6be7fe90271fcc8cd5d5f1887cea",
+      "characters": 24373
+    },
+    {
+      "assetId": "aea44816c87b86f1a4c73888",
+      "filename": "المحاضرة الثانية في الذكاء الاصطناعي.pdf",
+      "sha256": "99339d60fce911b1326130020c36a0ed3d9633e575fdc066f3d765a67d240f1e",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "fb454c13cb97aa0230cb807d0c4e865f4cf039afc044d3f85726a6a74c1ccb7d",
+      "textSha256": "fb454c13cb97aa0230cb807d0c4e865f4cf039afc044d3f85726a6a74c1ccb7d",
+      "characters": 22571
+    },
+    {
+      "assetId": "557a6e404fcd4ce161213ded",
+      "filename": "المحاضرة الأولى في الذكاء الاصطناعي.pdf",
+      "sha256": "a5a1cbd077be245238eb8673bdd75cef45644867cb2853f0de38b1abe2e4598f",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "5951852425d6e0d268d415c44bb62c4687c7693fb2c2f74de532b490e8354ee0",
+      "textSha256": "5951852425d6e0d268d415c44bb62c4687c7693fb2c2f74de532b490e8354ee0",
+      "characters": 9670
+    },
+    {
+      "assetId": "c35bf2365ef831ebbfcd124e",
+      "filename": "المحاضرة الثالثة في الذكاء الاصطناعي.pdf",
+      "sha256": "c2c10579067f939d928903315ee2d89997e8fcb740abe96eb83c5c350d07110f",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "768a6e405f6f50977348c3788a5ec62ea6e58c3e330a6e5bc65ecd0f0e4997e4",
+      "textSha256": "768a6e405f6f50977348c3788a5ec62ea6e58c3e330a6e5bc65ecd0f0e4997e4",
+      "characters": 36927
+    },
+    {
+      "assetId": "f06ecaf5b59c76220ad3af4a",
+      "filename": "المحاضرة السادسة في الذكاء الاصطناعي.pdf",
+      "sha256": "aa900f78d33bbf6177a58d1cb013ca194f1323ad08670f26142a3bfa0ff4f993",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "68b153e11eafac3a267dc6947447ffae437db9e83cb8055cb9f1ed75f6bd2ef3",
+      "textSha256": "68b153e11eafac3a267dc6947447ffae437db9e83cb8055cb9f1ed75f6bd2ef3",
+      "characters": 9842
+    },
+    {
+      "assetId": "01e397e5879b6ce3898d59d3",
+      "filename": "المحاضرة الرابعة في الذكاء الاصطناعي.pdf",
+      "sha256": "41db58597769ec8a30c2c9dc12ab2dece450dad9c37838ff6fcee68b999a1bf5",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "96cd933c74d030d29a6c80b6effc47e0ab4d6203e0d3afd519fe15478328fc67",
+      "textSha256": "96cd933c74d030d29a6c80b6effc47e0ab4d6203e0d3afd519fe15478328fc67",
+      "characters": 19890
+    },
+    {
+      "assetId": "3a55435aa06ebc0acab36dda",
+      "filename": "المحاضرة الخامسة في الذكاء الاصطناعي.pdf",
+      "sha256": "e787492f7ae801026a4c87da1bfd787c016b53aa05c04f71d57ac82a1b18d9fa",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "1b370f2898615e4cef3906f70aba193a84983994655d545070d170a587eadc24",
+      "textSha256": "1b370f2898615e4cef3906f70aba193a84983994655d545070d170a587eadc24",
+      "characters": 17596
+    },
+    {
+      "assetId": "8e2d7d52a6b5596d7f6902f1",
+      "filename": "خارطة الطريق للحصول على الشهادة الدولية ISO 27001.pdf",
+      "sha256": "71e68863275b8b5bee0fb43e602edf37c9f83ab8e6b9023a6f0d26fe897bb7bf",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "ab08e253d1ef74237d61da31e6b91d7bdd05bec786af4f0bc9db58242662c848",
+      "textSha256": "ab08e253d1ef74237d61da31e6b91d7bdd05bec786af4f0bc9db58242662c848",
+      "characters": 5179
+    },
+    {
+      "assetId": "2dfee85271553f9f492f86eb",
+      "filename": "المحاضرة الخامسة في حوكمة الأمن السيبراني.pdf",
+      "sha256": "ffd344cb81930393fa4c7622b79c4cd6add69cb8efa9f392e641b8036517e6ef",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "e6f39589c415e21acdcf75f4246ebf41c3cc3305b6e880a8b3ce98e5b5937d2a",
+      "textSha256": "e6f39589c415e21acdcf75f4246ebf41c3cc3305b6e880a8b3ce98e5b5937d2a",
+      "characters": 4401
+    },
+    {
+      "assetId": "c7d1c6fe4eda35e1d2ce8e26",
+      "filename": "المحاضرة السادسة قانونية.pdf",
+      "sha256": "c82ca3cfd8e1bcd9a788f30e75a4ddb76d7bdac6153e98c43849a19ec1626fe7",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "5b141088739a15e7af540316d94f3ff36e2c45c68013a65cde737668a0d122e3",
+      "textSha256": "5b141088739a15e7af540316d94f3ff36e2c45c68013a65cde737668a0d122e3",
+      "characters": 14209
+    },
+    {
+      "assetId": "99c09ae430aab72382139a4d",
+      "filename": "المحاضرة الخامسة قانونية.pdf",
+      "sha256": "50fc2a6268300608e0a432e92f3d802be6cca53793d602a49422a8df11a4b793",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "b6111d9681111e9fd43594dd6d07da0f4bb1fcd99bdb775c16e912c7f6bbd5ab",
+      "textSha256": "b6111d9681111e9fd43594dd6d07da0f4bb1fcd99bdb775c16e912c7f6bbd5ab",
+      "characters": 12085
+    },
+    {
+      "assetId": "f0f97d6e57b9e814ba839145",
+      "filename": "المحاضرة الرابعة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "d0f9d4d0e612bb257d0e95415003e1529e41922e03b784a89820e6234007a333",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "1dec4fe2ac00651be13fb3d5fa2b5851b8682ec039c22cb52a147954a1a7d139",
+      "textSha256": "1dec4fe2ac00651be13fb3d5fa2b5851b8682ec039c22cb52a147954a1a7d139",
+      "characters": 10344
+    },
+    {
+      "assetId": "98a4e8c5f6a72d7206bbc4f5",
+      "filename": "المحاضرة الخامسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "c549a1727941f8e8cd95d29fbbe8c67e3ad037a2b309d9edca822531aeb2790e",
+      "method": "existing-reviewed-transcription",
+      "previousTextSha256": "eb95a352522b01d41072f4f8ae4f2528ede3d081eaa4ec3b31aa8c967face194",
+      "textSha256": "eb95a352522b01d41072f4f8ae4f2528ede3d081eaa4ec3b31aa8c967face194",
+      "characters": 4423
+    }
+  ]
+}

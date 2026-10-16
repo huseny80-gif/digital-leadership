@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { exactSourceText, referenceFor, referenceLabel, STRICT_SOURCE_INSTRUCTION, validSourceReference, type GroundedQuestion, type SourceParagraph, type SourceReference } from "./sourceGrounding.js";
 import { readableSourcePassage } from "./sourceReadability.js";
 import { OFFICIAL_EXAM_PROCTOR_INSTRUCTION } from "./academicExamPolicy.js";
+import { proofreadArabicText } from "@digital-leadership/shared";
+import { sourceRelations } from "./sourceRelations.js";
 
 export const ANALYTICAL_ASSESSMENT_INSTRUCTION = "أنت خبير قيادي ومصمم تقييمات أكاديمية متقدمة. قم بتحليل نص المحاضرات المحددة، وصغ أسئلة اختبارية ذات طابع واقعي ومهني (Scenario/Case-based) تقيس الفهم الاستراتيجي والتحليلي. ابتعد تماماً عن الأسئلة المباشرة السطحية أو حشو الكلمات. اجعل البدائل الخاطئة منطقية ولكنها غير صحيحة بناءً على النص.";
 export const analyticalPolicy = "source-case-assessment-v1" as const;
@@ -22,11 +24,24 @@ const catalog = JSON.parse(readFileSync(new URL("../../content/finquiz/analytica
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 24);
 const units = (text: string) => [text, ...text.split(/(?<=[.!؟؛])\s+/u).map(part => part.trim())];
 const distinctReferences = (references: SourceReference[]) => references.filter((reference, index, all) => all.findIndex(other => other.paragraphId === reference.paragraphId && exactSourceText(other.excerpt) === exactSourceText(reference.excerpt)) === index);
+const evidenceUnits = new WeakMap<SourceParagraph, Array<{ excerpt: string; normalized: string }>>();
+function readableEvidenceUnits(paragraph: SourceParagraph) {
+  let cached = evidenceUnits.get(paragraph);
+  if (!cached) {
+    cached = units(paragraph.text).filter(readableSourcePassage).map(excerpt => ({ excerpt, normalized: exactSourceText(proofreadArabicText(excerpt)) }));
+    evidenceUnits.set(paragraph, cached);
+  }
+  return cached;
+}
 
 function evidence(needles: string[], paragraphs: SourceParagraph[]): SourceReference[] | null {
   const references: SourceReference[] = [];
   for (const needle of needles) {
-    const matches = paragraphs.flatMap(paragraph => units(paragraph.text).filter(unit => readableSourcePassage(unit) && exactSourceText(unit).includes(exactSourceText(needle))).map(excerpt => ({ paragraph, excerpt })))
+    const normalized = exactSourceText(proofreadArabicText(needle));
+    // Locate approved evidence across deterministic PDF spelling repairs;
+    // referenceFor still binds the COMPLETE, unchanged excerpt to its source.
+    // Numbers, conditions, negation and diacritics are never fuzzy matched.
+    const matches = paragraphs.flatMap(paragraph => readableEvidenceUnits(paragraph).filter(unit => unit.normalized.includes(normalized)).map(unit => ({ paragraph, excerpt: unit.excerpt })))
       .sort((a, b) => a.excerpt.length - b.excerpt.length);
     if (!matches.length) return null;
     references.push(referenceFor(matches[0]!.paragraph, matches[0]!.excerpt));
@@ -123,12 +138,40 @@ function ruleQuestions(paragraphs: SourceParagraph[]): GroundedQuestion[] {
     .map(plan => plan.question);
 }
 
+function relationshipQuestions(paragraphs: SourceParagraph[]): GroundedQuestion[] {
+  const relations = sourceRelations(paragraphs), questions: GroundedQuestion[] = [];
+  const files = [...new Set(relations.map(relation => `${relation.reference.fileId}:${relation.reference.sha256}`))];
+  for (const file of files) {
+    const source = relations.filter(relation => `${relation.reference.fileId}:${relation.reference.sha256}` === file);
+    // Diagnose three source relations together. Do not turn an isolated
+    // definition into a single-word memory question or pad a question quota.
+    for (let index = 0; index + 2 < source.length && index < 18; index += 3) {
+      const group = source.slice(index, index + 3), positions = ["الأول", "الثاني", "الثالث"];
+      const prompt = `يراجع مسؤول مسودة تصنيف تتضمن الأوصاف الثلاثة الآتية. أي توزيع يربط الأوصاف بمفاهيمها وفق العلاقات المحددة في المحاضرة، دون الخلط بين وظائفها أو شروطها؟\n${group.map((relation, i) => `الوصف ${positions[i]}: «${relation.meaning}»`).join("\n")}`;
+      const references = distinctReferences(group.map(relation => relation.reference));
+      const options = [[0, 1, 2], [1, 2, 0], [2, 0, 1]].map((assignment, optionIndex) => ({
+        text: assignment.map((target, i) => `الوصف ${positions[i]} يندرج تحت «${group[target]!.term}»`).join("؛ ") + ".",
+        isCorrect: optionIndex === 0,
+        rationale: optionIndex === 0 ? "يحافظ هذا التوزيع على العلاقات الثلاث كما وردت في المصدر، مع إبقاء شروط كل وصف كاملة."
+          : assignment.map((target, i) => `يربط المصدر الوصف ${positions[i]} بـ«${group[i]!.term}»، بينما تنسبه المسودة إلى «${group[target]!.term}»؛ لذلك لا يطابق هذا الربط النص.`).join(" "),
+        references,
+      }));
+      const question = render(prompt, { policy: analyticalPolicy, skill: "diagnosis",
+        criterion: `تمييز العلاقات بين ${group.map(relation => `«${relation.term}»`).join("، ")}`,
+        caseReferences: references, options }, `${file}:${group.map(relation => `${relation.reference.paragraphId}:${relation.term}:${relation.meaning}`).join(":")}`);
+      if (question) questions.push(question);
+    }
+  }
+  return questions;
+}
+
 export function analyticalQuestionCandidates(paragraphs: SourceParagraph[]): GroundedQuestion[] {
-  return [...reviewedQuestions(paragraphs), ...ruleQuestions(paragraphs)].filter((question, index, all) => all.findIndex(other => other.candidateId === question.candidateId) === index);
+  return [...reviewedQuestions(paragraphs), ...ruleQuestions(paragraphs), ...relationshipQuestions(paragraphs)].filter((question, index, all) => all.findIndex(other => other.candidateId === question.candidateId) === index);
 }
 
 /** Model-written citations alone are not proof of option polarity. Only a
- * reviewed, file-bound case or a provable execution-rule program can grade. */
+ * reviewed, file-bound case, a provable execution rule, or a complete
+ * one-to-one source-relation program can grade. */
 export function validAnalyticalQuestion(question: GroundedQuestion, paragraphs: SourceParagraph[]): boolean {
   if (question.type !== "multiple_choice" || question.assessment?.policy !== analyticalPolicy || !question.references.every(reference => validSourceReference(reference, paragraphs))) return false;
   return analyticalQuestionCandidates(paragraphs).some(approved => approved.candidateId === question.candidateId && JSON.stringify(approved) === JSON.stringify(question));

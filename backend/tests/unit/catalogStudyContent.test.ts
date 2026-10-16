@@ -16,6 +16,7 @@ describe("current academic content from the approved PDFs", () => {
       expect(content.paragraphCount).toBeGreaterThan(0);
       expect(content.summary.grounding!.sources).toEqual([{ lectureId: lecture.id, fileId: asset.id, filename: asset.filename, sha256: asset.sha256 }]);
       expect(content.summaryHtml).not.toMatch(/<script|<style|\son\w+=|اختبار ذاتي موثّق|عدد الأسئلة|تم المسح الضوئي|CamScanner/u);
+      expect(content.lectureHtml + content.summaryHtml).not.toMatch(/األ|اإل|اآل/u);
       expect(content.summaryHtml).toContain("المصدر:");
       expect(content.summary.sections[0]!.text.length).toBeGreaterThan(100);
       if (course.id === "legal-regulatory") {
