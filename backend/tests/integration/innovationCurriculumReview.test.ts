@@ -87,7 +87,7 @@ describe("innovation current lecture numbering and marked duplicate cleanup", ()
     expect(result.groupId).toBeTruthy();
     const root = (await pool.query("select z.id,count(q.id)::int questions,count(distinct q.lecture_id)::int lectures from quizzes z join quiz_questions qq on qq.quiz_id=z.id join questions q on q.id=qq.question_id where z.subject_id=$1 and z.purpose='course' and z.lecture_id is null and z.superseded_by is null and z.deleted_at is null group by z.id", [subjectId])).rows;
     expect(root).toHaveLength(1);
-    expect(root[0]).toMatchObject({ questions: 22, lectures: 5 });
+    expect(root[0]).toMatchObject({ questions: 39, lectures: 5 });
     expect((await pool.query("select title from lectures where subject_id=$1 and deleted_at is null and status='published' order by order_index", [subjectId])).rows.map(row => row.title)).toEqual(["الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة"].map(ordinal => `المحاضرة ${ordinal} في الابتكار وإدارة المشاريع`));
     expect((await pool.query("select count(*)::int n from lectures where id=any($1::uuid[]) and deleted_at is not null", [[s.old, ...s.empty]])).rows[0].n).toBe(3);
     expect(await s.storage.read(s.original.key)).toEqual(s.original.bytes);

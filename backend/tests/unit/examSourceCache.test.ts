@@ -8,6 +8,8 @@ import { assertSourceBoundSummary, groundedQuestionCandidates, sourceParagraphs,
 import { compileExamSummary } from "../../src/examMaterials/summary.js";
 
 const cases = JSON.parse(await readFile(new URL("analyticalCases.json", catalogRoot), "utf8")) as { cases: Array<{ sha256: string; prompt: string }> };
+// Cyber lecture six: reviewed admin upload separated from lecture five.
+const privateUploads = new Set(["8b7cc1cca073fa98ceacc56750a067295894d1a53e8f63dae72ac01599921a67"]);
 const hash = (value: Buffer | string) => createHash("sha256").update(value).digest("hex");
 const cache = JSON.parse(await readFile(new URL("extractedSources.json", catalogRoot), "utf8")) as {
   version: string; sources: Array<{ sha256: string; textSha256: string; text: string }>;
@@ -39,6 +41,20 @@ describe("original PDF extraction provenance across the five subjects", () => {
   });
   for (const source of cache.sources) {
     const asset = Object.values(manifest.assets).find(item => item.sha256 === source.sha256 && !item.bodyHtml);
+    // Reviewed private uploads (not catalog assets) are bound by file hash at
+    // runtime; here their transcript hash and reviewed cases are verified.
+    if (!asset && privateUploads.has(source.sha256)) {
+      it(`verifies private upload transcript and analytical cases: ${source.sha256}`, () => {
+        expect(hash(source.text)).toBe(source.textSha256);
+        const paragraphs = sourceParagraphs({ id: source.sha256.slice(0, 24), filename: "upload.pdf", ...source });
+        const questions = groundedQuestionCandidates(paragraphs);
+        const reviewed = cases.cases.filter(item => item.sha256 === source.sha256);
+        expect(reviewed.length).toBeGreaterThan(0);
+        for (const item of reviewed) expect(questions.some(question => question.prompt === item.prompt)).toBe(true);
+        expect(questions.every(question => validGroundedQuestion(question, paragraphs))).toBe(true);
+      });
+      continue;
+    }
     it(`verifies exact file/text hashes and analytical cases: ${asset?.filename ?? source.sha256}`, async () => {
       expect(asset).toBeDefined();
       const bytes = await readAsset(asset!, catalogRoot);

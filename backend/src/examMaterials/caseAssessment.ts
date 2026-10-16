@@ -23,10 +23,18 @@ const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(valu
 const units = (text: string) => [text, ...text.split(/(?<=[.!؟؛])\s+/u).map(part => part.trim())];
 const distinctReferences = (references: SourceReference[]) => references.filter((reference, index, all) => all.findIndex(other => other.paragraphId === reference.paragraphId && exactSourceText(other.excerpt) === exactSourceText(reference.excerpt)) === index);
 
-function evidence(needles: string[], paragraphs: SourceParagraph[]): SourceReference[] | null {
+interface ReadableUnit { paragraph: SourceParagraph; excerpt: string; exact: string }
+/** Readable quotation units of one file, computed once per file rather than
+ * once per evidence needle (the readability check dominates the cost). */
+function readableUnits(paragraphs: SourceParagraph[]): ReadableUnit[] {
+  return paragraphs.flatMap(paragraph => units(paragraph.text).filter(readableSourcePassage).map(excerpt => ({ paragraph, excerpt, exact: exactSourceText(excerpt) })));
+}
+
+function evidence(needles: string[], source: ReadableUnit[]): SourceReference[] | null {
   const references: SourceReference[] = [];
   for (const needle of needles) {
-    const matches = paragraphs.flatMap(paragraph => units(paragraph.text).filter(unit => readableSourcePassage(unit) && exactSourceText(unit).includes(exactSourceText(needle))).map(excerpt => ({ paragraph, excerpt })))
+    const exact = exactSourceText(needle);
+    const matches = source.filter(unit => unit.exact.includes(exact))
       .sort((a, b) => a.excerpt.length - b.excerpt.length);
     if (!matches.length) return null;
     references.push(referenceFor(matches[0]!.paragraph, matches[0]!.excerpt));
@@ -53,10 +61,12 @@ function render(prompt: string, assessment: AnalyticalAssessment, seed: string):
 
 function reviewedQuestions(paragraphs: SourceParagraph[]): GroundedQuestion[] {
   if (catalog.version !== "source-cases-v1") return [];
+  const bySha = new Map<string, ReadableUnit[]>();
   return catalog.cases.flatMap(item => {
     // A reviewed case belongs to exact original bytes, not a similarly named
     // upload. Replacing a file invalidates its reviewed decisions immediately.
-    const source = paragraphs.filter(paragraph => paragraph.sha256 === item.sha256);
+    let source = bySha.get(item.sha256);
+    if (!source) bySha.set(item.sha256, source = readableUnits(paragraphs.filter(paragraph => paragraph.sha256 === item.sha256)));
     const caseReferences = evidence(item.evidence, source);
     if (!caseReferences) return [];
     const options = item.options.map(option => ({ ...option, references: evidence(option.evidence, source) }));
