@@ -53,7 +53,9 @@ describe("published weekly assessment access and exports", () => {
         const text = (await parser.getText()).text.normalize("NFKC");
         expect(text).toContain("اختبارات د. ضياء الأسبوعية"); expect(text).toContain("الفرق بين");
         expect(text).not.toMatch(/الاسم الثلاثي|gmail|Google Forms/u);
-        if (includeAnswers) expect(text).toContain("يتكون مثلث CIA"); else expect(text).not.toContain("يتكون مثلث CIA");
+        // A PDF text extractor can place the LTR acronym before its Arabic
+        // run. Check the complete Arabic feedback clause, not visual run order.
+        if (includeAnswers) expect(text).toContain("فليست أحد عناصره"); else expect(text).not.toContain("فليست أحد عناصره");
       } finally { await parser.destroy(); }
     }
   }, 30000);
