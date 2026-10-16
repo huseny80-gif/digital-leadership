@@ -12,7 +12,10 @@ const lectures = manifest.subjects.flatMap(subject => subject.lectures);
 const owners = (path: string) => lectures.filter(lecture => lecture.files?.some(file => file.url === path));
 interface Transcription { sha256: string; textSha256: string; text: string; method?: string }
 const saved = JSON.parse(await readFile(new URL("extractedSources.json", catalogRoot), "utf8")) as { sources: Transcription[] };
-const native = saved.sources.filter(source => source.method === "pdf-native-actualtext-v1" && hash(source.text) === source.textSha256);
+// Reviewed native transcripts (scripts/extractPdfActualText.py and
+// scripts/extractPopplerTranscripts.py) are kept for the exact same bytes.
+const nativeMethods = ["pdf-native-actualtext-v1", "poppler-ligature-verified-v1"];
+const native = saved.sources.filter(source => source.method && nativeMethods.includes(source.method) && hash(source.text) === source.textSha256);
 const sources: Transcription[] = [];
 for (const asset of Object.values(manifest.assets)) {
   if (asset.bodyHtml || !asset.filename.toLowerCase().endsWith(".pdf") || isAssessmentAppendixTitle(asset.filename) || !owners(asset.path).length) continue;

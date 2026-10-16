@@ -28,6 +28,14 @@ specific error and leave previous archives untouched.
 - Summaries select complete source sentences. Questions use bounded cloze,
   literal-quotation true/false, matching and numbered-order templates. Each
   answer and quotation is independently validated against a source paragraph.
+- Born-digital Arabic PDFs whose `pdf-parse` text is scrambled use
+  `backend/scripts/extractPopplerTranscripts.py` (method
+  `poppler-ligature-verified-v1`): `pdftotext` supplies reading order, running
+  headers and page numbers are dropped, and reversed lam-alef ligatures are
+  restored only when orthographically certain or proven by the file's own
+  glyphs. Then run `npm run build` and
+  `node scripts/buildCatalogStudyContent.mjs` from `backend`, and re-anchor
+  any reviewed case evidence that quoted the old broken spelling.
 - Every reference records the original file identity/hash, paragraph number
   and line range **in the extracted text**, rather than invented PDF page
   coordinates. Questions retain these references in their private rubric.
