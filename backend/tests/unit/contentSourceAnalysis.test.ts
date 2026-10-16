@@ -30,9 +30,14 @@ describe("grounded source question generation", () => {
     expect(questions.map(q => q.type)).toEqual(expect.arrayContaining(["multiple_choice", "match", "open"]));
     expect(questions.some(q => q.type === "fill" || /___|أكمل العبارة/u.test(q.prompt))).toBe(false);
     for (const question of questions) {
-      if (question.type === "multiple_choice") {
+      if (question.type === "multiple_choice" && question.kind === "source_concept") {
         expect(question.excerpt).toContain(question.options![question.correctIndex!]!);
         expect(question.options!.every(option => option.length > 30 && text.includes(option))).toBe(true);
+      }
+      if (question.kind === "analytical_case") {
+        expect(validGeneratedQuestion(question, text, "المخاطر")).toBe(true);
+        expect(question.references!.every(reference => text.includes(reference.excerpt))).toBe(true);
+        expect(question.assessment!.options.every(option => option.references.length > 0 && option.rationale.length > 20)).toBe(true);
       }
       if (question.type === "fill") expect(question.excerpt).toContain(question.acceptedAnswers![0]!);
       if (question.type === "open") expect(question.rubric?.every(point => text.includes(point.text))).toBe(true);

@@ -30,7 +30,7 @@ describe("original PDF extraction provenance across the five subjects", () => {
     }
   });
   it("covers all physical standalone lecture PDFs without substituting authored HTML or answer guides", () => {
-    expect(cache.version).toBe("verified-pdf-transcripts-v2");
+    expect(cache.version).toBe("verified-pdf-transcripts-v3-layout");
     const primary = manifest.subjects.flatMap(subject => subject.lectures.filter(lecture => lecture.status === "published").flatMap(lecture =>
       (lecture.files ?? []).flatMap(file => Object.values(manifest.assets).filter(asset => asset.path === file.url && !asset.bodyHtml && asset.filename.endsWith(".pdf")
         && manifest.subjects.flatMap(course => course.lectures).filter(owner => owner.files?.some(link => link.url === asset.path)).length === 1))));
