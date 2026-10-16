@@ -25,7 +25,9 @@ describe("private feedback authenticated encryption", () => {
   it("rejects tampered values and supports legitimately empty notes", () => {
     const ciphertext = encryptFeedback("", "record-1", "internal_note", secret);
     expect(decryptFeedback(ciphertext, "record-1", "internal_note", secret)).toBe("");
-    expect(() => decryptFeedback(ciphertext.slice(0, -2) + "AA", "record-1", "internal_note", secret)).toThrow();
+    // Always change the final characters; a ciphertext may already end in "AA".
+    const tampered = ciphertext.slice(0, -2) + (ciphertext.endsWith("AA") ? "BB" : "AA");
+    expect(() => decryptFeedback(tampered, "record-1", "internal_note", secret)).toThrow();
     expect(() => decryptFeedback("plaintext", "record-1", "message", secret)).toThrow();
   });
 });
