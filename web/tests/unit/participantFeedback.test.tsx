@@ -35,8 +35,8 @@ describe("share your opinion form", () => {
     fireEvent.click(screen.getByRole("button", { name: "تم" }));
     expect(await screen.findByRole("status")).toHaveTextContent("تم استلام ردك بنجاح");
     const body = JSON.parse(String(mockFetch.mock.calls[0]?.[1]?.body));
-    expect(body).toMatchObject({ category: "suggestion", message: "اقتراح خاص" });
-    expect(Object.keys(body).sort()).toEqual(["category", "message", "submissionId"]);
+    expect(body).toMatchObject({ category: "suggestion", message: "اقتراح خاص", anonymous: true });
+    expect(Object.keys(body).sort()).toEqual(["anonymous", "category", "message", "submissionId"]);
     expect(body.submissionId).toMatch(/^[a-f0-9-]{36}$/);
     expect(mockFetch.mock.calls[0]?.[0]).toBe("/api/feedback");
     expect(screen.queryByText("اقتراح خاص")).not.toBeInTheDocument();

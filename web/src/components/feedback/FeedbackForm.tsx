@@ -18,7 +18,9 @@ export function FeedbackForm() {
     event.preventDefault();
     if (inFlight.current) return;
     setError(null);
-    const payload = { category, message: message.trim() };
+    // Older backends reject this explicit contract instead of storing an
+    // identified response while the frontend/backend releases overlap.
+    const payload = { category, message: message.trim(), anonymous: true };
     if (!payload.message) { setError("اكتب رأيك أو ملاحظتك قبل الإرسال."); return; }
     inFlight.current = true;
     setBusy(true);

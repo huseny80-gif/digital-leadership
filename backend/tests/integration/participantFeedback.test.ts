@@ -43,7 +43,7 @@ describe("private participant feedback", () => {
       const req = request(s.app).post("/api/v1/feedback");
       if (author === "user") req.set("Authorization", `Bearer ${s.aliceToken}`);
       else req.set("Cookie", s.cookie);
-      const response = await req.send(submission({ name: "  مشاركة خاصة  ", message: "  رأيي خاص ولا يُعرض للآخرين.  " })).expect(201);
+      const response = await req.send(submission({ anonymous: true, name: "  مشاركة خاصة  ", message: "  رأيي خاص ولا يُعرض للآخرين.  " })).expect(201);
       expect(response.body).toEqual({ data: { received: true } });
       expect(response.headers["cache-control"]).toBe("private, no-store");
     }
