@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import PDFDocument from "pdfkit";
+import { proofreadArabicText } from "@digital-leadership/shared";
 import type { ExamMaterialDetail, ExamMindMapNode, QuestionForAttempt } from "@shared/index";
 import { examSummaryPresentation, examTopicSourceLabel, generateExamReviewArtifacts } from "@digital-leadership/shared";
 import { visualRuns } from "../studyTools/reportExport.js";
@@ -51,14 +52,14 @@ export async function examReviewPdf(group: ExamMaterialDetail, questions: Questi
     function write(text: string, heading = false) {
       const size = heading ? 14 : 12;
       doc.font(heading ? "ArabicBold" : "Arabic").fontSize(size).fillColor(heading ? "#07566a" : "#172b3a");
-      for (const line of lines(text, width)) { if (y + size * 2 > doc.page.height - 70) { newPage(); } rtlLine(line, left, y, width); y += size * 2; }
+      for (const line of lines(proofreadArabicText(text), width)) { if (y + size * 2 > doc.page.height - 70) { newPage(); } rtlLine(line, left, y, width); y += size * 2; }
       y += heading ? 10 : 12;
     }
     function node(node: ExamMindMapNode, x: number, at: number, index?: number) {
       doc.roundedRect(x, at, 216, 66, 9).fillAndStroke(node.kind === "lecture" ? "#e5f4f5" : "#f2f6fa", "#bad7de");
       doc.font("ArabicBold").fontSize(11).fillColor("#143f50");
       const title = `${index === undefined ? "" : `${index + 1}. `}${node.label}`;
-      const wrapped = lines(title, 190);
+      const wrapped = lines(proofreadArabicText(title), 190);
       wrapped.slice(0, 2).forEach((line, lineIndex) => rtlLine(lineIndex === 1 && wrapped.length > 2 ? `${line.slice(0, -2)}…` : line, x + 13, at + 9 + lineIndex * 20, 190));
     }
     write("حزمة المراجعة الذكية", true); write(group.title, true);

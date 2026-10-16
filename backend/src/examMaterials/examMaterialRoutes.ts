@@ -10,6 +10,7 @@ import { academicNarrationChapters, academicNarrationText, ACADEMIC_VOICES, ACAD
 import { ExamMaterialService } from "./examMaterialService.js";
 import { examReviewPdf } from "./examReviewPdf.js";
 import { academicSpeechCache, AcademicSpeechUnavailable } from "./academicSpeech.js";
+import { weeklyExamRoutes } from "./weeklyExamRoutes.js";
 
 const generateSchema = z.object({ lectureIds: z.array(z.string().uuid()).min(1).max(50).refine(ids => new Set(ids).size === ids.length), requestId: z.string().uuid() }).strict();
 const academicPaperQuery = z.object({ attemptId: z.string().uuid().optional() }).strict();
@@ -17,6 +18,7 @@ const attemptSchema = z.object({ mode: z.enum(["learning", "challenge"]) }).stri
 const audioSchema = z.object({ chapter: z.union([z.literal("introduction"), z.string().uuid()]), segment: z.string().regex(/^(?:0|[1-9]\d{0,4})$/).transform(Number), voice: z.string().refine(id => ACADEMIC_VOICES.some(voice => voice.id === id)) }).strict();
 export function examMaterialRoutes(): Router {
   const router = Router();
+  router.use(weeklyExamRoutes());
   router.use(["/subjects/:subjectId/exam-material", "/admin/subjects/:subjectId/exam-material"], (req, res, next) => {
     res.set("Cache-Control", "private, no-store");
     if (req.user && req.user.status !== "active") { next(forbidden()); return; }

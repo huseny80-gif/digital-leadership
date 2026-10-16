@@ -10,7 +10,7 @@ import { analyticalQuestionCandidates } from "../examMaterials/caseAssessment.js
 import { groundingVersion, validGroundedQuestion, type GroundedQuestion } from "../examMaterials/sourceGrounding.js";
 import { generatedSourcePolicy } from "./questionGeneration.js";
 
-export const courseAssessmentReviewPolicy = "file-verified-course-assessments-v2";
+export const courseAssessmentReviewPolicy = "file-verified-course-assessments-v3-arabic";
 const weakFormat = /_{3,}|أكمل\s+(?:العبارة|النص)|الكلمة\s+المحذوفة|CamScanner|المسح الضوئي\s+ب/u;
 type Plan = { lecture: Lecture; questions: GroundedQuestion[]; links: Awaited<ReturnType<LectureSourceFiles["read"]>>["links"] };
 const nativeQuestionIds = (subjectId: string) => manifest.subjects.find(subject => subjectMapping[subject.id] === subjectId)?.quizzes.flatMap(quiz => quiz.questions.flatMap(question => [
@@ -19,7 +19,7 @@ const nativeQuestionIds = (subjectId: string) => manifest.subjects.find(subject 
 ])) ?? [];
 const unreviewedMembership = `exists(select 1 from quiz_questions qq join questions q on q.id=qq.question_id where qq.quiz_id=z.id and q.deleted_at is null and
   (q.id=any($2::uuid[]) or q.prompt ~ '_{3,}|أكمل[[:space:]]+(العبارة|النص)|CamScanner|المسح الضوئي[[:space:]]+ب'
-   or q.rubric->>'courseReview'='file-verified-course-assessments-v1'
+   or q.rubric->>'courseReview' in ('file-verified-course-assessments-v1','file-verified-course-assessments-v2')
    or (q.source_import_id is not null and coalesce(q.rubric->>'sourcePolicy','')<>$3)))`;
 // Refresh only editions owned entirely by the platform. An instructor's manual
 // questions must never be overwritten when a new original lecture is added.

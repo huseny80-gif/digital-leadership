@@ -42,8 +42,16 @@ describe("source-grounded study assistant", () => {
     for (const question of review.quiz) {
       expect(question.prompt).not.toMatch(/___|أكمل العبارة/u);
       expect(question.options).toHaveLength(3);
-      for (const option of question.options) expect(definitions).toContain(option);
-      expect(question.explanation).toContain(question.options[question.correctIndex]);
+      const meanings = definitions.split("\n").map(definition => definition.split(": ")[1]!);
+      if (question.prompt.includes("مسودة تصنيف")) {
+        for (const meaning of meanings) expect(question.prompt).toContain(meaning);
+        for (const option of question.options) for (const term of ["الاحتمالية", "الأثر", "الاستجابة"]) expect(option).toContain(term);
+        expect(question.explanation).toContain("يحافظ هذا التوزيع على العلاقات الثلاث");
+        expect(question.explanation).toContain("لا يطابق هذا الربط النص");
+      } else {
+        for (const option of question.options) expect(definitions).toContain(option);
+        expect(question.explanation).toContain(question.options[question.correctIndex]);
+      }
     }
   });
   it("accepts an AI response only with real source quotes and falls back on fabricated citations or provider failures", async () => {

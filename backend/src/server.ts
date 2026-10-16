@@ -31,6 +31,8 @@ import { refreshCatalogStudyMaterials } from "./contentAutomation/refreshCatalog
 import { normalizeArabicLectureLabels } from "./contentAutomation/normalizeArabicLectureLabels.js";
 import { separateCyberRiskSixthLecture } from "./contentAutomation/separateCyberRiskSixthLecture.js";
 import { reviewInnovationCurriculum } from "./contentAutomation/reviewInnovationCurriculum.js";
+import { probeCyberRiskStudyContent } from "./finquiz/uploadedStudyContent.js";
+import { WeeklyCyberExams, weeklyCyberSubjectId } from "./examMaterials/weeklyCyberExams.js";
 
 initMonitoring();
 
@@ -67,8 +69,10 @@ async function refreshPublishedContent() {
   logger.info({ ...sixth, sourcesQueued: generationSources.length }, "legal_sixth_lecture_separated");
   logger.info({ courses: await refreshStudyCourses(getPool()) }, "study_courses_content_refreshed");
   await runIndependentContentReviews([
+    { name: "weekly_cyber_exams", run: async () => { const papers = new WeeklyCyberExams().index(weeklyCyberSubjectId); logger.info({ policy: papers.policy, subjectId: weeklyCyberSubjectId, papers: papers.papers.map(paper => ({ id: paper.id, questions: paper.questionCount })), questions: papers.papers.reduce((sum, paper) => sum + paper.questionCount, 0) }, "weekly_cyber_exams_ready"); } },
     { name: "innovation_curriculum", run: async () => { logger.info(await reviewInnovationCurriculum(getPool()), "innovation_curriculum_reviewed"); } },
     { name: "cyber_risk_sixth", run: async () => { logger.info(await separateCyberRiskSixthLecture(getPool()), "cyber_risk_sixth_lecture_separated"); } },
+    { name: "cyber_risk_sixth_reading", run: async () => { logger.info(await probeCyberRiskStudyContent(getPool()), "cyber_risk_sixth_reading_verified"); } },
     { name: "catalog_study_materials", run: async () => { logger.info(await refreshCatalogStudyMaterials(getPool()), "catalog_study_materials_refreshed"); } },
     { name: "onedrive_sources", run: async () => { logger.info(await reviewOneDriveSources(getPool()), "onedrive_sources_reviewed"); } },
     { name: "risk_content", run: async () => { logger.info(await reviewRiskContent(getPool()), "risk_content_source_reviewed"); } },

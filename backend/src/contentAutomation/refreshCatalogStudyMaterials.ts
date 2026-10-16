@@ -10,7 +10,7 @@ import { ExamMaterialService } from "../examMaterials/examMaterialService.js";
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 interface Slot { id: string; title: string; status: string; order_index: number; catalogSourceId?: string }
 interface Prepared { source: SourceLecture; content: CatalogStudyContent }
-export const catalogCurriculumPolicy = "catalog-primary-review-v1-2026-10-14";
+export const catalogCurriculumPolicy = "catalog-primary-review-v2-arabic-2026-10-16";
 
 /** Register only byte-verified lecture PDFs, with permanent source bindings.
  * Content, summaries and exams use the same files. Prior snapshots stay intact.

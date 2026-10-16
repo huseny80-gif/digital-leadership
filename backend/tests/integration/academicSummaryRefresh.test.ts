@@ -4,6 +4,7 @@ import { Pool } from "pg";
 import { createExamSourceFile } from "../helpers/examSourceFile.js";
 import { ExamMaterialService } from "../../src/examMaterials/examMaterialService.js";
 import { refreshAcademicSummaries } from "../../src/examMaterials/refreshAcademicSummaries.js";
+import { examSummaryVersion } from "../../src/examMaterials/summary.js";
 import { createUser, createSubject, createLecture } from "../helpers/seedFixtures.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -31,7 +32,7 @@ describe("existing academic exam review publication", () => {
     const current = await service.index(subject, false, { page: 1, limit: 100, offset: 0 });
     expect(current.groups).toHaveLength(1);
     expect(current.groups[0]!.id).not.toBe(old.id);
-    expect((await service.detail(subject, current.groups[0]!.id, false)).summary.version).toBe(6);
+    expect((await service.detail(subject, current.groups[0]!.id, false)).summary.version).toBe(examSummaryVersion);
     expect(await refreshAcademicSummaries(pool)).toMatchObject({ published: 0, alreadyCurrent: 1, issues: [] });
   });
   it("publishes current summaries for legacy selections without rewriting snapshots, answers or attempts, then repeats safely", async () => {
@@ -71,7 +72,7 @@ describe("existing academic exam review publication", () => {
     expect(current.groups[0]!.lectures.map(l => l.id)).toEqual([lectures[1]]);
     for (const review of result.reviews) {
       const detail = await service.detail(subject, review.currentId, false);
-      expect(detail.summary.version).toBe(6);
+      expect(detail.summary.version).toBe(examSummaryVersion);
       expect(detail.summary.sections.every(section => section.topics?.some(topic => topic.title === "التصعيد والمتابعة"))).toBe(true);
     }
     expect(await refreshAcademicSummaries(pool)).toMatchObject({ published: 0, alreadyCurrent: 2, issues: [] });

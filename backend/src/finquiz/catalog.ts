@@ -1,10 +1,12 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import type { LibraryAsset, LibraryEntry, LibrarySection, SubjectLibrary } from "@shared/index";
+import type { Lecture, LibraryAsset, LibraryEntry, LibrarySection, SubjectLibrary } from "@shared/index";
 import type { ContentService } from "../content/contentService.js";
 import { notFound } from "../lib/httpError.js";
 import { findSourceLecture } from "./recordIdentity.js";
 import { assetPaths } from "./assetFiles.js";
+import { cyberRiskPrivateSourceId } from "../contentAutomation/cyberRiskSixthSource.js";
+import type { uploadedStudyContent } from "./uploadedStudyContent.js";
 
 interface SourceRow {
   id: string; title: string; legacyTitles?: string[]; status?: string; lectureId?: string;
@@ -43,7 +45,7 @@ const assetsByPath = new Map(Object.values(manifest.assets).map(asset => [asset.
 const safeUrl = (url?: string | null) => url && /^https?:\/\//i.test(url) ? url : null;
 
 export class LibraryService {
-  constructor(private readonly content: ContentService) {}
+  constructor(private readonly content: ContentService, private readonly uploadedReader?: (lecture: Lecture) => ReturnType<typeof uploadedStudyContent>) {}
 
   async get(subjectId: string, isAdmin: boolean): Promise<SubjectLibrary> {
     await this.content.getSubjectOrThrow(subjectId, isAdmin);
@@ -130,6 +132,20 @@ export class LibraryService {
       currentEntries.push({ id: previous?.id ?? `source-study-${item.source.id}-summary`, title: `ملخص ${item.source.title}`, section: "summaries", lectureId: item.lectureId,
         files: [...lectureEntry.files.filter(file => !file.bodyHtml), { id: `source-study-${item.content.assetId}-summary`, filename: `${item.source.title} — الملخص الأكاديمي.html`, label: "الملخص الأكاديمي",
           sizeBytes: Buffer.byteLength(item.content.summaryHtml), bodyHtml: item.content.summaryHtml }], unavailableFiles: [] });
+    }
+    // The sixth cyber lecture is a verified private upload rather than a
+    // bundled catalog PDF. Give it the same reading/summary surface.
+    for (const lecture of lectures.items.filter(lecture => subjectId === subjectMapping["cybersecurity-governance"] && lecture.status === "published" && lecture.orderIndex === 6 && lecture.catalogSourceId === cyberRiskPrivateSourceId)) {
+      try {
+        const { uploadedStudyContent } = await import("./uploadedStudyContent.js");
+        const content = await (this.uploadedReader ?? uploadedStudyContent)(lecture);
+        for (const [section, html, label] of [["lectures", content.lectureHtml, "الشرح الدراسي من ملف المحاضرة"], ["summaries", content.summaryHtml, "الملخص الأكاديمي"]] as const) {
+          currentEntries.push({ id: `source-study-upload-${lecture.id}-${section}`, title: section === "lectures" ? lecture.title : `ملخص ${lecture.title}`, section, lectureId: lecture.id,
+            files: [{ id: `source-study-upload-${lecture.id}-${section}`, filename: `${lecture.title}.html`, label, sizeBytes: Buffer.byteLength(html), bodyHtml: html }], unavailableFiles: [] });
+        }
+      } catch {
+        currentEntries.push({ id: `source-study-upload-${lecture.id}-unavailable`, title: lecture.title, section: "lectures", lectureId: lecture.id, files: [], unavailableFiles: ["تعذرت قراءة الشرح من الملف الأصلي قراءة موثوقة؛ أعد المحاولة أو راجع ملف PDF"] });
+      }
     }
     return { subjectId, entries: currentEntries, sourceQuestionCount: source.quizzes.reduce((n, q) => n + q.questions.length, 0) };
   }

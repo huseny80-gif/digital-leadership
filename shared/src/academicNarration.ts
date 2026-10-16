@@ -1,8 +1,9 @@
 import type { ExamAudioChapter, ExamMaterialSummary, ExamNarrationSegment, ExamSummarySection } from "./types/examMaterial.js";
 import { examSectionPresentation } from "./studyPresentation.js";
 import { cleanStudyLayout } from "./studyLayout.js";
+import { proofreadArabicText } from "./arabicProofreading.js";
 
-export const ACADEMIC_NARRATION_VERSION = "academic-ar-v2-connected";
+export const ACADEMIC_NARRATION_VERSION = "academic-ar-v3-proofread";
 export const DEFAULT_ACADEMIC_PLAYBACK_RATE = 1;
 export const ACADEMIC_SPEECH_SEGMENT_LIMIT = 1400;
 export const ACADEMIC_VOICES = [
@@ -33,7 +34,7 @@ const terms: Record<string, string> = {
 const abbreviations: Record<string, string> = { AI: "إيه آي", API: "إيه بي آي", PDF: "بي دي إف", GPT: "جي بي تي", ISO: "آيزو", ICT: "آي سي تي", IoT: "آي أو تي" };
 
 export function prepareAcademicSpeech(source: string): string {
-  return cleanStudyLayout(source).normalize("NFKC")
+  return proofreadArabicText(cleanStudyLayout(source)).normalize("NFKC")
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069\u0640]/g, "")
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")

@@ -38,7 +38,7 @@ let bundled: Promise<Map<string, VerifiedExtraction>> | undefined;
 async function bundledExtractions(): Promise<Map<string, VerifiedExtraction>> {
   bundled ??= readFile(new URL("../../content/finquiz/extractedSources.json", import.meta.url), "utf8").then(text => {
     const data = JSON.parse(text) as { version: string; sources: VerifiedExtraction[] };
-    if (!["pdf-parse-tesseract-v1", "verified-pdf-transcripts-v2"].includes(data.version)) return new Map<string, VerifiedExtraction>();
+    if (!["pdf-parse-tesseract-v1", "verified-pdf-transcripts-v2", "verified-pdf-transcripts-v3-layout"].includes(data.version)) return new Map<string, VerifiedExtraction>();
     return new Map(data.sources.filter(source => source.sha256.length === 64 && sha(source.text) === source.textSha256).map(source => [source.sha256, source]));
   }).catch(() => new Map<string, VerifiedExtraction>());
   return bundled;

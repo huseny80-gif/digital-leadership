@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import PDFDocument from "pdfkit";
+import { proofreadArabicText } from "@digital-leadership/shared";
 import type { Bidi } from "bidi-js";
 import { AlignmentType, Document, Header, HeadingLevel, PageNumber, Packer, Paragraph, TextRun } from "docx";
 import type { StudyReport, StudyPrintDocument } from "@shared/index";
@@ -13,7 +14,7 @@ export async function reportDocx(report: StudyReport): Promise<Buffer> {
     bidirectional: true, alignment: AlignmentType.RIGHT,
     ...(heading ? { heading: HeadingLevel.HEADING_2 } : {}),
     spacing: { line: 480, after: 120 }, ...(reference ? { indent: { right: 720, hanging: 720 } } : {}),
-    children: [new TextRun({ text, rightToLeft: true, bold: heading, font: "Times New Roman", size: 24 })],
+    children: [new TextRun({ text: proofreadArabicText(text), rightToLeft: true, bold: heading, font: "Times New Roman", size: 24 })],
   });
   const children = [
     new Paragraph({ alignment: AlignmentType.CENTER, bidirectional: true, spacing: { before: 1440, after: 480 }, children: [new TextRun({ text: report.title, bold: true, size: 32, font: "Times New Roman", rightToLeft: true })] }),
@@ -92,7 +93,7 @@ export function studyPdf(input: StudyPrintDocument, author = "Digital Leadership
       measureStyle = heading ? "heading" : "body";
       const size = heading ? 14 : 12; document.font(heading ? "ArabicBold" : "Arabic").fontSize(size).fillColor("#111111");
       const writeLine = (value: string) => { if (y + size * 2 > document.page.height - 72) { document.addPage(); y = 80; } line(value, size); };
-      for (const paragraph of text.split(/\n+/)) {
+      for (const paragraph of proofreadArabicText(text).split(/\n+/)) {
         let current = "";
         for (const word of paragraph.split(/\s+/).filter(Boolean)) {
           const candidate = current ? `${current} ${word}` : word;

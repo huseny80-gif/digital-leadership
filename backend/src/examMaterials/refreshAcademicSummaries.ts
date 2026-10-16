@@ -24,7 +24,7 @@ const reextractionKey = "poppler-reextract-2026-10-16";
 export async function refreshAcademicSummaries(pool: Pool) {
   const legacy = (await pool.query<LegacyGroup>(`select g.id,g.subject_id,g.lecture_ids,g.created_by
     from exam_material_groups g join subjects s on s.id=g.subject_id join quizzes q on q.id=g.quiz_id
-    where coalesce(g.summary->>'version','1') in ('1','2','3','4','5') and s.status='published' and s.deleted_at is null
+    where coalesce(g.summary->>'version','1') in ('1','2','3','4','5','6') and s.status='published' and s.deleted_at is null
     and q.status='published' and q.deleted_at is null and ${examGroupVisible}
     order by g.created_at,g.id`)).rows;
   const selections = new Map<string, LegacyGroup>();
@@ -66,7 +66,7 @@ export async function refreshAcademicSummaries(pool: Pool) {
   let reextracted = 0;
   for (const [key, groups] of staleSelections) {
     const requestId = finquizRecordId(`${reextractionKey}:` + key);
-    if (groups.some(group => group.request_id === requestId)) continue;
+    if (groups.some(group => group.request_id === requestId || group.request_id === finquizRecordId(`academic-exam-summary-v${examSummaryVersion}:` + (selections.get(key)?.id ?? "")))) continue;
     const group = groups[groups.length - 1]!;
     try {
       const review = await service.generate(group.subject_id, group.lecture_ids, requestId, group.created_by);
@@ -76,5 +76,5 @@ export async function refreshAcademicSummaries(pool: Pool) {
       issues.push({ groupId: group.id, code: error instanceof Error && "code" in error ? String(error.code) : "source_review_unavailable" });
     }
   }
-  return { key: "academic-exam-summary-v6-analytical-cases-2026-10-13", reextracted, legacyGroups: legacy.length, selections: groups.length, published: reviews.length, alreadyCurrent, reviews, issues };
+  return { key: "academic-exam-summary-v7-reviewed-arabic-2026-10-16", reextracted, legacyGroups: legacy.length, selections: groups.length, published: reviews.length, alreadyCurrent, reviews, issues };
 }

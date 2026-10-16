@@ -1,5 +1,6 @@
 import type { ExamMaterialSummary, ExamSummarySection, ExamSummaryTopic } from "./types/examMaterial.js";
 import type { LibraryEntry } from "./types/library.js";
+import { proofreadAcademicContent } from "./arabicProofreading.js";
 
 // Preserve spelling, diacritics, negation, mathematical symbols and numbers.
 // Only layout whitespace and a prose sentence's final full stop are ignored.
@@ -91,7 +92,7 @@ export function examSectionPresentation(section: ExamSummarySection): ExamSummar
     ...(section.concepts ? { concepts } : {}), ...(objectives ? { objectives } : {}) };
 }
 export function examSummaryPresentation(summary: ExamMaterialSummary): ExamMaterialSummary {
-  return { ...summary, sections: summary.sections.map(examSectionPresentation) };
+  return proofreadAcademicContent({ ...summary, sections: summary.sections.map(examSectionPresentation) });
 }
 
 export function examTopicSourceLabel(topic: Pick<ExamSummaryTopic, "sourcePages">): string {

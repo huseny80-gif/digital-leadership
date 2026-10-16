@@ -15,6 +15,7 @@ import { feedbackRoutes } from "../feedback/feedbackRoutes.js";
 import { learningRoutes } from "../learning/learningRoutes.js";
 import { examMaterialRoutes } from "../examMaterials/examMaterialRoutes.js";
 import { studyToolsRoutes } from "../studyTools/studyToolsRoutes.js";
+import { academicPresentation } from "../middleware/academicPresentation.js";
 
 /**
  * Assembles the versioned API surface under `/api/v1` (API_V1.md,
@@ -23,6 +24,7 @@ import { studyToolsRoutes } from "../studyTools/studyToolsRoutes.js";
  */
 export function apiV1Router(): Router {
   const router = Router();
+  router.use(academicPresentation);
   // One boundary covers all admin mounts, including future child routers.
   router.use("/admin", requireAdmin, (_req, res, next) => { res.set("Cache-Control", "private, no-store"); next(); });
 

@@ -99,6 +99,8 @@ export default async function LectureDetailPage({
   const currentIndex = siblingLectures.findIndex((l) => l.id === lectureId);
   const libraryEntries = await getLectureLibraryEntries(lecture!.subjectId, lecture!.id);
   const summaryEntries = libraryEntries.filter(entry => entry.section === "summaries");
+  const hasReading = libraryEntries.some(entry => entry.section === "lectures" && entry.files.some(file => file.bodyHtml));
+  const visibleLibraryEntries = hasReading ? libraryEntries.filter(entry => entry.section !== "summaries") : libraryEntries;
   const hasReviewedSummary = summaryEntries.some(entry => entry.files.some(file => file.id.startsWith("source-study-") && file.bodyHtml));
   // The current academic reading replaces older summary display copies.
   // Saved instructor items remain available through their management API.
@@ -114,7 +116,7 @@ export default async function LectureDetailPage({
       {summaryEntries.length || summaryItems.length ? <LibrarySummaryPrint title={`${lecture!.title} — الملخص الدراسي`} subjectId={lecture!.subjectId} entries={summaryEntries} items={summaryItems} /> : null}
       <Breadcrumbs
         items={[
-          { label: "Subjects", href: "/subjects" },
+          { label: "المواد الدراسية", href: "/subjects" },
           { label: subjectTitle, href: `/subjects/${subjectId}` },
           { label: lecture!.title },
         ]}
@@ -122,17 +124,18 @@ export default async function LectureDetailPage({
 
       <h1 className="page-heading">{lecture!.title}</h1>
       <LectureTabs subjectId={lecture!.subjectId} lectures={siblingLectures} activeId={lecture!.id} />
-      <div className="dl-library-list">{libraryEntries.map(entry => <LibraryEntryContent key={entry.id} subjectId={lecture!.subjectId} entry={entry} />)}</div>
+      {hasReading && summaryEntries[0] ? <p><Link className="text-link" href={`/subjects/${subjectId}/summaries#${encodeURIComponent(summaryEntries[0].id)}`}>عرض ملخص المحاضرة</Link></p> : null}
+      <div className="dl-library-list">{visibleLibraryEntries.map(entry => <LibraryEntryContent key={entry.id} subjectId={lecture!.subjectId} entry={entry} />)}</div>
       <p className="item-row-meta" style={{ marginBottom: "var(--space-2)" }}>
         {subjectTitle}
-        {hasPosition ? ` · Lecture ${currentIndex + 1} of ${siblingLectures.length}` : null}
+        {hasPosition && lecture!.orderIndex > 0 ? ` · رقم المحاضرة: ${lecture!.orderIndex.toLocaleString("ar")}` : null}
       </p>
       {!hasReviewedSummary && lecture!.description ? <p className="page-subheading">{lecture!.description}</p> : null}
 
       {progress ? <LectureCompleteToggle lectureId={lectureId} initialCompleted={progress.completed} /> : null}
 
       <Link href={`/subjects/${subjectId}`} className="btn btn-secondary" style={{ marginBottom: "var(--space-5)", display: "inline-flex" }}>
-        Back to subject
+        الرجوع إلى المادة
       </Link>
 
       {currentItems.length === 0 && libraryEntries.length === 0 ? (
@@ -146,14 +149,14 @@ export default async function LectureDetailPage({
       ) : null}
 
       {previousLecture || nextLecture ? (
-        <nav className="lecture-nav" aria-label="Lecture navigation">
+        <nav className="lecture-nav" aria-label="التنقل بين المحاضرات">
           {previousLecture ? (
             <Link
               href={`/subjects/${subjectId}/lectures/${previousLecture.id}`}
               className="lecture-nav-link"
               data-direction="previous"
             >
-              <span className="lecture-nav-label">← Previous</span>
+              <span className="lecture-nav-label">← المحاضرة السابقة</span>
               <span className="lecture-nav-title">{previousLecture.title}</span>
             </Link>
           ) : (
@@ -165,7 +168,7 @@ export default async function LectureDetailPage({
               className="lecture-nav-link"
               data-direction="next"
             >
-              <span className="lecture-nav-label">Next →</span>
+              <span className="lecture-nav-label">المحاضرة التالية →</span>
               <span className="lecture-nav-title">{nextLecture.title}</span>
             </Link>
           ) : null}

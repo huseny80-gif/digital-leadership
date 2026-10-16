@@ -10,6 +10,10 @@ import { subjectMapping } from "../../src/finquiz/catalog.js";
 import { separateCyberRiskSixthLecture } from "../../src/contentAutomation/separateCyberRiskSixthLecture.js";
 import { cyberRiskSixthPolicy, cyberRiskSixthTitle } from "../../src/contentAutomation/cyberRiskSixthSource.js";
 import { FilesRepository } from "../../src/files/filesRepository.js";
+import { ContentService } from "../../src/content/contentService.js";
+import { PgContentRepository } from "../../src/content/contentRepository.js";
+import { LibraryService } from "../../src/finquiz/catalog.js";
+import { uploadedStudyContent } from "../../src/finquiz/uploadedStudyContent.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const subjectId = subjectMapping["cybersecurity-governance"]!, riskSubject = subjectMapping["risk-management"]!;
@@ -81,6 +85,16 @@ describe("cyber risk is sixth, Cybersecurety5 remains fifth", () => {
     expect((await pool.query("select * from files where id=$1", [s.files.cobit!.id])).rows[0]).toEqual(beforeFile);
     expect((await pool.query("select lecture_id from lecture_items where id=$1", [s.files.risk!.item])).rows[0].lecture_id).toBe(s.sixth);
     expect(await s.storage.read(s.files.risk!.key)).toEqual(s.files.risk!.bytes);
+    const contentService = new ContentService(new PgContentRepository(pool));
+    const library = await new LibraryService(contentService, lecture => uploadedStudyContent(lecture, pool, s.storage)).get(subjectId, false);
+    const readings = library.entries.filter(entry => entry.lectureId === s.sixth);
+    expect(readings.map(entry => entry.section).sort()).toEqual(["lectures", "summaries"]);
+    const reading = readings.find(entry => entry.section === "lectures")!.files[0]!;
+    expect(reading.bodyHtml!.replace(/<[^>]*>/gu, " ").replace(/\s+/gu, " ")).toContain("Identify information assets and threats");
+    expect(reading.bodyHtml).toContain("الأسطر");
+    expect(reading.bodyHtml).not.toContain("COBIT 2019 governance framework");
+    const review = readings.find(entry => entry.section === "summaries")!.files[0]!;
+    expect(review.bodyHtml!.replace(/<[^>]*>/gu, " ").replace(/\s+/gu, " ")).toContain("Review the risk register regularly");
     expect(await new FilesRepository(pool).getCurrentPlacement(s.files.risk!.id)).toEqual({ subjectId, lectureId: s.sixth });
     expect((await pool.query("select id,question_type,prompt,points,explanation,rubric from questions order by id")).rows).toEqual(original);
     expect((await pool.query("select * from question_options order by id")).rows).toEqual(options);
@@ -98,6 +112,18 @@ describe("cyber risk is sixth, Cybersecurety5 remains fifth", () => {
     await separateCyberRiskSixthLecture(pool, s.storage);
     expect((await pool.query("select status from lectures where id=$1", [s.sixth])).rows[0].status).toBe("draft");
     expect((await pool.query("select status from lecture_items where id=$1", [s.files.risk!.item])).rows[0].status).toBe("draft");
+  }, 30000);
+  it("never reuses a reading after its file changes or becomes unpublished", async () => {
+    const s = await seed(); await separateCyberRiskSixthLecture(pool, s.storage);
+    const lecture = await new ContentService(new PgContentRepository(pool)).getLectureOrThrow(s.sixth, false);
+    expect((await uploadedStudyContent(lecture, pool, s.storage)).characterCount).toBeGreaterThan(100);
+    s.storage.objects.set(s.files.risk!.key, await sourcePdf("An unrelated replacement source with a different checksum."));
+    await expect(uploadedStudyContent(lecture, pool, s.storage)).rejects.toThrow("uploaded_reading_source_changed");
+    s.storage.objects.set(s.files.risk!.key, s.files.risk!.bytes);
+    await pool.query("update lecture_items set status='draft' where id=$1", [s.files.risk!.item]);
+    await expect(uploadedStudyContent(lecture, pool, s.storage)).rejects.toThrow("uploaded_reading_source_missing");
+    const wrong = { ...lecture, subjectId: riskSubject };
+    await expect(uploadedStudyContent(wrong, pool, s.storage)).rejects.toThrow("uploaded_reading_source_missing");
   }, 30000);
   it("fails atomically when an independent sixth lecture occupies the target slot", async () => {
     const s = await seed();

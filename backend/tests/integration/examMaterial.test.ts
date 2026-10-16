@@ -271,7 +271,7 @@ describe("independent exam material archives", () => {
     await createLectureItem(pool, { lectureId: s.lectures[0]!, itemType: "summary", title: "ملخص موجز", status: "published", createdBy: s.admin, bodyText: source });
     await createExamSourceFile(pool, { lectureId: s.lectures[0]!, title: "النص الكامل", createdBy: s.admin, text: `## تطبيقات إدارة المخاطر\n${full.join("\n")}\n## التصعيد وحدود الصلاحية\n${lateTopic}` });
     const group = await s.generate([s.lectures[0]!]);
-    expect(group.summary.version).toBe(6);
+    expect(group.summary.version).toBe(7);
     const section = group.summary.sections[0]!;
     expect(group.summary.sections).toHaveLength(1);
     for (const paragraph of full) expect(section.text).toContain(paragraph);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compileExamSummary, isAssessmentAppendixTitle, lectureSelectionLabel, plainStudyText, readableStudyText, studyContentText, studyOnlyExamSummary } from "../../src/examMaterials/summary.js";
+import { compileExamSummary, examSummaryVersion, isAssessmentAppendixTitle, lectureSelectionLabel, plainStudyText, readableStudyText, studyContentText, studyOnlyExamSummary } from "../../src/examMaterials/summary.js";
 import { manifest } from "../../src/finquiz/catalog.js";
 describe("source-grounded exam summaries", () => {
   it("names contiguous and non-contiguous lecture selections without implying unselected lectures", () => {
@@ -33,7 +33,7 @@ describe("source-grounded exam summaries", () => {
     const condition = "يجب تصعيد الخطر عند تجاوز صلاحية المالك، مع توثيق جهة الإبلاغ وموعده ومتابعة القرار المتخذ بشأنه.";
     const result = compileExamSummary("إدارة المخاطر", [{ id: "l1", title: "الملكية", number: 1, text: `## ملكية الخطر\n${definition}\n${definition}\n## التصعيد والمتابعة\n${condition}` }]);
     const section = result.sections[0]!;
-    expect(result.version).toBe(6);
+    expect(result.version).toBe(examSummaryVersion);
     expect(section.topics?.map(topic => topic.title)).toEqual(["ملكية الخطر", "التصعيد والمتابعة"]);
     expect(section.text.split(definition)).toHaveLength(2);
     expect(section.keyPoints).toContain(condition);

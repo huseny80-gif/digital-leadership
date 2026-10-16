@@ -29,7 +29,7 @@ export function LibraryEntryContent({ entry: original, subjectId }: { entry: Lib
       <small>{(file.sizeBytes / 1024 / 1024).toFixed(2)} MB</small>
       {file.filename.toLowerCase().endsWith(".pdf") ? <details><summary>قراءة الملف</summary><iframe title={file.label} src={"/api/library/" + subjectId + "/" + file.id + "?inline=1"} /></details> : null}
     </div>)}
-    {entry.unavailableFiles.map((label, i) => <p className="content-card-meta" key={i}>{label}: لم يُرفق الملف في المصدر بعد.</p>)}
+    {entry.unavailableFiles.map((label, i) => <p className="content-card-meta" key={i}>{label}{/تعذر|تعذّر|تعذرت/u.test(label) ? "" : ": لم يُرفق الملف في المصدر بعد."}</p>)}
   </article>;
 }
 
