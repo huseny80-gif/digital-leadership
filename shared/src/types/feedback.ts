@@ -13,7 +13,6 @@ export interface FeedbackSubmission {
   submissionId: string;
   category: FeedbackCategory;
   message: string;
-  name?: string | undefined;
 }
 
 /** Only the staff inbox API returns this shape. Submission returns an
@@ -23,7 +22,7 @@ export interface ParticipantFeedback {
   category: FeedbackCategory;
   message: string;
   authorName: string;
-  authorKind: "user" | "guest";
+  authorKind: "user" | "guest" | "anonymous";
   status: FeedbackStatus;
   internalNote: string;
   createdAt: string;

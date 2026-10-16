@@ -22,7 +22,8 @@ describe("share your opinion form", () => {
   it("explains confidentiality and has no participant-response list", () => {
     render(<FeedbackPage />);
     expect(screen.getByRole("heading", { name: "شاركنا رأيك" })).toBeInTheDocument();
-    expect(screen.getByText("تُرسل ملاحظتك بسرية إلى الإدارة والمدربين، ولا تظهر لبقية المشاركين.")).toBeInTheDocument();
+    expect(screen.getByText(/تصل مشاركتك بدون اسم/)).toHaveTextContent("لا تُربط المشاركة بحسابك أو جلسة زيارتك");
+    expect(screen.queryByLabelText(/الاسم/)).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "آراء المشاركين" })).not.toBeInTheDocument();
     expect(mockFetch).not.toHaveBeenCalled();
   });
@@ -35,6 +36,7 @@ describe("share your opinion form", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("تم استلام ردك بنجاح");
     const body = JSON.parse(String(mockFetch.mock.calls[0]?.[1]?.body));
     expect(body).toMatchObject({ category: "suggestion", message: "اقتراح خاص" });
+    expect(Object.keys(body).sort()).toEqual(["category", "message", "submissionId"]);
     expect(body.submissionId).toMatch(/^[a-f0-9-]{36}$/);
     expect(mockFetch.mock.calls[0]?.[0]).toBe("/api/feedback");
     expect(screen.queryByText("اقتراح خاص")).not.toBeInTheDocument();
@@ -68,6 +70,12 @@ describe("share your opinion form", () => {
 });
 
 describe("staff participant-response inbox", () => {
+  it("labels new anonymous responses without displaying account identity even in accessible labels", () => {
+    const { container } = render(<ParticipantFeedbackInbox initial={{ ...initial, data: [{ ...item, authorKind: "anonymous", authorName: "اسم لا يجوز عرضه" }] }} />);
+    expect(screen.getByRole("heading", { name: "مشاركة بدون اسم" })).toBeInTheDocument();
+    expect(screen.getByText(/مشاركة مجهولة الهوية/)).toBeInTheDocument();
+    expect(container.innerHTML).not.toContain("اسم لا يجوز عرضه");
+  });
   it("renders submitted text as escaped plaintext", () => {
     const { container } = render(<ParticipantFeedbackInbox initial={initial} canDelete />);
     expect(container.querySelector(".feedback-message")?.textContent).toBe(item.message);

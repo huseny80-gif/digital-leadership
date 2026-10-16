@@ -1,8 +1,15 @@
-import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHmac, hkdfSync, randomBytes } from "node:crypto";
 import { getEnv } from "../config/env.js";
 
 type Field = "message" | "internal_note" | "submitted_name";
 const key = (secret: string) => Buffer.from(hkdfSync("sha256", secret, "digital-leadership", "private-feedback-content:v1", 32));
+/** This token is specific to one principal AND one submission. It cannot
+ * link separate responses, and the raw principal never leaves the server. */
+export function anonymousFeedbackSubmissionKey(principal: string, submissionId: string, secret = getEnv().GUEST_SESSION_SIGNING_SECRET): string {
+  const retryKey = Buffer.from(hkdfSync("sha256", secret, "digital-leadership", "anonymous-feedback-retry:v1", 32));
+  return createHmac("sha256", retryKey).update(JSON.stringify([principal, submissionId])).digest("hex");
+}
+
 export function encryptFeedback(value: string, id: string, field: Field, secret = getEnv().GUEST_SESSION_SIGNING_SECRET): string {
   const nonce = randomBytes(12), cipher = createCipheriv("aes-256-gcm", key(secret), nonce);
   cipher.setAAD(Buffer.from(`participant-feedback:${id}:${field}`));

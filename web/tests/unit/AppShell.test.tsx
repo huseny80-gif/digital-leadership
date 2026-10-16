@@ -5,7 +5,7 @@ import type { GuestTrainingSession } from "@shared/index";
 
 const route = vi.hoisted(() => ({ pathname: "/dashboard" }));
 vi.mock("next/navigation", () => ({ usePathname: () => route.pathname, useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
-vi.mock("next/link", () => ({ default: (props: ComponentProps<"a">) => <a data-client-link {...props} /> }));
+vi.mock("next/link", () => ({ default: ({ prefetch, onNavigate, ...props }: ComponentProps<"a"> & { prefetch?: boolean; onNavigate?: () => void }) => <a data-client-link data-prefetch={prefetch} {...props} onClick={event => { props.onClick?.(event); if (!event.defaultPrevented) onNavigate?.(); }} /> }));
 import { AppShell } from "@/components/layout/AppShell";
 
 beforeEach(() => { route.pathname = "/dashboard"; localStorage.clear(); });
@@ -50,7 +50,7 @@ describe("reference application shell", () => {
 
   it("does not expose registered account actions to guests", () => {
     render(<AppShell isAdmin={false} userEmail={null} guestSession={{ displayName: "Guest" } as GuestTrainingSession}><p>Guest content</p></AppShell>);
-    expect(screen.getByRole("dialog", { name: "أهلاً بك، كيف يمكنني مساعدتك" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "مرحباً بك في مساعدك الدراسي الذكي" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "تصفح المنصة" }));
     fireEvent.click(screen.getByRole("button", { name: "قائمة الحساب" }));
     expect(screen.queryByRole("link", { name: "الإدارة" })).not.toBeInTheDocument();

@@ -3,11 +3,11 @@ import type { FeedbackCategory, FeedbackStatus, FeedbackSubmission, PaginatedRes
 import { notFound } from "../lib/httpError.js";
 import { writeAuditLog } from "../lib/audit.js";
 import { randomUUID } from "node:crypto";
-import { encryptFeedback, decryptFeedback } from "./privateContent.js";
+import { anonymousFeedbackSubmissionKey, encryptFeedback, decryptFeedback } from "./privateContent.js";
 
 type FeedbackRow = {
   id: string; category: FeedbackCategory; message: string; author_name: string;
-  author_kind: "user" | "guest"; status: FeedbackStatus; internal_note: string;
+  author_kind: ParticipantFeedback["authorKind"]; status: FeedbackStatus; internal_note: string;
   created_at: Date; updated_at: Date;
   message_ciphertext: string | null; internal_note_ciphertext: string | null; submitted_name_ciphertext: string | null;
 };
@@ -16,13 +16,14 @@ export type FeedbackFilter = { page: number; limit: number; status?: FeedbackSta
 export class FeedbackRepository {
   constructor(private readonly pool: Pool) {}
 
-  async submit(input: FeedbackSubmission, author: { userId?: string; guestSessionId?: string }): Promise<void> {
+  async submit(input: FeedbackSubmission, author: { userId: string; guestSessionId?: never } | { guestSessionId: string; userId?: never }): Promise<void> {
     const id = randomUUID();
+    const principal = author.userId ? `user:${author.userId}` : `guest:${author.guestSessionId}`;
     await this.pool.query(
-      `insert into participant_feedback (id, submission_id, user_id, guest_session_id, author_kind, category, message, message_ciphertext, internal_note_ciphertext, submitted_name_ciphertext)
-       values ($1,$2,$3,$4,$5,$6,'[encrypted]',$7,$8,$9) on conflict do nothing`,
-      [id, input.submissionId, author.userId ?? null, author.guestSessionId ?? null, author.userId ? "user" : "guest", input.category,
-        encryptFeedback(input.message, id, "message"), encryptFeedback("", id, "internal_note"), input.name ? encryptFeedback(input.name, id, "submitted_name") : null],
+      `insert into participant_feedback (id, submission_id, author_kind, category, message, message_ciphertext, internal_note_ciphertext, anonymous_submission_key)
+       values ($1,$2,'anonymous',$3,'[encrypted]',$4,$5,$6) on conflict do nothing`,
+      [id, input.submissionId, input.category, encryptFeedback(input.message, id, "message"), encryptFeedback("", id, "internal_note"),
+        anonymousFeedbackSubmissionKey(principal, input.submissionId)],
     );
   }
 
@@ -41,7 +42,7 @@ export class FeedbackRepository {
     );
     return { data: result.rows.map(row => ({
       id: row.id, category: row.category, message: row.message_ciphertext ? decryptFeedback(row.message_ciphertext, row.id, "message") : row.message,
-      authorName: row.submitted_name_ciphertext ? decryptFeedback(row.submitted_name_ciphertext, row.id, "submitted_name") : row.author_name, authorKind: row.author_kind, status: row.status,
+      authorName: row.author_kind === "anonymous" ? "مشاركة بدون اسم" : row.submitted_name_ciphertext ? decryptFeedback(row.submitted_name_ciphertext, row.id, "submitted_name") : row.author_name, authorKind: row.author_kind, status: row.status,
       internalNote: row.internal_note_ciphertext ? decryptFeedback(row.internal_note_ciphertext, row.id, "internal_note") : row.internal_note, createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString(),
     })), page: filter.page, limit: filter.limit, total: Number(count.rows[0]!.total) };
   }

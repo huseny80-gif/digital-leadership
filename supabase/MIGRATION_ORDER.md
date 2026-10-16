@@ -120,3 +120,9 @@ Current full order:
     IDs, timestamps and statuses. Preserve the existing guest signing secret:
     encryption derives a separate key with HKDF; rotation requires migrating
     ciphertext with the old and new keys, never replacing the secret blindly.
+
+27. `00000000000027_anonymous_participant_feedback.sql` — apply after 26.
+    Adds anonymous submissions with no saved user, guest session or name.
+    A purpose-separated, per-submission HMAC retains principal-scoped retry
+    deduplication without a reusable author identifier. Startup applies this
+    idempotently; existing feedback, attribution and staff review state remain.

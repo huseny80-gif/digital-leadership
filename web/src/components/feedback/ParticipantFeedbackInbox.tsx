@@ -16,6 +16,7 @@ async function inboxRequest(method: "GET" | "PATCH" | "DELETE", path: string, bo
 }
 
 function FeedbackCard({ item, save, remove, canDelete }: { item: ParticipantFeedback; save: (id: string, status: FeedbackStatus, internalNote: string) => Promise<void>; remove: (id: string) => Promise<void>; canDelete: boolean }) {
+  const authorName = item.authorKind === "anonymous" ? "مشاركة بدون اسم" : item.authorName;
   const [status, setStatus] = useState(item.status);
   const [note, setNote] = useState(item.internalNote);
   const [busy, setBusy] = useState(false);
@@ -27,8 +28,8 @@ function FeedbackCard({ item, save, remove, canDelete }: { item: ParticipantFeed
     catch { setError("تعذر حفظ التحديث. حاول مرة أخرى."); }
     finally { setBusy(false); }
   }
-  return <article className="feedback-panel feedback-card" aria-label={`مشاركة ${item.authorName}`}>
-    <div className="feedback-card-heading"><div><h2 dir="auto">{item.authorName}</h2><small className="feedback-muted">{item.authorKind === "guest" ? "زائر" : "مستخدم مسجل"} · <time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString("ar", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Baghdad" })}</time></small></div><div className="feedback-badges"><span className="badge">{FEEDBACK_CATEGORY_LABELS[item.category]}</span><span className="badge" data-feedback-status={item.status}>{FEEDBACK_STATUS_LABELS[item.status]}</span></div></div>
+  return <article className="feedback-panel feedback-card" aria-label={item.authorKind === "anonymous" ? authorName : `مشاركة ${authorName}`}>
+    <div className="feedback-card-heading"><div><h2 dir="auto">{authorName}</h2><small className="feedback-muted">{item.authorKind === "anonymous" ? "مشاركة مجهولة الهوية" : item.authorKind === "guest" ? "زائر" : "مستخدم مسجل"} · <time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString("ar", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Baghdad" })}</time></small></div><div className="feedback-badges"><span className="badge">{FEEDBACK_CATEGORY_LABELS[item.category]}</span><span className="badge" data-feedback-status={item.status}>{FEEDBACK_STATUS_LABELS[item.status]}</span></div></div>
     <p className="feedback-message" dir="auto">{item.message}</p>
     <fieldset disabled={busy} className="feedback-card-management"><div className="form-field"><label className="form-label" htmlFor={`feedback-status-${item.id}`}>حالة الرد</label><select className="form-input" id={`feedback-status-${item.id}`} value={status} onChange={event => { setStatus(event.target.value as FeedbackStatus); setSaved(false); }}>{FEEDBACK_STATUSES.map(value => <option key={value} value={value}>{FEEDBACK_STATUS_LABELS[value]}</option>)}</select></div><div className="form-field"><label className="form-label" htmlFor={`feedback-note-${item.id}`}>ملاحظة داخلية للمدير والمدرب</label><textarea id={`feedback-note-${item.id}`} className="form-input" rows={2} maxLength={3000} value={note} onChange={event => { setNote(event.target.value); setSaved(false); }} /></div><div className="feedback-actions"><button type="button" className="btn" onClick={update} disabled={busy}>{busy ? "جارٍ الحفظ…" : "حفظ التحديث"}</button>{canDelete ? <ConfirmButton label="حذف الرد" confirmTitle="حذف الرد نهائيًا؟" confirmMessage="سيتم حذف هذه المشاركة. لا يمكن التراجع عن الحذف." onConfirm={() => remove(item.id)} confirmLabel="حذف" cancelLabel="إلغاء" busyLabel="جارٍ الحذف…" errorMessage="تعذر حذف الرد. حاول مرة أخرى." /> : null}{saved ? <span role="status">تم حفظ التحديث</span> : null}</div>{error ? <p role="alert" className="feedback-error">{error}</p> : null}</fieldset>
   </article>;

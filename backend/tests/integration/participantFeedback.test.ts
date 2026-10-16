@@ -37,7 +37,7 @@ async function submitAndId(s: Awaited<ReturnType<typeof seed>>) {
 }
 
 describe("private participant feedback", () => {
-  it("accepts a trainee and a permanent guest, returning only an acknowledgement", async () => {
+  it("accepts a trainee and a permanent guest without storing identity, including names from legacy forms", async () => {
     const s = await seed();
     for (const author of ["user", "guest"]) {
       const req = request(s.app).post("/api/v1/feedback");
@@ -47,12 +47,21 @@ describe("private participant feedback", () => {
       expect(response.body).toEqual({ data: { received: true } });
       expect(response.headers["cache-control"]).toBe("private, no-store");
     }
-    const rows = (await pool.query("select author_kind,user_id,guest_session_id,submitted_name,message,message_ciphertext,submitted_name_ciphertext from participant_feedback order by author_kind")).rows;
+    const rows = (await pool.query("select author_kind,user_id,guest_session_id,submitted_name,message,message_ciphertext,submitted_name_ciphertext,anonymous_submission_key from participant_feedback")).rows;
     expect(rows).toHaveLength(2);
-    expect(rows[0]).toMatchObject({ author_kind: "guest", guest_session_id: s.guest, user_id: null, submitted_name: null, message: "[encrypted]" });
+    for (const row of rows) {
+      expect(row).toMatchObject({ author_kind: "anonymous", guest_session_id: null, user_id: null, submitted_name: null, submitted_name_ciphertext: null, message: "[encrypted]" });
+      expect(row.message_ciphertext).toMatch(/^v1\./);
+      expect(row.anonymous_submission_key).toMatch(/^[0-9a-f]{64}$/);
+    }
     expect(JSON.stringify(rows)).not.toMatch(/مشاركة خاصة|رأيي خاص/);
-    expect(rows[0].message_ciphertext).toMatch(/^v1\./); expect(rows[0].submitted_name_ciphertext).toMatch(/^v1\./);
-    expect(rows[1]).toMatchObject({ author_kind: "user", user_id: s.alice, guest_session_id: null });
+    for (const token of [s.adminToken, s.trainerToken]) {
+      const inbox = await request(s.app).get("/api/v1/feedback/manage").set("Authorization", `Bearer ${token}`).expect(200);
+      expect(inbox.body.data).toHaveLength(2);
+      for (const item of inbox.body.data) expect(item).toMatchObject({ authorName: "مشاركة بدون اسم", authorKind: "anonymous", message: "رأيي خاص ولا يُعرض للآخرين." });
+      expect(JSON.stringify(inbox.body)).not.toMatch(/مشاركة خاصة|زائر مشارك/);
+      for (const value of [s.alice, s.guest, "anonymous_submission_key", "userId", "guestSessionId", "submissionId"]) expect(JSON.stringify(inbox.body)).not.toContain(value);
+    }
     await request(s.app).post("/api/v1/feedback").send(submission()).expect(401);
     await request(s.app).post("/api/v1/feedback").set("Cookie", "training_guest_session=forged").send(submission()).expect(401);
   });
@@ -87,7 +96,7 @@ describe("private participant feedback", () => {
     }
     const filtered = await request(s.app).get("/api/v1/feedback/manage?category=weakness").set("Authorization", `Bearer ${s.trainerToken}`).expect(200);
     expect(filtered.body.total).toBe(1);
-    expect(filtered.body.data[0]).toMatchObject({ authorName: "اسم الزائر", authorKind: "guest", message: "لاحظت صعوبة في القراءة." });
+    expect(filtered.body.data[0]).toMatchObject({ authorName: "مشاركة بدون اسم", authorKind: "anonymous", message: "لاحظت صعوبة في القراءة." });
     await request(s.app).get("/api/v1/admin/users").set("Authorization", `Bearer ${s.trainerToken}`).expect(403);
   });
 
@@ -114,11 +123,25 @@ describe("private participant feedback", () => {
     await request(s.app).post("/api/v1/feedback").set("Authorization", `Bearer ${s.bobToken}`).send(body).expect(201);
     for (let i = 0; i < 2; i++) await request(s.app).post("/api/v1/feedback").set("Cookie", s.cookie).send(body).expect(201);
     expect((await pool.query("select count(*)::int as count from participant_feedback")).rows[0].count).toBe(3);
+    const rows = (await pool.query("select author_kind,user_id,guest_session_id,anonymous_submission_key from participant_feedback")).rows;
+    expect(new Set(rows.map(row => row.anonymous_submission_key)).size).toBe(3);
+    for (const row of rows) expect(row).toMatchObject({ author_kind: "anonymous", user_id: null, guest_session_id: null });
+  });
+
+  it("enforces anonymous identity constraints in the database itself", async () => {
+    const s = await seed(); const id = await submitAndId(s);
+    for (const [sql, value] of [
+      ["user_id=$2", s.alice], ["guest_session_id=$2", s.guest], ["submitted_name=$2", "اسم مخفي"],
+      ["submitted_name_ciphertext=$2", "ciphertext"], ["anonymous_submission_key=$2", null],
+    ] as const) {
+      await expect(pool.query(`update participant_feedback set ${sql} where id=$1`, [id, value])).rejects.toMatchObject({ code: "23514" });
+    }
+    expect((await pool.query("select user_id,guest_session_id,submitted_name from participant_feedback where id=$1", [id])).rows[0]).toEqual({ user_id: null, guest_session_id: null, submitted_name: null });
   });
 
   it("rejects malformed text, injected ownership/roles, invalid categories and out-of-range queries", async () => {
     const s = await seed();
-    for (const input of [{ message: "   " }, { message: "x".repeat(5001) }, { name: "x".repeat(121) }, { message: "text\u0000private" }, { category: "other" }, { submissionId: "invalid" }, { userId: s.admin }, { role: "admin" }]) {
+    for (const input of [{ message: "   " }, { message: "x".repeat(5001) }, { name: "x".repeat(121) }, { message: "text\u0000private" }, { category: "other" }, { submissionId: "invalid" }, { userId: s.admin }, { role: "admin" }, { anonymous: false }, { authorKind: "user" }]) {
       await request(s.app).post("/api/v1/feedback").set("Authorization", `Bearer ${s.aliceToken}`).send(submission(input)).expect(400);
     }
     for (const query of ["limit=101", "page=0", "category=invalid", "status=invalid", "unexpected=value"]) await request(s.app).get(`/api/v1/feedback/manage?${query}`).set("Authorization", `Bearer ${s.trainerToken}`).expect(400);
@@ -179,8 +202,8 @@ describe("private participant feedback", () => {
   });
 
   it("encrypts legacy private text without changing identifiers, timestamps or review state", async () => {
-    const s = await seed(); const id = await submitAndId(s);
-    await pool.query("update participant_feedback set message='رأي سابق خاص',internal_note='متابعة سابقة',submitted_name='اسم سابق',message_ciphertext=null,internal_note_ciphertext=null,submitted_name_ciphertext=null,status='reviewed' where id=$1", [id]);
+    const s = await seed();
+    const id = (await pool.query<{ id: string }>("insert into participant_feedback(submission_id,user_id,author_kind,category,message,internal_note,submitted_name,status) values($1,$2,'user','opinion','رأي سابق خاص','متابعة سابقة','اسم سابق','reviewed') returning id", [randomUUID(), s.alice])).rows[0]!.id;
     const before = (await pool.query("select id,created_at,updated_at,status from participant_feedback where id=$1", [id])).rows[0];
     await ensureParticipantFeedbackSchema(pool); await ensureParticipantFeedbackSchema(pool);
     expect((await pool.query("select id,created_at,updated_at,status from participant_feedback where id=$1", [id])).rows[0]).toEqual(before);

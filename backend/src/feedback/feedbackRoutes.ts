@@ -11,7 +11,9 @@ import { getPool } from "../lib/db.js";
 import { FeedbackRepository } from "./feedbackRepository.js";
 
 const text = (max: number) => z.string().trim().max(max).refine(value => !value.includes("\u0000"));
-const submissionSchema = z.object({ submissionId: z.string().uuid(), category: z.enum(FEEDBACK_CATEGORIES), message: text(5000).min(1), name: text(120).optional() }).strict();
+// Accept the old form's optional name for compatibility, then discard it.
+// Clients cannot opt out of anonymity or inject an owner into a new record.
+const submissionSchema = z.object({ submissionId: z.string().uuid(), category: z.enum(FEEDBACK_CATEGORIES), message: text(5000).min(1), name: text(120).optional() }).strict().transform(({ submissionId, category, message }) => ({ submissionId, category, message }));
 const listSchema = z.object({ page: z.coerce.number().int().min(1).default(1), limit: z.coerce.number().int().min(1).max(100).default(20), status: z.enum(FEEDBACK_STATUSES).optional(), category: z.enum(FEEDBACK_CATEGORIES).optional() }).strict();
 const updateSchema = z.object({ status: z.enum(FEEDBACK_STATUSES).optional(), internalNote: text(3000).optional() }).strict().refine(value => value.status !== undefined || value.internalNote !== undefined);
 
@@ -34,7 +36,7 @@ export function feedbackRoutes(): Router {
     try {
       if (req.user && req.user.status !== "active") throw forbidden();
       const result = submissionSchema.safeParse(req.body);
-      if (!result.success) throw new ValidationError("تحقق من نص الملاحظة والتصنيف والاسم، ثم حاول مرة أخرى.");
+      if (!result.success) throw new ValidationError("تحقق من نص الملاحظة والتصنيف، ثم حاول مرة أخرى.");
       await repository().submit(result.data, req.user ? { userId: req.user.id } : { guestSessionId: req.guestSession!.id });
       // No record id, author information, or submitted content is returned.
       res.status(201).json({ data: { received: true } });

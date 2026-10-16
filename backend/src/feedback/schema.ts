@@ -5,12 +5,14 @@ import { encryptFeedback } from "./privateContent.js";
 export async function ensureParticipantFeedbackSchema(pool: Pool): Promise<void> {
   const migration = await readFile(new URL("../../../supabase/migrations/00000000000020_participant_feedback.sql", import.meta.url), "utf8");
   const encryptionMigration = await readFile(new URL("../../../supabase/migrations/00000000000026_private_feedback_encryption.sql", import.meta.url), "utf8");
+  const anonymityMigration = await readFile(new URL("../../../supabase/migrations/00000000000027_anonymous_participant_feedback.sql", import.meta.url), "utf8");
   const client = await pool.connect();
   try {
     await client.query("begin");
     await client.query("select pg_advisory_xact_lock(hashtext('participant_feedback_schema_v1'))");
     await client.query(migration);
     await client.query(encryptionMigration);
+    await client.query(anonymityMigration);
     for (;;) {
       const rows = (await client.query<{ id: string; message: string; internal_note: string; submitted_name: string | null }>(
         "select id,message,internal_note,submitted_name from participant_feedback where message_ciphertext is null order by id limit 100 for update",
