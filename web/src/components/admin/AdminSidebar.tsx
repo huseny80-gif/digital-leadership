@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const NAV_ITEMS = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/analytics", label: "Analytics" },
+  { href: "/admin/workflows", label: "مسارات الوكلاء والمهام" },
   { href: "/admin/subjects", label: "Subjects" },
   { href: "/admin/content", label: "تحديث المحتوى تلقائيًا" },
   { href: "/admin/training-access", label: "دخول المتدربين والزوار" },

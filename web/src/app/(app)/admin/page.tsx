@@ -37,6 +37,7 @@ export default async function AdminOverviewPage() {
       <h1 className="page-heading">Admin Overview</h1>
       <p className="page-subheading">A summary of the platform&apos;s current content and users.</p>
       <a className="btn btn-gold" href="/admin/content">إضافة محاضرات وملفات وتحديث الاختبارات تلقائيًا</a>
+      <a className="btn btn-secondary" href="/admin/workflows">متابعة مسارات الوكلاء والمهام</a>
 
       <div className="card-grid">
         {TILES.map((tile) => (
