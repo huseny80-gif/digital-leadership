@@ -36,6 +36,14 @@ specific error and leave previous archives untouched.
   glyphs. Then run `npm run build` and
   `node scripts/buildCatalogStudyContent.mjs` from `backend`, and re-anchor
   any reviewed case evidence that quoted the old broken spelling.
+- Fonts that map further two-letter ligatures (e.g. "تح", "لم", "ير") to one
+  glyph are repaired the same way when the file's glyphs prove the spelling.
+  The ISO 27001 roadmap transcript (method `poppler-pair-repair-v1`) also
+  needed pure letter-order swaps proven by the other verified transcripts and
+  a reviewed list of permutations; no letter is added or removed.
+- Reviewed admin uploads that are not catalog assets (cyber lecture six) bind
+  a transcript to the upload's file hash; tests verify their text hash and
+  reviewed cases without the catalog bytes.
 - Every reference records the original file identity/hash, paragraph number
   and line range **in the extracted text**, rather than invented PDF page
   coordinates. Questions retain these references in their private rubric.

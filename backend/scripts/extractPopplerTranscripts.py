@@ -91,7 +91,33 @@ def restore_ligatures(word, vocabulary):
         candidate = "".join(letters)
         if MARKS.sub("", candidate) in vocabulary:
             proven.append(candidate)
-    return proven[0] if len(set(proven)) == 1 else word
+    if len(set(proven)) == 1:
+        return proven[0]
+    return restore_pairs(word, vocabulary)
+
+
+def restore_pairs(word, vocabulary):
+    """Some fonts also map other two-letter ligatures (e.g. "تح", "لم", "ير")
+    to one glyph, which poppler reverses the same way. Swap up to three
+    non-overlapping adjacent letter pairs, and accept only a spelling that the
+    file's own glyphs prove, when exactly one such spelling exists."""
+    bare = MARKS.sub("", word)
+    if bare != word or bare in vocabulary or len(bare) > 14:
+        return word
+    proven = set()
+    for count in (1, 2, 3):
+        for chosen in itertools.combinations(range(len(bare) - 1), count):
+            if any(b - a < 2 for a, b in zip(chosen, chosen[1:])):
+                continue
+            letters = list(bare)
+            for start in chosen:
+                letters[start], letters[start + 1] = letters[start + 1], letters[start]
+            candidate = "".join(letters)
+            if candidate in vocabulary:
+                proven.add(candidate)
+        if proven:
+            break
+    return proven.pop() if len(proven) == 1 else word
 
 
 def transcript(path):
