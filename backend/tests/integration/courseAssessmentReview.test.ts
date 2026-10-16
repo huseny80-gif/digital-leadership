@@ -51,7 +51,7 @@ describe("publish file-verified course questions without rewriting learner histo
     const current = (await s.repository.listQuizzesForSubject(subjectId, false)).find(quiz => quiz.lectureId === null)!;
     expect(current.id).not.toBe(s.original);
     const questions = await s.repository.listQuestionsForAttempt(current.id);
-    expect(questions).toHaveLength(12);
+    expect(questions).toHaveLength(41);
     expect(new Set(questions.map(q => q.lectureId))).toEqual(new Set(s.lectures));
     expect(questions.every(q => q.questionType === "multiple_choice" && !/___|أكمل العبارة|CamScanner|\bla\b/u.test(q.prompt) && q.options!.every(option => option.optionText.length >= 24))).toBe(true);
     expect(JSON.stringify(questions)).not.toMatch(/isCorrect|is_correct|sourceReferences|correctIndex/);
@@ -76,9 +76,9 @@ describe("publish file-verified course questions without rewriting learner histo
     const current = (await s.repository.listQuizzesForSubject(subjectId, false)).find(q => !q.lectureId)!;
     await pool.query("insert into quiz_questions(quiz_id,question_id,order_index) values($1,$2,99)", [current.id, s.q]);
     await reviewCourseAssessments(pool, [subjectId]);
-    expect((await pool.query("select count(*)::int as n from quiz_questions where quiz_id=$1", [current.id])).rows[0].n).toBe(13);
+    expect((await pool.query("select count(*)::int as n from quiz_questions where quiz_id=$1", [current.id])).rows[0].n).toBe(42);
     const fixed = (await s.repository.listQuizzesForSubject(subjectId, false)).find(q => !q.lectureId)!;
-    expect(await s.repository.listQuestionsForAttempt(fixed.id)).toHaveLength(12);
+    expect(await s.repository.listQuestionsForAttempt(fixed.id)).toHaveLength(41);
     const nextCount = await count();
     await reviewCourseAssessments(pool, [subjectId]);
     expect(await count()).toBe(nextCount);
@@ -98,7 +98,7 @@ describe("publish file-verified course questions without rewriting learner histo
     expect(missing.status).toBe("draft");
     const current = (await s.repository.listQuizzesForSubject(subjectId, false)).find(q => !q.lectureId && q.id !== manualQuiz)!;
     const questions = await s.repository.listQuestionsForAttempt(current.id);
-    expect(questions).toHaveLength(10);
+    expect(questions).toHaveLength(33);
     expect(questions.some(q => q.lectureId === unknown || q.lectureId === s.lectures[1])).toBe(false);
   }, 30000);
 
@@ -108,7 +108,7 @@ describe("publish file-verified course questions without rewriting learner histo
     await reviewCourseAssessments(pool, [subjectId]);
     const root = (await s.repository.listQuizzesForSubject(subjectId, false)).find(q => !q.lectureId)!;
     const before = (await pool.query("select * from quiz_questions where quiz_id=$1 order by order_index", [root.id])).rows;
-    expect(before).toHaveLength(10);
+    expect(before).toHaveLength(35);
     await pool.query("update quiz_questions set points_override=3 where quiz_id=$1 and question_id=$2", [root.id, before[0].question_id]);
     const originalAttempt = (await pool.query("select * from quiz_attempts where id=$1", [s.attempt.id])).rows[0];
     const manual = (await pool.query("insert into quizzes(subject_id,title,status,created_by) values($1,'مناقشة خاصة بالمدرب','published',$2) returning id", [subjectId, s.admin])).rows[0].id;
@@ -119,10 +119,10 @@ describe("publish file-verified course questions without rewriting learner histo
     const current = (await s.repository.listQuizzesForSubject(subjectId, false)).find(q => !q.lectureId && q.id !== manual)!;
     expect(current.id).not.toBe(root.id);
     const questions = await s.repository.listQuestionsForAttempt(current.id);
-    expect(questions).toHaveLength(12);
+    expect(questions).toHaveLength(41);
     expect(new Set(questions.map(q => q.lectureId))).toEqual(new Set(s.lectures));
     expect((await pool.query("select points_override from quiz_questions where quiz_id=$1 and question_id=$2", [current.id, before[0].question_id])).rows[0].points_override).toBe(3);
-    expect((await pool.query("select count(*)::int n from quiz_questions where quiz_id=$1", [root.id])).rows[0].n).toBe(10);
+    expect((await pool.query("select count(*)::int n from quiz_questions where quiz_id=$1", [root.id])).rows[0].n).toBe(35);
     expect((await pool.query("select * from quiz_attempts where id=$1", [s.attempt.id])).rows[0]).toEqual(originalAttempt);
     expect((await pool.query("select superseded_by from quizzes where id=$1", [manual])).rows[0].superseded_by).toBeNull();
     const count = (await pool.query("select count(*)::int n from quizzes")).rows[0].n;
