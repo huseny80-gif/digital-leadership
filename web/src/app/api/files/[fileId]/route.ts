@@ -11,13 +11,10 @@ import { readGuestSessionCookieValue } from "@/lib/api/guestCookie";
  * Existing Architecture"); it calls this Next.js Route Handler, which
  * forwards the current session's access token to the backend exactly as
  * every other server-side API call already does (`lib/api/client.ts`),
- * and returns only the resulting short-lived signed URL.
- *
- * This is the only place in the web app that requests a signed URL, and
- * it does nothing with it beyond returning it in the JSON response — it
- * is never logged (PDF_VIEWER.md "Signed URL Handling"), never written to
- * a cookie/session/database, and this route itself sets `Cache-Control:
- * no-store` so nothing caches it either.
+ * and returns the resulting short-lived signed URL. With `download=1`,
+ * it streams that authorized PDF as an attachment instead, so download
+ * works before preview and uses a fresh permission check each time.
+ * Signed URLs are never logged or persisted, and responses are not cached.
  *
  * ONE learner platform, multiple principals: a Guest Training Session
  * (no Supabase token, but a `training_guest_session` cookie) is accepted
@@ -27,7 +24,7 @@ import { readGuestSessionCookieValue } from "@/lib/api/guestCookie";
  * (`FilesService.getSignedUrlForGuestFile`) regardless of what this route
  * decides.
  */
-export async function GET(_request: Request, context: { params: Promise<{ fileId: string }> }) {
+export async function GET(request: Request, context: { params: Promise<{ fileId: string }> }) {
   const { fileId } = await context.params;
 
   const token = await getCurrentAccessToken();
@@ -41,6 +38,28 @@ export async function GET(_request: Request, context: { params: Promise<{ fileId
 
   try {
     const { data } = await apiGet<SignedFileUrl>(`/api/v1/files/${fileId}`);
+    if (new URL(request.url).searchParams.get("download") === "1") {
+      // Resolve access again for every download; no expired URLs in anchors,
+      // no client-supplied storage URL, and no user credentials sent to storage.
+      const signed = new URL(data.url);
+      if (signed.protocol !== "https:" && !(process.env.NODE_ENV !== "production" && signed.protocol === "http:")) throw new Error("invalid_storage_url");
+      if (!(Date.parse(data.expiresAt) > Date.now())) throw new Error("expired_storage_url");
+      const upstream = await fetch(signed, { cache: "no-store", redirect: "error", signal: AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]) });
+      if (!upstream.ok || !upstream.headers.get("content-type")?.toLowerCase().startsWith("application/pdf")) {
+        await upstream.body?.cancel();
+        return NextResponse.json({ error: { code: "file_unavailable", message: "تعذّر تحميل الملف. أعد المحاولة." } }, { status: 502, headers: { "Cache-Control": "no-store" } });
+      }
+      const requestedName = new URL(request.url).searchParams.get("filename") ?? "lecture.pdf";
+      const filename = requestedName.normalize("NFC").replace(/\p{Cc}/gu, "").slice(0, 200);
+      const encodedName = encodeURIComponent(/\.pdf$/iu.test(filename) ? filename : "lecture.pdf")
+        .replace(/['()*]/gu, character => `%${character.charCodeAt(0).toString(16).toUpperCase()}`);
+      return new Response(upstream.body, { headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="lecture.pdf"; filename*=UTF-8''${encodedName}`,
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+      } });
+    }
     return NextResponse.json({ data }, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
     if (err instanceof ApiError) {

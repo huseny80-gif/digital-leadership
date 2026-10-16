@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiGet, apiGetPaginated } from "@/lib/api/client";
 import { loadSubjectPdfDocuments } from "@/lib/content/subjectPdf";
+import catalog from "../../../backend/content/finquiz/catalog.json";
 
 vi.mock("@/lib/api/client", () => ({ apiGet: vi.fn(), apiGetPaginated: vi.fn() }));
 const subjectId = "subject";
@@ -32,5 +33,54 @@ describe("subject PDF inventory", () => {
     vi.mocked(apiGetPaginated).mockRejectedValue(new Error("unavailable"));
     const result = await loadSubjectPdfDocuments(subjectId);
     expect(result.partial).toBe(true); expect(result.documents).toHaveLength(1);
+  });
+
+  it("shows the six original legal lectures once when both the catalog and uploads contain them", async () => {
+    const course = catalog.subjects.find(subject => subject.id === "legal-regulatory")!;
+    const entries = course.lectures.map(lecture => {
+      const file = Object.values(catalog.assets).find(file => lecture.files.some(ref => ref.url === file.path) && file.filename.endsWith(".pdf"))!;
+      return { lectureId: lecture.id, files: [{ ...file, label: lecture.title }] };
+    });
+    vi.mocked(apiGet).mockResolvedValue({ data: { subjectId, entries: [...entries, ...entries] } });
+    vi.mocked(apiGetPaginated).mockImplementation(async path => {
+      const data = path.includes("/lectures?") ? course.lectures.map(lecture => ({ ...lecture, orderIndex: lecture.number }))
+        : entries.filter(entry => path.includes(`/lectures/${entry.lectureId}/`)).map(entry => {
+          const file = entry.files[0]!;
+          return { itemType: "pdf", title: file.label, fileId: `uploaded-${file.id}`, file: { ...file, id: `uploaded-${file.id}`,
+            originalFilename: file.filename, mimeType: "application/pdf", status: "active", sha256: file.sha256.toUpperCase() } };
+        });
+      return { data, total: data.length, page: 1, limit: 100 };
+    });
+    const result = await loadSubjectPdfDocuments(subjectId);
+    expect(result.partial).toBe(false);
+    expect(result.documents).toHaveLength(6);
+    expect(result.documents.every(document => document.source === "catalog")).toBe(true);
+    expect(result.documents.map(document => document.lectureId)).toEqual(course.lectures.map(lecture => lecture.id));
+    expect(new Set(result.documents.map(document => document.fileId)).size).toBe(6);
+  });
+
+  it("retains distinct, unverified and size-mismatched originals despite identical Arabic filenames", async () => {
+    vi.mocked(apiGet).mockResolvedValue({ data: { subjectId, entries: [{ lectureId: "l1", files: [{ ...asset, sha256: "a".repeat(64) }] }] } });
+    const hashes = ["b".repeat(64), undefined, "not-a-sha256", "a".repeat(64)];
+    vi.mocked(apiGetPaginated).mockImplementation(async path => {
+      const data = path.includes("/lectures?") ? [{ id: "l1", title: asset.label, orderIndex: 1 }]
+        : hashes.map((sha256, index) => ({ itemType: "pdf", title: asset.label, fileId: `file-${index}`, file: { id: `file-${index}`,
+          originalFilename: asset.filename, mimeType: "application/pdf", status: "active", sizeBytes: index === 3 ? 601 : asset.sizeBytes, sha256 } }));
+      return { data, total: data.length, page: 1, limit: 100 };
+    });
+    const result = await loadSubjectPdfDocuments(subjectId);
+    expect(result.documents).toHaveLength(5);
+  });
+
+  it("recovers lecture navigation when an identical original first appears as a resource", async () => {
+    vi.mocked(apiGet).mockResolvedValue({ data: { subjectId, entries: [{ files: [{ ...asset, sha256: "a".repeat(64) }] }] } });
+    vi.mocked(apiGetPaginated).mockImplementation(async path => {
+      const data = path.includes("/lectures?") ? [{ id: "l1", title: asset.label, orderIndex: 6 }]
+        : [{ itemType: "pdf", title: asset.label, fileId: "copy", file: { id: "copy", originalFilename: asset.filename,
+          mimeType: "application/pdf", status: "active", sizeBytes: asset.sizeBytes, sha256: "a".repeat(64) } }];
+      return { data, total: data.length, page: 1, limit: 100 };
+    });
+    const result = await loadSubjectPdfDocuments(subjectId);
+    expect(result.documents).toEqual([expect.objectContaining({ id: `catalog:${asset.id}`, lectureId: "l1", lectureTitle: asset.label, order: 6 })]);
   });
 });

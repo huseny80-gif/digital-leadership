@@ -9,6 +9,8 @@ export interface FileMetadata {
   originalFilename: string;
   mimeType: string;
   sizeBytes: number;
+  /** SHA-256 of the original bytes, when verified at upload/import time. */
+  sha256?: string;
   status: "active" | "archived";
   uploadedBy: string;
   createdAt: string;

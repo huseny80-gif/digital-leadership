@@ -87,6 +87,7 @@ interface LectureItemRow {
   file_original_filename: string | null;
   file_mime_type: string | null;
   file_size_bytes: string | null;
+  file_checksum: string | null;
   file_status: "active" | "archived" | null;
   file_uploaded_by: string | null;
   file_created_at: Date | null;
@@ -142,6 +143,7 @@ function toLectureItem(row: LectureItemRow): LectureItemResponse {
       originalFilename: row.file_original_filename,
       mimeType: row.file_mime_type,
       sizeBytes: Number(row.file_size_bytes),
+      ...(row.file_checksum && /^[a-f0-9]{64}$/iu.test(row.file_checksum) ? { sha256: row.file_checksum.toLowerCase() } : {}),
       status: row.file_status,
       uploadedBy: row.file_uploaded_by,
       createdAt: row.file_created_at.toISOString(),
@@ -263,6 +265,7 @@ export class PgContentRepository implements ContentRepository {
          f.original_filename as file_original_filename,
          f.mime_type as file_mime_type,
          f.size_bytes as file_size_bytes,
+         f.checksum as file_checksum,
          f.status as file_status,
          f.uploaded_by as file_uploaded_by,
          f.created_at as file_created_at

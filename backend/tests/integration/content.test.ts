@@ -234,7 +234,9 @@ describe("Lecture Items", () => {
   });
 
   it("15. authenticated user sees only published items, with embedded safe file metadata for the pdf item", async () => {
-    const { publishedLectureId, userToken } = await seedBasicScenario();
+    const { publishedLectureId, fileId, userToken } = await seedBasicScenario();
+    const sha256 = "a".repeat(64);
+    await pool.query("update files set checksum=$1 where id=$2", [sha256, fileId]);
     const app = createApp();
     const res = await request(app)
       .get(`/api/v1/lectures/${publishedLectureId}/items`)
@@ -244,7 +246,7 @@ describe("Lecture Items", () => {
     expect(res.body.data).toHaveLength(1);
     const item = res.body.data[0];
     expect(item.itemType).toBe("pdf");
-    expect(item.file).toMatchObject({ mimeType: "application/pdf", originalFilename: "lecture1.pdf" });
+    expect(item.file).toMatchObject({ mimeType: "application/pdf", originalFilename: "lecture1.pdf", sha256 });
   });
 
   it("16. invalid lecture ID → 400", async () => {

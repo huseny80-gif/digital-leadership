@@ -1,4 +1,5 @@
 import { passivePdf } from "../helpers/passivePdf.js";
+import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import type { Pool } from "pg";
 import { FilesService } from "../../src/files/filesService.js";
@@ -28,6 +29,7 @@ describe("FilesService upload consistency (PHASE 08 §10, tests 24/25)", () => {
     await service.replaceFile("11111111-1111-4111-8111-111111111111", input);
     for (const [metadata] of insertFile.mock.calls) {
       expect(metadata.originalFilename).toBe(filename);
+      expect(metadata.sha256).toBe(createHash("sha256").update(VALID_PDF).digest("hex"));
       expect(metadata.storageKey).toMatch(/^subjects\/[0-9a-f-]+\/lectures\/unassigned\/[0-9a-f-]+\/[a-z0-9._-]+$/u);
     }
     expect(insertFile.mock.calls[0]![0].storageKey).not.toBe(insertFile.mock.calls[1]![0].storageKey);

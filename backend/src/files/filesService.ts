@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import { createHash } from "node:crypto";
 import type { FileMetadata, SignedFileUrl } from "@shared/index";
 import type { StorageProvider } from "./storageProvider.js";
 import { FilesRepository } from "./filesRepository.js";
@@ -84,6 +85,7 @@ export class FilesService {
         originalFilename: courseDisplayLabel(input.subjectId, displayFilename(input.originalFilename)),
         mimeType: "application/pdf",
         sizeBytes: input.buffer.length,
+        sha256: createHash("sha256").update(input.buffer).digest("hex"),
         uploadedBy: input.uploadedBy,
       });
       await writeAuditLog(this.pool, {
@@ -201,6 +203,7 @@ export class FilesService {
         originalFilename: courseDisplayLabel(context.subjectId, displayFilename(input.originalFilename)),
         mimeType: "application/pdf",
         sizeBytes: input.buffer.length,
+        sha256: createHash("sha256").update(input.buffer).digest("hex"),
         uploadedBy: input.uploadedBy,
       });
       await this.repository.repointLectureItems(oldFileId, newFileId);

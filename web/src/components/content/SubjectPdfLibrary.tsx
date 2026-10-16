@@ -17,6 +17,9 @@ function PdfFile({ document, subjectId }: { document: SubjectPdfDocument; subjec
   useEffect(() => () => pending.current?.abort(), []);
   const catalogUrl = `/api/library/${subjectId}/${document.fileId}`;
   const url = document.source === "catalog" ? catalogUrl : signed?.url;
+  const downloadUrl = document.source === "catalog" ? catalogUrl
+    : `/api/files/${document.fileId}?download=1&filename=${encodeURIComponent(document.filename)}`;
+  const title = document.title.replace(/\.pdf$/iu, "").trim();
 
   async function open() {
     if (opened) { setOpened(false); return; }
@@ -26,21 +29,21 @@ function PdfFile({ document, subjectId }: { document: SubjectPdfDocument; subjec
     try {
       const response = await fetch(`/api/files/${document.fileId}`, { cache: "no-store", credentials: "same-origin", signal: controller.signal });
       const body = await response.json();
-      if (!response.ok || typeof body.data?.url !== "string" || !/^https?:\/\//iu.test(body.data.url) || !Number.isFinite(Date.parse(body.data.expiresAt))) throw new Error("unavailable");
+      if (!response.ok || typeof body.data?.url !== "string" || !/^https?:\/\//iu.test(body.data.url) || !(Date.parse(body.data.expiresAt) > Date.now())) throw new Error("unavailable");
       if (!controller.signal.aborted) { setSigned(body.data); setOpened(true); }
     } catch { if (!controller.signal.aborted) setError("تعذّر فتح الملف. أعد المحاولة."); }
     finally { if (!controller.signal.aborted) setLoading(false); }
   }
 
   return <article className={styles.file}>
-    <div className={styles.fileHead}><span className={styles.pdfIcon}><PlatformIcon name="document" /><b>PDF</b></span><div><h3>{document.title}</h3><p><bdi>{document.filename}</bdi></p><small>{(document.sizeBytes / 1024 / 1024).toLocaleString("ar-IQ", { maximumFractionDigits: 2 })} ميغابايت</small></div></div>
+    <div className={styles.fileHead}><span className={styles.pdfIcon}><PlatformIcon name="document" /><b>PDF</b></span><div><h3 title={document.filename}>{title}</h3><small>{(document.sizeBytes / 1024 / 1024).toLocaleString("ar-IQ", { maximumFractionDigits: 2 })} ميغابايت</small></div></div>
     <div className={styles.actions}>
-      <button type="button" className="btn btn-secondary" aria-expanded={opened} disabled={loading} onClick={open}>{loading ? "جارٍ فتح الملف…" : opened ? "إغلاق المعاينة" : "عرض PDF"}</button>
-      {url ? <a className="btn btn-secondary" href={url} download={document.filename} target="_blank" rel="noopener noreferrer"><PlatformIcon name="download" /> تحميل PDF</a> : null}
-      {document.lectureId ? <Link className="text-link" href={`/subjects/${subjectId}/lectures/${document.lectureId}`}>فتح المحاضرة</Link> : null}
+      <button type="button" className="btn btn-secondary" aria-expanded={opened} aria-busy={loading} title={opened ? "إغلاق المعاينة" : "عرض الملف"} disabled={loading} onClick={open}>عرض</button>
+      <a className="btn btn-secondary" href={downloadUrl} download={document.filename} target="_blank" rel="noopener noreferrer"><PlatformIcon name="download" /> تحميل</a>
+      {document.lectureId ? <Link className="btn btn-secondary" href={`/subjects/${subjectId}/lectures/${document.lectureId}`}>فتح المحاضرة</Link> : null}
     </div>
     {error ? <p role="alert">{error}</p> : null}
-    {opened && url ? <div className={styles.preview}><iframe src={document.source === "catalog" ? `${url}?inline=1` : url} title={`معاينة ${document.title}`} loading="lazy" /><a className="text-link" href={document.source === "catalog" ? `${url}?inline=1` : url} target="_blank" rel="noopener noreferrer">فتح الملف في نافذة مستقلة</a></div> : null}
+    {opened && url ? <div className={styles.preview}><iframe src={document.source === "catalog" ? `${url}?inline=1` : url} title={`معاينة ${title}`} loading="lazy" /></div> : null}
   </article>;
 }
 

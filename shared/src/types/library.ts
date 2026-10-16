@@ -4,6 +4,8 @@ export interface LibraryAsset {
   filename: string;
   label: string;
   sizeBytes: number;
+  /** Content identity shared with uploaded copies of the same original file. */
+  sha256?: string;
   bodyHtml?: string;
   /** View-only link to a source already rendered in the same collection. */
   inlineReferenceId?: string;

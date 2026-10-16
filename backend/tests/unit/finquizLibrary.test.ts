@@ -31,6 +31,9 @@ describe("Finquiz educational library", () => {
       }
       expect(JSON.stringify(library)).not.toMatch(/"(answer|rubric|is_correct|question_options)"/);
       for (const entry of library.entries) for (const file of entry.files) if (file.bodyHtml) expect(file.bodyHtml).not.toMatch(/<script|<style|\son\w+=|\sstyle=|\sclass=|javascript:/i);
+      for (const entry of library.entries) for (const file of entry.files) if (!file.bodyHtml && file.filename.endsWith(".pdf")) {
+        expect(file.sha256).toBe(manifest.assets[file.id]!.sha256);
+      }
     }
   });
 

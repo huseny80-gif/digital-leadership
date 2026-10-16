@@ -6,6 +6,7 @@ interface FileRow {
   original_filename: string;
   mime_type: string;
   size_bytes: string;
+  checksum: string | null;
   status: "active" | "archived";
   uploaded_by: string;
   created_at: Date;
@@ -18,6 +19,7 @@ function toFileMetadata(row: FileRow): FileMetadata {
     originalFilename: row.original_filename,
     mimeType: row.mime_type,
     sizeBytes: Number(row.size_bytes),
+    ...(row.checksum && /^[a-f0-9]{64}$/iu.test(row.checksum) ? { sha256: row.checksum.toLowerCase() } : {}),
     status: row.status,
     uploadedBy: row.uploaded_by,
     createdAt: row.created_at.toISOString(),
@@ -56,13 +58,14 @@ export class FilesRepository {
     originalFilename: string;
     mimeType: string;
     sizeBytes: number;
+    sha256: string;
     uploadedBy: string;
   }): Promise<FileMetadata> {
     const result = await this.pool.query<FileRow>(
-      `insert into files (id, storage_key, original_filename, mime_type, size_bytes, uploaded_by)
-       values ($1, $2, $3, $4, $5, $6)
-       returning id, original_filename, mime_type, size_bytes, status, uploaded_by, created_at, storage_key`,
-      [input.id, input.storageKey, input.originalFilename, input.mimeType, input.sizeBytes, input.uploadedBy],
+      `insert into files (id, storage_key, original_filename, mime_type, size_bytes, uploaded_by, checksum)
+       values ($1, $2, $3, $4, $5, $6, $7)
+       returning id, original_filename, mime_type, size_bytes, checksum, status, uploaded_by, created_at, storage_key`,
+      [input.id, input.storageKey, input.originalFilename, input.mimeType, input.sizeBytes, input.uploadedBy, input.sha256],
     );
     return toFileMetadata(result.rows[0]!);
   }
@@ -73,7 +76,7 @@ export class FilesRepository {
    * the route layer, not by publication status. */
   async listFilesAdmin(): Promise<FileMetadata[]> {
     const result = await this.pool.query<FileRow>(
-      `select id, original_filename, mime_type, size_bytes, status, uploaded_by, created_at, storage_key
+      `select id, original_filename, mime_type, size_bytes, checksum, status, uploaded_by, created_at, storage_key
        from files where deleted_at is null order by created_at desc`,
     );
     return result.rows.map(toFileMetadata);
@@ -81,7 +84,7 @@ export class FilesRepository {
 
   async getFileById(id: string): Promise<(FileMetadata & { storageKey: string }) | null> {
     const result = await this.pool.query<FileRow>(
-      `select id, original_filename, mime_type, size_bytes, status, uploaded_by, created_at, storage_key
+      `select id, original_filename, mime_type, size_bytes, checksum, status, uploaded_by, created_at, storage_key
        from files where id = $1 and deleted_at is null`,
       [id],
     );

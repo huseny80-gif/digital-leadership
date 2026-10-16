@@ -1,4 +1,5 @@
 import { passivePdf } from "../helpers/passivePdf.js";
+import { createHash } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { Pool } from "pg";
@@ -78,7 +79,7 @@ describe("Upload authorization", () => {
       .attach("file", VALID_PDF, "lecture1.pdf");
 
     expect(res.status).toBe(201);
-    expect(res.body.data).toMatchObject({ originalFilename: "lecture1.pdf", mimeType: "application/pdf", status: "active" });
+    expect(res.body.data).toMatchObject({ originalFilename: "lecture1.pdf", mimeType: "application/pdf", status: "active", sha256: createHash("sha256").update(VALID_PDF).digest("hex") });
     expect(res.body.data).not.toHaveProperty("storageKey");
     expect(res.body.data).not.toHaveProperty("storage_key");
   });

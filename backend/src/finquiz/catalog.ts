@@ -76,7 +76,7 @@ export class LibraryService {
         for (const ref of refs) {
           const asset = ref.url ? assetsByPath.get(ref.url) : undefined;
           if (asset && asset.subjectSlug === source.id) {
-            files.push({ id: asset.id, filename: asset.filename, label: ref.label ?? asset.filename, sizeBytes: asset.sizeBytes, ...(asset.bodyHtml ? { bodyHtml: asset.bodyHtml } : {}) });
+            files.push({ id: asset.id, filename: asset.filename, label: ref.label ?? asset.filename, sizeBytes: asset.sizeBytes, sha256: asset.sha256, ...(asset.bodyHtml ? { bodyHtml: asset.bodyHtml } : {}) });
           } else unavailableFiles.push(ref.label ?? ref.type);
         }
         const entry = {
@@ -95,7 +95,7 @@ export class LibraryService {
     // navigation, such as a second standalone lecture document.
     for (const asset of Object.values(manifest.assets)) {
       if (asset.subjectSlug !== source.id || referenced.has(asset.id)) continue;
-      entries.push({ id: "asset-" + asset.id, title: asset.filename, section: "resources", files: [{ id: asset.id, filename: asset.filename, label: asset.filename, sizeBytes: asset.sizeBytes, ...(asset.bodyHtml ? { bodyHtml: asset.bodyHtml } : {}) }], unavailableFiles: [] });
+      entries.push({ id: "asset-" + asset.id, title: asset.filename, section: "resources", files: [{ id: asset.id, filename: asset.filename, label: asset.filename, sizeBytes: asset.sizeBytes, sha256: asset.sha256, ...(asset.bodyHtml ? { bodyHtml: asset.bodyHtml } : {}) }], unavailableFiles: [] });
     }
     // Import after manifest initialization: the source reader also uses the
     // catalog for file identity. Visible lecture IDs still gate every result.
