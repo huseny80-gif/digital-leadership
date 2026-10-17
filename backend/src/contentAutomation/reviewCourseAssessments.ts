@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
-import { assessmentFormat, type Lecture, type QuestionType } from "@shared/index";
+import { assessmentFormat, type Lecture, type QuestionType } from "@digital-leadership/shared";
 import { ContentService } from "../content/contentService.js";
 import { PgContentRepository } from "../content/contentRepository.js";
 import { LibraryService, manifest, subjectMapping } from "../finquiz/catalog.js";
