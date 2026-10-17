@@ -71,7 +71,12 @@ describe("source assessment quality", () => {
   });
   it("renders academic rubric points without exposing their private provenance object", () => {
     const points = [{ text: "استيفاء الشروط الواردة في النص.", keywords: ["الشروط"] }];
-    expect(normalizeAnswerRubric({ sourcePolicy: "provided-text-assessment-v2", points, sourceReferences: [{ excerpt: "private" }] })).toEqual(points);
+    for (const policy of [{ sourcePolicy: "provided-text-assessment-v2" }, { sourcePolicy: "provided-text-assessment-v3-diverse" }, { grounding: "strict-file-extraction-v1" }]) {
+      const displayed = normalizeAnswerRubric({ ...policy, points, sourceReferences: [{ excerpt: "PRIVATE_QUOTE" }], sourceProgram: { correctIndex: 1 }, matchingRightIds: { left: "PRIVATE_RIGHT_ID" } });
+      expect(displayed).toEqual(points);
+      expect(JSON.stringify(displayed)).not.toMatch(/PRIVATE_|sourceProgram|sourceReferences|matchingRightIds/);
+    }
+    expect(normalizeAnswerRubric({ sourcePolicy: "unknown", points })).toEqual([]);
   });
 });
 

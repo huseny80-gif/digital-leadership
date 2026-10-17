@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
+import { assessmentFormat } from "@shared/index";
 import { Pool } from "pg";
 import { createUser } from "../helpers/seedFixtures.js";
 import { synchronizeFinquizCore } from "../../src/finquiz/synchronizeCore.js";
@@ -53,7 +54,8 @@ describe("a verified curriculum review across all five materials", () => {
       expect(group.lectures).toHaveLength(report.currentLectures);
       const questions = await new PgAssessmentsRepository(pool).listQuestionsForAttempt(group.quizId);
       expect(JSON.stringify(questions)).not.toMatch(/isCorrect|sourceReferences|correctIndex/);
-      expect(questions.every(question => question.questionType === "multiple_choice" && !/___|أكمل العبارة/u.test(question.prompt))).toBe(true);
+      expect(new Set(questions.map(assessmentFormat))).toEqual(new Set(["multiple_choice", "true_false", "match", "order", "essay", "short_scenario"]));
+      expect(questions.every(question => !/___|أكمل العبارة/u.test(question.prompt))).toBe(true);
     }
     await reviewCourseAssessments(pool);
     expect((await pool.query("select * from quiz_attempts where id=$1", [attempt.id])).rows[0]).toEqual(before.attempt);

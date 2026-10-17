@@ -146,7 +146,9 @@ function buildDiversePaper(input: Parameters<typeof buildAcademicExam>[0], inclu
       : [{ criterion: "تحديد الإجابة الصحيحة", expected: program.options![program.correctIndex!]!, points: program.type === "true_false" ? 1 : 2, references }];
     const points = rubric.reduce((sum, point) => sum + point.points, 0);
     questions.push({ id: question.id, type, lectureId: lecture.id, lectureTitle: lecture.title, prompt: question.prompt,
-      instructions: instructions[type], points, options: program.options ?? [],
+      instructions: type === "short_answer" ? "قدّم إجابة تحليلية منظّمة تستوفي عناصر السؤال، مستندًا إلى محتوى المحاضرة وحده."
+        : type === "case_study" ? "حلّل الموقف في إجابة موجزة، وحدّد الإجراء المناسب وعلّله وفق المحاضرة دون إضافة افتراضات." : instructions[type],
+      points, options: program.options ?? [],
       ...(program.pairs ? { matchItems: { left: program.pairs.map(pair => pair.left), right: shuffled(program.pairs.map(pair => pair.right)) } } : {}),
       ...(program.items ? { orderItems: shuffled(program.items) } : {}),
       sources: references.map(({ excerpt: _excerpt, ...location }) => location) });

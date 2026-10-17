@@ -21,7 +21,9 @@ export interface AttemptExperienceOptions { mode: "learning" | "challenge"; time
 /** Source rubrics contain {text, keywords}; never display them through
  * String(object), JSON or heuristic grading. Plain legacy text is also supported. */
 export function normalizeAnswerRubric(value: unknown): AnswerRubricPoint[] {
-  if (value && typeof value === "object" && "sourcePolicy" in value && value.sourcePolicy === "provided-text-assessment-v2" && "points" in value && Array.isArray(value.points)) value = value.points;
+  if (value && typeof value === "object" && "points" in value && Array.isArray(value.points)
+    && (("sourcePolicy" in value && ["provided-text-assessment-v2", "provided-text-assessment-v3-diverse"].includes(String(value.sourcePolicy)))
+      || ("grounding" in value && value.grounding === "strict-file-extraction-v1"))) value = value.points;
   const entries = Array.isArray(value) ? value : value == null ? [] : [value];
   return entries.flatMap(entry => {
     if (typeof entry === "string") return entry.trim() ? [{ text: entry, keywords: [] }] : [];

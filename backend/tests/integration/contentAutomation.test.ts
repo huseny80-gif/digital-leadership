@@ -49,7 +49,7 @@ describe("durable automatic content imports", () => {
       expect(question.question_type).toBe("open");
       expect(source).toContain(question.source_excerpt);
       expect(question.explanation).toContain("لا تُصحَّح تلقائيًا");
-      expect(question.rubric.sourcePolicy).toBe("provided-text-assessment-v2");
+      expect(question.rubric.sourcePolicy).toBe("provided-text-assessment-v3-diverse");
       expect(question.rubric.sourceReferences[0].excerpt).toBe(question.source_excerpt);
     }
     const repo = new PgAssessmentsRepository(pool);

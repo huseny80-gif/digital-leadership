@@ -36,7 +36,7 @@ export async function refreshDiverseAssessments(pool: Pool) {
   for (const [key, selection] of latest) {
     if (selection.summary.grounding?.questionPolicy === diverseAssessmentPolicy) { alreadyCurrent++; continue; }
     try {
-      const requestId = finquizRecordId(`${diverseAssessmentPolicy}:selection:${key}`);
+      const requestId = finquizRecordId(`${diverseAssessmentPolicy}:selection:${key}:previous:${selection.id}`);
       const scope = selection.id === "initial" || selection.summary.grounding?.sourceScope === "catalog-primary" ? "catalog" : "all";
       const review = await service.generate(selection.subject_id, selection.lecture_ids, requestId, selection.created_by, scope);
       reviews.push({ subjectId: selection.subject_id, groupId: review.id, questions: review.questionCount });
