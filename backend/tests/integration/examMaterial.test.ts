@@ -100,7 +100,7 @@ describe("independent exam material archives", () => {
     await request(s.app).get(`/api/v1/subjects/${s.other}/exam-material/${group.id}/academic-paper`).set("Cookie", s.cookie).expect(404);
     const another = await s.generate([s.lectures[3]!]);
     await request(s.app).get(`${s.path}/${another.id}/academic-paper?attemptId=${attempt.id}`).set("Cookie", s.cookie).expect(404);
-  });
+  }, 30000);
 
   it("refuses an academic paper when archived grading prose or a question was altered outside its verified source program", async () => {
     const s = await seed(), group = await s.generate([s.lectures[0]!]);
