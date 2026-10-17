@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest";
 import { catalogRoot, manifest } from "../../src/finquiz/catalog.js";
 import { readAsset } from "../../src/finquiz/assetFiles.js";
 import { actualFileText, scopeSharedSource } from "../../src/examMaterials/lectureSourceFiles.js";
-import { assertSourceBoundSummary, groundedQuestionCandidates, sourceParagraphs, validGroundedQuestion } from "../../src/examMaterials/sourceGrounding.js";
+import { assertSourceBoundSummary, sourceParagraphs, validGroundedQuestion } from "../../src/examMaterials/sourceGrounding.js";
+import { analyticalQuestionCandidates as groundedQuestionCandidates } from "../../src/examMaterials/caseAssessment.js";
 import { compileExamSummary } from "../../src/examMaterials/summary.js";
 
 const cases = JSON.parse(await readFile(new URL("analyticalCases.json", catalogRoot), "utf8")) as { cases: Array<{ sha256: string; prompt: string }> };

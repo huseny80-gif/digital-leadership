@@ -1,4 +1,6 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
+import { randomUUID } from "node:crypto";
+import { assessmentFormat } from "@shared/index";
 import { Pool } from "pg";
 import { createUser, createLecture } from "../helpers/seedFixtures.js";
 import { manifest, subjectMapping } from "../../src/finquiz/catalog.js";
@@ -51,10 +53,13 @@ describe("publish file-verified course questions without rewriting learner histo
     const current = (await s.repository.listQuizzesForSubject(subjectId, false)).find(quiz => quiz.lectureId === null)!;
     expect(current.id).not.toBe(s.original);
     const questions = await s.repository.listQuestionsForAttempt(current.id);
-    expect(questions).toHaveLength(42);
+    expect(questions).toHaveLength(44);
     expect(new Set(questions.map(q => q.lectureId))).toEqual(new Set(s.lectures));
-    expect(questions.every(q => q.questionType === "multiple_choice" && !/___|أكمل العبارة|CamScanner|\bla\b/u.test(q.prompt) && q.options!.every(option => option.optionText.length >= 24))).toBe(true);
-    expect(JSON.stringify(questions)).not.toMatch(/isCorrect|is_correct|sourceReferences|correctIndex/);
+    expect(new Set(questions.map(assessmentFormat))).toEqual(new Set(["multiple_choice", "true_false", "match", "order", "essay", "short_scenario"]));
+    expect(questions.every(q => !/___|أكمل العبارة|CamScanner|\bla\b/u.test(q.prompt))).toBe(true);
+    expect(questions.filter(q => q.questionType === "multiple_choice").every(q => q.options!.every(option => option.optionText.length >= 24))).toBe(true);
+    expect(questions.filter(q => q.questionType === "true_false").every(q => q.options!.map(option => option.optionText).sort().join(":") === ["صح", "خطأ"].sort().join(":"))).toBe(true);
+    expect(JSON.stringify(questions)).not.toMatch(/isCorrect|is_correct|sourceReferences|correctIndex|sourceProgram|matchingRightIds/);
     expect(await snapshot()).toEqual(before);
     const service = new AssessmentsService(s.repository);
     const fresh = await service.startAttempt(s.original, { kind: "user", userId: s.admin }, false);
@@ -64,6 +69,29 @@ describe("publish file-verified course questions without rewriting learner histo
     expect((await s.repository.getQuizById(s.original, false))!.supersededBy).toBe(current.id);
     const audit = await courseAssessmentAudit(pool, subjectId, false);
     expect(audit.quizzes.every(quiz => quiz.referenced === quiz.questions && quiz.weakFormatQuestions === 0)).toBe(true);
+  }, 30000);
+
+  it("delivers independent matching IDs, grades and restores them without exposing the private mapping", async () => {
+    const s = await seed(); await reviewCourseAssessments(pool, [subjectId]);
+    const quiz = (await s.repository.listQuizzesForSubject(subjectId, false)).find(q => !q.lectureId)!;
+    const question = (await s.repository.listQuestionsForAttempt(quiz.id)).find(q => q.questionType === "match")!;
+    const left = new Set(question.matchItems!.left.map(item => item.id));
+    expect(question.matchItems!.right.every(item => !left.has(item.id))).toBe(true);
+    expect(JSON.stringify(question)).not.toMatch(/matchingRightIds|sourceProgram|isCorrect|rubric/);
+    const service = new AssessmentsService(s.repository), principal = { kind: "user" as const, userId: s.admin };
+    const attempt = await service.startAttempt(quiz.id, principal, false);
+    const correct = (await s.repository.getStudyAnswer(question.id)).review!.correctMatches!;
+    const wrong = correct.map((pair, index) => ({ ...pair, rightId: correct[(index + 1) % correct.length]!.rightId }));
+    expect(await s.repository.scoreMatchAnswer(question.id, wrong)).toMatchObject({ isCorrect: false, pointsAwarded: 0 });
+    await expect(service.submitAnswer(attempt.id, principal, { questionId: question.id, matchAnswer: [{ ...correct[0]!, rightId: randomUUID() }, ...correct.slice(1)] })).rejects.toThrow(/does not belong/);
+    const ack = await service.submitAnswer(attempt.id, principal, { questionId: question.id, matchAnswer: correct });
+    expect(ack.isCorrect).toBe(true);
+    const restored = (await service.getAnswersOrThrow(attempt.id, principal)).find(answer => answer.questionId === question.id)!;
+    expect(restored.matchAnswer!.sort((a,b) => a.leftId.localeCompare(b.leftId))).toEqual([...correct].sort((a,b) => a.leftId.localeCompare(b.leftId)));
+    const childSnapshot = (await pool.query("select * from question_pairs where question_id=$1 order by id", [question.id])).rows;
+    await reviewCourseAssessments(pool, [subjectId], "replay-matching-identities");
+    expect((await pool.query("select * from question_pairs where question_id=$1 order by id", [question.id])).rows).toEqual(childSnapshot);
+    expect((await service.getAnswersOrThrow(attempt.id, principal)).find(answer => answer.questionId === question.id)!.matchAnswer!.sort((a,b) => a.leftId.localeCompare(b.leftId))).toEqual(restored.matchAnswer);
   }, 30000);
 
   it("is idempotent and repairs a late legacy generation without altering its saved membership", async () => {
@@ -76,9 +104,9 @@ describe("publish file-verified course questions without rewriting learner histo
     const current = (await s.repository.listQuizzesForSubject(subjectId, false)).find(q => !q.lectureId)!;
     await pool.query("insert into quiz_questions(quiz_id,question_id,order_index) values($1,$2,99)", [current.id, s.q]);
     await reviewCourseAssessments(pool, [subjectId]);
-    expect((await pool.query("select count(*)::int as n from quiz_questions where quiz_id=$1", [current.id])).rows[0].n).toBe(43);
+    expect((await pool.query("select count(*)::int as n from quiz_questions where quiz_id=$1", [current.id])).rows[0].n).toBe(45);
     const fixed = (await s.repository.listQuizzesForSubject(subjectId, false)).find(q => !q.lectureId)!;
-    expect(await s.repository.listQuestionsForAttempt(fixed.id)).toHaveLength(42);
+    expect(await s.repository.listQuestionsForAttempt(fixed.id)).toHaveLength(44);
     const nextCount = await count();
     await reviewCourseAssessments(pool, [subjectId]);
     expect(await count()).toBe(nextCount);
@@ -98,7 +126,7 @@ describe("publish file-verified course questions without rewriting learner histo
     expect(missing.status).toBe("draft");
     const current = (await s.repository.listQuizzesForSubject(subjectId, false)).find(q => !q.lectureId && q.id !== manualQuiz)!;
     const questions = await s.repository.listQuestionsForAttempt(current.id);
-    expect(questions).toHaveLength(34);
+    expect(questions).toHaveLength(36);
     expect(questions.some(q => q.lectureId === unknown || q.lectureId === s.lectures[1])).toBe(false);
   }, 30000);
 
@@ -108,7 +136,7 @@ describe("publish file-verified course questions without rewriting learner histo
     await reviewCourseAssessments(pool, [subjectId]);
     const root = (await s.repository.listQuizzesForSubject(subjectId, false)).find(q => !q.lectureId)!;
     const before = (await pool.query("select * from quiz_questions where quiz_id=$1 order by order_index", [root.id])).rows;
-    expect(before).toHaveLength(36);
+    expect(before).toHaveLength(38);
     await pool.query("update quiz_questions set points_override=3 where quiz_id=$1 and question_id=$2", [root.id, before[0].question_id]);
     const originalAttempt = (await pool.query("select * from quiz_attempts where id=$1", [s.attempt.id])).rows[0];
     const manual = (await pool.query("insert into quizzes(subject_id,title,status,created_by) values($1,'مناقشة خاصة بالمدرب','published',$2) returning id", [subjectId, s.admin])).rows[0].id;
@@ -119,10 +147,10 @@ describe("publish file-verified course questions without rewriting learner histo
     const current = (await s.repository.listQuizzesForSubject(subjectId, false)).find(q => !q.lectureId && q.id !== manual)!;
     expect(current.id).not.toBe(root.id);
     const questions = await s.repository.listQuestionsForAttempt(current.id);
-    expect(questions).toHaveLength(42);
+    expect(questions).toHaveLength(44);
     expect(new Set(questions.map(q => q.lectureId))).toEqual(new Set(s.lectures));
     expect((await pool.query("select points_override from quiz_questions where quiz_id=$1 and question_id=$2", [current.id, before[0].question_id])).rows[0].points_override).toBe(3);
-    expect((await pool.query("select count(*)::int n from quiz_questions where quiz_id=$1", [root.id])).rows[0].n).toBe(36);
+    expect((await pool.query("select count(*)::int n from quiz_questions where quiz_id=$1", [root.id])).rows[0].n).toBe(38);
     expect((await pool.query("select * from quiz_attempts where id=$1", [s.attempt.id])).rows[0]).toEqual(originalAttempt);
     expect((await pool.query("select superseded_by from quizzes where id=$1", [manual])).rows[0].superseded_by).toBeNull();
     const count = (await pool.query("select count(*)::int n from quizzes")).rows[0].n;

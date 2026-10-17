@@ -1,4 +1,4 @@
-import type { MatchAnswerPair, QuestionForAttempt } from "@shared/index";
+import { assessmentFormats, type MatchAnswerPair, type QuestionForAttempt } from "@digital-leadership/shared";
 
 export type AnswerState = { selectedOptionId?: string; answerText?: string; matchAnswer?: MatchAnswerPair[]; orderAnswer?: string[] };
 export type QuizDraft = {
@@ -7,6 +7,7 @@ export type QuizDraft = {
   questionId?: string;
   difficulty: string;
   lecture: string;
+  format?: string;
 };
 
 const storageKey = (attemptId: string) => `digital-leadership:quiz-draft:${attemptId}`;
@@ -48,6 +49,7 @@ export function readQuizDraft(attemptId: string, quizId: string, questions: Ques
       questionId: questions.some(question => question.id === value.questionId) ? value.questionId : undefined,
       difficulty: ["easy", "medium", "hard"].includes(value.difficulty) ? value.difficulty : "all",
       lecture: questions.some(question => question.lectureId === value.lecture) ? value.lecture : "all",
+      format: assessmentFormats.some(format => format.id === value.format) ? value.format : "all",
     };
   } catch { return null; }
 }

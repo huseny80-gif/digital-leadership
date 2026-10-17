@@ -1,16 +1,16 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
-import type { Lecture } from "@shared/index";
+import { assessmentFormat, type Lecture, type QuestionType } from "@shared/index";
 import { ContentService } from "../content/contentService.js";
 import { PgContentRepository } from "../content/contentRepository.js";
 import { LibraryService, manifest, subjectMapping } from "../finquiz/catalog.js";
 import { finquizRecordId } from "../finquiz/recordIdentity.js";
 import { LectureSourceFiles } from "../examMaterials/lectureSourceFiles.js";
-import { analyticalQuestionCandidates } from "../examMaterials/caseAssessment.js";
-import { groundingVersion, validGroundedQuestion, type GroundedQuestion } from "../examMaterials/sourceGrounding.js";
+import { groundingVersion, groundedQuestionCandidates, validGroundedQuestion, type GroundedQuestion } from "../examMaterials/sourceGrounding.js";
 import { generatedSourcePolicy } from "./questionGeneration.js";
+import { privateMatchingIds } from "../assessments/matchingIdentity.js";
 
-export const courseAssessmentReviewPolicy = "file-verified-course-assessments-v3-arabic";
+export const courseAssessmentReviewPolicy = "file-verified-course-assessments-v4-diverse";
 const weakFormat = /_{3,}|أكمل\s+(?:العبارة|النص)|الكلمة\s+المحذوفة|CamScanner|المسح الضوئي\s+ب/u;
 type Plan = { lecture: Lecture; questions: GroundedQuestion[]; links: Awaited<ReturnType<LectureSourceFiles["read"]>>["links"] };
 const nativeQuestionIds = (subjectId: string) => manifest.subjects.find(subject => subjectMapping[subject.id] === subjectId)?.quizzes.flatMap(quiz => quiz.questions.flatMap(question => [
@@ -19,7 +19,7 @@ const nativeQuestionIds = (subjectId: string) => manifest.subjects.find(subject 
 ])) ?? [];
 const unreviewedMembership = `exists(select 1 from quiz_questions qq join questions q on q.id=qq.question_id where qq.quiz_id=z.id and q.deleted_at is null and
   (q.id=any($2::uuid[]) or q.prompt ~ '_{3,}|أكمل[[:space:]]+(العبارة|النص)|CamScanner|المسح الضوئي[[:space:]]+ب'
-   or q.rubric->>'courseReview' in ('file-verified-course-assessments-v1','file-verified-course-assessments-v2')
+   or q.rubric->>'courseReview' in ('file-verified-course-assessments-v1','file-verified-course-assessments-v2','file-verified-course-assessments-v3-arabic')
    or (q.source_import_id is not null and coalesce(q.rubric->>'sourcePolicy','')<>$3)))`;
 // Refresh only editions owned entirely by the platform. An instructor's manual
 // questions must never be overwritten when a new original lecture is added.
@@ -57,7 +57,7 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
         // still validates every selected attachment through the default reader.
         const { sources, links } = await reader.read(subjectId, [lecture], catalog, "catalog");
         const paragraphs = sources[0]!.paragraphs;
-        const questions = analyticalQuestionCandidates(paragraphs).filter(question => validGroundedQuestion(question, paragraphs)).sort((a, b) => a.candidateId.localeCompare(b.candidateId));
+        const questions = groundedQuestionCandidates(paragraphs).filter(question => validGroundedQuestion(question, paragraphs)).sort((a, b) => a.candidateId.localeCompare(b.candidateId));
         plans.push({ lecture, questions, links });
         if (!questions.length) unavailableLectures.push({ number: lecture.orderIndex, reason: "no_verified_assessment" });
       } catch { unavailableLectures.push({ number: lecture.orderIndex, reason: "source_unavailable" }); }
@@ -89,9 +89,15 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
         const questions: string[] = [];
         for (const question of plan.questions) {
           const id = finquizRecordId(`${courseAssessmentReviewPolicy}:question:${plan.lecture.id}:${question.candidateId}`);
-          const rubric = { grounding: groundingVersion, sourceReferences: question.references, assessment: question.assessment, courseReview: courseAssessmentReviewPolicy };
-          await client.query("insert into questions(id,question_bank_id,question_type,prompt,points,created_by,lecture_id,difficulty,kind,source_excerpt,explanation,rubric) values($1,$2,'multiple_choice',$3,1,$4,$5,$6,'analytical_case',$7,$8,$9::jsonb) on conflict(id) do nothing", [id, bankId, question.prompt, subject.createdBy, plan.lecture.id, question.difficulty, question.excerpt, question.explanation, JSON.stringify(rubric)]);
-          for (const [order, text] of question.options!.entries()) await client.query("insert into question_options(id,question_id,option_text,is_correct,order_index) values($1,$2,$3,$4,$5) on conflict(id) do nothing", [finquizRecordId(`${id}:option:${order}`), id, text, order === question.correctIndex, order]);
+          const pairIds = (question.pairs ?? []).map(() => randomUUID());
+          const rubric = { grounding: groundingVersion, sourceReferences: question.references, assessment: question.assessment, points: question.rubric ?? [], sourceProgram: question,
+            ...(pairIds.length ? { matchingRightIds: privateMatchingIds(pairIds) } : {}), courseReview: courseAssessmentReviewPolicy };
+          const created = await client.query("insert into questions(id,question_bank_id,question_type,prompt,points,created_by,lecture_id,difficulty,kind,source_excerpt,explanation,rubric) values($1,$2,$3,$4,1,$5,$6,$7,$8,$9,$10,$11::jsonb) on conflict(id) do nothing returning id", [id, bankId, question.type, question.prompt, subject.createdBy, plan.lecture.id, question.difficulty, question.kind ?? null, question.excerpt, question.explanation, JSON.stringify(rubric)]);
+          if (created.rowCount) {
+          for (const [order, text] of (question.options ?? []).entries()) await client.query("insert into question_options(id,question_id,option_text,is_correct,order_index) values($1,$2,$3,$4,$5) on conflict(id) do nothing", [finquizRecordId(`${id}:option:${order}`), id, text, order === question.correctIndex, order]);
+          for (const [order, pair] of (question.pairs ?? []).entries()) await client.query("insert into question_pairs(id,question_id,left_text,right_text,order_index) values($1,$2,$3,$4,$5) on conflict(id) do nothing", [pairIds[order], id, pair.left, pair.right, order]);
+          for (const [order, text] of (question.items ?? []).entries()) await client.query("insert into question_items(id,question_id,item_text,correct_order_index) values($1,$2,$3,$4)", [randomUUID(), id, text, order]);
+          }
           questions.push(id);
         }
         ids.set(plan.lecture.id, questions);
@@ -105,7 +111,7 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
         const id = finquizRecordId(`${courseAssessmentReviewPolicy}:quiz:${previous.id}:${digest}`);
         await client.query(`insert into quizzes(id,subject_id,lecture_id,title,description,time_limit_seconds,status,created_by,due_at)
           select $1,subject_id,lecture_id,title,$3,time_limit_seconds,case when $4 then status else 'draft' end,created_by,due_at from quizzes where id=$2`,
-        [id, previous.id, "أسئلة تحليلية موثقة بملفات المحاضرات، مع تصحيح وتفسير مستندين إلى المصدر.", questionIds.length > 0]);
+        [id, previous.id, "اختبار متنوع الصيغ موثّق بملفات المحاضرات، مع التصحيح والتغذية الراجعة ونماذج الإجابات الكتابية.", questionIds.length > 0]);
         for (const [order, questionId] of questionIds.entries()) await client.query("insert into quiz_questions(quiz_id,question_id,order_index,points_override) values($1,$2,$3,$4)", [id, questionId, order, overrides.get(questionId) ?? null]);
         await client.query("update quizzes set superseded_by=$2 where id=$1", [previous.id, id]);
         await client.query(`update content_imports set result_lectures=(select jsonb_agg(case when entry->>'quizId'=$1 then jsonb_set(entry,'{quizId}',to_jsonb($2::text)) else entry end order by ordinal)
@@ -119,7 +125,7 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
         if (existing.rowCount) continue;
         const digest = createHash("sha256").update(JSON.stringify(questionIds)).digest("hex");
         const id = finquizRecordId(`${courseAssessmentReviewPolicy}:lecture-quiz:${plan.lecture.id}:${digest}`);
-        await client.query("insert into quizzes(id,subject_id,lecture_id,title,description,status,created_by) values($1,$2,$3,$4,$5,'published',$6)", [id, subjectId, plan.lecture.id, `اختبار ${plan.lecture.title}`, "أسئلة تحليلية موثقة بملف المحاضرة الأصلي.", subject.createdBy]);
+        await client.query("insert into quizzes(id,subject_id,lecture_id,title,description,status,created_by) values($1,$2,$3,$4,$5,'published',$6)", [id, subjectId, plan.lecture.id, `اختبار ${plan.lecture.title}`, "أسئلة متنوعة موثّقة بملف المحاضرة الأصلي، مع نماذج إجابة وتغذية راجعة.", subject.createdBy]);
         for (const [order, questionId] of questionIds.entries()) await client.query("insert into quiz_questions(quiz_id,question_id,order_index) values($1,$2,$3)", [id, questionId, order]);
         changed = true;
       }
@@ -134,10 +140,13 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
 
 /** Safe production proof: counts and public quiz IDs only, never keys/grades. */
 export async function courseAssessmentAudit(pool: Pool, subjectId: string, changed: boolean) {
-  const rows = (await pool.query<{ id: string; lecture_id: string | null; prompts: string[]; count: number; referenced: number }>(`select z.id,z.lecture_id,count(q.id)::int as count,
+  const rows = (await pool.query<{ id: string; lecture_id: string | null; prompts: string[]; formats: Array<{ questionType: QuestionType; kind: string | null }>; count: number; referenced: number }>(`select z.id,z.lecture_id,count(q.id)::int as count,
     coalesce(jsonb_agg(q.prompt) filter(where q.id is not null),'[]'::jsonb) as prompts,
+    coalesce(jsonb_agg(jsonb_build_object('questionType',q.question_type,'kind',q.kind)) filter(where q.id is not null),'[]'::jsonb) as formats,
     count(q.id) filter(where case when jsonb_typeof(q.rubric->'sourceReferences')='array' then jsonb_array_length(q.rubric->'sourceReferences')>0 else false end)::int as referenced
     from quizzes z left join quiz_questions qq on qq.quiz_id=z.id left join questions q on q.id=qq.question_id and q.deleted_at is null
     where z.subject_id=$1 and z.purpose='course' and z.superseded_by is null and z.status='published' and z.deleted_at is null group by z.id order by z.lecture_id nulls first,z.id`, [subjectId])).rows;
-  return { subjectId, changed, quizzes: rows.map(row => ({ id: row.id, lectureId: row.lecture_id, questions: row.count, referenced: row.referenced, weakFormatQuestions: row.prompts.filter(prompt => weakFormat.test(prompt)).length })) };
+  return { subjectId, changed, quizzes: rows.map(row => ({ id: row.id, lectureId: row.lecture_id, questions: row.count, referenced: row.referenced,
+    formats: row.formats.reduce<Record<string, number>>((counts, question) => { const format = assessmentFormat(question); counts[format] = (counts[format] ?? 0) + 1; return counts; }, {}),
+    weakFormatQuestions: row.prompts.filter(prompt => weakFormat.test(prompt)).length })) };
 }

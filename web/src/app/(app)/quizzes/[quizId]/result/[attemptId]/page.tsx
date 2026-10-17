@@ -1,16 +1,17 @@
 import Link from "next/link";
-import type { QuizAttemptResult, Quiz, QuestionForAttempt, AttemptAnswer, SubmitAnswerAck } from "@shared/index";
+import type { QuizAttemptResult, Quiz, QuestionForAttempt, AttemptAnswer, SubmitAnswerAck } from "@digital-leadership/shared";
 import { apiGet, ApiError } from "@/lib/api/client";
 import { toSafeErrorMessage } from "@/lib/api/errorMessage";
 import { ErrorState, NotFoundState } from "@/components/ui/States";
 import { QuizAttemptRunner } from "@/components/quiz/QuizAttemptRunner";
 import { QuizNavigation } from "@/components/quiz/QuizNavigation";
+import { assessmentFormats } from "@digital-leadership/shared";
 
 /** Result and saved-answer review. The backend checks ownership for both
  * the aggregate result and the feedback, including for guest sessions. */
 export default async function QuizResultPage({ params, searchParams }: {
   params: Promise<{ quizId: string; attemptId: string }>;
-  searchParams?: Promise<{ difficulty?: string; lecture?: string }>;
+  searchParams?: Promise<{ difficulty?: string; lecture?: string; format?: string }>;
 }) {
   const { quizId, attemptId } = await params;
   const filters = await searchParams;
@@ -40,9 +41,10 @@ export default async function QuizResultPage({ params, searchParams }: {
   }
   const difficulty = ["easy", "medium", "hard"].includes(filters?.difficulty ?? "") ? filters!.difficulty! : "all";
   const lecture = questions.some(question => question.lectureId === filters?.lecture) && filters?.lecture ? filters.lecture : "all";
+  const format = assessmentFormats.some(format => format.id === filters?.format) ? filters!.format! : "all";
   return <section>
     <h1 className="page-heading">نتيجة الاختبار</h1>
-    <QuizAttemptRunner key={attemptId} quiz={quiz} questions={questions} attemptId={attemptId} initialAnswers={answers} initialFeedback={feedback} initialDifficulty={difficulty} initialLecture={lecture} reviewMode />
+    <QuizAttemptRunner key={attemptId} quiz={quiz} questions={questions} attemptId={attemptId} initialAnswers={answers} initialFeedback={feedback} initialDifficulty={difficulty} initialLecture={lecture} initialFormat={format} reviewMode />
     <Link href={`/quizzes/${quizId}`} className="btn btn-secondary">العودة إلى الاختبار</Link>
   </section>;
 }

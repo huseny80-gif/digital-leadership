@@ -1,12 +1,11 @@
 import { fileURLToPath } from "node:url";
 import PDFDocument from "pdfkit";
-import { proofreadArabicText } from "@digital-leadership/shared";
+import { proofreadArabicText, assessmentFormatLabel } from "@digital-leadership/shared";
 import type { ExamMaterialDetail, ExamMindMapNode, QuestionForAttempt } from "@shared/index";
 import { examSummaryPresentation, examTopicSourceLabel, generateExamReviewArtifacts } from "@digital-leadership/shared";
 import { visualRuns } from "../studyTools/reportExport.js";
 
 const font = (weight: string) => fileURLToPath(new URL(`../../content/report-fonts/Amiri-${weight}.ttf`, import.meta.url));
-const labels = { multiple_choice: "اختيار من متعدد", true_false: "صح أو خطأ", fill: "إكمال", match: "مطابقة", order: "ترتيب", open: "سؤال مقالي", short_answer: "إجابة قصيرة" };
 
 /** Server-authorized archive snapshot, public questions only. The exported
  * graph is vector artwork, not a screenshot or a hidden answer-key payload. */
@@ -103,7 +102,7 @@ export async function examReviewPdf(group: ExamMaterialDetail, questions: Questi
     }
     newPage(); write("٣. الأسئلة التدريبية", true);
     questions.forEach((question, index) => {
-      write(`السؤال ${index + 1} — ${labels[question.questionType]}`, true);
+      write(`السؤال ${index + 1} — ${assessmentFormatLabel(question)}`, true);
       if (question.lectureTitle) write(question.lectureTitle); write(question.prompt);
       question.options?.forEach((option, optionIndex) => write(`${"أبجدهو"[optionIndex] ?? optionIndex + 1}) ${option.optionText}`));
       if (question.matchItems) {

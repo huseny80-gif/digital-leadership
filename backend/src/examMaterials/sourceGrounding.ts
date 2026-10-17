@@ -84,5 +84,5 @@ export function assertSourceBoundSummary(summary: ExamMaterialSummary, sources: 
   }
 }
 
-/** New generation only: decision cases, never cloze/quotation-memory items. */
-export { analyticalQuestionCandidates as groundedQuestionCandidates, validAnalyticalQuestion as validGroundedQuestion, prioritizeAnalyticalQuestions as prioritizeGroundedCandidates } from "./caseAssessment.js";
+/** New generation includes reviewed cases and source-proven format variants. */
+export { diverseQuestionCandidates as groundedQuestionCandidates, validDiverseQuestion as validGroundedQuestion, prioritizeDiverseQuestions as prioritizeGroundedCandidates } from "./diverseAssessment.js";

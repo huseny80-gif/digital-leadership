@@ -35,11 +35,9 @@ export interface QuestionOptionForAttempt {
   orderIndex: number;
 }
 
-/** One item on either side of a `match` question, as delivered to the
- * learner. `id` is the underlying `question_pairs.id` — shared by the
- * left and right entry of the same authoritative pair, but this alone
- * does not reveal which `right` array *position* is the correct match
- * for a given `left` entry (Phase 12F-BE contract review §C). */
+/** A public identity on one side of a match question. Current source-reviewed
+ * questions use independent right-side IDs; their private association is
+ * never included in the initial payload. Legacy archives remain compatible. */
 export interface MatchItemForAttempt {
   id: string;
   text: string;
@@ -103,8 +101,7 @@ export interface QuizAttempt {
  * second round trip. */
 export type AssessmentPrincipal = { kind: "user"; userId: string } | { kind: "guest"; guestSessionId: string };
 
-/** One submitted pairing for a `match` question: `leftId`/`rightId` are
- * both `question_pairs.id` values (see `MatchItemForAttempt`). */
+/** One submitted pairing using the public identities delivered for each side. */
 export interface MatchAnswerPair {
   leftId: string;
   rightId: string;

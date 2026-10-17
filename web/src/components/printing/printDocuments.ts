@@ -1,8 +1,7 @@
-import type { ExamMaterialSummary, LibraryEntry, QuestionForAttempt, StudyPrintBlock, StudyPrintDocument } from "@shared/index";
-import { examSummaryPresentation, examTopicSourceLabel, libraryEntriesPresentation, uniqueStudyText } from "@digital-leadership/shared";
+import type { ExamMaterialSummary, LibraryEntry, QuestionForAttempt, StudyPrintBlock, StudyPrintDocument } from "@digital-leadership/shared";
+import { assessmentFormatLabel, examSummaryPresentation, examTopicSourceLabel, libraryEntriesPresentation, uniqueStudyText } from "@digital-leadership/shared";
 
 const letters = ["أ", "ب", "ج", "د", "هـ", "و"];
-const questionTypes = { multiple_choice: "اختيار من متعدد", true_false: "صح أو خطأ", fill: "إكمال", match: "مطابقة", order: "ترتيب", open: "سؤال مقالي أو سيناريو", short_answer: "إجابة قصيرة" };
 function add(blocks: StudyPrintBlock[], text: string, heading = false) {
   let remaining = text.trim();
   // Keep long chapters within the transport schema without dropping their tail.
@@ -20,7 +19,7 @@ function add(blocks: StudyPrintBlock[], text: string, heading = false) {
 export function questionPrintDocument(title: string, questions: QuestionForAttempt[]): StudyPrintDocument {
   const blocks: StudyPrintBlock[] = [];
   questions.forEach((question, index) => {
-    add(blocks, `السؤال ${index + 1} — ${questionTypes[question.questionType]}`, true);
+    add(blocks, `السؤال ${index + 1} — ${assessmentFormatLabel(question)}`, true);
     if (question.lectureTitle) add(blocks, question.lectureTitle);
     add(blocks, question.prompt);
     question.options?.forEach((option, optionIndex) => add(blocks, `${letters[optionIndex] ?? optionIndex + 1}) ${option.optionText}`));

@@ -22,6 +22,7 @@ import { ensureExamMaterialSchema } from "./examMaterials/schema.js";
 import { reviewRiskContent } from "./contentAutomation/reviewRiskContent.js";
 import { refreshInstructorGuides } from "./examMaterials/refreshInstructorGuides.js";
 import { refreshAcademicSummaries } from "./examMaterials/refreshAcademicSummaries.js";
+import { refreshDiverseAssessments } from "./examMaterials/refreshDiverseAssessments.js";
 import { runIndependentContentReviews, runStartupMaintenance } from "./lib/startupMaintenance.js";
 import { probeAcademicSpeech } from "./examMaterials/academicSpeech.js";
 import { probeLegalAcademicReadings } from "./examMaterials/legalAcademicReadings.js";
@@ -79,6 +80,7 @@ async function refreshPublishedContent() {
     { name: "arabic_lecture_labels", run: async () => { logger.info(await normalizeArabicLectureLabels(getPool()), "arabic_lecture_labels_normalized"); } },
     { name: "course_assessments", run: async () => { logger.info(await reviewCourseAssessments(getPool()), "course_assessments_source_verified"); } },
     { name: "exam_archives", run: async () => { logger.info(await refreshAcademicSummaries(getPool()), "academic_exam_summaries_refreshed"); } },
+    { name: "diverse_assessments", run: async () => { logger.info(await refreshDiverseAssessments(getPool()), "diverse_exam_groups_refreshed"); } },
     { name: "instructor_guides", run: async () => { logger.info(await refreshInstructorGuides(getPool()), "instructor_guides_source_verified"); } },
   ], (stage, error) => {
     // Log a safe machine reason, never SQL values, private file text or tokens.

@@ -2,9 +2,10 @@ import { createHash } from "node:crypto";
 import type { QuestionType, AnswerRubricPoint } from "@shared/index";
 import { normalizeText, significantWords } from "./sourceAnalysis.js";
 import { assertReadableSourceText, hasBrokenSourceEncoding } from "./sourceTextQuality.js";
-import { sourceParagraphs, referenceFor, referenceLabel, STRICT_SOURCE_INSTRUCTION, type SourceParagraph, type SourceReference } from "../examMaterials/sourceGrounding.js";
-import { analyticalQuestionCandidates, ANALYTICAL_ASSESSMENT_INSTRUCTION, type AnalyticalAssessment } from "../examMaterials/caseAssessment.js";
+import { sourceParagraphs, referenceFor, referenceLabel, STRICT_SOURCE_INSTRUCTION, type ExamSourceDocument, type SourceParagraph, type SourceReference } from "../examMaterials/sourceGrounding.js";
+import { ANALYTICAL_ASSESSMENT_INSTRUCTION, type AnalyticalAssessment } from "../examMaterials/caseAssessment.js";
 import { readableSourcePassage, usableQuestionPassage } from "../examMaterials/sourceReadability.js";
+import { diverseQuestionCandidates } from "../examMaterials/diverseAssessment.js";
 
 /** Models may select approved questions, never author grading facts. */
 export interface GeneratedQuestion {
@@ -23,10 +24,10 @@ export interface GeneratedQuestion {
   references?: SourceReference[];
   assessment?: AnalyticalAssessment;
 }
-export const generatedSourcePolicy = "provided-text-assessment-v2";
+export const generatedSourcePolicy = "provided-text-assessment-v3-diverse";
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
-function paragraphsFor(text: string, title: string): SourceParagraph[] {
-  return sourceParagraphs({ id: `provided-text:${hash(text).slice(0, 24)}`, filename: title, sha256: createHash("sha256").update(text).digest("hex"), text });
+function paragraphsFor(text: string, title: string, document?: Omit<ExamSourceDocument, "text">): SourceParagraph[] {
+  return sourceParagraphs({ id: `provided-text:${hash(text).slice(0, 24)}`, filename: title, sha256: createHash("sha256").update(text).digest("hex"), ...document, text });
 }
 
 /** Complete readable units only; original negation/numbers are retained. */
@@ -58,12 +59,12 @@ function definitionsFor(paragraphs: SourceParagraph[]): Definition[] {
   })));
 }
 
-function approvedQuestions(text: string, title: string): GeneratedQuestion[] {
+function approvedQuestions(text: string, title: string, document?: Omit<ExamSourceDocument, "text">): GeneratedQuestion[] {
   assertReadableSourceText(text);
-  const paragraphs = paragraphsFor(text, title);
-  const questions: GeneratedQuestion[] = analyticalQuestionCandidates(paragraphs);
+  const paragraphs = paragraphsFor(text, title, document);
+  const questions: GeneratedQuestion[] = diverseQuestionCandidates(paragraphs);
   const definitions = definitionsFor(paragraphs).slice(0, 8);
-  if (definitions.length >= 3) {
+  if (definitions.length >= 3 && !questions.some(question => question.type === "match")) {
     for (const definition of definitions) {
       const alternatives = [definition, ...definitions.filter(other => other !== definition)].slice(0, 4);
       const offset = parseInt(hash(definition.term).slice(0, 4), 16) % alternatives.length;
@@ -90,7 +91,7 @@ function approvedQuestions(text: string, title: string): GeneratedQuestion[] {
     return units.map(text => ({ paragraph, text: text.trim() }));
   })
     .filter((unit, index, all) => usableQuestionPassage(unit.text) && all.findIndex(other => other.text === unit.text) === index).slice(0, 3);
-  for (const { paragraph, text: passage } of reviewUnits) {
+  for (const { paragraph, text: passage } of questions.some(question => question.type === "open") ? [] : reviewUnits) {
     const reference = referenceFor(paragraph, passage);
     questions.push({ type: "open", kind: "مقالي", difficulty: "hard",
       prompt: `حلّل الفكرة التي يعرضها المقطع الآتي، وبيّن العلاقات أو الشروط الواردة فيه، مستندًا إلى النص دون إضافة افتراضات:\n«${passage}»`,
@@ -101,8 +102,8 @@ function approvedQuestions(text: string, title: string): GeneratedQuestion[] {
   return questions.filter((question, index, all) => all.findIndex(other => hash(other) === hash(question)) === index);
 }
 
-export function generateSourceQuestions(text: string, title: string): GeneratedQuestion[] {
-  const questions = approvedQuestions(text, title);
+export function generateSourceQuestions(text: string, title: string, document?: Omit<ExamSourceDocument, "text">): GeneratedQuestion[] {
+  const questions = approvedQuestions(text, title, document);
   if (!questions.length) throw new Error("insufficient_text");
   return questions;
 }
@@ -115,8 +116,8 @@ export function validGeneratedQuestion(value: unknown, source: string, title = "
   catch { return false; }
 }
 
-export async function generateQuestions(text: string, title: string): Promise<{ questions: GeneratedQuestion[]; method: "source" | "ai" }> {
-  const questions = generateSourceQuestions(text, title);
+export async function generateQuestions(text: string, title: string, document?: Omit<ExamSourceDocument, "text">): Promise<{ questions: GeneratedQuestion[]; method: "source" | "ai" }> {
+  const questions = generateSourceQuestions(text, title, document);
   const token = process.env.CONTENT_AI_API_KEY || process.env.NEON_AI_GATEWAY_TOKEN || process.env.OPENAI_API_KEY;
   if (!token) return { questions, method: "source" };
   const root = (process.env.CONTENT_AI_BASE_URL || process.env.NEON_AI_GATEWAY_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/u, "");

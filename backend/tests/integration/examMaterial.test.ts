@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { Pool } from "pg";
 import { PDFParse } from "pdf-parse";
 import request from "supertest";
-import type { AcademicExamPaper, ExamMaterialDetail, ExamMaterialAttempt } from "@shared/index";
+import { assessmentFormat, type AcademicExamPaper, type ExamMaterialDetail, type ExamMaterialAttempt, type QuestionForAttempt } from "@shared/index";
 import { createExamSourceFile } from "../helpers/examSourceFile.js";
 import { createApp } from "../../src/app.js";
 import { ensureExamMaterialSchema } from "../../src/examMaterials/schema.js";
@@ -73,7 +73,7 @@ async function seed() {
 }
 
 describe("independent exam material archives", () => {
-  it("formats curriculum-bound academic papers and releases marking schemes only to admins or the graded attempt owner", async () => {
+  it("formats curriculum-bound academic papers and releases marking schemes only to admins or the owner after final submission", async () => {
     const s = await seed(), group = await s.generate(s.lectures.slice(0, 3));
     const url = `${s.path}/${group.id}/academic-paper`;
     await request(s.app).get(url).expect(401);
@@ -82,9 +82,9 @@ describe("independent exam material archives", () => {
       expect(response.headers["cache-control"]).toBe("private, no-store");
       const paper = response.body.data as AcademicExamPaper;
       expect(paper.questions).toHaveLength(group.questionCount);
-      expect(paper.distribution.map(item => item.type)).toEqual(["multiple_choice", "short_answer", "case_study"]);
-      expect(paper.distribution.every(item => item.count > 0)).toBe(true);
-      expect(paper.totalPoints).toBe(24);
+      expect(paper.distribution.filter(item => item.count).map(item => item.type)).toEqual(["multiple_choice", "true_false", "short_answer", "case_study"]);
+      expect(paper.distribution.reduce((n, item) => n + item.count, 0)).toBe(group.questionCount);
+      expect(paper.totalPoints).toBe(paper.questions.reduce((n, item) => n + item.points, 0));
       expect(JSON.stringify(paper)).not.toMatch(/"(answerKey|modelAnswer|rubric|rationale|isCorrect|excerpt|correctOptionIndex)"/);
     }
     const admin = (await request(s.app).get(url).set("Authorization", `Bearer ${s.tokens[0]}`).expect(200)).body.data as AcademicExamPaper;
@@ -134,8 +134,8 @@ describe("independent exam material archives", () => {
     expect(group.summary.sections.map(l => l.id)).toEqual(s.lectures.slice(0, 3));
     expect(JSON.stringify(group.summary)).not.toContain("محتوى المحاضرة 4");
     const questions = (await request(s.app).get(`/api/v1/quizzes/${group.quizId}/questions`).set("Cookie", s.cookie).expect(200)).body.data;
-    expect(questions.length).toBe(6);
-    expect(new Set(questions.map((q: { questionType: string }) => q.questionType))).toEqual(new Set(["multiple_choice"]));
+    expect(questions.length).toBe(group.questionCount);
+    expect(new Set(questions.map((q: QuestionForAttempt) => assessmentFormat(q)))).toEqual(new Set(["multiple_choice", "true_false", "essay", "short_scenario"]));
     expect(JSON.stringify(questions)).not.toMatch(/is_correct|isCorrect|correct_order_index|explanation|source_excerpt|acceptedAnswers|caseReferences|assessment|rationale/);
     expect(questions.every((q: { id: string }) => !s.originals.includes(q.id))).toBe(true);
     expect((await pool.query("select * from questions where id=any($1::uuid[]) order by id", [s.originals])).rows).toEqual(before);
@@ -300,9 +300,9 @@ describe("independent exam material archives", () => {
     const group = await s.generate([s.lectures[0]!]);
     expect(group.summary.sections[0]!.text).toContain(scientific);
     expect(JSON.stringify(group.summary)).not.toMatch(/QUESTION_APPENDIX_ONLY|ANSWER_APPENDIX_ONLY|ANSWER_FILE_ONLY|التمرين التفاعلي/);
-    // Only the two proven operational cases; an answer appendix never pads
-    // the assessment with additional memory questions.
-    expect(group.questionCount).toBe(2);
+    // Only the two proven operational cases and their reviewed response
+    // formats; the answer appendix never supplies additional grading facts.
+    expect(group.questionCount).toBe(9);
     const saved = structuredClone(group.summary);
     saved.version = 2;
     saved.sections[0]!.topics!.push({ title: "الإجابات النموذجية والتعاليل", text: "SAVED_ANSWER_APPENDIX" });
@@ -415,15 +415,17 @@ describe("independent exam material archives", () => {
       let answer: object;
       if (q.options) answer = { selectedOptionId: (await pool.query("select id from question_options where question_id=$1 and is_correct", [q.id])).rows[0].id };
       else if (q.questionType === "fill") answer = { answerText: (await pool.query("select answer_text from question_accepted_answers where question_id=$1 order by order_index limit 1", [q.id])).rows[0].answer_text };
-      else if (q.matchItems) answer = { matchAnswer: q.matchItems.left.map(l => ({ leftId: l.id, rightId: l.id })) };
+      else if (q.matchItems) answer = { matchAnswer: (await pool.query("select id,coalesce((select rubric->'matchingRightIds'->>id::text from questions where questions.id=question_pairs.question_id),id::text) as right_id from question_pairs where question_id=$1", [q.id])).rows.map(pair => ({ leftId: pair.id, rightId: pair.right_id })) };
+      else if (q.questionType === "open") answer = { answerText: "إجابة تحليلية مقدمة للمراجعة وفق عناصر النموذج الموثق بالمحاضرة." };
       else answer = { orderAnswer: (await pool.query("select id from question_items where question_id=$1 order by correct_order_index", [q.id])).rows.map(i => i.id) };
       const response = await request(s.app).post(`/api/v1/attempts/${attempt.id}/answers`).set("Cookie", s.cookie).send({ questionId: q.id, ...answer }).expect(200);
-      expect(response.body.data.isCorrect).toBe(true);
+      expect(response.body.data.isCorrect).toBe(q.questionType === "open" ? null : true);
       expect(response.body.data.correctAnswerSummary).toBeTruthy();
     }
     await request(s.app).post(`/api/v1/attempts/${attempt.id}/submit`).set("Cookie", s.cookie).expect(200);
     const completed = (await request(s.app).get(bundlePath).set("Cookie", s.cookie).expect(200)).body.data as ExamMaterialAttempt;
-    expect(completed.result).toMatchObject({ percentage: 100, status: "graded", correctAnswers: group.questionCount, pendingManualReview: false });
+    expect(completed.result).toMatchObject({ percentage: 100, status: "submitted", correctAnswers: initial.questions.filter(q => q.questionType !== "open").length, pendingManualReview: true });
+    expect(completed.feedback.filter(item => initial.questions.some(q => q.id === item.questionId && q.questionType === "open")).every(item => item.isCorrect === null)).toBe(true);
     expect(completed.feedback).toHaveLength(group.questionCount);
     const revised = await s.generate(s.lectures.slice(0, 3));
     expect(revised.quizId).not.toBe(group.quizId);
@@ -550,6 +552,22 @@ describe("advanced exam review and challenge protection", () => {
     const next = (await request(s.app).post(url).set("Cookie", s.cookie).send({ mode: "challenge" }).expect(201)).body.data;
     expect(next.id).not.toBe(attempt.id);
     expect((await request(s.app).get(`${url}/${attempt.id}`).set("Cookie", s.cookie).expect(200)).body.data.result).toEqual(reviewed.result);
+  });
+
+  it("keeps written challenge answers pending manual review after submission and expiration", async () => {
+    const s = await seed(), group = await s.generate([s.lectures[0]!]);
+    for (const expire of [false, true]) {
+      const attempt = (await request(s.app).post(`${s.path}/${group.id}/attempts`).set("Cookie", s.cookie).send({ mode: "challenge" }).expect(201)).body.data;
+      const question = (await pool.query("select q.id from questions q join quiz_questions qq on qq.question_id=q.id where qq.quiz_id=$1 and q.question_type='open' limit 1", [group.quizId])).rows[0].id;
+      const response = await request(s.app).post(`/api/v1/attempts/${attempt.id}/answers`).set("Cookie", s.cookie).send({ questionId: question, answerText: "تحليل كتابي يستند إلى المحاضرة، ويحتاج إلى مراجعة المدرب وفق النموذج." }).expect(200);
+      expect(response.body.data.isCorrect).toBeNull(); expect(response.body.data.correctAnswerSummary).toBeNull();
+      if (expire) await pool.query("update quiz_attempts set deadline_at=clock_timestamp()-interval '1 second' where id=$1", [attempt.id]);
+      else await request(s.app).post(`/api/v1/attempts/${attempt.id}/submit`).set("Cookie", s.cookie).expect(200);
+      const restored = (await request(s.app).get(`${s.path}/${group.id}/attempts/${attempt.id}`).set("Cookie", s.cookie).expect(200)).body.data as ExamMaterialAttempt;
+      expect(restored.attempt.status).toBe("submitted"); expect(restored.result?.pendingManualReview).toBe(true);
+      expect(restored.feedback.find(item => item.questionId === question)?.isCorrect).toBeNull();
+      expect((await request(s.app).get(`${s.path}/${group.id}/academic-paper?attemptId=${attempt.id}`).set("Cookie", s.cookie).expect(200)).body.data.answerKey).toHaveLength(group.questionCount);
+    }
   });
 
   it("enforces expiration on the server, finalizes on restore, and never restarts the timer on reload", async () => {

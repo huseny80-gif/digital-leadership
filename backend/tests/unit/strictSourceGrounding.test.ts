@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { STRICT_SOURCE_INSTRUCTION, groundedQuestionCandidates, prioritizeGroundedCandidates, referenceFor, sourceParagraphs, validGroundedQuestion, validSourceReference } from "../../src/examMaterials/sourceGrounding.js";
-import { ANALYTICAL_ASSESSMENT_INSTRUCTION, analyticalPolicy } from "../../src/examMaterials/caseAssessment.js";
+import { STRICT_SOURCE_INSTRUCTION, referenceFor, sourceParagraphs, validGroundedQuestion, validSourceReference } from "../../src/examMaterials/sourceGrounding.js";
+import { ANALYTICAL_ASSESSMENT_INSTRUCTION, analyticalPolicy, analyticalQuestionCandidates as groundedQuestionCandidates, prioritizeAnalyticalQuestions as prioritizeGroundedCandidates } from "../../src/examMaterials/caseAssessment.js";
 import { actualFileText, scopeSharedSource } from "../../src/examMaterials/lectureSourceFiles.js";
 import { compileExamSummary } from "../../src/examMaterials/summary.js";
 import { readableSourcePassage } from "../../src/examMaterials/sourceReadability.js";

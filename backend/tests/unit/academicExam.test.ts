@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildAcademicExam, type AcademicExamSourceQuestion } from "../../src/examMaterials/academicExam.js";
-import { groundingVersion, groundedQuestionCandidates, sourceParagraphs, validSourceReference } from "../../src/examMaterials/sourceGrounding.js";
+import { groundingVersion, sourceParagraphs, validSourceReference } from "../../src/examMaterials/sourceGrounding.js";
+import { analyticalQuestionCandidates as groundedQuestionCandidates } from "../../src/examMaterials/caseAssessment.js";
 import { catalogRoot, manifest } from "../../src/finquiz/catalog.js";
 import { scopeSharedSource } from "../../src/examMaterials/lectureSourceFiles.js";
 

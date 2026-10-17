@@ -40,7 +40,11 @@ describe("grounded source question generation", () => {
         expect(question.assessment!.options.every(option => option.references.length > 0 && option.rationale.length > 20)).toBe(true);
       }
       if (question.type === "fill") expect(question.excerpt).toContain(question.acceptedAnswers![0]!);
-      if (question.type === "open") expect(question.rubric?.every(point => text.includes(point.text))).toBe(true);
+      if (question.type === "open") {
+        expect(question.rubric?.length).toBeGreaterThan(0);
+        expect(question.references!.every(reference => text.includes(reference.excerpt))).toBe(true);
+        expect(validGeneratedQuestion(question, text, "المخاطر")).toBe(true);
+      }
     }
   });
   it("works with no external credential", async () => {

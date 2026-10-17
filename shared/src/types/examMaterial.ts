@@ -25,6 +25,7 @@ export interface ExamMaterialSummary {
     summaryPolicy?: "visually-verified-legal-excerpts-v1";
     /** An automatic curriculum review explicitly selects its approved PDFs. */
     sourceScope?: "catalog-primary";
+    questionPolicy?: "source-diverse-assessment-v1";
     sources: Array<{ lectureId: string; fileId: string; filename: string; sha256: string }>;
   };
 }
@@ -96,7 +97,7 @@ export interface ExamMaterialAttempt {
   knowledgeGaps?: ExamKnowledgeGapReport;
 }
 
-export type AcademicExamQuestionType = "multiple_choice" | "short_answer" | "case_study";
+export type AcademicExamQuestionType = "multiple_choice" | "true_false" | "match" | "order" | "short_answer" | "case_study";
 export interface AcademicExamQuestion {
   id: string;
   type: AcademicExamQuestionType;
@@ -106,6 +107,8 @@ export interface AcademicExamQuestion {
   instructions: string;
   points: number;
   options: string[];
+  matchItems?: { left: string[]; right: string[] };
+  orderItems?: string[];
   /** Locations establish provenance without revealing the answer quotation. */
   sources: Array<Omit<ExamContextReference, "excerpt">>;
 }

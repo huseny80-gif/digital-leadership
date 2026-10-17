@@ -15,6 +15,7 @@ import { reviewedAiPdf } from "./aiAssessmentReviewCatalog.js";
 import { assertReadableSourceText } from "./sourceTextQuality.js";
 import { LEGAL_SUBJECT_ID, legalLectureNumber, legalLectureTitle, replaceLegalLabels } from "./legalLectureLabels.js";
 import { courseLabelsForSubject } from "./courseSourceLabels.js";
+import { privateMatchingIds } from "../assessments/matchingIdentity.js";
 import { cleanArabicDisplayLabel, displayFilename } from "./arabicDisplayLabels.js";
 
 type ImportRow = {
@@ -234,7 +235,8 @@ export class ContentImportService {
       await heartbeat("generating");
       const generated: Array<{ section: LectureSection; questions: GeneratedQuestion[]; method: "source" | "ai" }> = [];
       for (const section of sections) {
-        const output = reviewed ? { questions: reviewed.questions, method: "source" as const } : await (this.dependencies.generate ?? generateQuestions)(section.text, section.title);
+        const document = bytes ? { id: job.file_id ?? `content-import:${job.id}`, filename: job.filename ?? section.title, sha256: createHash("sha256").update(bytes).digest("hex") } : undefined;
+        const output = await (this.dependencies.generate ?? generateQuestions)(section.text, section.title, document);
         if (!output.questions.length) throw new Error("insufficient_text");
         generated.push({ section, ...output });
         await heartbeat();
@@ -338,11 +340,13 @@ export class ContentImportService {
 
   private async insertQuestion(client: PoolClient, bankId: string, lectureId: string, job: ImportRow, q: GeneratedQuestion): Promise<string> {
     const id = randomUUID();
-    const rubric = q.references?.length ? { sourcePolicy: generatedSourcePolicy, sourceReferences: q.references, assessment: q.assessment, points: q.rubric ?? [] } : q.rubric;
+    const pairIds = (q.pairs ?? []).map(() => randomUUID());
+    const baseRubric = q.references?.length ? { sourcePolicy: generatedSourcePolicy, sourceReferences: q.references, assessment: q.assessment, points: q.rubric ?? [] } : q.rubric;
+    const rubric = pairIds.length ? { ...(Array.isArray(baseRubric) ? { points: baseRubric } : baseRubric), matchingRightIds: privateMatchingIds(pairIds) } : baseRubric;
     await client.query("insert into questions(id,question_bank_id,question_type,prompt,points,created_by,lecture_id,difficulty,kind,source_import_id,source_excerpt,explanation,rubric) values($1,$2,$3,$4,1,$5,$6,$7,$8,$9,$10,$11,$12::jsonb)", [id, bankId, q.type, q.prompt, job.created_by, lectureId, q.difficulty, q.kind ?? null, job.id, q.excerpt, q.explanation, rubric ? JSON.stringify(rubric) : null]);
     for (const [index, option] of (q.options ?? []).entries()) await client.query("insert into question_options(question_id,option_text,is_correct,order_index) values($1,$2,$3,$4)", [id, option, index === q.correctIndex, index]);
     for (const [index, answer] of (q.acceptedAnswers ?? []).entries()) await client.query("insert into question_accepted_answers(question_id,answer_text,order_index) values($1,$2,$3)", [id, answer, index]);
-    for (const [index, pair] of (q.pairs ?? []).entries()) await client.query("insert into question_pairs(question_id,left_text,right_text,order_index) values($1,$2,$3,$4)", [id, pair.left, pair.right, index]);
+    for (const [index, pair] of (q.pairs ?? []).entries()) await client.query("insert into question_pairs(id,question_id,left_text,right_text,order_index) values($1,$2,$3,$4,$5)", [pairIds[index], id, pair.left, pair.right, index]);
     for (const [index, item] of (q.items ?? []).entries()) await client.query("insert into question_items(question_id,item_text,correct_order_index) values($1,$2,$3)", [id, item, index]);
     return id;
   }

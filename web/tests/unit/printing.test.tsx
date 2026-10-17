@@ -19,7 +19,7 @@ describe("complete print-only content", () => {
     const ordered: QuestionForAttempt = { ...first, questionType: "order", options: null, orderItems: [{ id: "secret-order-2", text: "تنفيذ الخطة" }, { id: "secret-order-1", text: "تحديد المخاطر" }] };
     const input = questionPrintDocument("اختبار المخاطر", [leaked, second, matching, ordered, { ...first, questionType: "fill", options: null }, { ...first, questionType: "open", options: null }]);
     const text = JSON.stringify(input);
-    expect(text).toContain("السؤال 6"); expect(text).toContain("صح أو خطأ"); expect(text).toContain("القائمة الثانية");
+    expect(text).toContain("السؤال 6"); expect(text).toContain("صح / خطأ"); expect(text).toContain("القائمة الثانية");
     expect(text.indexOf("البديل الثاني")).toBeLessThan(text.indexOf("البديل الأول"));
     expect(text.indexOf("تنفيذ الخطة")).toBeLessThan(text.indexOf("تحديد المخاطر"));
     expect(text).not.toMatch(/PRIVATE_|private-question|private-option|secret-|isCorrect|answerReview/);

@@ -21,6 +21,8 @@ import { reviewedLegalSummary } from "./legalAcademicReadings.js";
 import { currentAcademicReadings } from "./currentAcademicReadings.js";
 import type { ExamExperienceMode, QuizAttempt, QuestionForAttempt } from "@shared/index";
 import { buildAcademicExam, type AcademicExamSourceQuestion } from "./academicExam.js";
+import { diverseAssessmentPolicy } from "./diverseAssessment.js";
+import { privateMatchingIds } from "../assessments/matchingIdentity.js";
 
 interface GroupMetadataRow {
   id: string; subject_id: string; title: string; sequence: number; created_at: Date;
@@ -37,18 +39,20 @@ interface SourceQuestion {
   pairs: Array<{ left_text: string; right_text: string; order_index: number }>;
   items: Array<{ item_text: string; correct_order_index: number }>;
 }
-const automaticTypes = new Set<QuestionType>(["multiple_choice", "true_false", "fill", "match", "order"]);
+const automaticTypes = new Set<QuestionType>(["multiple_choice", "true_false", "fill", "match", "order", "open"]);
 function validQuestion(q: SourceQuestion): boolean {
-  if (!automaticTypes.has(q.question_type) || q.prompt.trim().length < 10 || q.points < 1 || hasBrokenSourceEncoding(JSON.stringify(q))) return false;
+  if (!automaticTypes.has(q.question_type) || q.prompt.trim().length < 10 || q.points < 1
+    || hasBrokenSourceEncoding(JSON.stringify({ prompt: q.prompt, options: q.options, pairs: q.pairs, items: q.items, explanation: q.explanation }))) return false;
   if (q.question_type === "multiple_choice" || q.question_type === "true_false") return q.options.length >= 2 && q.options.filter(o => o.is_correct).length === 1 && q.options.every(o => o.option_text.trim());
   if (q.question_type === "fill") return q.accepted.length > 0 && q.accepted.every(a => a.answer_text.trim());
   if (q.question_type === "match") return q.pairs.length >= 2 && q.pairs.every(p => p.left_text.trim() && p.right_text.trim());
+  if (q.question_type === "open") return Boolean(q.explanation?.trim() && q.rubric && typeof q.rubric === "object" && "points" in q.rubric && Array.isArray(q.rubric.points) && q.rubric.points.length);
   return q.items.length >= 2 && new Set(q.items.map(i => i.correct_order_index)).size === q.items.length && q.items.every(i => i.item_text.trim());
 }
 function generatedSource(q: GeneratedQuestion & Pick<GroundedQuestion, "references" | "assessment">, lectureId: string): SourceQuestion {
   return {
     lecture_id: lectureId, question_type: q.type, prompt: q.prompt, points: 1, explanation: q.explanation,
-    rubric: { grounding: groundingVersion, sourceReferences: q.references, assessment: q.assessment }, difficulty: q.difficulty, kind: q.kind ?? null, source_excerpt: q.excerpt,
+    rubric: { grounding: groundingVersion, sourceReferences: q.references, assessment: q.assessment, points: q.rubric ?? [], sourceProgram: q, questionPolicy: diverseAssessmentPolicy }, difficulty: q.difficulty, kind: q.kind ?? null, source_excerpt: q.excerpt,
     options: (q.options ?? []).map((option_text, order_index) => ({ option_text, order_index, is_correct: order_index === q.correctIndex })),
     accepted: (q.acceptedAnswers ?? []).map((answer_text, order_index) => ({ answer_text, order_index })),
     pairs: (q.pairs ?? []).map((p, order_index) => ({ left_text: p.left, right_text: p.right, order_index })),
@@ -63,7 +67,7 @@ function balancedQuestions(questions: SourceQuestion[], limit: number): SourceQu
     const key = `${q.question_type}:${q.prompt.normalize("NFKC").trim()}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    const bucket = `${q.question_type}:${q.difficulty}`;
+    const bucket = `${q.question_type}:${q.question_type === "open" ? q.kind : ""}:${q.difficulty}`;
     buckets.set(bucket, [...(buckets.get(bucket) ?? []), q]);
   }
   const result: SourceQuestion[] = [];
@@ -137,11 +141,14 @@ export class ExamMaterialService {
     if (attemptId) {
       const attempt = await this.assessments.getAttemptOrThrow(attemptId, principal);
       if (attempt.quizId !== group.quizId) throw notFound("Quiz attempt");
-      includeAnswerKey ||= attempt.status === "graded";
+      includeAnswerKey ||= attempt.status !== "in_progress";
     }
-    const questions = (await this.pool.query<AcademicExamSourceQuestion>(`select q.id,q.lecture_id as "lectureId",q.prompt,q.rubric,
+    const questions = (await this.pool.query<AcademicExamSourceQuestion>(`select q.id,q.lecture_id as "lectureId",q.prompt,q.rubric,q.question_type as "questionType",q.kind,q.explanation,
       coalesce((select json_agg(json_build_object('text',o.option_text,'isCorrect',o.is_correct) order by o.order_index,o.id)
-        from question_options o where o.question_id=q.id),'[]'::json) as options
+        from question_options o where o.question_id=q.id),'[]'::json) as options,
+      coalesce((select json_agg(json_build_object('left',p.left_text,'right',p.right_text) order by p.order_index,p.id)
+        from question_pairs p where p.question_id=q.id),'[]'::json) as pairs,
+      coalesce((select json_agg(i.item_text order by i.correct_order_index,i.id) from question_items i where i.question_id=q.id),'[]'::json) as items
       from quiz_questions qq join questions q on q.id=qq.question_id
       where qq.quiz_id=$1 and q.deleted_at is null order by qq.order_index,q.id`, [group.quizId])).rows;
     if (questions.length !== group.questionCount) throw conflict("تغيرت أسئلة المراجعة. حدّث الصفحة أو أعد توليد المجموعة.");
@@ -176,7 +183,7 @@ export class ExamMaterialService {
       attempt.status === "in_progress" ? Promise.resolve(null) : this.assessments.getResultOrThrow(attemptId, principal, isAdmin),
     ]);
     let knowledgeGaps: ExamMaterialAttempt["knowledgeGaps"];
-    if (attempt.status === "graded") {
+    if (attempt.status !== "in_progress") {
       const evidence = await this.pool.query<{ id: string; lecture_id: string; rubric: unknown }>(`select q.id,q.lecture_id,q.rubric from questions q
         join quiz_questions qq on qq.question_id=q.id where qq.quiz_id=$1 order by qq.order_index`, [group.quizId]);
       knowledgeGaps = knowledgeGapReport({ attemptId, questions, answers, feedback, sources: evidence.rows.map(question => ({
@@ -256,7 +263,7 @@ export class ExamMaterialService {
     }));
     let summary = compileExamSummary(subject.title, sections);
     assertSourceBoundSummary(summary, fileSources.map(source => ({ lectureId: source.lecture.id, paragraphs: source.paragraphs })));
-    summary.grounding = { policy: groundingVersion, assessmentPolicy: analyticalPolicy, sources: fileSources.flatMap(source => source.documents.map(document => ({
+    summary.grounding = { policy: groundingVersion, assessmentPolicy: analyticalPolicy, questionPolicy: diverseAssessmentPolicy, sources: fileSources.flatMap(source => source.documents.map(document => ({
       lectureId: source.lecture.id, fileId: document.id, filename: document.filename, sha256: document.sha256,
     }))) };
     if (scope === "catalog") summary.grounding.sourceScope = "catalog-primary";
@@ -269,7 +276,7 @@ export class ExamMaterialService {
       if (!candidates.every(question => validGroundedQuestion(question, source.paragraphs))) throw new ValidationError("تعذر إثبات مناسبة بدائل التقييم للمصدر. لم يُنشر الاختبار.");
       const prioritized = await prioritizeGroundedCandidates(candidates, source.paragraphs);
       const chosen = balancedQuestions(prioritized.map(question => generatedSource(question, source.lecture.id)), perLecture);
-      if (!chosen.length) throw new ValidationError(`لا يتضمن ملف «${source.lecture.title}» موقفًا تحليليًا معتمدًا أو ضابطًا صريحًا يتيح تقييم البدائل دون التباس. أضف حالة تطبيقية موثقة أو ضابطًا واضحًا إلى المصدر؛ لن تُولد أسئلة حفظ أو إجابات مفترضة.`);
+      if (!chosen.length) throw new ValidationError(`لا تتوفر في ملف «${source.lecture.title}» أدلة مقروءة كافية لإنشاء تقييم موثّق. أضف نسخة واضحة من المحاضرة وأعد التوليد.`);
       questions.push(...chosen);
       const section = sections.find(section => section.id === source.lecture.id)!;
       guideSources.push({ lecture: { id: section.id, title: section.title, number: section.number }, paragraphs: source.paragraphs, candidates: prioritized });
@@ -323,10 +330,12 @@ export class ExamMaterialService {
 
   private async copyQuestion(client: PoolClient, bankId: string, quizId: string, actorId: string, q: SourceQuestion, index: number): Promise<void> {
     const id = randomUUID();
-    await client.query("insert into questions(id,question_bank_id,question_type,prompt,points,created_by,explanation,rubric,lecture_id,difficulty,kind,source_excerpt) values($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12)", [id, bankId, q.question_type, q.prompt, q.points, actorId, q.explanation, JSON.stringify(q.rubric), q.lecture_id, q.difficulty, q.kind, q.source_excerpt]);
+    const pairIds = q.pairs.map(() => randomUUID());
+    const rubric = pairIds.length ? { ...(q.rubric as Record<string, unknown>), matchingRightIds: privateMatchingIds(pairIds) } : q.rubric;
+    await client.query("insert into questions(id,question_bank_id,question_type,prompt,points,created_by,explanation,rubric,lecture_id,difficulty,kind,source_excerpt) values($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12)", [id, bankId, q.question_type, q.prompt, q.points, actorId, q.explanation, JSON.stringify(rubric), q.lecture_id, q.difficulty, q.kind, q.source_excerpt]);
     for (const o of q.options) await client.query("insert into question_options(question_id,option_text,is_correct,order_index) values($1,$2,$3,$4)", [id, o.option_text, o.is_correct, o.order_index]);
     for (const a of q.accepted) await client.query("insert into question_accepted_answers(question_id,answer_text,order_index) values($1,$2,$3)", [id, a.answer_text, a.order_index]);
-    for (const p of q.pairs) await client.query("insert into question_pairs(question_id,left_text,right_text,order_index) values($1,$2,$3,$4)", [id, p.left_text, p.right_text, p.order_index]);
+    for (const [position, p] of q.pairs.entries()) await client.query("insert into question_pairs(id,question_id,left_text,right_text,order_index) values($1,$2,$3,$4,$5)", [pairIds[position], id, p.left_text, p.right_text, p.order_index]);
     for (const i of q.items) await client.query("insert into question_items(question_id,item_text,correct_order_index) values($1,$2,$3)", [id, i.item_text, i.correct_order_index]);
     await client.query("insert into quiz_questions(quiz_id,question_id,order_index) values($1,$2,$3)", [quizId, id, index]);
   }

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer, QuizAttempt } from "@shared/index";
+import type { Quiz, QuestionForAttempt, SubmitAnswerAck, AttemptAnswer, QuizAttempt } from "@digital-leadership/shared";
+import { assessmentFormat, assessmentFormatLabel, assessmentFormats } from "@digital-leadership/shared";
 import { QuizNavigation } from "./QuizNavigation";
 import { readQuizDraft, writeQuizDraft, type AnswerState } from "./quizDraft";
 import { notifyLearningProgress } from "@/lib/learning";
@@ -58,7 +59,7 @@ function QuestionFeedback({ feedback, open }: { feedback: SubmitAnswerAck; open:
 export function QuizAttemptRunner({
   quiz, questions, attemptId, initialAnswers = [], initialFeedback = [], startedAt,
   apiBasePath = "/api", routeBasePath = "/quizzes", reviewMode = false,
-  initialDifficulty = "all", initialLecture = "all",
+  initialDifficulty = "all", initialLecture = "all", initialFormat = "all",
   backHref, onFinished, onRestart, displayTitle, startAttempt,
 }: {
   quiz: Quiz;
@@ -72,6 +73,7 @@ export function QuizAttemptRunner({
   reviewMode?: boolean;
   initialDifficulty?: string;
   initialLecture?: string;
+  initialFormat?: string;
   backHref?: string;
   onFinished?: (attemptId: string) => Promise<void> | void;
   onRestart?: (attempt: QuizAttempt) => Promise<void> | void;
@@ -82,6 +84,7 @@ export function QuizAttemptRunner({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [difficulty, setDifficulty] = useState(initialDifficulty);
   const [lecture, setLecture] = useState(initialLecture);
+  const [format, setFormat] = useState(initialFormat);
   const [answers, setAnswers] = useState<Record<string, AnswerState>>(() => toInitialAnswers(initialAnswers));
   const [studyFeedback, setStudyFeedback] = useState<Record<string, SubmitAnswerAck>>(() => Object.fromEntries(initialFeedback.filter(feedback => initialAnswers.some(answer => answer.questionId === feedback.questionId)).map(feedback => [feedback.questionId, feedback])));
   const [revealedModels, setRevealedModels] = useState<Record<string, boolean>>({});
@@ -108,7 +111,8 @@ export function QuizAttemptRunner({
       setAnswers({ ...draft.answers, ...toInitialAnswers(initialAnswers) });
       setDifficulty(draft.difficulty);
       setLecture(draft.lecture);
-      const visible = questions.filter(item => (draft.difficulty === "all" || (item.difficulty ?? "medium") === draft.difficulty) && (draft.lecture === "all" || item.lectureId === draft.lecture));
+      setFormat(draft.format ?? "all");
+      const visible = questions.filter(item => (draft.difficulty === "all" || (item.difficulty ?? "medium") === draft.difficulty) && (draft.lecture === "all" || item.lectureId === draft.lecture) && (!draft.format || draft.format === "all" || assessmentFormat(item) === draft.format));
       setCurrentIndex(Math.max(0, visible.findIndex(item => item.id === draft.questionId)));
     }
     setDraftReady(true);
@@ -116,13 +120,13 @@ export function QuizAttemptRunner({
 
   useEffect(() => {
     if (!draftReady || reviewMode) return;
-    const visible = questions.filter(item => (difficulty === "all" || (item.difficulty ?? "medium") === difficulty) && (lecture === "all" || item.lectureId === lecture));
+    const visible = questions.filter(item => (difficulty === "all" || (item.difficulty ?? "medium") === difficulty) && (lecture === "all" || item.lectureId === lecture) && (format === "all" || assessmentFormat(item) === format));
     writeQuizDraft(attemptId, {
       quizId: quiz.id,
       answers: Object.fromEntries(Object.entries(answers).filter(([id]) => !studyFeedback[id])),
-      questionId: visible[currentIndex]?.id, difficulty, lecture,
+      questionId: visible[currentIndex]?.id, difficulty, lecture, format,
     });
-  }, [draftReady, reviewMode, attemptId, quiz.id, questions, answers, studyFeedback, currentIndex, difficulty, lecture]);
+  }, [draftReady, reviewMode, attemptId, quiz.id, questions, answers, studyFeedback, currentIndex, difficulty, lecture, format]);
 
   useEffect(() => {
     if (deadline === null) return;
@@ -141,11 +145,11 @@ export function QuizAttemptRunner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftReady, remainingSeconds, savingQuestionId]);
 
-  const filteredQuestions = questions.filter(question => (difficulty === "all" || (question.difficulty ?? "medium") === difficulty) && (lecture === "all" || question.lectureId === lecture));
+  const filteredQuestions = questions.filter(question => (difficulty === "all" || (question.difficulty ?? "medium") === difficulty) && (lecture === "all" || question.lectureId === lecture) && (format === "all" || assessmentFormat(question) === format));
   const question = filteredQuestions[currentIndex];
   const currentAnswer = question ? answers[question.id] : undefined;
   const feedback = question ? studyFeedback[question.id] : undefined;
-  const isOpen = question?.questionType === "open";
+  const isOpen = question?.questionType === "open" || question?.questionType === "short_answer";
   const isBusy = savingQuestionId !== null || submitting || restarting;
   const locked = reviewMode || Boolean(feedback) || isBusy;
   const answeredCount = filteredQuestions.filter(item => answers[item.id] && completeAnswer(item, answers[item.id])).length;
@@ -154,8 +158,8 @@ export function QuizAttemptRunner({
   const automaticWrong = automaticQuestions.filter(item => studyFeedback[item.id]?.isCorrect === false).length;
   const lectures = Array.from(new Map(questions.filter(item => item.lectureId).map(item => [item.lectureId!, { id: item.lectureId!, number: item.lectureNumber, title: item.lectureTitle }])).values()).sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
 
-  function changeFilter(kind: "difficulty" | "lecture", value: string) {
-    if (kind === "difficulty") setDifficulty(value); else setLecture(value);
+  function changeFilter(kind: "difficulty" | "lecture" | "format", value: string) {
+    if (kind === "difficulty") setDifficulty(value); else if (kind === "lecture") setLecture(value); else setFormat(value);
     setCurrentIndex(0);
     setSaveError(null);
   }
@@ -241,6 +245,7 @@ export function QuizAttemptRunner({
       notifyLearningProgress();
       const filters = new URLSearchParams();
       if (difficulty !== "all") filters.set("difficulty", difficulty);
+      if (format !== "all") filters.set("format", format);
       if (lecture !== "all") filters.set("lecture", lecture);
       if (onFinished) await onFinished(attemptId);
       else router.push(`${routeBasePath}/${quiz.id}/result/${attemptId}${filters.size ? `?${filters}` : ""}`);
@@ -302,6 +307,11 @@ export function QuizAttemptRunner({
         <button className="filter-btn" type="button" aria-pressed={lecture === "all"} onClick={() => changeFilter("lecture", "all")} disabled={isBusy}>الكل</button>
         {lectures.map(item => <button className="filter-btn" key={item.id} type="button" title={item.title} aria-pressed={lecture === item.id} onClick={() => changeFilter("lecture", item.id)} disabled={isBusy}>المحاضرة {item.number ?? item.title}</button>)}
       </div> : null}
+      <div className="quiz-toolbar quiz-format-toolbar" role="group" aria-label="تصفية حسب نوع السؤال">
+        <span className="label">نوع السؤال:</span>
+        <button className="filter-btn" type="button" aria-pressed={format === "all"} onClick={() => changeFilter("format", "all")} disabled={isBusy}>جميع الصيغ ({questions.length})</button>
+        {assessmentFormats.filter(item => questions.some(question => assessmentFormat(question) === item.id)).map(item => <button className="filter-btn" key={item.id} type="button" aria-pressed={format === item.id} onClick={() => changeFilter("format", item.id)} disabled={isBusy}>{item.label} ({questions.filter(question => assessmentFormat(question) === item.id).length})</button>)}
+      </div>
       <div className="quiz-toolbar" role="group" aria-label="تصفية حسب الصعوبة">
         <span className="label">تصفية حسب الصعوبة:</span>
         {levels.map(level => <button className="filter-btn" key={level.id} type="button" aria-pressed={difficulty === level.id} onClick={() => changeFilter("difficulty", level.id)} disabled={isBusy}>{level.label}</button>)}
@@ -310,7 +320,7 @@ export function QuizAttemptRunner({
       </div>
       <div className="quiz-progress">
         <div className="progress-meta" role="status" aria-live="polite">
-          <span>التقدّم: {answeredCount}/{filteredQuestions.length}</span><span>النتيجة: {automaticCorrect}/{filteredQuestions.length}</span>
+          <span>التقدّم: {answeredCount}/{filteredQuestions.length}</span><span>{automaticQuestions.length ? `النتيجة: ${automaticCorrect}/${automaticQuestions.length}` : "مراجعة الإجابات الكتابية وفق النموذج"}</span>
         </div>
         <div className="progress-track" role="progressbar" aria-label="التقدّم" aria-valuemin={0} aria-valuemax={100} aria-valuenow={filteredQuestions.length ? Math.round(answeredCount / filteredQuestions.length * 100) : 0}>
           <div className="progress-fill" style={{ width: `${filteredQuestions.length ? answeredCount / filteredQuestions.length * 100 : 0}%` }} />
@@ -321,7 +331,7 @@ export function QuizAttemptRunner({
           <div className="q-prompt">
             <span className="qnum">سؤال {currentIndex + 1}/{filteredQuestions.length}</span>
             <span className={`badge badge-${question.difficulty ?? "medium"}`}>{levels.find(level => level.id === (question.difficulty ?? "medium"))?.label}</span>
-            {isOpen ? <span className="badge badge-type" title={question.kind}>سؤال مفتوح</span> : null}
+            <span className="badge badge-type" title={question.kind}>{assessmentFormatLabel(question)}</span>
             <h2 id={`prompt-${question.id}`}>{question.prompt}</h2>
           </div>
           <div aria-labelledby={`prompt-${question.id}`}>
@@ -378,14 +388,14 @@ export function QuizAttemptRunner({
         <button className="btn btn-secondary" type="button" onClick={restartQuiz} disabled={isBusy}>{restarting ? "جارٍ بدء المحاولة…" : "↻ إعادة الاختبار"}</button>
       </div>
       {reviewMode ? <div className="quiz-result" role="status">
-        <div className="score-big">{automaticCorrect} / {automaticQuestions.length} ({automaticQuestions.length ? Math.round(automaticCorrect / automaticQuestions.length * 100) : 0}%)</div>
+        <div className="score-big">{automaticQuestions.length ? `${automaticCorrect} / ${automaticQuestions.length} (${Math.round(automaticCorrect / automaticQuestions.length * 100)}%)` : "مراجعة كتابية"}</div>
         <div className="score-sub">نتيجة الاختبار</div>
         <div className="bars">
           <span className="badge badge-easy">✓ إجابة صحيحة: {automaticCorrect}</span>
           <span className="badge badge-hard">✕ إجابة غير صحيحة: {automaticWrong}</span>
           <span className="badge badge-type">عدد الأسئلة: {filteredQuestions.length}</span>
         </div>
-        {filteredQuestions.some(item => item.questionType === "open") ? <p className="score-sub">المقالات والسيناريوهات متاحة للمراجعة الذاتية من خلال الإجابة النموذجية.</p> : null}
+        {filteredQuestions.some(item => item.questionType === "open" || item.questionType === "short_answer") ? <p className="score-sub">المقالات والسيناريوهات متاحة للمراجعة الذاتية من خلال الإجابة النموذجية. النتيجة الآلية تخص الأسئلة الموضوعية فقط.</p> : null}
       </div> : null}
       {submitError ? <p className="quiz-error" role="alert">{submitError}</p> : null}
     </section>

@@ -307,9 +307,12 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       id: string;
       left_text: string;
       right_text: string;
+      right_id: string;
     }>(
-      `select qp.question_id, qp.id, qp.left_text, qp.right_text
+      `select qp.question_id, qp.id, qp.left_text, qp.right_text,
+         coalesce(qn.rubric->'matchingRightIds'->>qp.id::text,qp.id::text) as right_id
        from question_pairs qp
+       join questions qn on qn.id=qp.question_id
        join quiz_questions qq on qq.question_id = qp.question_id
        where qq.quiz_id = $1`,
       [quizId],
@@ -318,7 +321,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
     for (const row of pairsResult.rows) {
       const entry = matchItemsByQuestion.get(row.question_id) ?? { left: [], right: [] };
       entry!.left.push({ id: row.id, text: row.left_text });
-      entry!.right.push({ id: row.id, text: row.right_text });
+      entry!.right.push({ id: row.right_id ?? row.id, text: row.right_text });
       matchItemsByQuestion.set(row.question_id, entry);
     }
     for (const entry of matchItemsByQuestion.values()) {
@@ -395,11 +398,12 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       return { summary: result.rows.map((r) => r.answer_text).join(" / ") || null, review: {} };
     }
     if (type === "match") {
-      const result = await this.pool.query<{ id: string; left_text: string; right_text: string }>(
-        `select id, left_text, right_text from question_pairs where question_id = $1 order by order_index, id`,
+      const result = await this.pool.query<{ id: string; left_text: string; right_text: string; right_id: string }>(
+        `select qp.id, qp.left_text, qp.right_text, coalesce(qn.rubric->'matchingRightIds'->>qp.id::text,qp.id::text) as right_id
+         from question_pairs qp join questions qn on qn.id=qp.question_id where qp.question_id=$1 order by qp.order_index, qp.id`,
         [questionId],
       );
-      return { summary: result.rows.map((r) => `${r.left_text} ← ${r.right_text}`).join(" | ") || null, review: { correctMatches: result.rows.map(r => ({ leftId: r.id, rightId: r.id })) } };
+      return { summary: result.rows.map((r) => `${r.left_text} ← ${r.right_text}`).join(" | ") || null, review: { correctMatches: result.rows.map(r => ({ leftId: r.id, rightId: r.right_id ?? r.id })) } };
     }
     if (type === "order") {
       const result = await this.pool.query<{ id: string; item_text: string }>(
@@ -491,18 +495,16 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
    * references a question_pairs row that actually belongs to this
    * question, that the submission covers every left item exactly once
    * (no duplicate, no missing, no extra), then grades all-or-nothing: a
-   * pair is correct only when submitted_pair_id === question_pair_id
-   * (the learner chose the same question_pairs row for both sides,
-   * which is how the authoritative pairing is represented — see
-   * `listQuestionsForAttempt`'s delivery comment). The authoritative
-   * pairing itself is read and consumed entirely inside this function.
+   * pair is correct only when the submitted opaque right ID matches the
+   * private mapping for that left item. Legacy questions without the mapping
+   * retain their original keys so saved attempts remain valid.
    */
   async scoreMatchAnswer(
     questionId: string,
     pairs: MatchAnswerPair[],
   ): Promise<{ isCorrect: boolean; pointsAwarded: number }> {
-    const result = await this.pool.query<{ id: string; points: number }>(
-      `select qp.id, qn.points
+    const result = await this.pool.query<{ id: string; points: number; right_id: string }>(
+      `select qp.id, qn.points, coalesce(qn.rubric->'matchingRightIds'->>qp.id::text,qp.id::text) as right_id
        from question_pairs qp
        join questions qn on qn.id = qp.question_id
        where qp.question_id = $1`,
@@ -513,13 +515,15 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
     }
     const points = result.rows[0]!.points;
     const validIds = new Set(result.rows.map((r) => r.id));
+    const validRightIds = new Set(result.rows.map(row => row.right_id ?? row.id));
+    const expectedRight = new Map(result.rows.map(row => [row.id, row.right_id ?? row.id]));
 
     if (pairs.length !== validIds.size) {
       throw new ValidationError("The match submission must include exactly one mapping per left item, no duplicates, no extras.");
     }
     const seenLeft = new Set<string>();
     for (const pair of pairs) {
-      if (!validIds.has(pair.leftId) || !validIds.has(pair.rightId)) {
+      if (!validIds.has(pair.leftId) || !validRightIds.has(pair.rightId)) {
         throw new ValidationError("The match submission references an item that does not belong to this question.");
       }
       if (seenLeft.has(pair.leftId)) {
@@ -531,7 +535,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       throw new ValidationError("The match submission is missing one or more left items.");
     }
 
-    const isCorrect = pairs.every((pair) => pair.leftId === pair.rightId);
+    const isCorrect = pairs.every(pair => expectedRight.get(pair.leftId) === pair.rightId);
     return { isCorrect, pointsAwarded: isCorrect ? points : 0 };
   }
 
@@ -624,7 +628,12 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       await client.query("begin");
       const row = (await client.query<AttemptRow>(`select ${ATTEMPT_COLUMNS} from quiz_attempts where id=$1 for update`, [attemptId])).rows[0]!;
       if (row.status !== "in_progress") { await client.query("commit"); return toAttempt(row); }
-      const result = await client.query<AttemptRow>(`update quiz_attempts set status='graded',submitted_at=clock_timestamp(),score=(select coalesce(sum(points_awarded),0) from quiz_attempt_answers where attempt_id=$1) where id=$1 returning ${ATTEMPT_COLUMNS}`, [attemptId]);
+      const result = await client.query<AttemptRow>(`update quiz_attempts set status=case when exists (
+        select 1 from quiz_attempt_answers a join questions q on q.id=a.question_id
+        where a.attempt_id=$1 and q.question_type='open' and a.points_awarded is null
+      ) then 'submitted'::quiz_attempt_status else 'graded'::quiz_attempt_status end,submitted_at=clock_timestamp(),
+        score=(select coalesce(sum(points_awarded),0) from quiz_attempt_answers where attempt_id=$1)
+        where id=$1 returning ${ATTEMPT_COLUMNS}`, [attemptId]);
       await client.query("commit"); return toAttempt(result.rows[0]!);
     } catch (error) { await client.query("rollback"); throw error; }
     finally { client.release(); }
@@ -669,9 +678,10 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
         question_pair_id: string;
         submitted_pair_id: string;
       }>(
-        `select attempt_answer_id, question_pair_id, submitted_pair_id
-         from quiz_attempt_answer_matches
-         where attempt_answer_id = any($1::uuid[])`,
+        `select answer.attempt_answer_id, answer.question_pair_id,
+           coalesce(question.rubric->'matchingRightIds'->>submitted.id::text,submitted.id::text) as submitted_pair_id
+         from quiz_attempt_answer_matches answer join question_pairs submitted on submitted.id=answer.submitted_pair_id
+         join questions question on question.id=submitted.question_id where answer.attempt_answer_id=any($1::uuid[])`,
         [attemptAnswerIds],
       );
       for (const row of matchRows.rows) {
@@ -778,11 +788,13 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       const attemptAnswerId = upsertResult.rows[0]!.id;
       await client.query(`delete from quiz_attempt_answer_matches where attempt_answer_id = $1`, [attemptAnswerId]);
       for (const pair of input.pairs) {
-        await client.query(
+        const inserted = await client.query(
           `insert into quiz_attempt_answer_matches (attempt_answer_id, question_pair_id, submitted_pair_id)
-           values ($1, $2, $3)`,
-          [attemptAnswerId, pair.leftId, pair.rightId],
+           select $1,$2,qp.id from question_pairs qp join questions qn on qn.id=qp.question_id
+           where qp.question_id=$4 and coalesce(qn.rubric->'matchingRightIds'->>qp.id::text,qp.id::text)=$3`,
+          [attemptAnswerId, pair.leftId, pair.rightId, input.questionId],
         );
+        if (inserted.rowCount === 0) throw new ValidationError("The selected match item is no longer available.");
       }
       await client.query("commit");
     } catch (err) {
