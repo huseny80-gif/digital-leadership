@@ -34,6 +34,8 @@ import { separateCyberRiskSixthLecture } from "./contentAutomation/separateCyber
 import { reviewInnovationCurriculum } from "./contentAutomation/reviewInnovationCurriculum.js";
 import { probeCyberRiskStudyContent } from "./finquiz/uploadedStudyContent.js";
 import { WeeklyCyberExams, weeklyCyberSubjectId } from "./examMaterials/weeklyCyberExams.js";
+import { repairPdfIdentities } from "./files/repairPdfIdentities.js";
+import { probePublishedPdfInventory } from "./files/pdfInventoryProbe.js";
 
 initMonitoring();
 
@@ -70,6 +72,7 @@ async function refreshPublishedContent() {
   logger.info({ ...sixth, sourcesQueued: generationSources.length }, "legal_sixth_lecture_separated");
   logger.info({ courses: await refreshStudyCourses(getPool()) }, "study_courses_content_refreshed");
   await runIndependentContentReviews([
+    { name: "pdf_file_identities", run: async () => { logger.info(await repairPdfIdentities(getPool()), "original_pdf_identities_verified"); } },
     { name: "weekly_cyber_exams", run: async () => { const papers = new WeeklyCyberExams().index(weeklyCyberSubjectId); logger.info({ policy: papers.policy, subjectId: weeklyCyberSubjectId, papers: papers.papers.map(paper => ({ id: paper.id, questions: paper.questionCount })), questions: papers.papers.reduce((sum, paper) => sum + paper.questionCount, 0) }, "weekly_cyber_exams_ready"); } },
     { name: "innovation_curriculum", run: async () => { logger.info(await reviewInnovationCurriculum(getPool()), "innovation_curriculum_reviewed"); } },
     { name: "cyber_risk_sixth", run: async () => { logger.info(await separateCyberRiskSixthLecture(getPool()), "cyber_risk_sixth_lecture_separated"); } },
@@ -82,6 +85,7 @@ async function refreshPublishedContent() {
     { name: "exam_archives", run: async () => { logger.info(await refreshAcademicSummaries(getPool()), "academic_exam_summaries_refreshed"); } },
     { name: "diverse_assessments", run: async () => { logger.info(await refreshDiverseAssessments(getPool()), "diverse_exam_groups_refreshed"); } },
     { name: "instructor_guides", run: async () => { logger.info(await refreshInstructorGuides(getPool()), "instructor_guides_source_verified"); } },
+    { name: "pdf_inventory", run: async () => { logger.info(await probePublishedPdfInventory(getPool()), "published_pdf_inventory_verified"); } },
   ], (stage, error) => {
     // Log a safe machine reason, never SQL values, private file text or tokens.
     const reason = error instanceof Error && /^[a-z0-9_]{1,100}$/u.test(error.message) ? error.message : undefined;

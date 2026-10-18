@@ -22,5 +22,6 @@ export * from "./studyLayout.js";
 export * from "./arabicProofreading.js";
 export * from "./weeklyExams.js";
 export * from "./assessmentFormats.js";
+export * from "./pdfInventory.js";
 export * from "./constants/guestSession.js";
 export * from "./contracts/api.js";

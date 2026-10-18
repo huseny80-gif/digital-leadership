@@ -35,8 +35,9 @@ describe("subject PDF inventory", () => {
     expect(result.partial).toBe(true); expect(result.documents).toHaveLength(1);
   });
 
-  it("shows the six original legal lectures once when both the catalog and uploads contain them", async () => {
-    const course = catalog.subjects.find(subject => subject.id === "legal-regulatory")!;
+  it.each(["legal-regulatory", "risk-management", "ai-data", "cybersecurity-governance", "innovation-project-management"])("shows each %s original once when the catalog and uploads both contain it", async slug => {
+    const source = catalog.subjects.find(subject => subject.id === slug)!;
+    const course = { ...source, lectures: source.lectures.filter(lecture => lecture.files.some(ref => ref.url?.endsWith(".pdf"))) };
     const entries = course.lectures.map(lecture => {
       const file = Object.values(catalog.assets).find(file => lecture.files.some(ref => ref.url === file.path) && file.filename.endsWith(".pdf"))!;
       return { lectureId: lecture.id, files: [{ ...file, label: lecture.title }] };
@@ -53,10 +54,10 @@ describe("subject PDF inventory", () => {
     });
     const result = await loadSubjectPdfDocuments(subjectId);
     expect(result.partial).toBe(false);
-    expect(result.documents).toHaveLength(6);
+    expect(result.documents).toHaveLength(course.lectures.length);
     expect(result.documents.every(document => document.source === "catalog")).toBe(true);
     expect(result.documents.map(document => document.lectureId)).toEqual(course.lectures.map(lecture => lecture.id));
-    expect(new Set(result.documents.map(document => document.fileId)).size).toBe(6);
+    expect(new Set(result.documents.map(document => document.fileId)).size).toBe(course.lectures.length);
   });
 
   it("retains distinct, unverified and size-mismatched originals despite identical Arabic filenames", async () => {
