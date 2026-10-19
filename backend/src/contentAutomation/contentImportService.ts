@@ -12,6 +12,7 @@ import { extractPdfText } from "./pdfText.js";
 import { cleanSourceText } from "./sourceText.js";
 import { generateQuestions, generatedSourcePolicy, type GeneratedQuestion } from "./questionGeneration.js";
 import { reviewedAiPdf } from "./aiAssessmentReviewCatalog.js";
+import { verifiedTranscript } from "../examMaterials/lectureSourceFiles.js";
 import { assertReadableSourceText } from "./sourceTextQuality.js";
 import { LEGAL_SUBJECT_ID, legalLectureNumber, legalLectureTitle, replaceLegalLabels } from "./legalLectureLabels.js";
 import { courseLabelsForSubject } from "./courseSourceLabels.js";
@@ -196,7 +197,8 @@ export class ContentImportService {
     try {
       const bytes = job.source_text ? null : (await this.readSource(job.id)).bytes;
       const reviewed = bytes ? reviewedAiPdf(bytes) : null;
-      const text = cleanSourceText(reviewed?.text ?? job.source_text ?? await (this.dependencies.extract ?? extractPdfText)(bytes!, () => heartbeat()));
+      const verified = bytes && !reviewed ? await verifiedTranscript(bytes) : null;
+      const text = cleanSourceText(reviewed?.text ?? verified ?? job.source_text ?? await (this.dependencies.extract ?? extractPdfText)(bytes!, () => heartbeat()));
       assertReadableSourceText(text);
       await heartbeat("classifying");
       let parent: { id: string; subject_id: string; title: string; status: string } | undefined;
