@@ -42,8 +42,14 @@ describe("uploaded slide PDF with a verified catalog transcript", () => {
     expect((await old.get(job.id)).status).toBe("failed");
     const imports = new ContentImportService(pool, storage, 10485760);
     const unrelated = await imports.submitText({ actorId: actor, text: "هذه مادة دراسية مستقلة تشرح تنظيم مسؤوليات العمل المؤسسي وحماية المعلومات وتحديد أهداف الفريق ومتابعة تنفيذ السياسات ومراجعة نتائج العمل بصورة دورية وفق الإجراءات المعتمدة لتحقيق جودة الأداء المؤسسي", subjectId, lectureId: lecture, title: "طلب آخر في الطابور" });
+    await pool.query("update content_imports set created_at=now()-interval '1 hour' where id=$1", [unrelated.id]);
     expect(await reprocessCyberSecondLecture(pool, { importId: job.id, imports })).toMatchObject({ status: "completed", lectureId: lecture });
     expect((await imports.get(unrelated.id)).status).toBe("queued");
+    const current = (await pool.query(`select count(*)::int n,count(distinct q.prompt)::int unique_prompts from quizzes z
+      join quiz_questions qq on qq.quiz_id=z.id join questions q on q.id=qq.question_id
+      where z.lecture_id=$1 and z.purpose='course' and z.status='published' and z.superseded_by is null and z.deleted_at is null`, [lecture])).rows[0];
+    expect(current.n).toBeGreaterThan(0);
+    expect(current.n).toBe(current.unique_prompts);
     const count = (await pool.query("select count(*)::int n from quizzes")).rows[0].n;
     expect(await reprocessCyberSecondLecture(pool, { importId: job.id, imports })).toMatchObject({ status: "completed" });
     expect((await pool.query("select count(*)::int n from quizzes")).rows[0].n).toBe(count);

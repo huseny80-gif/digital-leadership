@@ -4,6 +4,7 @@ import { ContentImportService } from "./contentImportService.js";
 import { getStorageProvider } from "../files/storageProviderFactory.js";
 import { getEnv } from "../config/env.js";
 import { subjectMapping } from "../finquiz/catalog.js";
+import { courseSourceRevision, reviewCourseAssessments } from "./reviewCourseAssessments.js";
 
 /** Retry the administrator's previously failed upload using the newly
  * verified transcript. Authorization is tied to the exact approved bytes;
@@ -16,7 +17,11 @@ export async function reprocessCyberSecondLecture(pool: Pool, options: { importI
   let job = await imports.get(importId);
   const subjectId = subjectMapping["cybersecurity-governance"]!;
   if (job.subjectId && job.subjectId !== subjectId) throw new Error("cyber_second_wrong_subject");
-  if (job.status === "completed") return { status: job.status, importId, questionCount: job.questionCount };
+  const reviewCurrentEdition = () => reviewCourseAssessments(pool, [subjectId], `${courseSourceRevision()}:recovered:${importId}`);
+  if (job.status === "completed") {
+    await reviewCurrentEdition();
+    return { status: job.status, importId, questionCount: job.questionCount };
+  }
   if (job.status !== "failed") return { status: job.status, importId };
   const source = await imports.readSource(importId);
   if (source.bytes.length !== 225458 || createHash("sha256").update(source.bytes).digest("hex") !== "a9575490de2eb2ee2076b9905dfb749c095e0afdf48046c40444f7668a37921c") throw new Error("cyber_second_source_changed");
@@ -29,5 +34,9 @@ export async function reprocessCyberSecondLecture(pool: Pool, options: { importI
   await imports.processNext(importId);
   job = await imports.get(importId);
   if (job.status !== "completed" || job.subjectId !== subjectId || job.lectures.length !== 1 || job.lectures[0]!.id !== slots[0]!.id) throw new Error("cyber_second_reprocess_incomplete");
+  // Import editions append newly generated questions to preserve history.
+  // Publish the canonical file-verified edition once after recovery so the
+  // current course/lecture tests do not repeat their previous questions.
+  await reviewCurrentEdition();
   return { status: job.status, importId, lectureId: slots[0]!.id, questionCount: job.questionCount };
 }
