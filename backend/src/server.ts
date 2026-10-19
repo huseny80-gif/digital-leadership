@@ -83,7 +83,7 @@ async function refreshPublishedContent() {
     { name: "arabic_lecture_labels", run: async () => { logger.info(await normalizeArabicLectureLabels(getPool()), "arabic_lecture_labels_normalized"); } },
     { name: "course_assessments", run: async () => { logger.info(await reviewCourseAssessments(getPool(), undefined, courseSourceRevision()), "course_assessments_source_verified"); } },
     { name: "exam_archives", run: async () => { logger.info(await refreshAcademicSummaries(getPool()), "academic_exam_summaries_refreshed"); } },
-    { name: "diverse_assessments", run: async () => { logger.info(await refreshDiverseAssessments(getPool()), "diverse_exam_groups_refreshed"); } },
+    { name: "diverse_assessments", run: async () => { logger.info(await refreshDiverseAssessments(getPool(), courseSourceRevision()), "diverse_exam_groups_refreshed"); } },
     { name: "instructor_guides", run: async () => { logger.info(await refreshInstructorGuides(getPool()), "instructor_guides_source_verified"); } },
     { name: "pdf_inventory", run: async () => { logger.info(await probePublishedPdfInventory(getPool()), "published_pdf_inventory_verified"); } },
   ], (stage, error) => {

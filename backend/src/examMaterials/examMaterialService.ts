@@ -275,7 +275,11 @@ export class ExamMaterialService {
       const candidates = groundedQuestionCandidates(source.paragraphs);
       if (!candidates.every(question => validGroundedQuestion(question, source.paragraphs))) throw new ValidationError("تعذر إثبات مناسبة بدائل التقييم للمصدر. لم يُنشر الاختبار.");
       const prioritized = await prioritizeGroundedCandidates(candidates, source.paragraphs);
-      const chosen = balancedQuestions(prioritized.map(question => generatedSource(question, source.lecture.id)), perLecture);
+      // Keep format balance while ensuring explicitly reviewed comparisons
+      // reach the shortened paper instead of remaining at the bank's tail.
+      const selectedOrder = [...prioritized].sort((a, b) => Number(/^مقارنة\s*[:：]/u.test(b.assessment?.criterion ?? ""))
+        - Number(/^مقارنة\s*[:：]/u.test(a.assessment?.criterion ?? "")));
+      const chosen = balancedQuestions(selectedOrder.map(question => generatedSource(question, source.lecture.id)), perLecture);
       if (!chosen.length) throw new ValidationError(`لا تتوفر في ملف «${source.lecture.title}» أدلة مقروءة كافية لإنشاء تقييم موثّق. أضف نسخة واضحة من المحاضرة وأعد التوليد.`);
       questions.push(...chosen);
       const section = sections.find(section => section.id === source.lecture.id)!;

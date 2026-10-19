@@ -9,6 +9,7 @@ import { PgAssessmentsRepository } from "../../src/assessments/assessmentsReposi
 import { ExamMaterialService } from "../../src/examMaterials/examMaterialService.js";
 import { refreshDiverseAssessments } from "../../src/examMaterials/refreshDiverseAssessments.js";
 import { diverseAssessmentPolicy } from "../../src/examMaterials/diverseAssessment.js";
+import { readFileSync } from "node:fs";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 async function reset() {
@@ -50,6 +51,14 @@ describe("published six-format curriculum and exam material revisions", () => {
       expect(new Set(paper.questions.map(question => question.type))).toEqual(new Set(["multiple_choice", "true_false", "match", "order", "short_answer", "case_study"]));
       expect(paper.answerKey).toHaveLength(group.question_count);
       expect(paper.answerKey!.every(answer => answer.rubric.length > 0 && answer.rubric.every(item => item.references.length > 0))).toBe(true);
+      if (group.subject_id === subjectMapping["cybersecurity-governance"]) {
+        const cases = JSON.parse(readFileSync(new URL("../../content/finquiz/analyticalCases.json", import.meta.url), "utf8")) as { cases: Array<{ id: string; prompt: string }> };
+        // The catalog selection covers lectures 1–5 and ISO; the privately
+        // uploaded sixth lecture is not part of this integration fixture.
+        const comparisons = cases.cases.filter(question => question.id.startsWith("cmp-cyber") && !question.id.startsWith("cmp-cyber6-"));
+        expect(comparisons).toHaveLength(5);
+        expect(paper.questions.map(question => question.prompt)).toEqual(expect.arrayContaining(comparisons.map(question => question.prompt)));
+      }
       const learner = await service.academicPaper(group.subject_id, group.id, { kind: "user", userId: admin }, false);
       expect(JSON.stringify(learner)).not.toMatch(/"(?:answerKey|modelAnswer|correctIndex|isCorrect|sourceProgram|matchingRightIds|excerpt)"/u);
     }
@@ -71,5 +80,14 @@ describe("published six-format curriculum and exam material revisions", () => {
     const index = await service.index(previous.subject_id, false, { page: 1, limit: 20, offset: 0 });
     expect(index.total).toBe(1); expect(index.groups[0]!.id).not.toBe(previous.id);
     expect((await refreshDiverseAssessments(pool))).toMatchObject({ published: 0, alreadyCurrent: 5, issues: [] });
+    // A new reviewed-case revision must also refresh a current-format group.
+    // Every earlier summary and copied answer program remains untouched.
+    const archived = (await pool.query("select id,summary,source_digest,quiz_id from exam_material_groups order by id")).rows;
+    const sourceRefresh = await refreshDiverseAssessments(pool, "comparison-cases-regression");
+    expect(sourceRefresh).toMatchObject({ published: 5, alreadyCurrent: 0, issues: [] });
+    expect((await pool.query("select id,summary,source_digest,quiz_id from exam_material_groups where id=any($1::uuid[]) order by id", [archived.map(group => group.id)])).rows).toEqual(archived);
+    const afterSource = (await pool.query("select count(*)::int n from exam_material_groups")).rows[0].n;
+    expect(await refreshDiverseAssessments(pool, "comparison-cases-regression")).toMatchObject({ published: 0, alreadyCurrent: 5, issues: [] });
+    expect((await pool.query("select count(*)::int n from exam_material_groups")).rows[0].n).toBe(afterSource);
   }, 180000);
 });

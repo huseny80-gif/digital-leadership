@@ -7,11 +7,11 @@ import { finquizRecordId } from "../finquiz/recordIdentity.js";
 import { subjectMapping } from "../finquiz/catalog.js";
 import { courseAssessmentReviewPolicy } from "../contentAutomation/reviewCourseAssessments.js";
 
-interface Selection { id: string; subject_id: string; lecture_ids: string[]; created_by: string; summary: ExamMaterialSummary }
+interface Selection { id: string; subject_id: string; lecture_ids: string[]; created_by: string; summary: ExamMaterialSummary; request_id?: string | null }
 /** Publish one new revision per saved selection, preserving every old question,
  * answer, score and archive. Stable request IDs make restart/retry safe. */
-export async function refreshDiverseAssessments(pool: Pool) {
-  const rows = (await pool.query<Selection>(`select g.id,g.subject_id,g.lecture_ids,g.created_by,g.summary
+export async function refreshDiverseAssessments(pool: Pool, sourceRevision?: string) {
+  const rows = (await pool.query<Selection>(`select g.id,g.subject_id,g.lecture_ids,g.created_by,g.summary,g.request_id
     from exam_material_groups g join subjects s on s.id=g.subject_id join quizzes q on q.id=g.quiz_id
     where s.id=any($1::uuid[]) and s.status='published' and s.deleted_at is null and q.status='published' and q.deleted_at is null
     and ${examGroupVisible} order by g.created_at,g.sequence,g.id`, [Object.values(subjectMapping)])).rows;
@@ -34,9 +34,17 @@ export async function refreshDiverseAssessments(pool: Pool) {
   const issues: Array<{ subjectId: string; code: string }> = [];
   let alreadyCurrent = 0;
   for (const [key, selection] of latest) {
-    if (selection.summary.grounding?.questionPolicy === diverseAssessmentPolicy) { alreadyCurrent++; continue; }
+    if (!sourceRevision && selection.summary.grounding?.questionPolicy === diverseAssessmentPolicy) { alreadyCurrent++; continue; }
     try {
-      const requestId = finquizRecordId(`${diverseAssessmentPolicy}:selection:${key}:previous:${selection.id}`);
+      // A format policy can remain unchanged when new reviewed cases arrive.
+      // Refresh each saved selection once per source revision, without
+      // overwriting the archived summary, answer keys or attempts.
+      const requestId = finquizRecordId(sourceRevision
+        ? `${diverseAssessmentPolicy}:selection:${key}:source-revision:${sourceRevision}`
+        : `${diverseAssessmentPolicy}:selection:${key}:previous:${selection.id}`);
+      if (sourceRevision && (selection.request_id === requestId || (await pool.query(
+        "select 1 from exam_material_groups where created_by=$1 and request_id=$2 and subject_id=$3", [selection.created_by, requestId, selection.subject_id],
+      )).rowCount)) { alreadyCurrent++; continue; }
       const scope = selection.id === "initial" || selection.summary.grounding?.sourceScope === "catalog-primary" ? "catalog" : "all";
       const review = await service.generate(selection.subject_id, selection.lecture_ids, requestId, selection.created_by, scope);
       reviews.push({ subjectId: selection.subject_id, groupId: review.id, questions: review.questionCount });
@@ -44,5 +52,5 @@ export async function refreshDiverseAssessments(pool: Pool) {
       issues.push({ subjectId: selection.subject_id, code: error instanceof Error && "code" in error ? String(error.code) : "source_review_unavailable" });
     }
   }
-  return { policy: diverseAssessmentPolicy, selections: latest.size, published: reviews.length, alreadyCurrent, reviews, issues };
+  return { policy: diverseAssessmentPolicy, ...(sourceRevision ? { sourceRevision } : {}), selections: latest.size, published: reviews.length, alreadyCurrent, reviews, issues };
 }
