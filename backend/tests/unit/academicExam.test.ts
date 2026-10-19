@@ -68,7 +68,10 @@ describe("archived academic papers across the actual curriculum", () => {
     const asset = Object.values(manifest.assets).find(asset => asset.sha256 === source.sha256 && !asset.bodyHtml);
     // Reviewed private uploads are verified in examSourceCache.test.ts.
     if (!asset) continue;
-    const lecture = manifest.subjects.flatMap(subject => subject.lectures).find(lecture => lecture.files?.some(file => file.url === asset.path))!;
+    const lecture = manifest.subjects.flatMap(subject => subject.lectures).find(lecture => lecture.files?.some(file => file.url === asset.path));
+    // A retired edition (e.g. the full cyber lecture-1 PDF split into lectures
+    // 1 and 2) keeps its transcript only so earlier exam archives stay verifiable.
+    if (!lecture) continue;
     it(`revalidates the source programs and marking evidence for ${asset.filename}`, () => {
       const scoped = scopeSharedSource({ id: asset.id, filename: asset.filename, ...source }, { title: lecture.title, orderIndex: lecture.number }, false);
       const sourceParagraphList = sourceParagraphs(scoped.document, scoped.lineOffset);
