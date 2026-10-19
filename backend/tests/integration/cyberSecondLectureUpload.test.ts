@@ -7,6 +7,7 @@ import { subjectMapping } from "../../src/finquiz/catalog.js";
 import type { StorageProvider } from "../../src/files/storageProvider.js";
 import { createUser, createLecture } from "../helpers/seedFixtures.js";
 import { ExamMaterialService } from "../../src/examMaterials/examMaterialService.js";
+import { reprocessCyberSecondLecture } from "../../src/contentAutomation/reprocessCyberSecondLecture.js";
 
 const live = vi.hoisted(() => ({ storage: undefined as StorageProvider | undefined }));
 vi.mock("../../src/files/storageProviderFactory.js", () => ({ getStorageProvider: () => live.storage }));
@@ -29,6 +30,24 @@ beforeEach(reset);
 afterAll(async () => { await reset(); await pool.end(); });
 
 describe("uploaded slide PDF with a verified catalog transcript", () => {
+  it("recovers the previously failed exact second-lecture upload once without processing other queued imports", async () => {
+    const actor = await createUser(pool, { email: "cyber-retry@example.test", roleName: "admin", providerSubject: "cyber-retry" });
+    await pool.query("insert into subjects(id,title,status,created_by) values($1,'حوكمة الأمن السيبراني','published',$2)", [subjectId, actor]);
+    const lecture = await createLecture(pool, { subjectId, title: "المحاضرة الثانية في حوكمة الأمن السيبراني", orderIndex: 2, status: "published", createdBy: actor });
+    const bytes = await readFile(new URL("../../content/finquiz/files/cybersecurity-governance/المحاضرة الثانية في حوكمة الأمن السيبراني.pdf", import.meta.url));
+    const storage = new MemoryStorage();
+    const old = new ContentImportService(pool, storage, 10485760, { generate: async () => { throw new Error("insufficient_text"); } });
+    const job = await old.submitPdf({ actorId: actor, subjectId: null, filename: "المحاضرة الثانية امن سيبراني.pdf", mimeType: "application/pdf", buffer: bytes });
+    await old.processNext();
+    expect((await old.get(job.id)).status).toBe("failed");
+    const imports = new ContentImportService(pool, storage, 10485760);
+    const unrelated = await imports.submitText({ actorId: actor, text: "هذه مادة دراسية مستقلة تشرح تنظيم مسؤوليات العمل المؤسسي وحماية المعلومات وتحديد أهداف الفريق ومتابعة تنفيذ السياسات ومراجعة نتائج العمل بصورة دورية وفق الإجراءات المعتمدة لتحقيق جودة الأداء المؤسسي", subjectId, lectureId: lecture, title: "طلب آخر في الطابور" });
+    expect(await reprocessCyberSecondLecture(pool, { importId: job.id, imports })).toMatchObject({ status: "completed", lectureId: lecture });
+    expect((await imports.get(unrelated.id)).status).toBe("queued");
+    const count = (await pool.query("select count(*)::int n from quizzes")).rows[0].n;
+    expect(await reprocessCyberSecondLecture(pool, { importId: job.id, imports })).toMatchObject({ status: "completed" });
+    expect((await pool.query("select count(*)::int n from quizzes")).rows[0].n).toBe(count);
+  }, 60000);
   it("keeps lecture 1 within pages 1–15 when its retired combined edition is still attached privately", async () => {
     const actor = await createUser(pool, { email: "cyber-first-source@example.test", roleName: "admin", providerSubject: "cyber-first-source" });
     await pool.query("insert into subjects(id,title,status,created_by) values($1,'حوكمة الأمن السيبراني','published',$2)", [subjectId, actor]);

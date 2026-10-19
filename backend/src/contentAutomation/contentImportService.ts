@@ -176,11 +176,12 @@ export class ContentImportService {
   }
 
   /** Atomic claim plus renewable lease allows safe restart and multiple replicas. */
-  async processNext(): Promise<boolean> {
+  async processNext(importId?: string): Promise<boolean> {
     const lease = randomUUID();
     const result = await this.pool.query<ImportRow>(
       `update content_imports set status='processing',stage='reading',attempts=attempts+1,lease_token=$1,lease_until=now()+interval '3 minutes',updated_at=now()
-       where id=(select id from content_imports where (status='queued' or (status='processing' and lease_until<now())) and attempts<3 order by created_at for update skip locked limit 1) returning *`, [lease],
+       where id=(select id from content_imports where (status='queued' or (status='processing' and lease_until<now())) and attempts<3
+         and ($2::uuid is null or id=$2) order by created_at for update skip locked limit 1) returning *`, [lease, importId ?? null],
     );
     const job = result.rows[0];
     if (!job) {
