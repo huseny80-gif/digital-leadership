@@ -44,6 +44,13 @@ async function bundledExtractions(): Promise<Map<string, VerifiedExtraction>> {
   return bundled;
 }
 
+/** Reviewed transcript for these exact bytes, if the file is a verified
+ * catalog source. Slide PDFs extract with reversed lam-alef ligatures and tab
+ * spacing; the byte-bound transcript is the proofread text of the same file. */
+export async function verifiedTranscript(bytes: Buffer): Promise<string | null> {
+  return (await bundledExtractions()).get(sha(bytes))?.text ?? null;
+}
+
 /** Hash original bytes before using a transcription. Changing a file cannot
  * accidentally reuse an old extraction or a question-bank excerpt. */
 export async function actualFileText(bytes: Buffer, filename: string, mimeType: string): Promise<{ text: string; sha256: string }> {

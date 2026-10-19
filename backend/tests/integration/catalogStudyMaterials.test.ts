@@ -37,7 +37,7 @@ describe("a verified curriculum review across all five materials", () => {
     await pool.query("update lectures set deleted_at=now() where id=$1", [deleted]);
     const result = await refreshCatalogStudyMaterials(pool);
     expect(result.courses).toHaveLength(5);
-    expect(result.courses.reduce((n, course) => n + course.verifiedFiles, 0)).toBe(25);
+    expect(result.courses.reduce((n, course) => n + course.verifiedFiles, 0)).toBe(26);
     expect(result.courses.every(course => course.groupId && course.questionCount > 0)).toBe(true);
     expect(result.courses.find(course => course.slug === "cybersecurity-governance")!.registered).toBe(1);
     const content = new ContentService(new PgContentRepository(pool));
@@ -74,7 +74,7 @@ describe("a verified curriculum review across all five materials", () => {
     expect((await pool.query("select count(*)::int n from exam_material_groups where subject_id=$1", [subjectId])).rows[0].n).toBe(1);
     expect((await pool.query("select title from lectures where id=$1", [lectureId])).rows[0].title).toBe("عنوان اختاره المدرب");
   }, 60000);
-  it("respects a subsequent instructor deletion and never publishes a phantom second cyber lecture", async () => {
+  it("respects a subsequent instructor deletion and publishes the verified second cyber lecture", async () => {
     await seed();
     const subjectId = subjectMapping["cybersecurity-governance"]!;
     await refreshCatalogStudyMaterials(pool, [subjectId]);
@@ -83,7 +83,7 @@ describe("a verified curriculum review across all five materials", () => {
     const result = await refreshCatalogStudyMaterials(pool, [subjectId]);
     expect(result.courses[0]!.registered).toBe(0);
     expect(result.courses[0]!.issues).toContainEqual({ sourceLectureId: "cs-l3", code: "source_slot_removed" });
-    expect(result.courses[0]!.currentLectures).toBe(4);
-    expect((await pool.query("select status from lectures where id=$1", [finquizRecordId("lecture:cs-l2")])).rows[0].status).toBe("draft");
+    expect(result.courses[0]!.currentLectures).toBe(5);
+    expect((await pool.query("select status from lectures where id=$1", [finquizRecordId("lecture:cs-l2")])).rows[0].status).toBe("published");
   }, 60000);
 });

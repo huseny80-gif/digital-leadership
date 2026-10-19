@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import type { Pool, PoolClient } from "pg";
 import { assessmentFormat, type Lecture, type QuestionType } from "@digital-leadership/shared";
 import { ContentService } from "../content/contentService.js";
@@ -10,6 +11,10 @@ import { groundingVersion, groundedQuestionCandidates, validGroundedQuestion, ty
 import { generatedSourcePolicy } from "./questionGeneration.js";
 import { privateMatchingIds } from "../assessments/matchingIdentity.js";
 
+/** Changes whenever reviewed cases are added or edited (e.g. a new lecture),
+ * so platform-managed course editions are rebuilt once for that revision. */
+export const courseSourceRevision = (): string => createHash("sha256")
+  .update(readFileSync(new URL("../../content/finquiz/analyticalCases.json", import.meta.url))).digest("hex").slice(0, 16);
 export const courseAssessmentReviewPolicy = "file-verified-course-assessments-v4-diverse";
 const weakFormat = /_{3,}|أكمل\s+(?:العبارة|النص)|الكلمة\s+المحذوفة|CamScanner|المسح الضوئي\s+ب/u;
 type Plan = { lecture: Lecture; questions: GroundedQuestion[]; links: Awaited<ReturnType<LectureSourceFiles["read"]>>["links"] };

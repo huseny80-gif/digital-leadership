@@ -27,7 +27,7 @@ import { runIndependentContentReviews, runStartupMaintenance } from "./lib/start
 import { probeAcademicSpeech } from "./examMaterials/academicSpeech.js";
 import { probeLegalAcademicReadings } from "./examMaterials/legalAcademicReadings.js";
 import { probePublishedLegalReviews } from "./examMaterials/legalAcademicReviewProbe.js";
-import { reviewCourseAssessments } from "./contentAutomation/reviewCourseAssessments.js";
+import { courseSourceRevision, reviewCourseAssessments } from "./contentAutomation/reviewCourseAssessments.js";
 import { refreshCatalogStudyMaterials } from "./contentAutomation/refreshCatalogStudyMaterials.js";
 import { normalizeArabicLectureLabels } from "./contentAutomation/normalizeArabicLectureLabels.js";
 import { separateCyberRiskSixthLecture } from "./contentAutomation/separateCyberRiskSixthLecture.js";
@@ -81,7 +81,7 @@ async function refreshPublishedContent() {
     { name: "onedrive_sources", run: async () => { logger.info(await reviewOneDriveSources(getPool()), "onedrive_sources_reviewed"); } },
     { name: "risk_content", run: async () => { logger.info(await reviewRiskContent(getPool()), "risk_content_source_reviewed"); } },
     { name: "arabic_lecture_labels", run: async () => { logger.info(await normalizeArabicLectureLabels(getPool()), "arabic_lecture_labels_normalized"); } },
-    { name: "course_assessments", run: async () => { logger.info(await reviewCourseAssessments(getPool()), "course_assessments_source_verified"); } },
+    { name: "course_assessments", run: async () => { logger.info(await reviewCourseAssessments(getPool(), undefined, courseSourceRevision()), "course_assessments_source_verified"); } },
     { name: "exam_archives", run: async () => { logger.info(await refreshAcademicSummaries(getPool()), "academic_exam_summaries_refreshed"); } },
     { name: "diverse_assessments", run: async () => { logger.info(await refreshDiverseAssessments(getPool()), "diverse_exam_groups_refreshed"); } },
     { name: "instructor_guides", run: async () => { logger.info(await refreshInstructorGuides(getPool()), "instructor_guides_source_verified"); } },
