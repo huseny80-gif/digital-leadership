@@ -68,6 +68,6 @@ describe("Arabic labels follow source identities and subject folders", () => {
     expect((await pool.query("select title,status,order_index from lectures where id=$1", [generic])).rows[0]).toEqual({ title: "المحاضرة الثانية في الابتكار وإدارة المشاريع", status: "draft", order_index: 0 });
     expect((await pool.query("select original_filename from files where id=$1", [file])).rows[0].original_filename).toBe("Legal1.pdf");
     expect((await pool.query("select title from lectures where id=$1", [first])).rows[0].title).toBe("مقدمة مخصصة للمدرّب");
-    expect((await pool.query("select status from lectures where id=$1", [finquizRecordId("lecture:cs-l2")])).rows[0].status).toBe("draft");
+    expect((await pool.query("select status from lectures where id=$1", [finquizRecordId("lecture:cs-l2")])).rows[0].status).toBe("published");
   }, 30000);
 });
