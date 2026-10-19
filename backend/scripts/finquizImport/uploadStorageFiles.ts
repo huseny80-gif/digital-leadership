@@ -52,7 +52,7 @@
  */
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { SupabaseStorageProvider } from "../../src/files/supabaseStorageProvider.js";
 import { buildObjectKey, sanitizeFilename } from "../../src/files/objectPath.js";
@@ -266,9 +266,9 @@ async function main() {
       try {
         await client.query("begin");
         await client.query(
-          `insert into files (id, storage_key, original_filename, mime_type, size_bytes, uploaded_by)
-           values ($1, $2, $3, $4, $5, $6)`,
-          [fileId, objectKey, safeFilename, "application/pdf", buffer.length, ADMIN_USER_ID],
+          `insert into files (id, storage_key, original_filename, mime_type, size_bytes, uploaded_by, checksum)
+           values ($1, $2, $3, $4, $5, $6, $7)`,
+          [fileId, objectKey, safeFilename, "application/pdf", buffer.length, ADMIN_USER_ID, createHash("sha256").update(buffer).digest("hex")],
         );
         const lectureItemId = randomUUID();
         // order_index 0 — a pdf attachment is the only lecture_item this
