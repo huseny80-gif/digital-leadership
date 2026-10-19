@@ -56,6 +56,8 @@ describe("original PDF extraction provenance across the five subjects", () => {
       });
       continue;
     }
+    // Retired editions keep their transcript for earlier exam archives only.
+    if (asset && !manifest.subjects.some(subject => subject.lectures.some(item => item.files?.some(file => file.url === asset.path)))) continue;
     it(`verifies exact file/text hashes and analytical cases: ${asset?.filename ?? source.sha256}`, async () => {
       expect(asset).toBeDefined();
       const bytes = await readAsset(asset!, catalogRoot);
