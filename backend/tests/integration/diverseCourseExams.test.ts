@@ -10,6 +10,7 @@ import { ExamMaterialService } from "../../src/examMaterials/examMaterialService
 import { refreshDiverseAssessments } from "../../src/examMaterials/refreshDiverseAssessments.js";
 import { diverseAssessmentPolicy } from "../../src/examMaterials/diverseAssessment.js";
 import { readFileSync } from "node:fs";
+import { auditCyberComparisonQuestions } from "../../src/examMaterials/examCaseRevisionAudit.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 async function reset() {
@@ -63,6 +64,8 @@ describe("published six-format curriculum and exam material revisions", () => {
       expect(JSON.stringify(learner)).not.toMatch(/"(?:answerKey|modelAnswer|correctIndex|isCorrect|sourceProgram|matchingRightIds|excerpt)"/u);
     }
     const rerun = await refreshDiverseAssessments(pool);
+    const comparisonAudit = await auditCyberComparisonQuestions(pool);
+    expect(comparisonAudit).toMatchObject({ expected: 7, verifiedCourseCases: 5, missingExamSelections: 0 });
     expect(rerun).toMatchObject({ published: 0, alreadyCurrent: 5, issues: [] });
     expect((await pool.query("select * from exam_material_groups order by subject_id")).rows).toEqual(published);
     expect((await pool.query("select * from question_options where id=any($1::uuid[]) order by id", [originalKeys.map(key => key.id)])).rows).toEqual(originalKeys);

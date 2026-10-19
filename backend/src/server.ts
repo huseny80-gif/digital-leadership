@@ -36,6 +36,7 @@ import { probeCyberRiskStudyContent } from "./finquiz/uploadedStudyContent.js";
 import { WeeklyCyberExams, weeklyCyberSubjectId } from "./examMaterials/weeklyCyberExams.js";
 import { repairPdfIdentities } from "./files/repairPdfIdentities.js";
 import { probePublishedPdfInventory } from "./files/pdfInventoryProbe.js";
+import { auditCyberComparisonQuestions } from "./examMaterials/examCaseRevisionAudit.js";
 
 initMonitoring();
 
@@ -85,6 +86,7 @@ async function refreshPublishedContent() {
     { name: "exam_archives", run: async () => { logger.info(await refreshAcademicSummaries(getPool()), "academic_exam_summaries_refreshed"); } },
     { name: "diverse_assessments", run: async () => { logger.info(await refreshDiverseAssessments(getPool(), courseSourceRevision()), "diverse_exam_groups_refreshed"); } },
     { name: "instructor_guides", run: async () => { logger.info(await refreshInstructorGuides(getPool()), "instructor_guides_source_verified"); } },
+    { name: "cyber_comparison_coverage", run: async () => { logger.info(await auditCyberComparisonQuestions(getPool()), "cyber_comparison_questions_verified"); } },
     { name: "pdf_inventory", run: async () => { logger.info(await probePublishedPdfInventory(getPool()), "published_pdf_inventory_verified"); } },
   ], (stage, error) => {
     // Log a safe machine reason, never SQL values, private file text or tokens.

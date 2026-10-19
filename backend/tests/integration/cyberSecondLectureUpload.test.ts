@@ -1,10 +1,15 @@
 import { readFile } from "node:fs/promises";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { randomUUID } from "node:crypto";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Pool } from "pg";
 import { ContentImportService } from "../../src/contentAutomation/contentImportService.js";
 import { subjectMapping } from "../../src/finquiz/catalog.js";
 import type { StorageProvider } from "../../src/files/storageProvider.js";
 import { createUser, createLecture } from "../helpers/seedFixtures.js";
+import { ExamMaterialService } from "../../src/examMaterials/examMaterialService.js";
+
+const live = vi.hoisted(() => ({ storage: undefined as StorageProvider | undefined }));
+vi.mock("../../src/files/storageProviderFactory.js", () => ({ getStorageProvider: () => live.storage }));
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const subjectId = subjectMapping["cybersecurity-governance"]!;
@@ -24,6 +29,21 @@ beforeEach(reset);
 afterAll(async () => { await reset(); await pool.end(); });
 
 describe("uploaded slide PDF with a verified catalog transcript", () => {
+  it("keeps lecture 1 within pages 1–15 when its retired combined edition is still attached privately", async () => {
+    const actor = await createUser(pool, { email: "cyber-first-source@example.test", roleName: "admin", providerSubject: "cyber-first-source" });
+    await pool.query("insert into subjects(id,title,status,created_by) values($1,'حوكمة الأمن السيبراني','published',$2)", [subjectId, actor]);
+    const lecture = await createLecture(pool, { subjectId, title: "المحاضرة الأولى في حوكمة الأمن السيبراني", orderIndex: 1, status: "published", createdBy: actor });
+    const bytes = await readFile(new URL("../../content/finquiz/files/cybersecurity-governance/المحاضرة الأولى في حوكمة الأمن السيبراني.pdf", import.meta.url));
+    const storage = new MemoryStorage(); live.storage = storage;
+    const imports = new ContentImportService(pool, storage, 10485760);
+    const job = await imports.submitPdf({ actorId: actor, subjectId, lectureId: lecture, filename: "المحاضرة الأولى.pdf", mimeType: "application/pdf", buffer: bytes });
+    await imports.processNext();
+    expect((await imports.get(job.id)).status).toBe("completed");
+    const review = await new ExamMaterialService(pool).generate(subjectId, [lecture], randomUUID(), actor);
+    expect(review.summary.grounding!.sources.map(source => source.sha256)).toEqual(["c89f4141e173e4cf52cbe14b47131875050564f411ccba752431890e743c44c2"]);
+    const fileId = (await imports.get(job.id)).fileId;
+    expect((await pool.query("select count(*)::int n from files where id=$1 and deleted_at is null", [fileId])).rows[0].n).toBe(1);
+  }, 60000);
   it("uses the proofread transcript of the same bytes instead of the ligature-reversed extraction", async () => {
     const actor = await createUser(pool, { email: "cyber-second@example.test", roleName: "admin", providerSubject: "cyber-second-admin" });
     await pool.query("insert into subjects(id,title,status,created_by) values($1,'حوكمة الأمن السيبراني','published',$2)", [subjectId, actor]);

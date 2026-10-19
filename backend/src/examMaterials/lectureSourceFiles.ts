@@ -33,6 +33,12 @@ const extractionCache = new Map<string, Promise<string>>();
 // appear in either lecture's current file list. Never infer this from names.
 const supersededCombinedEditions: Record<string, readonly string[]> = {
   cae05b9640b56a01c8bf42c9: ["557a6e404fcd4ce161213ded", "aea44816c87b86f1a4c73888"],
+  c71268af93d9b8497abc489d: ["3b752ab98bac584c0c94b517"],
+};
+// The administrator's full 31-page upload has different original bytes from
+// the older catalog edition. Both are superseded by the verified 1–15 PDF.
+const supersededUploadEditions: Record<string, readonly string[]> = {
+  "4c4534b48666c18794be0346000a926e5bc7f866f8bd55d029d3fa867d65c5c3": ["3b752ab98bac584c0c94b517"],
 };
 let bundled: Promise<Map<string, VerifiedExtraction>> | undefined;
 async function bundledExtractions(): Promise<Map<string, VerifiedExtraction>> {
@@ -131,7 +137,9 @@ export class LectureSourceFiles {
           // Standalone files above have already been read and verified.
           const superseded = Object.entries(supersededCombinedEditions).some(([id, replacements]) =>
             manifest.assets[id]?.sha256 === checksum && standalone.some(asset => replacements.includes(asset.id)
-              && documents.some(document => document.id === asset.id)));
+              && documents.some(document => document.id === asset.id)))
+            || (supersededUploadEditions[checksum] ?? []).some(id => standalone.some(asset => asset.id === id)
+              && documents.some(document => document.id === id));
           if (superseded) continue;
           const extracted = await actualFileText(bytes, link.original_filename, link.mime_type);
           add({ id: link.file_id, filename: link.original_filename, ...extracted }, link.owner_count > 1);
