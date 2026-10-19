@@ -18,6 +18,7 @@ import { analyticalPolicy } from "./caseAssessment.js";
 import { examGroupVisible } from "./visibility.js";
 import { generateExamReviewArtifacts, examChallengeSeconds } from "@digital-leadership/shared";
 import { reviewedLegalSummary } from "./legalAcademicReadings.js";
+import { reviewedAcademicSummary } from "./academicSummaryReadings.js";
 import { currentAcademicReadings } from "./currentAcademicReadings.js";
 import type { ExamExperienceMode, QuizAttempt, QuestionForAttempt } from "@shared/index";
 import { buildAcademicExam, type AcademicExamSourceQuestion } from "./academicExam.js";
@@ -131,7 +132,7 @@ export class ExamMaterialService {
       this.latestRevision(subjectId, row.lecture_ids, isAdmin),
       this.assessments.getQuizOrThrow(row.quiz_id, isAdmin),
     ]);
-    const summary = await currentAcademicReadings(studyOnlyExamSummary(row.summary));
+    const summary = await currentAcademicReadings(studyOnlyExamSummary(row.summary), this.pool);
     return { ...groupMetadata(row), revisionCount: currentRevision.revisionCount!, currentRevision, summary, quiz, review: generateExamReviewArtifacts(summary, row.title) };
   }
 
@@ -267,7 +268,7 @@ export class ExamMaterialService {
       lectureId: source.lecture.id, fileId: document.id, filename: document.filename, sha256: document.sha256,
     }))) };
     if (scope === "catalog") summary.grounding.sourceScope = "catalog-primary";
-    summary = await reviewedLegalSummary(summary);
+    summary = await reviewedAcademicSummary(await reviewedLegalSummary(summary), new Set(fileSources.flatMap(source => source.documents.map(document => document.sha256))));
     const perLecture = Math.min(12, Math.floor(200 / selected.length));
     const questions: SourceQuestion[] = [];
     const guideSources: Parameters<typeof instructorDebriefGuide>[1] = [];

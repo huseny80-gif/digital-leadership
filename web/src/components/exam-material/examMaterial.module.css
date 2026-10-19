@@ -82,7 +82,9 @@
 .summaryTopic p:last-child { margin-block-end: 0; }
 .topicDetails { margin-block-start: 1rem; border-block-start: 1px solid var(--exam-line); padding-block-start: .7rem; }
 .topicDetails summary { cursor: pointer; color: #99e3ec; font-size: .88rem; }
-.topicList { display: grid; gap: .8rem; margin-block: 1rem; }
+.topicList { display: grid; gap: .8rem; margin-block: 1rem; list-style: none; padding: 0; }
+.topicList > li { min-width: 0; }
+.topicList > li h4 span { font-size: 1.2rem; }
 .legacyNarrative { margin-block: 1rem; }
 .objectives { margin-block: 1rem; color: #d2e5ee; padding: .7rem 1rem; border-inline-start: 2px solid #378da4; background: rgba(54, 155, 177, .06); border-radius: 10px; }
 .objectives summary { cursor: pointer; color: #a8e7ee; }

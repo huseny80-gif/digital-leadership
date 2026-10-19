@@ -74,8 +74,10 @@ export function examSectionPresentation(section: ExamSummarySection): ExamSummar
       if (pages.length) context.topic.sourcePages = [...new Map(pages.map(page => [`${page.fileId}:${page.sha256}:${page.page}`, { ...page }])).values()];
     }
     else {
-      context.topic = { title: topic.title, text: text || details, ...(text && details ? { details } : {}),
+      context.topic = { ...topic, title: topic.title, text: text || details,
         ...(topic.sourcePages?.length ? { sourcePages: topic.sourcePages.map(page => ({ ...page })) } : {}) };
+      delete context.topic.details;
+      if (text && details) context.topic.details = details;
       topics.push(context.topic);
     }
     body.remember(text); body.remember(details);
@@ -95,13 +97,20 @@ export function examSummaryPresentation(summary: ExamMaterialSummary): ExamMater
   return proofreadAcademicContent({ ...summary, sections: summary.sections.map(examSectionPresentation) });
 }
 
-export function examTopicSourceLabel(topic: Pick<ExamSummaryTopic, "sourcePages">): string {
+export function examTopicSourceLabel(topic: Pick<ExamSummaryTopic, "sourcePages" | "sourceNotes">): string {
   const files = new Map<string, { filename: string; pages: Set<number> }>();
   for (const reference of topic.sourcePages ?? []) {
     const id = `${reference.fileId}:${reference.sha256}`, file = files.get(id) ?? { filename: reference.filename, pages: new Set<number>() };
     file.pages.add(reference.page); files.set(id, file);
   }
-  return [...files.values()].map(file => `${file.filename} — صفحات ملف PDF: ${[...file.pages].sort((a, b) => a - b).join("، ")}`).join("؛ ");
+  if (files.size) return [...files.values()].map(file => `${file.filename} — صفحات ملف PDF: ${[...file.pages].sort((a, b) => a - b).join("، ")}`).join("؛ ");
+  const lines = new Map<string, { filename: string; ranges: Set<string> }>();
+  for (const note of topic.sourceNotes ?? []) {
+    if (!note.startLine || !note.endLine) continue;
+    const id = `${note.fileId}:${note.sha256}`, file = lines.get(id) ?? { filename: note.filename, ranges: new Set<string>() };
+    file.ranges.add(`${note.startLine}–${note.endLine}`); lines.set(id, file);
+  }
+  return [...lines.values()].map(file => `${file.filename} — أسطر النص المستخرج: ${[...file.ranges].join("، ")}`).join("؛ ");
 }
 
 function libraryDocumentText(html: string): string {

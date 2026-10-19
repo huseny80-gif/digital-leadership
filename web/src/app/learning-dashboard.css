@@ -113,6 +113,13 @@
 }
 .dl-workspace .dl-library-reader p { white-space: normal; unicode-bidi: plaintext; }
 .dl-workspace .dl-library-reader [dir="auto"] { unicode-bidi: isolate; }
+.dl-workspace .dl-academic-summary-entry .dl-library-reader ul { padding-inline-start: 1.35rem; margin-block: 1rem; }
+.dl-workspace .dl-academic-summary-entry .dl-library-reader li { padding: .55rem .4rem .85rem; margin-block: .6rem; border-block-end: 1px solid var(--line, rgba(151, 212, 237, .18)); }
+.dl-workspace .dl-academic-summary-entry .dl-library-reader li::marker { color: var(--primary, #218a99); }
+.dl-workspace .dl-academic-summary-entry .dl-library-reader li h3 { margin-block: .2rem .45rem; font-size: 1.05rem; }
+.dl-workspace .dl-academic-summary-entry .dl-library-reader li p { margin-block: .45rem; }
+.dl-workspace .dl-academic-summary-entry .dl-library-reader li p em { font-size: .76rem; line-height: 1.8; font-style: normal; color: var(--text-muted, #6b7f89); }
+.dl-workspace[data-theme="dark"] .dl-academic-summary-entry .dl-library-reader li p em { color: #adc8d6; }
 .dl-workspace[data-theme="dark"]
   :is(
     .dl-library-reader,

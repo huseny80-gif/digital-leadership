@@ -215,7 +215,10 @@ export function studyOnlyExamSummary(summary: ExamMaterialSummary): ExamMaterial
   return { ...summary, introduction: "", sections: summary.sections.map(section => {
     const topics = section.topics?.filter(topic => !isAssessmentInstruction(topic.title) && !isAdministrativeTitle(topic.title)).map(topic => {
       const text = studyContentText(topic.text), details = topic.details ? studyContentText(topic.details) : undefined;
-      return { title: topic.title, text, ...(details && details !== text ? { details } : {}) };
+      const cleaned = { ...topic, text };
+      delete cleaned.details;
+      if (details && details !== text) cleaned.details = details;
+      return cleaned;
     }).filter(topic => topic.text);
     const text = section.topics ? (topics ?? []).map(topic => topic.text).join("\n\n") : studyContentText(section.text);
     const original = identity(section.topics?.map(topic => topic.text + "\n" + (topic.details ?? "")).join("\n") ?? section.text);

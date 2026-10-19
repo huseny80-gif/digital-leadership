@@ -11,7 +11,7 @@ export const librarySections: Record<LibrarySection, string> = {
 
 export function LibraryEntryContent({ entry: original, subjectId }: { entry: LibraryEntry; subjectId: string }) {
   const entry = libraryEntryPresentation(original);
-  return <article className="content-card dl-library-entry" id={entry.id}>
+  return <article className={`content-card dl-library-entry${entry.section === "summaries" ? " dl-academic-summary-entry" : ""}`} id={entry.id}>
     <h2>{entry.title}</h2>
     <p className="content-card-meta">{[entry.date, entry.author, entry.publisher, entry.year, entry.difficulty].filter(Boolean).join(" · ")}{entry.demo ? " · نموذج تعليمي" : ""}</p>
     {entry.due ? <p>موعد التسليم: {entry.due}</p> : null}

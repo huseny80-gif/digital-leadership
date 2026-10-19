@@ -38,6 +38,7 @@ import { repairPdfIdentities } from "./files/repairPdfIdentities.js";
 import { probePublishedPdfInventory } from "./files/pdfInventoryProbe.js";
 import { auditCyberComparisonQuestions } from "./examMaterials/examCaseRevisionAudit.js";
 import { reprocessCyberSecondLecture } from "./contentAutomation/reprocessCyberSecondLecture.js";
+import { probePublishedAcademicSummaries } from "./examMaterials/academicSummaryReviewProbe.js";
 
 initMonitoring();
 
@@ -90,6 +91,7 @@ async function refreshPublishedContent() {
     { name: "instructor_guides", run: async () => { logger.info(await refreshInstructorGuides(getPool()), "instructor_guides_source_verified"); } },
     { name: "cyber_comparison_coverage", run: async () => { logger.info(await auditCyberComparisonQuestions(getPool()), "cyber_comparison_questions_verified"); } },
     { name: "pdf_inventory", run: async () => { logger.info(await probePublishedPdfInventory(getPool()), "published_pdf_inventory_verified"); } },
+    { name: "academic_summary_points", run: async () => { logger.info(await probePublishedAcademicSummaries(getPool()), "published_academic_summary_points_verified"); } },
   ], (stage, error) => {
     // Log a safe machine reason, never SQL values, private file text or tokens.
     const reason = error instanceof Error && /^[a-z0-9_]{1,100}$/u.test(error.message) ? error.message : undefined;

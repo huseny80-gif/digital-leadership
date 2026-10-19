@@ -14,4 +14,4 @@ for (const subject of manifest.subjects) for (const lecture of subject.lectures)
   sources.push({ lectureId: lecture.id, digest: createHash("sha256").update(JSON.stringify(content)).digest("hex"), content });
 }
 await writeFile(new URL("catalogStudyContent.json", catalogRoot), JSON.stringify({ policy: catalogStudyPolicy, sources }, null, 2) + "\n");
-console.log(JSON.stringify({ sourceFiles: sources.length, verifiedLegalReadings: sources.filter(row => row.content.summary.grounding?.summaryPolicy === "visually-verified-legal-excerpts-v1").length }));
+console.log(JSON.stringify({ sourceFiles: sources.length, reviewedAcademicPoints: sources.filter(row => row.content.summary.grounding?.summaryPolicy === "reviewed-academic-points-v1").length }));

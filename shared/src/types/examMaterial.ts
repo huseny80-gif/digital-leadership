@@ -2,10 +2,19 @@ import type { Lecture, Subject } from "./content.js";
 import type { Quiz, QuizAttempt, QuestionForAttempt, AttemptAnswer, SubmitAnswerAck, QuizAttemptResult } from "./quiz.js";
 
 export interface ExamLectureSnapshot { id: string; title: string; number: number }
+export interface ExamSummarySourceNote {
+  fileId: string; filename: string; sha256: string;
+  /** Exact evidence, kept separate from the editorial explanation. */
+  quote: string;
+  /** Lines in the verified extracted transcript, never inferred PDF pages. */
+  startLine?: number; endLine?: number;
+  page?: number; pageTo?: number;
+}
 export interface ExamSummaryTopic {
   title: string; text: string; details?: string;
   /** Physical one-based page in the original PDF, including cover pages. */
   sourcePages?: Array<{ fileId: string; filename: string; sha256: string; page: number }>;
+  sourceNotes?: ExamSummarySourceNote[];
 }
 export interface ExamSummarySection extends ExamLectureSnapshot {
   text: string;
@@ -13,6 +22,7 @@ export interface ExamSummarySection extends ExamLectureSnapshot {
   topics?: ExamSummaryTopic[];
   objectives?: string[];
   concepts?: Array<{ term: string; definition: string }>;
+  format?: "explained-points-v1";
 }
 export interface ExamMaterialSummary {
   introduction: string;
@@ -22,7 +32,7 @@ export interface ExamMaterialSummary {
   grounding?: {
     policy: "strict-file-extraction-v1";
     assessmentPolicy?: "source-case-assessment-v1";
-    summaryPolicy?: "visually-verified-legal-excerpts-v1";
+    summaryPolicy?: "visually-verified-legal-excerpts-v1" | "reviewed-academic-points-v1";
     /** An automatic curriculum review explicitly selects its approved PDFs. */
     sourceScope?: "catalog-primary";
     questionPolicy?: "source-diverse-assessment-v1";

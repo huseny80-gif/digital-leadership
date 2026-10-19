@@ -10,9 +10,11 @@ import { reviewedLegalSummary } from "../examMaterials/legalAcademicReadings.js"
 import { proofreadArabicHtml } from "@digital-leadership/shared";
 import { sourceReadingHtml } from "./studyReadingHtml.js";
 import { academicDisplaySource } from "./academicDisplaySources.js";
+import { academicSummaryRevision, reviewedAcademicSummary } from "../examMaterials/academicSummaryReadings.js";
+import { academicSummaryHtml } from "./academicSummaryHtml.js";
 
 export const catalogStudyPolicy = "source-study-library-v1-2026-10-14";
-export const catalogStudyRenderPolicy = "verified-readable-study-v3-proofread";
+export const catalogStudyRenderPolicy = `verified-readable-study-v4-academic-points:${academicSummaryRevision}`;
 export interface CatalogStudyContent {
   renderPolicy: typeof catalogStudyRenderPolicy;
   assetId: string; sha256: string; lectureHtml: string; summaryHtml: string;
@@ -70,6 +72,7 @@ export async function compileCatalogStudyContent(lecture: SourceLecture, asset: 
   // The complete unchanged PDF remains available; never guess damaged words.
   const reviewed = summary.grounding?.summaryPolicy === "visually-verified-legal-excerpts-v1";
   const lectureHtml = proofreadArabicHtml(reviewed ? `<article dir="rtl"><h2>${escape(lecture.title)}</h2>${source}<p>قراءة أكاديمية موثّقة من صفحات المحاضرة. يتوفر الملف الأصلي الكامل في تبويب PDF.</p>${academicTopics}</article>` : sourceReadingHtml(lecture.title, paragraphs));
-  const summaryHtml = proofreadArabicHtml(`<article dir="rtl"><h2>ملخص ${escape(lecture.title)}</h2>${source}${academicTopics}</article>`);
-  return { renderPolicy: catalogStudyRenderPolicy, assetId: asset.id, sha256: extracted.sha256, lectureHtml, summaryHtml, summary, paragraphCount: paragraphs.length, topicCount: topics.length };
+  summary = await reviewedAcademicSummary(summary);
+  const summaryHtml = academicSummaryHtml(summary, lecture.title, [asset.filename]);
+  return { renderPolicy: catalogStudyRenderPolicy, assetId: asset.id, sha256: extracted.sha256, lectureHtml, summaryHtml, summary, paragraphCount: paragraphs.length, topicCount: summary.sections[0]!.topics!.length };
 }

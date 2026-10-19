@@ -45,8 +45,9 @@ describe("curriculum-wide Arabic source review", () => {
     const asset = Object.values(manifest.assets).find(asset => asset.filename === "المحاضرة الثانية مخاطر.pdf")!;
     const original: ExamMaterialSummary = { version: 6, introduction: "", sections: [{ id: "saved", title: "المحاضرة الثانية مخاطر", number: 2, text: "صياغة استخراج قديمة", keyPoints: [] }], grounding: { policy: "strict-file-extraction-v1", sources: [{ lectureId: "saved", fileId: "original-file", filename: asset.filename, sha256: asset.sha256 }] } };
     const saved = structuredClone(original), result = await currentAcademicReadings(original);
-    expect(original).toEqual(saved); expect(result.sections[0]!.text).toContain("السجل وثيقة");
-    expect(result.grounding).toEqual(original.grounding); expect(result.sections[0]!.id).toBe("saved");
+    expect(original).toEqual(saved); expect(result.sections[0]!.text).toContain("السجل أحد مخرجاتها");
+    expect(result.grounding!.sources).toEqual(original.grounding!.sources);
+    expect(result.grounding!.summaryPolicy).toBe("reviewed-academic-points-v1"); expect(result.sections[0]!.id).toBe("saved");
     const extra = structuredClone(original); extra.grounding!.sources.push({ ...extra.grounding!.sources[0]!, sha256: "0".repeat(64) });
     expect(await currentAcademicReadings(extra)).toEqual(extra);
     const wrong = structuredClone(original); wrong.sections[0]!.number = 5;

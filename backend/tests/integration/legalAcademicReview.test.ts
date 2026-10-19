@@ -25,7 +25,7 @@ async function seed() {
 describe("legal archive study repair using actual course PDFs", () => {
   it("uses the same reviewed text for new generation, old bookmarks, narration and export without rewriting historical records", async () => {
     const s = await seed(), group = await s.service.generate(s.subjectId, s.lectures, randomUUID(), s.admin);
-    expect(group.summary.grounding?.summaryPolicy).toBe("visually-verified-legal-excerpts-v1");
+    expect(group.summary.grounding?.summaryPolicy).toBe("reviewed-academic-points-v1");
     expect(group.summary.sections.reduce((count, section) => count + section.topics!.length, 0)).toBe(64);
     const noisy = structuredClone(group.summary);
     delete noisy.grounding!.summaryPolicy;

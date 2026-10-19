@@ -46,7 +46,7 @@ export function examSummaryPrintDocument(summary: ExamMaterialSummary): StudyPri
     add(blocks, `المحاضرة ${section.number} — ${section.title}`, true);
     if (section.objectives?.length) { add(blocks, "أهداف المحاضرة", true); section.objectives.forEach(text => add(blocks, `• ${text}`)); }
     if (section.topics?.length) section.topics.forEach(topic => {
-      add(blocks, topic.title, true); add(blocks, topic.text);
+      add(blocks, `• ${topic.title}`, true); add(blocks, topic.text);
       if (topic.details) { add(blocks, "تفاصيل المحور وتطبيقاته", true); add(blocks, topic.details); }
       const reference = examTopicSourceLabel(topic); if (reference) add(blocks, reference);
     });

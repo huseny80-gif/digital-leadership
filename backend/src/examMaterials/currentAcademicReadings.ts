@@ -3,17 +3,35 @@ import { catalogStudyContent } from "../finquiz/catalogStudyContent.js";
 import { manifest } from "../finquiz/catalog.js";
 import { groundingVersion } from "./sourceGrounding.js";
 import { reviewedLegalSummary } from "./legalAcademicReadings.js";
+import { reviewedAcademicSummary } from "./academicSummaryReadings.js";
+import type { Pool } from "pg";
+import { cyberRiskPrivateSourceId } from "../contentAutomation/cyberRiskSixthSource.js";
 
 /** Re-read the SAME byte-bound lecture edition for old bookmarks. A changed
  * file, additional source or wrong lecture number cannot inherit a reading.
  * Saved snapshots, questions, references and grades are never rewritten. */
-export async function currentAcademicReadings(input: ExamMaterialSummary): Promise<ExamMaterialSummary> {
+export async function currentAcademicReadings(input: ExamMaterialSummary, pool?: Pool): Promise<ExamMaterialSummary> {
   const summary = await reviewedLegalSummary(input);
   if (summary.grounding?.policy !== groundingVersion) return summary;
   let refreshed = 0;
+  const verifiedPrivate = new Set<string>();
   const sections = await Promise.all(summary.sections.map(async section => {
     const proofs = summary.grounding!.sources.filter(proof => proof.lectureId === section.id);
     if (new Set(proofs.map(proof => proof.sha256)).size !== 1) return section;
+    if (pool && section.number === 6) {
+      const { ContentService } = await import("../content/contentService.js");
+      const { PgContentRepository } = await import("../content/contentRepository.js");
+      const lecture = await new ContentService(new PgContentRepository(pool)).getLectureOrThrow(section.id, false);
+      if (lecture.catalogSourceId === cyberRiskPrivateSourceId) {
+        const { uploadedStudyContent } = await import("../finquiz/uploadedStudyContent.js");
+        const content = await uploadedStudyContent(lecture, pool);
+        if (content.summary.grounding!.sources.every(source => source.sha256 === proofs[0]!.sha256)) {
+          verifiedPrivate.add(proofs[0]!.sha256);
+          refreshed++;
+          return { ...structuredClone(content.summary.sections[0]!), id: section.id, title: section.title, number: section.number };
+        }
+      }
+    }
     const asset = Object.values(manifest.assets).find(asset => !asset.bodyHtml && asset.sha256 === proofs[0]?.sha256 && asset.subjectSlug !== "legal-regulatory");
     if (!asset) return section;
     const lecture = manifest.subjects.find(subject => subject.id === asset.subjectSlug)?.lectures.find(lecture => lecture.status === "published" && lecture.number === section.number && lecture.files?.some(file => file.url === asset.path));
@@ -22,5 +40,5 @@ export async function currentAcademicReadings(input: ExamMaterialSummary): Promi
     refreshed++;
     return { ...structuredClone(content.summary.sections[0]!), id: section.id, title: section.title, number: section.number };
   }));
-  return refreshed ? { ...summary, introduction: "", sections } : summary;
+  return reviewedAcademicSummary(refreshed ? { ...summary, introduction: "", sections } : summary, verifiedPrivate);
 }

@@ -11,6 +11,7 @@ import { ContentService } from "../../src/content/contentService.js";
 import { PgContentRepository } from "../../src/content/contentRepository.js";
 import { ExamMaterialService } from "../../src/examMaterials/examMaterialService.js";
 import { PgAssessmentsRepository } from "../../src/assessments/assessmentsRepository.js";
+import { probePublishedAcademicSummaries } from "../../src/examMaterials/academicSummaryReviewProbe.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 async function reset() {
@@ -52,11 +53,17 @@ describe("a verified curriculum review across all five materials", () => {
       expect(group.summary.grounding!.sourceScope).toBe("catalog-primary");
       expect(group.summary.grounding!.sources).toHaveLength(report.currentLectures);
       expect(group.lectures).toHaveLength(report.currentLectures);
+      expect(group.summary.grounding!.summaryPolicy).toBe("reviewed-academic-points-v1");
+      expect(group.summary.sections.every(section => section.format === "explained-points-v1" && section.topics!.every(topic => topic.sourceNotes?.length))).toBe(true);
       const questions = await new PgAssessmentsRepository(pool).listQuestionsForAttempt(group.quizId);
       expect(JSON.stringify(questions)).not.toMatch(/isCorrect|sourceReferences|correctIndex/);
       expect(new Set(questions.map(assessmentFormat))).toEqual(new Set(["multiple_choice", "true_false", "match", "order", "essay", "short_scenario"]));
       expect(questions.every(question => !/___|أكمل العبارة/u.test(question.prompt))).toBe(true);
     }
+    const visible = await probePublishedAcademicSummaries(pool);
+    expect(visible.ready).toBe(true);
+    expect(visible.courses.reduce((count, course) => count + course.formattedDocuments, 0)).toBe(26);
+    expect(visible.courses.reduce((count, course) => count + course.bulletPoints, 0)).toBe(265);
     await reviewCourseAssessments(pool);
     expect((await pool.query("select * from quiz_attempts where id=$1", [attempt.id])).rows[0]).toEqual(before.attempt);
   }, 90000);

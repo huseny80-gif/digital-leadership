@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { catalogStudyContent, compileCatalogStudyContent } from "../../src/finquiz/catalogStudyContent.js";
 import { findSourceLecture, normalizeCatalogTitle } from "../../src/finquiz/recordIdentity.js";
 import { manifest } from "../../src/finquiz/catalog.js";
+import { reviewedLegalSummary } from "../../src/examMaterials/legalAcademicReadings.js";
 
 describe("current academic content from the approved PDFs", () => {
   for (const course of manifest.subjects) it(`covers every source-backed lecture and excludes solution appendices: ${course.id}`, async () => {
@@ -19,12 +20,16 @@ describe("current academic content from the approved PDFs", () => {
       expect(content.lectureHtml + content.summaryHtml).not.toMatch(/األ|اإل|اآل/u);
       expect(content.summaryHtml).toContain("المصدر:");
       expect(content.summary.sections[0]!.text.length).toBeGreaterThan(100);
+      expect(content.summary.grounding!.summaryPolicy).toBe("reviewed-academic-points-v1");
+      expect(content.summaryHtml).toContain("<ul><li><h3>");
+      expect((content.summaryHtml.match(/<li>/gu) ?? []).length).toBe(content.summary.sections[0]!.topics!.length);
+      expect(content.summary.sections[0]!.topics!.every(topic => topic.sourceNotes?.length && !topic.details)).toBe(true);
       if (course.id === "legal-regulatory") {
-        expect(content.summary.grounding!.summaryPolicy).toBe("visually-verified-legal-excerpts-v1");
         expect(content.lectureHtml).toContain("قراءة أكاديمية موثّقة");
         expect(content.lectureHtml).toContain("الصفحات ");
         expect(content.lectureHtml).not.toMatch(/العرض الأكاديمي للمحاضرة|الأسطر|\b(?:BEST|Fr|SH|Cel|Hv|Jie)\b|CamScanner|6800568008/u);
-        for (const topic of content.summary.sections[0]!.topics!) expect(content.lectureHtml).toContain(topic.text.split("\n\n")[0]!.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"));
+        const fullReading = await reviewedLegalSummary(content.summary);
+        for (const topic of fullReading.sections[0]!.topics!) expect(content.lectureHtml).toContain(topic.text.split("\n\n")[0]!.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"));
       }
       checked++;
     }

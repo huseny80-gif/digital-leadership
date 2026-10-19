@@ -1,14 +1,15 @@
 import { createHash } from "node:crypto";
 import type { Pool } from "pg";
 import type { Lecture } from "@shared/index";
-import { proofreadArabicHtml } from "@digital-leadership/shared";
 import { getPool } from "../lib/db.js";
 import { getStorageProvider } from "../files/storageProviderFactory.js";
 import type { StorageProvider } from "../files/storageProvider.js";
 import { actualFileText, scopeSharedSource } from "../examMaterials/lectureSourceFiles.js";
 import { assertSourceBoundSummary, groundingVersion, sourceParagraphs, type ExamSourceDocument, type SourceParagraph } from "../examMaterials/sourceGrounding.js";
 import { compileExamSummary, isAssessmentAppendixTitle } from "../examMaterials/summary.js";
-import { sourceReadingHtml, studyEscape } from "./studyReadingHtml.js";
+import { sourceReadingHtml } from "./studyReadingHtml.js";
+import { academicSummaryHtml } from "./academicSummaryHtml.js";
+import { reviewedAcademicSummary } from "../examMaterials/academicSummaryReadings.js";
 import { cyberRiskPrivateSourceId, cyberRiskSixthPolicy } from "../contentAutomation/cyberRiskSixthSource.js";
 import { finquizRecordId } from "./recordIdentity.js";
 import { ContentService } from "../content/contentService.js";
@@ -40,11 +41,12 @@ export async function uploadedStudyContent(lecture: Lecture, pool: Pool = getPoo
     paragraphs.push(...content); documents.push(scoped.document);
   }
   if (!documents.length) throw new Error("uploaded_reading_source_missing");
-  const summary = compileExamSummary(lecture.title, [{ id: lecture.id, title: lecture.title, number: lecture.orderIndex,
+  let summary = compileExamSummary(lecture.title, [{ id: lecture.id, title: lecture.title, number: lecture.orderIndex,
     text: paragraphs.map(paragraph => `## ${paragraph.heading}\n\n${paragraph.text}`).join("\n\n") }]);
   assertSourceBoundSummary(summary, [{ lectureId: lecture.id, paragraphs }]);
   summary.grounding = { policy: groundingVersion, sources: documents.map(document => ({ lectureId: lecture.id, fileId: document.id, filename: document.filename, sha256: document.sha256 })) };
-  const summaryHtml = proofreadArabicHtml(`<article dir="rtl"><h2>ملخص ${studyEscape(lecture.title)}</h2><p><strong>المصدر:</strong> ${documents.map(document => studyEscape(document.filename)).join("، ")}</p>${summary.sections[0]!.topics!.map(topic => `<section><h3>${studyEscape(topic.title)}</h3><p>${studyEscape(topic.text)}</p></section>`).join("")}</article>`);
+  summary = await reviewedAcademicSummary(summary, new Set(documents.map(document => document.sha256)));
+  const summaryHtml = academicSummaryHtml(summary, lecture.title, documents.map(document => document.filename));
   const candidates = analyticalQuestionCandidates(paragraphs);
   return { lectureHtml: sourceReadingHtml(lecture.title, paragraphs), summaryHtml, summary,
     assessment: { candidates: candidates.length, verified: candidates.every(question => validAnalyticalQuestion(question, paragraphs)), explicitRelations: sourceRelations(paragraphs).length },
