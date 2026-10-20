@@ -53,7 +53,8 @@ async function checkedContent(lecture: SourceLecture, asset: SourceAsset): Promi
 export async function compileCatalogStudyContent(lecture: SourceLecture, asset: SourceAsset): Promise<CatalogStudyContent> {
   const bytes = await readAsset(asset, catalogRoot);
   if (bytes.length !== asset.sizeBytes || createHash("sha256").update(bytes).digest("hex") !== asset.sha256) throw new Error("catalog_study_source_changed");
-  const extracted = academicDisplaySource(await actualFileText(bytes, asset.filename, "application/pdf"));
+  const verified = await actualFileText(bytes, asset.filename, "application/pdf");
+  const extracted = academicDisplaySource(verified);
   const scoped = scopeSharedSource({ id: asset.id, filename: asset.filename, ...extracted }, { title: lecture.title, orderIndex: lecture.number }, false);
   const paragraphs = sourceParagraphs(scoped.document, scoped.lineOffset);
   let summary = compileExamSummary(lecture.title, [{ id: lecture.id, title: lecture.title, number: lecture.number,
@@ -72,7 +73,7 @@ export async function compileCatalogStudyContent(lecture: SourceLecture, asset: 
   const reviewed = summary.grounding?.summaryPolicy === "visually-verified-legal-excerpts-v1";
   const lectureHtml = proofreadArabicHtml(reviewed ? `<article dir="rtl"><h2>${escape(lecture.title)}</h2>${source}<p>قراءة أكاديمية موثّقة من صفحات المحاضرة. يتوفر الملف الأصلي الكامل في تبويب PDF.</p>${academicTopics}</article>` : sourceReadingHtml(lecture.title, paragraphs));
   const authored = academicSummaryFor(extracted.sha256);
-  const summaryHtml = proofreadArabicHtml(authored ? academicSummaryHtml(lecture.title, asset.filename, authored, extracted.text)
+  const summaryHtml = proofreadArabicHtml(authored ? academicSummaryHtml(lecture.title, asset.filename, authored, verified.text)
     : `<article dir="rtl"><h2>ملخص ${escape(lecture.title)}</h2>${source}${academicTopics}</article>`);
   return { renderPolicy: catalogStudyRenderPolicy, assetId: asset.id, sha256: extracted.sha256, lectureHtml, summaryHtml, summary, paragraphCount: paragraphs.length, topicCount: topics.length };
 }
