@@ -16,6 +16,7 @@ import { PgContentRepository } from "../content/contentRepository.js";
 import { subjectMapping } from "./catalog.js";
 import { analyticalQuestionCandidates, validAnalyticalQuestion } from "../examMaterials/caseAssessment.js";
 import { sourceRelations } from "../examMaterials/sourceRelations.js";
+import { academicSummaryFor, academicSummaryHtml } from "./academicSummaries.js";
 
 interface Upload { id: string; storage_key: string; original_filename: string; mime_type: string; size_bytes: string; checksum: string | null; owner_count: number; title: string }
 export async function uploadedStudyContent(lecture: Lecture, pool: Pool = getPool(), storage: StorageProvider = getStorageProvider()) {
@@ -26,7 +27,7 @@ export async function uploadedStudyContent(lecture: Lecture, pool: Pool = getPoo
     and l.status='published' and l.deleted_at is null and s.status='published' and s.deleted_at is null
     and f.status='active' and f.deleted_at is null and f.mime_type='application/pdf' order by f.id`, [lecture.id, lecture.subjectId])).rows;
   if (!storage.read) throw new Error("uploaded_reading_storage_unavailable");
-  const paragraphs: SourceParagraph[] = [], documents: ExamSourceDocument[] = [], seen = new Set<string>();
+  const paragraphs: SourceParagraph[] = [], documents: ExamSourceDocument[] = [], seen = new Set<string>(), texts = new Map<string, string>();
   for (const file of files) {
     if (isAssessmentAppendixTitle(file.title) || isAssessmentAppendixTitle(file.original_filename)) continue;
     const bytes = await storage.read(file.storage_key);
@@ -37,14 +38,15 @@ export async function uploadedStudyContent(lecture: Lecture, pool: Pool = getPoo
     const scoped = scopeSharedSource({ id: file.id, filename: file.original_filename, ...extracted }, lecture, file.owner_count > 1);
     const content = sourceParagraphs(scoped.document, scoped.lineOffset);
     if (content.reduce((sum, item) => sum + item.text.length, 0) < 100) throw new Error("uploaded_reading_insufficient_text");
-    paragraphs.push(...content); documents.push(scoped.document);
+    paragraphs.push(...content); documents.push(scoped.document); texts.set(extracted.sha256, extracted.text);
   }
   if (!documents.length) throw new Error("uploaded_reading_source_missing");
+  const authored = documents.length === 1 ? academicSummaryFor(documents[0]!.sha256) : undefined;
   const summary = compileExamSummary(lecture.title, [{ id: lecture.id, title: lecture.title, number: lecture.orderIndex,
     text: paragraphs.map(paragraph => `## ${paragraph.heading}\n\n${paragraph.text}`).join("\n\n") }]);
   assertSourceBoundSummary(summary, [{ lectureId: lecture.id, paragraphs }]);
   summary.grounding = { policy: groundingVersion, sources: documents.map(document => ({ lectureId: lecture.id, fileId: document.id, filename: document.filename, sha256: document.sha256 })) };
-  const summaryHtml = proofreadArabicHtml(`<article dir="rtl"><h2>ملخص ${studyEscape(lecture.title)}</h2><p><strong>المصدر:</strong> ${documents.map(document => studyEscape(document.filename)).join("، ")}</p>${summary.sections[0]!.topics!.map(topic => `<section><h3>${studyEscape(topic.title)}</h3><p>${studyEscape(topic.text)}</p></section>`).join("")}</article>`);
+  const summaryHtml = proofreadArabicHtml(authored ? academicSummaryHtml(lecture.title, documents[0]!.filename, authored, texts.get(authored.sha256)!) : `<article dir="rtl"><h2>ملخص ${studyEscape(lecture.title)}</h2><p><strong>المصدر:</strong> ${documents.map(document => studyEscape(document.filename)).join("، ")}</p>${summary.sections[0]!.topics!.map(topic => `<section><h3>${studyEscape(topic.title)}</h3><p>${studyEscape(topic.text)}</p></section>`).join("")}</article>`);
   const candidates = analyticalQuestionCandidates(paragraphs);
   return { lectureHtml: sourceReadingHtml(lecture.title, paragraphs), summaryHtml, summary,
     assessment: { candidates: candidates.length, verified: candidates.every(question => validAnalyticalQuestion(question, paragraphs)), explicitRelations: sourceRelations(paragraphs).length },
