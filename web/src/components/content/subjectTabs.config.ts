@@ -32,6 +32,7 @@ export function subjectTabs(
     },
     { key: "pdf", href: `/subjects/${subjectId}/pdf`, label: "PDF", icon: "📁" },
     { key: "summaries", href: `/subjects/${subjectId}/library?section=summaries`, label: "الملخصات", icon: "📄" },
+    { key: "mind-maps", href: `/subjects/${subjectId}/mind-maps`, label: "خرائط ذهنية", icon: "◈" },
     {
       key: "assessments",
       href: `/subjects/${subjectId}/assessments`,

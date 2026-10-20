@@ -16,6 +16,7 @@ import { learningRoutes } from "../learning/learningRoutes.js";
 import { examMaterialRoutes } from "../examMaterials/examMaterialRoutes.js";
 import { studyToolsRoutes } from "../studyTools/studyToolsRoutes.js";
 import { academicPresentation } from "../middleware/academicPresentation.js";
+import { summaryVisualRoutes } from "../mindMaps/summaryVisualRoutes.js";
 
 /**
  * Assembles the versioned API surface under `/api/v1` (API_V1.md,
@@ -33,6 +34,7 @@ export function apiV1Router(): Router {
   router.use("/users", usersRoutes());
   router.use("/", contentRoutes());
   router.use("/", libraryRoutes());
+  router.use("/", summaryVisualRoutes());
   router.use("/lectures", lectureRoutes());
   router.use("/files", filesRoutes());
   router.use("/", assessmentsRoutes());
