@@ -24,8 +24,12 @@ const read = (file: string) => JSON.parse(readFileSync(new URL(file, catalogRoot
 const data = read("academicSummaryPoints.json") as { policy: string; sources: AcademicPointReading[] };
 const legal = read("legalAcademicReadings.json") as { policy: string; sources: LegalSource[] };
 const transcripts = new Map<string, Transcript>();
+const transcriptEditions = new Map<string, Transcript[]>();
 for (const file of ["extractedSources.json", "academicDisplaySources.json"]) {
-  for (const source of (read(file) as { sources: Transcript[] }).sources) transcripts.set(source.sha256, source);
+  for (const source of (read(file) as { sources: Transcript[] }).sources) {
+    transcripts.set(source.sha256, source);
+    transcriptEditions.set(source.sha256, [...(transcriptEditions.get(source.sha256) ?? []), source]);
+  }
 }
 const hash = (value: string | Buffer) => createHash("sha256").update(value).digest("hex");
 export const academicSummaryRevision = hash(JSON.stringify(data)).slice(0, 16);
@@ -62,6 +66,31 @@ export function academicPointEvidence(reading: AcademicPointReading): Array<Omit
       return [{ quote, startLine: startLine!, endLine: endLine! }];
     });
   });
+}
+
+type SummaryProof = NonNullable<ExamMaterialSummary["grounding"]>["sources"][number];
+
+/** Only exact, released editorial explanations may use the reviewed path.
+ * The independent grounding guard also verifies the supplied source context
+ * against a complete, checksum-verified transcript of this same PDF edition. */
+export function releasedAcademicSection(section: Pick<ExamSummarySection, "id" | "title" | "number">, proofs: SummaryProof[]) {
+  if (!proofs.length || new Set(proofs.map(proof => proof.sha256)).size !== 1) return undefined;
+  const proof = proofs[0]!;
+  if (proofs.some(item => item.lectureId !== section.id || item.fileId !== proof.fileId || item.filename !== proof.filename)) return undefined;
+  const reading = data.sources.find(source => source.sha256 === proof.sha256 && source.number === section.number);
+  if (!reading) return undefined;
+  const evidence = academicPointEvidence(reading);
+  const topics: ExamSummaryTopic[] = reading.points.map((point, index) => {
+    const sourceNotes = evidence[index]!.map(reference => ({ ...reference, fileId: proof.fileId, filename: proof.filename, sha256: proof.sha256 }));
+    const pages = [...new Set(sourceNotes.flatMap(reference => reference.page ? Array.from({ length: (reference.pageTo ?? reference.page) - reference.page + 1 }, (_, index) => reference.page! + index) : []))];
+    return { title: point.title, text: point.text, sourceNotes,
+      ...(pages.length ? { sourcePages: pages.map(page => ({ fileId: proof.fileId, filename: proof.filename, sha256: proof.sha256, page })) } : {}) };
+  });
+  const result: ExamSummarySection = { id: section.id, title: section.title, number: section.number, format: "explained-points-v1", topics,
+    text: topics.map(topic => topic.text).join("\n\n"), keyPoints: [] };
+  const sourceTexts = (transcriptEditions.get(proof.sha256) ?? [])
+    .filter(source => hash(source.text) === source.textSha256).map(source => source.text);
+  return { section: result, proof, sourceTexts };
 }
 
 async function verifyFile(reading: AcademicPointReading) {
@@ -106,15 +135,9 @@ export async function reviewedAcademicSummary(input: ExamMaterialSummary, verifi
       continue;
     }
     await verifyFile(reading);
-    const proof = proofs[0]!, evidence = academicPointEvidence(reading);
-    const topics: ExamSummaryTopic[] = reading.points.map((point, index) => {
-      const sourceNotes = evidence[index]!.map(reference => ({ ...reference, fileId: proof.fileId, filename: proof.filename, sha256: proof.sha256 }));
-      const pages = [...new Set(sourceNotes.flatMap(reference => reference.page ? Array.from({ length: (reference.pageTo ?? reference.page) - reference.page + 1 }, (_, index) => reference.page! + index) : []))];
-      return { title: point.title, text: point.text, sourceNotes,
-        ...(pages.length ? { sourcePages: pages.map(page => ({ fileId: proof.fileId, filename: proof.filename, sha256: proof.sha256, page })) } : {}) };
-    });
-    sections.push({ id: section.id, title: section.title, number: section.number, format: "explained-points-v1", topics,
-      text: topics.map(topic => topic.text).join("\n\n"), keyPoints: [] });
+    const released = releasedAcademicSection(section, proofs);
+    if (!released) { sections.push(section); continue; }
+    sections.push(released.section);
     reviewed++;
   }
   const grounding = { ...input.grounding };

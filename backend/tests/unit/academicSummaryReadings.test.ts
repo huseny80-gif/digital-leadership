@@ -5,6 +5,7 @@ import { academicAudioChapters, examSummaryPresentation, examTopicSourceLabel } 
 import { academicPointEvidence, academicSummaryPolicy, probeAcademicSummaryReadings, reviewedAcademicSummary, type AcademicPointReading } from "../../src/examMaterials/academicSummaryReadings.js";
 import { catalogRoot } from "../../src/finquiz/catalog.js";
 import { currentAcademicReadings } from "../../src/examMaterials/currentAcademicReadings.js";
+import { assertSourceBoundSummary, sourceParagraphs } from "../../src/examMaterials/sourceGrounding.js";
 
 const data = JSON.parse(readFileSync(new URL("academicSummaryPoints.json", catalogRoot), "utf8")) as { sources: AcademicPointReading[] };
 const transcripts = new Map<string, string>();
@@ -24,6 +25,9 @@ describe("academic explanations bound to the actual selected lecture edition", (
     for (const reading of data.sources) {
       const original = snapshot(reading), before = structuredClone(original);
       const result = await reviewedAcademicSummary(original, new Set([reading.sha256]));
+      const proof = result.grounding!.sources[0]!;
+      const paragraphs = sourceParagraphs({ id: proof.fileId, filename: proof.filename, sha256: proof.sha256, text: transcripts.get(reading.sha256)! });
+      expect(() => assertSourceBoundSummary(result, [{ lectureId: "saved-lecture", paragraphs }])).not.toThrow();
       expect(original).toEqual(before);
       expect(result.grounding!.summaryPolicy).toBe(academicSummaryPolicy);
       expect(result.sections[0]).toMatchObject({ id: "saved-lecture", title: before.sections[0]!.title, format: "explained-points-v1", keyPoints: [] });
@@ -81,6 +85,33 @@ describe("academic explanations bound to the actual selected lecture edition", (
     expect(() => academicPointEvidence({ ...reading, sourceTextSha256: "0".repeat(64) })).toThrow("academic_point_transcript_changed");
     const bad = structuredClone(reading); bad.points[0]!.evidence[0] = { startLine: 1, endLine: 100000 };
     expect(() => academicPointEvidence(bad)).toThrow("academic_point_reference_missing");
+  });
+  it("independently rejects altered explanations, forged evidence, other files and incomplete selected context", async () => {
+    const reading = data.sources.find(source => source.lectureId === "cs-l1")!;
+    const result = await reviewedAcademicSummary(snapshot(reading));
+    const proof = result.grounding!.sources[0]!;
+    const paragraphs = sourceParagraphs({ id: proof.fileId, filename: proof.filename, sha256: proof.sha256, text: transcripts.get(reading.sha256)! });
+    const context = [{ lectureId: "saved-lecture", paragraphs }];
+    for (const change of [
+      (summary: ExamMaterialSummary) => { summary.sections[0]!.topics![0]!.text += " معلومة غير موجودة في المحاضرة."; },
+      (summary: ExamMaterialSummary) => { summary.sections[0]!.text += "\n\nمعلومة غير موثقة."; },
+      (summary: ExamMaterialSummary) => { summary.sections[0]!.topics![0]!.sourceNotes![0]!.quote += " نفي مختلف."; },
+      (summary: ExamMaterialSummary) => { summary.sections[0]!.topics![0]!.sourceNotes![0]!.startLine!++; },
+      (summary: ExamMaterialSummary) => { summary.sections[0]!.topics![0]!.sourceNotes![0]!.fileId = "other-file"; },
+      (summary: ExamMaterialSummary) => { summary.grounding!.sources[0]!.sha256 = "f".repeat(64); },
+      (summary: ExamMaterialSummary) => { summary.grounding!.sources.push({ ...proof, fileId: "extra-file", sha256: "e".repeat(64) }); },
+      (summary: ExamMaterialSummary) => { summary.sections[0]!.topics![0]!.details = "تفصيل من خارج الملف."; },
+      (summary: ExamMaterialSummary) => { summary.sections[0]!.keyPoints.push("نقطة غير معتمدة."); },
+    ]) {
+      const changed = structuredClone(result); change(changed);
+      expect(() => assertSourceBoundSummary(changed, context)).toThrow("ungrounded_reviewed_summary");
+    }
+    expect(() => assertSourceBoundSummary(result, [{ ...context[0]!, paragraphs: paragraphs.slice(1) }])).toThrow("ungrounded_reviewed_summary");
+    expect(() => assertSourceBoundSummary(result, [{ ...context[0]!, paragraphs: paragraphs.map(paragraph => ({ ...paragraph, sha256: "0".repeat(64) })) }])).toThrow("ungrounded_reviewed_summary");
+    // Database JSON objects may reorder keys without changing their meaning.
+    const reordered = JSON.parse(JSON.stringify(result), (_key, value) => value && typeof value === "object" && !Array.isArray(value)
+      ? Object.fromEntries(Object.entries(value).reverse()) : value) as ExamMaterialSummary;
+    expect(() => assertSourceBoundSummary(reordered, context)).not.toThrow();
   });
   it("updates a bookmarked summary with the same source while retaining snapshot and evidence identities", async () => {
     const reading = data.sources.find(source => source.lectureId === "ai-l1")!, original = snapshot(reading), before = structuredClone(original);

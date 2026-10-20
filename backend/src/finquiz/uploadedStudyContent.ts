@@ -46,6 +46,7 @@ export async function uploadedStudyContent(lecture: Lecture, pool: Pool = getPoo
   assertSourceBoundSummary(summary, [{ lectureId: lecture.id, paragraphs }]);
   summary.grounding = { policy: groundingVersion, sources: documents.map(document => ({ lectureId: lecture.id, fileId: document.id, filename: document.filename, sha256: document.sha256 })) };
   summary = await reviewedAcademicSummary(summary, new Set(documents.map(document => document.sha256)));
+  assertSourceBoundSummary(summary, [{ lectureId: lecture.id, paragraphs }]);
   const summaryHtml = academicSummaryHtml(summary, lecture.title, documents.map(document => document.filename));
   const candidates = analyticalQuestionCandidates(paragraphs);
   return { lectureHtml: sourceReadingHtml(lecture.title, paragraphs), summaryHtml, summary,

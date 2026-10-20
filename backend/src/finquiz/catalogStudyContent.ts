@@ -73,6 +73,7 @@ export async function compileCatalogStudyContent(lecture: SourceLecture, asset: 
   const reviewed = summary.grounding?.summaryPolicy === "visually-verified-legal-excerpts-v1";
   const lectureHtml = proofreadArabicHtml(reviewed ? `<article dir="rtl"><h2>${escape(lecture.title)}</h2>${source}<p>قراءة أكاديمية موثّقة من صفحات المحاضرة. يتوفر الملف الأصلي الكامل في تبويب PDF.</p>${academicTopics}</article>` : sourceReadingHtml(lecture.title, paragraphs));
   summary = await reviewedAcademicSummary(summary);
+  assertSourceBoundSummary(summary, [{ lectureId: lecture.id, paragraphs }]);
   const summaryHtml = academicSummaryHtml(summary, lecture.title, [asset.filename]);
   return { renderPolicy: catalogStudyRenderPolicy, assetId: asset.id, sha256: extracted.sha256, lectureHtml, summaryHtml, summary, paragraphCount: paragraphs.length, topicCount: summary.sections[0]!.topics!.length };
 }

@@ -11,6 +11,12 @@ Legal explanations reference the separately page-reviewed passages in
 are retained. Exercise instructions, question banks, bibliography and scan
 debris are excluded from the explanatory text.
 
+The post-generation guard accepts an academic paraphrase only when the full
+section, evidence quotes, file identities and coordinates exactly match this
+released review, and the complete selected source context matches a verified
+transcript of the same PDF. A policy label alone never authorizes new prose.
+Unreviewed source editions continue to use complete source excerpts only.
+
 The sixth cybersecurity lecture is a private upload. Its reviewed transcript
 does not replace authorization or storage verification: its points are applied
 only after the caller verifies the actual uploaded bytes and checksum.

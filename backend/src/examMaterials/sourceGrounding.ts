@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import type { ExamMaterialSummary } from "@shared/index";
 import type { GeneratedQuestion } from "../contentAutomation/questionGeneration.js";
 import { sourceHeading, studyContentLines } from "./summary.js";
 import { readableSourcePassage } from "./sourceReadability.js";
+import { academicSummaryPolicy, releasedAcademicSection } from "./academicSummaryReadings.js";
 
 export const STRICT_SOURCE_INSTRUCTION = "أنت محرك تحليل أكاديمي دقيق. اعتمادك حصرياً على النصوص المزودة من ملفات المحاضرات أدناه. لا تقم بإضافة أي معلومات خارجية أو افتراضات غير مذكورة نصياً في المحاضرات المحددة. إذا كانت المعلومة غير موجودة في النص، فلا تدرجها في الملخص أو الأسئلة.";
 export const groundingVersion = "strict-file-extraction-v1";
@@ -68,13 +70,27 @@ export function referenceLabel(reference: SourceReference): string {
   return `${reference.filename} — الفقرة ${reference.number}، الأسطر ${reference.startLine}–${reference.endLine} من النص المستخرج`;
 }
 
-/** Independent post-generation guard: no prose or review point may escape
- * the selected file's complete paragraphs/sentences. Whitespace reflow is OK. */
+/** Independent post-generation guard: automatic prose must remain extractive.
+ * Reviewed explanations must exactly match the released editorial content,
+ * evidence and coordinates, with the complete selected source still present. */
 export function assertSourceBoundSummary(summary: ExamMaterialSummary, sources: Array<{ lectureId: string; paragraphs: SourceParagraph[] }>): void {
   if (summary.introduction) throw new Error("ungrounded_summary_introduction");
   for (const section of summary.sections) {
     const paragraphs = sources.find(source => source.lectureId === section.id)?.paragraphs;
     if (!paragraphs?.length || section.objectives?.length || section.concepts?.length) throw new Error("ungrounded_summary_metadata");
+    if (summary.grounding?.summaryPolicy === academicSummaryPolicy || section.topics?.some(topic => topic.sourceNotes?.length)) {
+      const released = summary.grounding?.policy === groundingVersion
+        ? releasedAcademicSection(section, summary.grounding.sources.filter(proof => proof.lectureId === section.id)) : undefined;
+      if (!released || !isDeepStrictEqual(section, released.section)
+        || !released.sourceTexts.some(text => {
+          const expected = sourceParagraphs({ id: released.proof.fileId, filename: released.proof.filename, sha256: released.proof.sha256, text });
+          // The lecture reader removes repeated identical paragraphs while
+          // retaining the first paragraph's identity and source coordinates.
+          const unique = expected.filter((paragraph, index, all) => all.findIndex(other => exactSourceText(other.text) === exactSourceText(paragraph.text)) === index);
+          return expected.length > 0 && (isDeepStrictEqual(paragraphs, expected) || isDeepStrictEqual(paragraphs, unique));
+        })) throw new Error("ungrounded_reviewed_summary");
+      continue;
+    }
     const supported = (value: string) => paragraphs.some(paragraph => completeExcerpt(paragraph.text, value))
       || sourceSentences(value).every(sentence => paragraphs.some(paragraph => completeExcerpt(paragraph.text, sentence)));
     for (const value of [...section.text.split(/\n{2,}/u), ...section.keyPoints,

@@ -269,6 +269,7 @@ export class ExamMaterialService {
     }))) };
     if (scope === "catalog") summary.grounding.sourceScope = "catalog-primary";
     summary = await reviewedAcademicSummary(await reviewedLegalSummary(summary), new Set(fileSources.flatMap(source => source.documents.map(document => document.sha256))));
+    assertSourceBoundSummary(summary, fileSources.map(source => ({ lectureId: source.lecture.id, paragraphs: source.paragraphs })));
     const perLecture = Math.min(12, Math.floor(200 / selected.length));
     const questions: SourceQuestion[] = [];
     const guideSources: Parameters<typeof instructorDebriefGuide>[1] = [];
