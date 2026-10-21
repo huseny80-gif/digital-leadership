@@ -87,10 +87,11 @@ describe("innovation current lecture numbering and marked duplicate cleanup", ()
     expect(result.groupId).toBeTruthy();
     const root = (await pool.query("select z.id,count(q.id)::int questions,count(distinct q.lecture_id)::int lectures from quizzes z join quiz_questions qq on qq.quiz_id=z.id join questions q on q.id=qq.question_id where z.subject_id=$1 and z.purpose='course' and z.lecture_id is null and z.superseded_by is null and z.deleted_at is null group by z.id", [subjectId])).rows;
     expect(root).toHaveLength(1);
-    expect(root[0]).toMatchObject({ questions: 41, lectures: 5 });
+    expect(root[0]).toMatchObject({ questions: 220, lectures: 5 });
     expect((await pool.query("select title from lectures where subject_id=$1 and deleted_at is null and status='published' order by order_index", [subjectId])).rows.map(row => row.title)).toEqual(["الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة"].map(ordinal => `المحاضرة ${ordinal} في الابتكار وإدارة المشاريع`));
     expect((await pool.query("select count(*)::int n from lectures where id=any($1::uuid[]) and deleted_at is not null", [[s.old, ...s.empty]])).rows[0].n).toBe(3);
-    expect(await s.storage.read(s.original.key)).toEqual(s.original.bytes);
+    // Compare all PDF bytes without enumerating a multi-megabyte Buffer.
+    expect((await s.storage.read(s.original.key)).equals(s.original.bytes)).toBe(true);
     expect((await pool.query("select * from quiz_attempts where id=$1", [s.attempt.id])).rows[0]).toEqual(s.attempt);
     expect((await pool.query("select * from question_options where question_id=$1 order by id", [s.bank.questionId])).rows).toEqual(options);
     expect((await pool.query("select lecture_id from quizzes where id=$1", [s.quiz])).rows[0].lecture_id).toBe(s.canonical);
@@ -100,7 +101,7 @@ describe("innovation current lecture numbering and marked duplicate cleanup", ()
     expect((await pool.query("select * from question_options where question_id=$1 order by id", [s.legacyBank.questionId])).rows).toEqual(legacyOptions);
     const latest = (await pool.query("select successor.id,successor.title from quizzes old join quizzes successor on successor.id=old.superseded_by where old.id=$1", [s.legacyQuiz])).rows[0];
     expect(latest.title).toBe("اختبار المحاضرة الخامسة في الابتكار وإدارة المشاريع");
-    expect((await pool.query("select count(*)::int n from quiz_questions where quiz_id=$1", [latest.id])).rows[0].n).toBe(10);
+    expect((await pool.query("select count(*)::int n from quiz_questions where quiz_id=$1", [latest.id])).rows[0].n).toBe(42);
     const group = (await pool.query("select lectures from exam_material_groups where id=$1", [result.groupId])).rows[0];
     expect(group.lectures.find((lecture: { id: string }) => lecture.id === s.renumbered)).toMatchObject({ title: "المحاضرة الخامسة في الابتكار وإدارة المشاريع", number: 5 });
     const repeated = await reviewInnovationCurriculum(pool);

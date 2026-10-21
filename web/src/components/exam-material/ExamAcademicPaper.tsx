@@ -44,6 +44,7 @@ export function ExamAcademicPaper({ subjectId, groupId, attemptId }: { subjectId
           <div className={styles.paperTable}><table><caption>توزيع درجات الورقة التحريرية</caption><thead><tr><th scope="col">نوع السؤال</th><th scope="col">العدد</th><th scope="col">الدرجات</th></tr></thead><tbody>{paper.distribution.filter(item => item.count > 0).map(item => <tr key={item.type}><th scope="row">{labels[item.type]}</th><td>{number(item.count)}</td><td>{number(item.points)}</td></tr>)}</tbody></table></div>
           {paper.questions.map((question, index) => <article className={styles.paperQuestion} key={question.id}>
             <div className={styles.sectionHead}><h4>السؤال {number(index + 1)} — {labels[question.type]}</h4><span className={styles.badge}>الدرجة: {number(question.points)}</span></div>
+            {question.difficulty ? <span className={styles.badge}>المستوى: {{ easy: "سهل", medium: "متوسط", hard: "صعب", very_hard: "صعب جدًا" }[question.difficulty]}</span> : null}
             <Link className={styles.sourceLink} href={`/subjects/${subjectId}/lectures/${question.lectureId}`}>{question.lectureTitle}</Link>
             <p>{question.prompt}</p><p className={styles.muted}>{question.instructions}</p>
             <ol className={styles.paperOptions}>{question.options.map((option, optionIndex) => <li key={optionIndex}><span>{optionLetter(optionIndex)})</span> {option}</li>)}</ol>

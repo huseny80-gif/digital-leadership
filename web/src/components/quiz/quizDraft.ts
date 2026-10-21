@@ -47,7 +47,7 @@ export function readQuizDraft(attemptId: string, quizId: string, questions: Ques
     return {
       quizId, answers,
       questionId: questions.some(question => question.id === value.questionId) ? value.questionId : undefined,
-      difficulty: ["easy", "medium", "hard"].includes(value.difficulty) ? value.difficulty : "all",
+      difficulty: ["easy", "medium", "hard", "very_hard"].includes(value.difficulty) ? value.difficulty : "all",
       lecture: questions.some(question => question.lectureId === value.lecture) ? value.lecture : "all",
       format: assessmentFormats.some(format => format.id === value.format) ? value.format : "all",
     };

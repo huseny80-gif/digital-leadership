@@ -259,11 +259,14 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       lecture_id: string | null;
       lecture_number: number | null;
       lecture_title: string | null;
-      difficulty: "easy" | "medium" | "hard" | null;
+      difficulty: "easy" | "medium" | "hard" | "very_hard" | null;
+      bloom: QuestionForAttempt["bloom"] | null;
       kind: string | null;
     }>(
       `select qn.id, qn.question_type, qn.prompt, qn.points, qq.order_index,
-         qn.lecture_id, qn.difficulty, qn.kind, l.order_index as lecture_number, l.title as lecture_title
+         qn.lecture_id, qn.difficulty, qn.kind, l.order_index as lecture_number, l.title as lecture_title,
+         case when coalesce(qn.rubric->'sourceProgram'->'classification'->>'bloom',qn.rubric->'classification'->>'bloom') in ('remember','understand','apply','analyze','evaluate','create')
+           then coalesce(qn.rubric->'sourceProgram'->'classification'->>'bloom',qn.rubric->'classification'->>'bloom') end as bloom
        from quiz_questions qq
        join questions qn on qn.id = qq.question_id and qn.deleted_at is null
        left join lectures l on l.id=qn.lecture_id
@@ -365,6 +368,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       ...(row.lecture_number !== null && row.lecture_number !== undefined ? { lectureNumber: row.lecture_number } : {}),
       ...(row.lecture_title ? { lectureTitle: row.lecture_title } : {}),
       ...(row.difficulty ? { difficulty: row.difficulty } : {}),
+      ...(row.bloom ? { bloom: row.bloom } : {}),
       ...(row.kind ? { kind: row.kind } : {}),
       options: optionsByQuestion.get(row.id) ?? null,
       matchItems: matchItemsByQuestion.get(row.id) ?? null,

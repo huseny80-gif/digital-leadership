@@ -6,6 +6,7 @@ import { hasBrokenSourceEncoding } from "../contentAutomation/sourceTextQuality.
 import { analyticalQuestionCandidates, prioritizeAnalyticalQuestions } from "./caseAssessment.js";
 import { exactSourceText, referenceFor, referenceLabel, validSourceReference, type GroundedQuestion, type SourceParagraph, type SourceReference } from "./sourceGrounding.js";
 import { readableSourcePassage } from "./sourceReadability.js";
+import { hasReviewedInnovationSource, reviewedInnovationQuestions, validReviewedInnovationQuestion } from "./reviewedInnovationAssessment.js";
 
 export const diverseAssessmentPolicy = "source-diverse-assessment-v1" as const;
 type Blueprint = {
@@ -166,7 +167,7 @@ function writtenAndJudgmentQuestions(cases: GroundedQuestion[]): GroundedQuestio
   return result;
 }
 
-export function diverseQuestionCandidates(paragraphs: SourceParagraph[]): GroundedQuestion[] {
+export function legacyQuestionCandidates(paragraphs: SourceParagraph[]): GroundedQuestion[] {
   const analytical = analyticalQuestionCandidates(paragraphs);
   const reviewed = reviewedWrittenQuestions(analytical);
   const otherSources = analytical.filter(question => !catalog.writtenPrograms.some(program => question.references.every(reference => reference.sha256 === program.sha256)));
@@ -175,11 +176,21 @@ export function diverseQuestionCandidates(paragraphs: SourceParagraph[]): Ground
       && all.findIndex(other => other.candidateId === question.candidateId) === index);
 }
 
+export function diverseQuestionCandidates(paragraphs: SourceParagraph[]): GroundedQuestion[] {
+  const reviewed = reviewedInnovationQuestions(paragraphs);
+  if (!hasReviewedInnovationSource(paragraphs)) return legacyQuestionCandidates(paragraphs);
+  const hashes = new Set(reviewed.flatMap(question => question.references.map(reference => reference.sha256)));
+  // Keep archived programs replayable below; only current generation replaces
+  // the old Innovation bank. Other selected source files retain their programs.
+  return [...reviewed, ...legacyQuestionCandidates(paragraphs).filter(question => !question.references.some(reference => hashes.has(reference.sha256)))];
+}
+
 /** Exact replay covers every prompt, pair, position, model answer and key.
  * A valid quotation alone cannot authorize altered grading data. */
 export function validDiverseQuestion(question: GroundedQuestion, paragraphs: SourceParagraph[]): boolean {
-  return question.references.every(reference => validSourceReference(reference, paragraphs))
-    && [...analyticalQuestionCandidates(paragraphs), ...diverseQuestionCandidates(paragraphs)].some(approved => approved.candidateId === question.candidateId && canonical(approved) === canonical(question));
+  if (!question.references.every(reference => validSourceReference(reference, paragraphs))) return false;
+  if (question.classification?.policy === "reviewed-innovation-curriculum-v1") return validReviewedInnovationQuestion(question, paragraphs);
+  return [...analyticalQuestionCandidates(paragraphs), ...legacyQuestionCandidates(paragraphs)].some(approved => approved.candidateId === question.candidateId && canonical(approved) === canonical(question));
 }
 
 export async function prioritizeDiverseQuestions(candidates: GroundedQuestion[], paragraphs: SourceParagraph[]): Promise<GroundedQuestion[]> {

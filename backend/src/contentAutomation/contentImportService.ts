@@ -344,7 +344,7 @@ export class ContentImportService {
   private async insertQuestion(client: PoolClient, bankId: string, lectureId: string, job: ImportRow, q: GeneratedQuestion): Promise<string> {
     const id = randomUUID();
     const pairIds = (q.pairs ?? []).map(() => randomUUID());
-    const baseRubric = q.references?.length ? { sourcePolicy: generatedSourcePolicy, sourceReferences: q.references, assessment: q.assessment, points: q.rubric ?? [] } : q.rubric;
+    const baseRubric = q.references?.length ? { sourcePolicy: generatedSourcePolicy, sourceReferences: q.references, assessment: q.assessment, classification: q.classification, points: q.rubric ?? [] } : q.rubric;
     const rubric = pairIds.length ? { ...(Array.isArray(baseRubric) ? { points: baseRubric } : baseRubric), matchingRightIds: privateMatchingIds(pairIds) } : baseRubric;
     await client.query("insert into questions(id,question_bank_id,question_type,prompt,points,created_by,lecture_id,difficulty,kind,source_import_id,source_excerpt,explanation,rubric) values($1,$2,$3,$4,1,$5,$6,$7,$8,$9,$10,$11,$12::jsonb)", [id, bankId, q.type, q.prompt, job.created_by, lectureId, q.difficulty, q.kind ?? null, job.id, q.excerpt, q.explanation, rubric ? JSON.stringify(rubric) : null]);
     for (const [index, option] of (q.options ?? []).entries()) await client.query("insert into question_options(question_id,option_text,is_correct,order_index) values($1,$2,$3,$4)", [id, option, index === q.correctIndex, index]);

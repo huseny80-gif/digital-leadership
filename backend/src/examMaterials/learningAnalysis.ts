@@ -14,7 +14,7 @@ export function storedSourceReferences(rubric: unknown): SourceReference[] {
       && Number.isSafeInteger(item.number) && item.number > 0 && Number.isSafeInteger(item.startLine) && item.startLine > 0 && Number.isSafeInteger(item.endLine) && item.endLine >= item.startLine
       && typeof item.excerpt === "string" && item.excerpt.trim().length > 0 && item.excerpt.length <= 20_000;
   };
-  return rubric.sourceReferences.length <= 8 && rubric.sourceReferences.every(valid) ? rubric.sourceReferences : [];
+  return rubric.sourceReferences.length <= 64 && rubric.sourceReferences.every(valid) ? rubric.sourceReferences : [];
 }
 
 /** Decision analysis is private grading metadata. Reject a partial rubric or

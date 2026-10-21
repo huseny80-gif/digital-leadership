@@ -6,6 +6,7 @@ import { examGroupVisible } from "./visibility.js";
 import { finquizRecordId } from "../finquiz/recordIdentity.js";
 import { subjectMapping } from "../finquiz/catalog.js";
 import { courseAssessmentReviewPolicy } from "../contentAutomation/reviewCourseAssessments.js";
+import { assessmentRevisionForSubject } from "./reviewedInnovationAssessment.js";
 
 interface Selection { id: string; subject_id: string; lecture_ids: string[]; created_by: string; summary: ExamMaterialSummary; request_id?: string | null }
 /** Publish one new revision per saved selection, preserving every old question,
@@ -34,13 +35,14 @@ export async function refreshDiverseAssessments(pool: Pool, sourceRevision?: str
   const issues: Array<{ subjectId: string; code: string }> = [];
   let alreadyCurrent = 0;
   for (const [key, selection] of latest) {
+    const revision = assessmentRevisionForSubject(selection.subject_id, sourceRevision);
     if (!sourceRevision && selection.summary.grounding?.questionPolicy === diverseAssessmentPolicy) { alreadyCurrent++; continue; }
     try {
       // A format policy can remain unchanged when new reviewed cases arrive.
       // Refresh each saved selection once per source revision, without
       // overwriting the archived summary, answer keys or attempts.
       const requestId = finquizRecordId(sourceRevision
-        ? `${diverseAssessmentPolicy}:selection:${key}:source-revision:${sourceRevision}`
+        ? `${diverseAssessmentPolicy}:selection:${key}:source-revision:${revision}`
         : `${diverseAssessmentPolicy}:selection:${key}:previous:${selection.id}`);
       if (sourceRevision && (selection.request_id === requestId || (await pool.query(
         "select 1 from exam_material_groups where created_by=$1 and request_id=$2 and subject_id=$3", [selection.created_by, requestId, selection.subject_id],

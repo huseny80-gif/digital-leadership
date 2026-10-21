@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { QuestionType, AnswerRubricPoint } from "@shared/index";
+import type { QuestionType, QuestionDifficulty, QuestionBloom, AnswerRubricPoint } from "@shared/index";
 import { normalizeText, significantWords } from "./sourceAnalysis.js";
 import { assertReadableSourceText, hasBrokenSourceEncoding } from "./sourceTextQuality.js";
 import { sourceParagraphs, referenceFor, referenceLabel, STRICT_SOURCE_INSTRUCTION, type ExamSourceDocument, type SourceParagraph, type SourceReference } from "../examMaterials/sourceGrounding.js";
@@ -11,7 +11,8 @@ import { diverseQuestionCandidates } from "../examMaterials/diverseAssessment.js
 export interface GeneratedQuestion {
   type: QuestionType;
   prompt: string;
-  difficulty: "easy" | "medium" | "hard";
+  difficulty: QuestionDifficulty;
+  classification?: { policy: string; approvedId: string; number: number; bloom: QuestionBloom; reason: string; difficultyProvenance: string; bloomProvenance: string; topics?: string[] };
   kind?: string;
   excerpt: string;
   explanation: string;
