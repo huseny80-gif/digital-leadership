@@ -1,0 +1,210 @@
+{
+  "sourceCommit": "57033f33ad48f2bb0a53e664eb7ce6839382f557",
+  "programs": [
+    {
+      "lecture": 1,
+      "candidateId": "0820001206a1a8d308bd7cca30c5e0fd35983d17cf978b2c92cdf05d7b924060",
+      "programSha256": "6d56c3c2481bc1c7dc018fbabd128aedf01f71bf0f3b61538bdd5a76e6d3cb6c"
+    },
+    {
+      "lecture": 1,
+      "candidateId": "87fcfc98595249936b730c1094df01f32d39a976728dd7bc7cacb50d1a68877d",
+      "programSha256": "e719ccad57b6f3a9e1a6f5e97ac824179bac5e42a621e309b1a68cd16d05c5e9"
+    },
+    {
+      "lecture": 1,
+      "candidateId": "a8e7c55a189b3535697b8d23",
+      "programSha256": "daf904d26cfa35296fb0581d6dfc87d3cfdd6a20906682b03f2c719eeeef52b1"
+    },
+    {
+      "lecture": 1,
+      "candidateId": "b2e796c8a153d310352a379499e7539c9562fd38b2b2b97d8b92a1228cbb0c67",
+      "programSha256": "7709095b00440c9b340a7475972bd94762bdeb260abfdee77e8142e74c43a996"
+    },
+    {
+      "lecture": 1,
+      "candidateId": "b6c64e4992012a175bad205a",
+      "programSha256": "c8d21fc2f8e7cb5fb19597d5a3fd503931569d8ddb2921150e1e26605cdb6e81"
+    },
+    {
+      "lecture": 1,
+      "candidateId": "c1e88562a6a0e3706e65e946",
+      "programSha256": "dda98dce98dbf678484897cb9de6cc7f731a30afdbb6131a916311c21861cebc"
+    },
+    {
+      "lecture": 1,
+      "candidateId": "f665660197ae8a3bb76d9e27",
+      "programSha256": "44ac6984cff354a4a7b7f0d2b19192932cd3606c7544e28249f5927a593ba47e"
+    },
+    {
+      "lecture": 2,
+      "candidateId": "8eff0dc92d92dd8eda5351d8",
+      "programSha256": "c8ddceeb39844d36105178861375b477fae889df3b50326469cefab6657ece3c"
+    },
+    {
+      "lecture": 2,
+      "candidateId": "9e2cd01868b8e8b6a091d0d724857ec06b491c217b3b389c9f566b6ac9fe95f6",
+      "programSha256": "460010d486ab37f9d3c48690b92ff4d22c6073c08cd982207ef4fc2385647fa7"
+    },
+    {
+      "lecture": 2,
+      "candidateId": "a680695af4f9dbc4fde2733d67ff767eff033305715bdb7fa292071827e48c84",
+      "programSha256": "187c859e95969412bc3cdf33198ca2664dbd3a0e8354c9b177d31c4241c738c3"
+    },
+    {
+      "lecture": 2,
+      "candidateId": "bf67c7514d704be010aa9ca52aa15c0f384d0c53ee47a4cfabef28e95908ed82",
+      "programSha256": "18308a39eb23d51992bf64cac9cb1219db18ee59fd469d8ff4e971f2ca2e0a98"
+    },
+    {
+      "lecture": 2,
+      "candidateId": "c6bdfeb02a536798a8a39057",
+      "programSha256": "7e0bfc6c8da71db85ccb0ae278124d91020550beddf558787a76bc07c8f2c0fa"
+    },
+    {
+      "lecture": 2,
+      "candidateId": "cbc2c016fb9373677e641c07",
+      "programSha256": "f5814ba8aee042a9ada8b768b58879ac6d43c32fa434a847d6f31e8327a94bd1"
+    },
+    {
+      "lecture": 2,
+      "candidateId": "d7a02f25edb62fe3f0f4217f",
+      "programSha256": "569eed8c8c8c491d1be11aa4ba0d66e34e028f3e5589b95ae22b57fc1710626b"
+    },
+    {
+      "lecture": 3,
+      "candidateId": "62c2a3d2ad72fbd386d95c608932f8a57cb9a8ae8c383f4d1cfdcd9bf03367c0",
+      "programSha256": "7d56a1600c95a1f97236c99044caedcf437e645f0d5ed47f8537441fe6176199"
+    },
+    {
+      "lecture": 3,
+      "candidateId": "c52a2fc90b58dc0febb93a8a",
+      "programSha256": "d441b55e1e2b4f8e901808788910110b7bdbbb2480e30df03cd9d75ad65f0e1f"
+    },
+    {
+      "lecture": 3,
+      "candidateId": "e8f81276a00a912cd9515511",
+      "programSha256": "477db4298bb6f54a8d73c8f871274a35f2e058231fa80101fad8e6caa876eeeb"
+    },
+    {
+      "lecture": 3,
+      "candidateId": "e90064cf8b850962a739fd986b2a98585669855f40d505e7e166689cb3ecd33c",
+      "programSha256": "966d84175740224fbb8f8618eefdd0d746e61f534970b5323a83c8f2c9b3beab"
+    },
+    {
+      "lecture": 3,
+      "candidateId": "ec6f1e7ceb79d7648799d1b4",
+      "programSha256": "840e103fbee0fb0c8473c252f08a966dd90b916ebca709b621242da13478457e"
+    },
+    {
+      "lecture": 3,
+      "candidateId": "fa4ab3acdade5d79e3f6494fefb2e4ad6439d0b23ea96782b0e41682414c41dc",
+      "programSha256": "a0bdf47e5ededb4e88f5dcf7f645ef077bc288bccac64fcf400ead72a6782906"
+    },
+    {
+      "lecture": 4,
+      "candidateId": "09b70241bd044edd9bc065f478957083e6c5585a5547aadfb9e49e34acc13860",
+      "programSha256": "354a2623cc0f14266602bf77e08d35d703cb28fa762326df78fa7d924ab08ad2"
+    },
+    {
+      "lecture": 4,
+      "candidateId": "14e9737815666be07f0b6a585923c8f55446e8a527a6b451b9008b25cec144d2",
+      "programSha256": "c3d89d07953d5ff7888ae06d6c9a8a2768f2f1eac0b7a06eb541a72621a60f62"
+    },
+    {
+      "lecture": 4,
+      "candidateId": "1c4445e027f06c665c04377942171b6f6280e36cda63d15b1f56fc52e07e5bf5",
+      "programSha256": "047b6dc53acff95d0c0cee268d82121646e46626e5f99bb888de3ce6c51b8f4d"
+    },
+    {
+      "lecture": 4,
+      "candidateId": "404cade5a3c174e2454b1362b12ef37e5b935ccb9551ba06605607fec5120b07",
+      "programSha256": "527b400383bc8dfa64b98101497850ccf490d0defb4374821dfae50724345c47"
+    },
+    {
+      "lecture": 4,
+      "candidateId": "40bdd71aa05d32cd3b60ed8d",
+      "programSha256": "3ba90b9936a98632013bf8d3b2797600a5a417e551e29e6e6aac0064fc2cb51b"
+    },
+    {
+      "lecture": 4,
+      "candidateId": "45815480b9010ffd17d7d697e2a0d68d6f1a5eb1aa609a70346b2ea350ffbf6b",
+      "programSha256": "812b7df0d27ec0535bd3cbfa381a0d8801062944efcdcf15c6401262ffd133be"
+    },
+    {
+      "lecture": 4,
+      "candidateId": "596f4b6662805dfdf66020b9",
+      "programSha256": "cdbd384ac369cb324774b724b6e84c0b6d2acdfea44ee039114b9e6e672d49d7"
+    },
+    {
+      "lecture": 4,
+      "candidateId": "62361dfaf6ad987ddb49cc32",
+      "programSha256": "76f3a0b699feb36a852dbec0942f02376b981fd1a1f6b37ef935b08512c8cf2d"
+    },
+    {
+      "lecture": 4,
+      "candidateId": "696b485e2ce01cc3f239f922",
+      "programSha256": "19fc4cdb9712f66634f41f5100b95a98389b5e6a8c2658c6b973f60b1fb9f5e5"
+    },
+    {
+      "lecture": 4,
+      "candidateId": "9c27df1cdedf593fd330d9f0",
+      "programSha256": "fd95600ed66f840e596b976873e63adac8360fae8577deb5c481566349764c6c"
+    },
+    {
+      "lecture": 4,
+      "candidateId": "c33e9fc38bdf3588ae3ee869",
+      "programSha256": "1131e3958d61f123e17bbba8d73a4641a7ce0f40245fd75ff1043b0f6a9449ed"
+    },
+    {
+      "lecture": 5,
+      "candidateId": "2ee94745df7c1ecea1c3be1e11fc5749fd034cd25dd9a371f683fe1d1b72dca7",
+      "programSha256": "c164beb2b6d8119086a6107e604f59b43d4c2b5d9d9ba80142b353337c8d2991"
+    },
+    {
+      "lecture": 5,
+      "candidateId": "49e03e65d3e71db452ca661e",
+      "programSha256": "21fb203a084de9e6e5fb9535450bf7b7d7a496be4c5fcc2e50d2e4971d7eb006"
+    },
+    {
+      "lecture": 5,
+      "candidateId": "73d6d1129f2620bc12c9e105",
+      "programSha256": "1afe94321dafe76664420193dc26b9532628ed0a1ab8c2846ae71918eab14109"
+    },
+    {
+      "lecture": 5,
+      "candidateId": "7d02b6770d746e8fd7c945365ff0b542af3caa6c1d87c1c6a230eb3ef9bd165e",
+      "programSha256": "73df57fa1e0e14bdb0202c3773c657ff1f9a91456cfbf930f8e4e820e19547c0"
+    },
+    {
+      "lecture": 5,
+      "candidateId": "817ec1bcf4f72d0da75527c0",
+      "programSha256": "0bbab215e10426e45987d43af75b7a440a7b8394e81a78fc6ab22dea5ec7d9f6"
+    },
+    {
+      "lecture": 5,
+      "candidateId": "cf0866d9da9af3198fe14899",
+      "programSha256": "66ab460491d7e25208995da7649eebc2c8293bbb05922bfbb72c3645cc54577b"
+    },
+    {
+      "lecture": 5,
+      "candidateId": "dd61c3028f858ab771bb59be",
+      "programSha256": "68baeb90a49361a471b839f11c6a6c8023485668f908cb9cd2b36357af9f0dd3"
+    },
+    {
+      "lecture": 5,
+      "candidateId": "f702111afded0889349b2633",
+      "programSha256": "2e060616257a08f79728c5ecc2c444216fa4c548654f4965c8b4513346cb76e5"
+    },
+    {
+      "lecture": 5,
+      "candidateId": "f911383ae82c1e0b1bc3efa81cd7ce18a0033ab7e69a4c0d4b8c475d08d0da02",
+      "programSha256": "6cfdbc3c62e9d60a554bc50b6dfed3d0d331b6c9674a8696b579372ddf926227"
+    },
+    {
+      "lecture": 5,
+      "candidateId": "fd39fb1ba4241349c92e5698",
+      "programSha256": "637f5b77275c8ec0b7a44f3a3637f00cd49807d29646511aad66dc036ae6f66f"
+    }
+  ]
+}

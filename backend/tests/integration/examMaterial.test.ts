@@ -186,7 +186,9 @@ describe("independent exam material archives", () => {
     const attempt = (await request(s.app).post(`${s.path}/${group.id}/attempts`).set("Cookie", s.cookie).send({ mode: "challenge" }).expect(201)).body.data;
     const bundle = `${s.path}/${group.id}/attempts/${attempt.id}`;
     expect((await request(s.app).get(bundle).set("Cookie", s.cookie).expect(200)).body.data).not.toHaveProperty("knowledgeGaps");
-    const wrong = (await pool.query("select o.id,o.question_id from question_options o join quiz_questions qq on qq.question_id=o.question_id where qq.quiz_id=$1 and not o.is_correct limit 1", [group.quizId])).rows[0];
+    // Exercise decision feedback, not an arbitrary false T/F option selected
+    // by the database's physical row order (which differs by Postgres version).
+    const wrong = (await pool.query("select o.id,o.question_id from question_options o join quiz_questions qq on qq.question_id=o.question_id join questions q on q.id=o.question_id where qq.quiz_id=$1 and q.question_type='multiple_choice' and q.rubric->'assessment' is not null and not o.is_correct order by qq.order_index,o.order_index limit 1", [group.quizId])).rows[0];
     await request(s.app).post(`/api/v1/attempts/${attempt.id}/answers`).set("Cookie", s.cookie).send({ questionId: wrong.question_id, selectedOptionId: wrong.id }).expect(200);
     expect((await request(s.app).get(bundle).set("Cookie", s.cookie).expect(200)).body.data).not.toHaveProperty("knowledgeGaps");
     await request(s.app).post(`/api/v1/attempts/${attempt.id}/submit`).set("Cookie", s.cookie).expect(200);

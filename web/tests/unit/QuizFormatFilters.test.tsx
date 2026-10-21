@@ -16,6 +16,24 @@ const questions: QuestionForAttempt[] = [
 ];
 beforeEach(()=>sessionStorage.clear());
 describe('explicit six-format classification',()=>{
+ it('combines very-hard and format filters, retains the draft level and shows its Bloom label without a model answer',()=>{
+  const advanced:QuestionForAttempt={...questions[5]!,id:'advanced',difficulty:'very_hard',bloom:'evaluate',prompt:'قيّم خطة الابتكار وفق أطر المحاضرة'};
+  const view=render(<QuizAttemptRunner quiz={quiz} questions={[...questions,advanced]} attemptId="advanced-level"/>);
+  const levels=screen.getByRole('group',{name:'تصفية حسب الصعوبة'});
+  fireEvent.click(within(levels).getByRole('button',{name:'صعب جدًا'}));
+  expect(screen.getByRole('heading',{name:advanced.prompt})).toBeInTheDocument();
+  expect(screen.getByText('التقييم')).toBeInTheDocument();
+  expect(screen.getByText('عدد الأسئلة: 1')).toBeInTheDocument();
+  const formats=screen.getByRole('group',{name:'تصفية حسب نوع السؤال'});
+  fireEvent.click(within(formats).getByRole('button',{name:'سيناريو قصير (2)'}));
+  fireEvent.change(screen.getByRole('textbox'),{target:{value:'إجابة تحليلية محفوظة'}});
+  expect(screen.queryByText(/معايير الإجابة النموذجية/)).not.toBeInTheDocument();
+  view.unmount();
+  render(<QuizAttemptRunner quiz={quiz} questions={[...questions,advanced]} attemptId="advanced-level"/>);
+  expect(screen.getByRole('heading',{name:advanced.prompt})).toBeInTheDocument();
+  expect(screen.getByRole('textbox')).toHaveValue('إجابة تحليلية محفوظة');
+  expect(within(screen.getByRole('group',{name:'تصفية حسب الصعوبة'})).getByRole('button',{name:'صعب جدًا'})).toHaveAttribute('aria-pressed','true');
+ });
  it('classifies objective questions, essays and short scenarios separately without exposing models',()=>{
   render(<QuizAttemptRunner quiz={quiz} questions={questions} attemptId="formats"/>);
   const filters=screen.getByRole('group',{name:'تصفية حسب نوع السؤال'});

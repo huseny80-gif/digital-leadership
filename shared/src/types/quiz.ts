@@ -14,6 +14,8 @@ export type QuestionType =
   | "order"
   | "open";
 export type QuizAttemptStatus = "in_progress" | "submitted" | "graded";
+export type QuestionDifficulty = "easy" | "medium" | "hard" | "very_hard";
+export type QuestionBloom = "remember" | "understand" | "apply" | "analyze" | "evaluate" | "create";
 
 export interface Quiz {
   id: string;
@@ -64,7 +66,9 @@ export interface QuestionForAttempt {
    * server-side. Null for every other type. */
   orderItems: OrderItemForAttempt[] | null;
   /** Presentation metadata only; never includes an explanation or answer key. */
-  difficulty?: "easy" | "medium" | "hard";
+  difficulty?: QuestionDifficulty;
+  /** Editorial cognitive classification only, without private model answers. */
+  bloom?: QuestionBloom;
   lectureId?: string;
   lectureNumber?: number;
   lectureTitle?: string;

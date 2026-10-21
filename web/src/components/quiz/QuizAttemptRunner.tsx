@@ -11,7 +11,8 @@ import { notifyLearningProgress } from "@/lib/learning";
 import { FloatingPdfButton } from "@/components/printing/FloatingPdfButton";
 import { questionPrintDocument } from "@/components/printing/printDocuments";
 
-const levels = [{ id: "all", label: "الكل" }, { id: "easy", label: "سهل" }, { id: "medium", label: "متوسط" }, { id: "hard", label: "صعب" }];
+const levels = [{ id: "all", label: "الكل" }, { id: "easy", label: "سهل" }, { id: "medium", label: "متوسط" }, { id: "hard", label: "صعب" }, { id: "very_hard", label: "صعب جدًا" }];
+const bloomLabels = { remember: "التذكر", understand: "الفهم", apply: "التطبيق", analyze: "التحليل", evaluate: "التقييم", create: "الإبداع" };
 const letters = ["أ", "ب", "ج", "د", "هـ", "و"];
 
 function toInitialAnswers(initialAnswers: AttemptAnswer[]): Record<string, AnswerState> {
@@ -332,6 +333,7 @@ export function QuizAttemptRunner({
             <span className="qnum">سؤال {currentIndex + 1}/{filteredQuestions.length}</span>
             <span className={`badge badge-${question.difficulty ?? "medium"}`}>{levels.find(level => level.id === (question.difficulty ?? "medium"))?.label}</span>
             <span className="badge badge-type" title={question.kind}>{assessmentFormatLabel(question)}</span>
+            {question.bloom ? <span className="badge badge-type" title="تصنيف معرفي تحريري وفق هرم بلوم">{bloomLabels[question.bloom]}</span> : null}
             <h2 id={`prompt-${question.id}`}>{question.prompt}</h2>
           </div>
           <div aria-labelledby={`prompt-${question.id}`}>

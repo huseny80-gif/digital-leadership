@@ -13,6 +13,7 @@ import { hasBrokenSourceEncoding } from "../contentAutomation/sourceTextQuality.
 import { compileExamSummary, lectureSelectionLabel, studyOnlyExamSummary } from "./summary.js";
 import { LectureSourceFiles } from "./lectureSourceFiles.js";
 import { assertSourceBoundSummary, groundedQuestionCandidates, validGroundedQuestion, prioritizeGroundedCandidates, groundingVersion, type GroundedQuestion } from "./sourceGrounding.js";
+import { assertCompleteInnovationBank, hasReviewedInnovationSource } from "./reviewedInnovationAssessment.js";
 import { instructorDebriefGuide, knowledgeGapReport, storedSourceReferences, storedAnalyticalAssessment } from "./learningAnalysis.js";
 import { analyticalPolicy } from "./caseAssessment.js";
 import { examGroupVisible } from "./visibility.js";
@@ -274,14 +275,19 @@ export class ExamMaterialService {
     for (const source of fileSources) {
       const candidates = groundedQuestionCandidates(source.paragraphs);
       if (!candidates.every(question => validGroundedQuestion(question, source.paragraphs))) throw new ValidationError("تعذر إثبات مناسبة بدائل التقييم للمصدر. لم يُنشر الاختبار.");
-      const prioritized = await prioritizeGroundedCandidates(candidates, source.paragraphs);
+      assertCompleteInnovationBank(source.paragraphs, candidates);
+      const reviewedBank = hasReviewedInnovationSource(source.paragraphs);
+      const prioritized = reviewedBank ? candidates : await prioritizeGroundedCandidates(candidates, source.paragraphs);
       // Keep format balance while ensuring explicitly reviewed comparisons
       // reach the shortened paper instead of remaining at the bank's tail.
       const selectedOrder = [...prioritized].sort((a, b) => Number(/^مقارنة\s*[:：]/u.test(b.assessment?.criterion ?? ""))
         - Number(/^مقارنة\s*[:：]/u.test(a.assessment?.criterion ?? "")));
-      const chosen = balancedQuestions(selectedOrder.map(question => generatedSource(question, source.lecture.id)), perLecture);
+      const chosen = reviewedBank
+        ? candidates.map(question => generatedSource(question, source.lecture.id))
+        : balancedQuestions(selectedOrder.map(question => generatedSource(question, source.lecture.id)), perLecture);
       if (!chosen.length) throw new ValidationError(`لا تتوفر في ملف «${source.lecture.title}» أدلة مقروءة كافية لإنشاء تقييم موثّق. أضف نسخة واضحة من المحاضرة وأعد التوليد.`);
       questions.push(...chosen);
+      if (questions.length > 500) throw new ValidationError("تجاوزت المجموعة ٥٠٠ سؤال. قسّم المحاضرات إلى مجموعات أصغر.");
       const section = sections.find(section => section.id === source.lecture.id)!;
       guideSources.push({ lecture: { id: section.id, title: section.title, number: section.number }, paragraphs: source.paragraphs, candidates: prioritized });
     }

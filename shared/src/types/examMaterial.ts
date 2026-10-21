@@ -1,5 +1,5 @@
 import type { Lecture, Subject } from "./content.js";
-import type { Quiz, QuizAttempt, QuestionForAttempt, AttemptAnswer, SubmitAnswerAck, QuizAttemptResult } from "./quiz.js";
+import type { Quiz, QuizAttempt, QuestionForAttempt, QuestionDifficulty, QuestionBloom, AttemptAnswer, SubmitAnswerAck, QuizAttemptResult } from "./quiz.js";
 
 export interface ExamLectureSnapshot { id: string; title: string; number: number }
 export interface ExamSummaryTopic {
@@ -106,6 +106,8 @@ export interface AcademicExamQuestion {
   prompt: string;
   instructions: string;
   points: number;
+  difficulty?: QuestionDifficulty;
+  bloom?: QuestionBloom;
   options: string[];
   matchItems?: { left: string[]; right: string[] };
   orderItems?: string[];

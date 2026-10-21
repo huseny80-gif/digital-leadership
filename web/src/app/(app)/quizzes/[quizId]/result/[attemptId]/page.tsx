@@ -39,7 +39,7 @@ export default async function QuizResultPage({ params, searchParams }: {
     </section>;
     return <section><QuizNavigation /><ErrorState message={toSafeErrorMessage(error, "this result").message} retryHref={`/quizzes/${quizId}/result/${attemptId}`} /></section>;
   }
-  const difficulty = ["easy", "medium", "hard"].includes(filters?.difficulty ?? "") ? filters!.difficulty! : "all";
+  const difficulty = ["easy", "medium", "hard", "very_hard"].includes(filters?.difficulty ?? "") ? filters!.difficulty! : "all";
   const lecture = questions.some(question => question.lectureId === filters?.lecture) && filters?.lecture ? filters.lecture : "all";
   const format = assessmentFormats.some(format => format.id === filters?.format) ? filters!.format! : "all";
   return <section>

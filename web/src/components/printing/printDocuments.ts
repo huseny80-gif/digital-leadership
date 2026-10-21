@@ -2,6 +2,7 @@ import type { ExamMaterialSummary, LibraryEntry, QuestionForAttempt, StudyPrintB
 import { assessmentFormatLabel, examSummaryPresentation, examTopicSourceLabel, libraryEntriesPresentation, uniqueStudyText } from "@digital-leadership/shared";
 
 const letters = ["أ", "ب", "ج", "د", "هـ", "و"];
+const difficultyLabels = { easy: "سهل", medium: "متوسط", hard: "صعب", very_hard: "صعب جدًا" };
 function add(blocks: StudyPrintBlock[], text: string, heading = false) {
   let remaining = text.trim();
   // Keep long chapters within the transport schema without dropping their tail.
@@ -20,6 +21,7 @@ export function questionPrintDocument(title: string, questions: QuestionForAttem
   const blocks: StudyPrintBlock[] = [];
   questions.forEach((question, index) => {
     add(blocks, `السؤال ${index + 1} — ${assessmentFormatLabel(question)}`, true);
+    if (question.difficulty) add(blocks, `المستوى: ${difficultyLabels[question.difficulty]}`);
     if (question.lectureTitle) add(blocks, question.lectureTitle);
     add(blocks, question.prompt);
     question.options?.forEach((option, optionIndex) => add(blocks, `${letters[optionIndex] ?? optionIndex + 1}) ${option.optionText}`));

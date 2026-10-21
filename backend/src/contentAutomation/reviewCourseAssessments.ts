@@ -10,6 +10,7 @@ import { LectureSourceFiles } from "../examMaterials/lectureSourceFiles.js";
 import { groundingVersion, groundedQuestionCandidates, validGroundedQuestion, type GroundedQuestion } from "../examMaterials/sourceGrounding.js";
 import { generatedSourcePolicy } from "./questionGeneration.js";
 import { privateMatchingIds } from "../assessments/matchingIdentity.js";
+import { assessmentRevisionForSubject, assertCompleteInnovationBank, innovationAssessmentSubjectId } from "../examMaterials/reviewedInnovationAssessment.js";
 
 /** Changes whenever reviewed cases are added or edited (e.g. a new lecture),
  * so platform-managed course editions are rebuilt once for that revision. */
@@ -45,7 +46,8 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
     if (!exists.rowCount) continue;
     const subject = await content.getSubjectOrThrow(subjectId, false);
     const auditSql = "select id from audit_logs where action='course_assessments.source_reviewed' and entity_id=$1 and metadata->>'policy'=$2 and ($3::text is null or metadata->>'sourceRevision'=$3)";
-    const auditParams = [subjectId, courseAssessmentReviewPolicy, sourceRevision ?? null];
+    const revision = assessmentRevisionForSubject(subjectId, sourceRevision);
+    const auditParams = [subjectId, courseAssessmentReviewPolicy, revision ?? null];
     const currentAudit = await pool.query(auditSql, auditParams);
     if (currentAudit.rowCount && !await needsReview(pool, subjectId)) { courses.push(await courseAssessmentAudit(pool, subjectId, false)); continue; }
     const catalog = await library.get(subjectId, false), lectures: Lecture[] = [];
@@ -62,12 +64,18 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
         // still validates every selected attachment through the default reader.
         const { sources, links } = await reader.read(subjectId, [lecture], catalog, "catalog");
         const paragraphs = sources[0]!.paragraphs;
-        const questions = groundedQuestionCandidates(paragraphs).filter(question => validGroundedQuestion(question, paragraphs)).sort((a, b) => a.candidateId.localeCompare(b.candidateId));
+        const questions = groundedQuestionCandidates(paragraphs).filter(question => validGroundedQuestion(question, paragraphs))
+          .sort((a, b) => (a.classification?.number ?? 0) - (b.classification?.number ?? 0) || a.candidateId.localeCompare(b.candidateId));
+        assertCompleteInnovationBank(paragraphs, questions);
         plans.push({ lecture, questions, links });
         if (!questions.length) unavailableLectures.push({ number: lecture.orderIndex, reason: "no_verified_assessment" });
       } catch { unavailableLectures.push({ number: lecture.orderIndex, reason: "source_unavailable" }); }
     }
     // A failed read never supplies fabricated replacement questions.
+    if (subjectId === innovationAssessmentSubjectId && unavailableLectures.length) {
+      courses.push({ subjectId, changed: false, unavailableLectures, reason: "innovation_assessment_evidence_incomplete" });
+      continue;
+    }
     if (!plans.some(plan => plan.questions.length)) { courses.push({ subjectId, changed: false, unavailableLectures, reason: "no_verified_assessment" }); continue; }
     const client = await pool.connect();
     let changed = false;
@@ -86,7 +94,7 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
       }
       const quizzes = (await client.query<{ id: string; lecture_id: string | null }>(`select z.id,z.lecture_id from quizzes z where z.purpose='course' and z.subject_id=$1 and z.superseded_by is null and z.deleted_at is null and
         (${unreviewedMembership} or ($4::boolean and (${managedMembership}))) order by z.id for update`,
-      [subjectId, nativeQuestionIds(subjectId), generatedSourcePolicy, Boolean(sourceRevision && !done.rowCount), courseAssessmentReviewPolicy])).rows;
+      [subjectId, nativeQuestionIds(subjectId), generatedSourcePolicy, Boolean(revision && !done.rowCount), courseAssessmentReviewPolicy])).rows;
       const bankId = finquizRecordId(`${courseAssessmentReviewPolicy}:bank:${subjectId}`);
       await client.query("insert into question_banks(id,subject_id,title,description,created_by) values($1,$2,$3,$4,$5) on conflict(id) do nothing", [bankId, subjectId, `تقييم موثق: ${subject.title}`, courseAssessmentReviewPolicy, subject.createdBy]);
       const ids = new Map<string, string[]>();
@@ -134,7 +142,7 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
         for (const [order, questionId] of questionIds.entries()) await client.query("insert into quiz_questions(quiz_id,question_id,order_index) values($1,$2,$3)", [id, questionId, order]);
         changed = true;
       }
-      await client.query("insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'course_assessments.source_reviewed','subject',$2,$3::jsonb)", [subject.createdBy, subjectId, JSON.stringify({ policy: courseAssessmentReviewPolicy, ...(sourceRevision ? { sourceRevision } : {}), verifiedLectures: plans.length, questions: plans.reduce((n, plan) => n + plan.questions.length, 0), unavailableLectures })]);
+      await client.query("insert into audit_logs(actor_user_id,action,entity_type,entity_id,metadata) values($1,'course_assessments.source_reviewed','subject',$2,$3::jsonb)", [subject.createdBy, subjectId, JSON.stringify({ policy: courseAssessmentReviewPolicy, ...(revision ? { sourceRevision: revision } : {}), verifiedLectures: plans.length, questions: plans.reduce((n, plan) => n + plan.questions.length, 0), unavailableLectures })]);
       await client.query("commit");
     } catch (error) { await client.query("rollback"); throw error; }
     finally { client.release(); }
@@ -145,13 +153,14 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
 
 /** Safe production proof: counts and public quiz IDs only, never keys/grades. */
 export async function courseAssessmentAudit(pool: Pool, subjectId: string, changed: boolean) {
-  const rows = (await pool.query<{ id: string; lecture_id: string | null; prompts: string[]; formats: Array<{ questionType: QuestionType; kind: string | null }>; count: number; referenced: number }>(`select z.id,z.lecture_id,count(q.id)::int as count,
+  const rows = (await pool.query<{ id: string; lecture_id: string | null; prompts: string[]; formats: Array<{ questionType: QuestionType; kind: string | null; difficulty: string | null }>; count: number; referenced: number }>(`select z.id,z.lecture_id,count(q.id)::int as count,
     coalesce(jsonb_agg(q.prompt) filter(where q.id is not null),'[]'::jsonb) as prompts,
-    coalesce(jsonb_agg(jsonb_build_object('questionType',q.question_type,'kind',q.kind)) filter(where q.id is not null),'[]'::jsonb) as formats,
+    coalesce(jsonb_agg(jsonb_build_object('questionType',q.question_type,'kind',q.kind,'difficulty',q.difficulty)) filter(where q.id is not null),'[]'::jsonb) as formats,
     count(q.id) filter(where case when jsonb_typeof(q.rubric->'sourceReferences')='array' then jsonb_array_length(q.rubric->'sourceReferences')>0 else false end)::int as referenced
     from quizzes z left join quiz_questions qq on qq.quiz_id=z.id left join questions q on q.id=qq.question_id and q.deleted_at is null
     where z.subject_id=$1 and z.purpose='course' and z.superseded_by is null and z.status='published' and z.deleted_at is null group by z.id order by z.lecture_id nulls first,z.id`, [subjectId])).rows;
   return { subjectId, changed, quizzes: rows.map(row => ({ id: row.id, lectureId: row.lecture_id, questions: row.count, referenced: row.referenced,
     formats: row.formats.reduce<Record<string, number>>((counts, question) => { const format = assessmentFormat(question); counts[format] = (counts[format] ?? 0) + 1; return counts; }, {}),
+    difficulties: row.formats.reduce<Record<string, number>>((counts, question) => { if (question.difficulty) counts[question.difficulty] = (counts[question.difficulty] ?? 0) + 1; return counts; }, {}),
     weakFormatQuestions: row.prompts.filter(prompt => weakFormat.test(prompt)).length })) };
 }

@@ -63,7 +63,7 @@ export function buildAcademicExam(input: {
   questions: AcademicExamSourceQuestion[];
 }, includeAnswerKey: boolean): AcademicExamPaper {
   function fail(): never { throw new ValidationError("لا تتوفر أدلة مكتملة لإعداد ورقة امتحانية موثّقة لهذه المراجعة. أعد توليد المجموعة من ملفات المحاضرات الأصلية."); }
-  if (input.grounding?.policy !== groundingVersion || !input.questions.length || input.questions.length > 200
+  if (input.grounding?.policy !== groundingVersion || !input.questions.length || input.questions.length > 500
     || new Set(input.questions.map(question => question.id)).size !== input.questions.length) fail();
   if (input.grounding.questionPolicy === diverseAssessmentPolicy) return buildDiversePaper(input, includeAnswerKey, fail);
   const questions: AcademicExamQuestion[] = [], answers: AcademicExamAnswer[] = [];
@@ -148,7 +148,7 @@ function buildDiversePaper(input: Parameters<typeof buildAcademicExam>[0], inclu
     questions.push({ id: question.id, type, lectureId: lecture.id, lectureTitle: lecture.title, prompt: question.prompt,
       instructions: type === "short_answer" ? "قدّم إجابة تحليلية منظّمة تستوفي عناصر السؤال، مستندًا إلى محتوى المحاضرة وحده."
         : type === "case_study" ? "حلّل الموقف في إجابة موجزة، وحدّد الإجراء المناسب وعلّله وفق المحاضرة دون إضافة افتراضات." : instructions[type],
-      points, options: program.options ?? [],
+      points, difficulty: program.difficulty, ...(program.classification ? { bloom: program.classification.bloom } : {}), options: program.options ?? [],
       ...(program.pairs ? { matchItems: { left: program.pairs.map(pair => pair.left), right: shuffled(program.pairs.map(pair => pair.right)) } } : {}),
       ...(program.items ? { orderItems: shuffled(program.items) } : {}),
       sources: references.map(({ excerpt: _excerpt, ...location }) => location) });
