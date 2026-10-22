@@ -40,7 +40,7 @@ import { auditCyberComparisonQuestions } from "./examMaterials/examCaseRevisionA
 import { reprocessCyberSecondLecture } from "./contentAutomation/reprocessCyberSecondLecture.js";
 import { probePublishedSummaryVisuals } from "./mindMaps/summaryVisualService.js";
 
-// innovation-assessment-bank: reviewed-innovation-curriculum-v1 (220 questions)
+// post-outage-redeploy: reviewed-innovation-curriculum-v1 (220 questions)
 initMonitoring();
 
 const env = getEnv();
@@ -94,7 +94,6 @@ async function refreshPublishedContent() {
     { name: "pdf_inventory", run: async () => { logger.info(await probePublishedPdfInventory(getPool()), "published_pdf_inventory_verified"); } },
     { name: "summary_visuals", run: async () => { logger.info(await probePublishedSummaryVisuals(getPool()), "published_summary_visuals_verified"); } },
   ], (stage, error) => {
-    // Log a safe machine reason, never SQL values, private file text or tokens.
     const reason = error instanceof Error && /^[a-z0-9_]{1,100}$/u.test(error.message) ? error.message : undefined;
     logger.error({ stage, name: error instanceof Error ? error.name : "UnknownError", reason }, "published_content_review_failed");
   });
