@@ -40,6 +40,7 @@ import { auditCyberComparisonQuestions } from "./examMaterials/examCaseRevisionA
 import { reprocessCyberSecondLecture } from "./contentAutomation/reprocessCyberSecondLecture.js";
 import { probePublishedSummaryVisuals } from "./mindMaps/summaryVisualService.js";
 
+// innovation-assessment-bank: reviewed-innovation-curriculum-v1 (220 questions)
 initMonitoring();
 
 const env = getEnv();
