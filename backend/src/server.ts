@@ -40,7 +40,7 @@ import { auditCyberComparisonQuestions } from "./examMaterials/examCaseRevisionA
 import { reprocessCyberSecondLecture } from "./contentAutomation/reprocessCyberSecondLecture.js";
 import { probePublishedSummaryVisuals } from "./mindMaps/summaryVisualService.js";
 
-// post-outage-redeploy: reviewed-innovation-curriculum-v1 (220 questions)
+// force-redeploy-2: reviewed-innovation-curriculum-v1 (220 questions)
 initMonitoring();
 
 const env = getEnv();
