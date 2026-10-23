@@ -29,7 +29,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.json({ error: { code: "forbidden", message: "Cross-origin changes are not allowed." } }, { status: 403, headers: { "Cache-Control": "no-store" } });
   }
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const csp = browserCsp(nonce, process.env.NODE_ENV === "production");
+  const csp = browserCsp(nonce, process.env.NODE_ENV === "production", pathname);
   const response = NextResponse.next();
   const finish = (redirect?: NextResponse) => {
     // Supabase may renew the request cookies during getUser(). Forward their
