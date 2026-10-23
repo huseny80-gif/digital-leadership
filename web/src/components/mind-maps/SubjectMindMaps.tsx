@@ -32,7 +32,7 @@ export function SubjectMindMaps({ index, document, selectedId, loadError }: {
 export function SummaryVisualViewer({ document }: { document: SummaryVisualDocument }) {
   const id = useId(), tabs = useRef<Array<HTMLButtonElement | null>>([]);
   const [view, setView] = useState<View>("mind"), [query, setQuery] = useState(""), [size, setSize] = useState(100);
-  const [manualCollapsed, setCollapsed] = useState<Set<string> | null>(null), [selectedId, setSelectedId] = useState("");
+  const [replay, setReplay] = useState(0), [manualCollapsed, setCollapsed] = useState<Set<string> | null>(null), [selectedId, setSelectedId] = useState("");
   const [sectionId, setSectionId] = useState(document.sections[0]?.id ?? ""), [sequenceId, setSequenceId] = useState(document.sequences[0]?.id ?? "");
   const compact = useSyncExternalStore(subscribeCompact, isCompact, serverCompact);
   const collapsed = manualCollapsed ?? new Set(compact || document.sections.length > 4 ? document.sections.map(section => section.id) : []);
@@ -53,9 +53,10 @@ export function SummaryVisualViewer({ document }: { document: SummaryVisualDocum
           <div className={styles.toolbar}><label className={styles.search}><PlatformIcon name="search" /><input type="search" aria-label="البحث في مفاهيم الخريطة" placeholder="ابحث عن مفهوم أو شرح…" value={query} onChange={event => setQuery(event.target.value)} /></label><div className={styles.tools}>
             <button type="button" className={styles.quietButton} onClick={() => setCollapsed(new Set(collapsed.size === document.sections.length ? [] : document.sections.map(section => section.id)))}>{collapsed.size === document.sections.length ? "توسيع المحاور" : "طيّ المحاور"}</button>
             <div className={styles.sizing} aria-label="تكبير الخريطة وتصغيرها"><button type="button" aria-label="تصغير الخريطة" disabled={size <= 60} onClick={() => setSize(size - 10)}>−</button><output aria-label="نسبة التكبير">{size.toLocaleString("ar")}%</output><button type="button" aria-label="تكبير الخريطة" disabled={size >= 150} onClick={() => setSize(size + 10)}>+</button></div>
+            <button type="button" className={styles.quietButton} onClick={() => setReplay(value => value + 1)}>إعادة الرسم</button>
             <button type="button" className={styles.quietButton} onClick={reset}>إعادة الضبط</button>
           </div></div><p className={styles.caption}>المحاضرة ← المحاور ← المفاهيم. افتح المحور أو اطوِه، ثم اختر مفهومًا لعرض شرحه ومراجعه.</p>
-          <SummaryMindTree document={document} query={query} size={size} compact={compact} collapsed={collapsed} onToggle={id => { const next = new Set(collapsed); if (next.has(id)) next.delete(id); else next.add(id); setCollapsed(next); }} selectedId={selectedId} onSelect={setSelectedId} />
+          <SummaryMindTree document={document} query={query} size={size} compact={compact} replay={replay} collapsed={collapsed} onToggle={id => { const next = new Set(collapsed); if (next.has(id)) next.delete(id); else next.add(id); setCollapsed(next); }} selectedId={selectedId} onSelect={setSelectedId} />
         </> : tab.id === "concepts" ? <SummaryConceptMap document={document} sectionId={sectionId} onSection={id => { setSectionId(id); setSelectedId(""); }} selectedId={selectedId} onSelect={setSelectedId} /> : <SummarySequence document={document} sequenceId={sequenceId} onSequence={id => { setSequenceId(id); setSelectedId(""); }} selectedId={selectedId} onSelect={setSelectedId} />)}
       </div>)}
       <div className={styles.canvasFooter}><span>روابط بنيوية من الملخص المعتمد</span><span>{view === "mind" ? "اختَر مفهومًا لعرض شرحه ومراجعه" : selectedId ? <a href={`#${id}-detail`}>قراءة الشرح والمرجع ↓</a> : "اختَر مفهومًا لعرض شرحه أدناه"}</span></div>

@@ -56,9 +56,15 @@
 .mmDragging { cursor:grabbing; }
 .mmWorld { position:absolute; top:0; left:0; transform-origin:0 0; isolation:isolate; }
 .shell .mmLinks { position:absolute; inset:0; width:auto; height:auto; overflow:visible; pointer-events:none; z-index:-1; }
-.mmLink,.mmLinkOn { fill:none; stroke:rgba(120,220,220,.3); stroke-width:1.6; transition:stroke .2s; }
+.mmLink,.mmLinkOn { stroke-dasharray:1; stroke-dashoffset:0; fill:none; stroke:rgba(120,220,220,.3); stroke-width:1.6; transition:stroke .2s; }
 .mmLinkOn { stroke:var(--mm-gold); stroke-width:2.2; filter:drop-shadow(0 0 4px var(--mm-gold-glow)); }
 .mmAt { position:absolute; display:flex; }
+.shell .mmFrame { position:absolute; inset:0; width:auto; height:auto; overflow:visible; pointer-events:none; z-index:1; }
+.mmFrame rect { fill:none; stroke:var(--mm-gold); stroke-width:1.6; stroke-dasharray:1; opacity:0; filter:drop-shadow(0 0 4px var(--mm-gold-glow)); }
+.mmLabel [data-word] { display:inline-block; }
+.mmPens { position:absolute; inset:0; pointer-events:none; }
+.mmPens>span { position:absolute; top:0; left:0; width:10px; height:10px; margin:-5px 0 0 -5px; border-radius:50%; background:#fff3cf; offset-rotate:0deg; opacity:0;
+  box-shadow:0 0 6px 2px var(--mm-gold),0 0 18px 6px var(--mm-gold-glow); }
 .mmRoot,.mmSection,.mmPoint { display:flex; align-items:center; gap:.6em; width:100%; text-align:start; padding:.55em .9em; border:1px solid var(--mm-glass-edge);
   border-radius:16px; background:var(--mm-glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); color:var(--mm-ink); line-height:1.5; transition:opacity .2s,border-color .2s,box-shadow .2s,background .2s; }
 .mmLabel { flex:1; min-width:0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
