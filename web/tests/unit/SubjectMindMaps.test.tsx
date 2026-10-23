@@ -28,12 +28,11 @@ describe("source-bound subject mind maps", () => {
     expect(screen.getAllByRole("button", { pressed: false })).toHaveLength(17);
     const point = allPoints[0]!;
     fireEvent.click(screen.getByRole("button", { name: point.label }));
-    const detail = screen.getByRole("region", { name: "شرح المفهوم ومرجعه" });
-    expect(within(detail).getByText(point.text)).toBeInTheDocument();
-    fireEvent.click(within(detail).getByText(/اقتباسات من المصدر/));
-    expect(within(detail).getByText(point.evidence[0]!.quote)).toBeInTheDocument();
-    expect(within(detail).getByText(/ليست أرقام صفحات PDF/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "فتح المحاضرة الأصلية" })).toHaveAttribute("href", "/subjects/subject/lectures/lecture-1");
+    const dialog = screen.getByRole("dialog", { name: point.label });
+    expect(within(dialog).getByText(point.text)).toBeInTheDocument();
+    expect(within(dialog).getByText(point.evidence[0]!.quote)).toBeInTheDocument();
+    expect(within(dialog).getByText(/ليست أرقام صفحات PDF/)).toBeInTheDocument();
+    expect(within(dialog).getByRole("link", { name: /فتح المحاضرة الأصلية/ })).toHaveAttribute("href", "/subjects/subject/lectures/lecture-1");
   });
   it("filters Arabic concepts regardless of vocalization, supports collapse, text size limits and reset", () => {
     mount();
@@ -43,8 +42,8 @@ describe("source-bound subject mind maps", () => {
     expect(screen.getByRole("button", { name: "السرية (Confidentiality)" })).toBeVisible();
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "كلمة غير موجودة إطلاقًا" } });
     expect(screen.getByText("لا توجد مفاهيم مطابقة")).toBeInTheDocument();
-    for (let i = 0; i < 3; i++) fireEvent.click(screen.getByRole("button", { name: "تكبير النص" }));
-    expect(screen.getByRole("button", { name: "تكبير النص" })).toBeDisabled();
+    for (let i = 0; i < 5; i++) fireEvent.click(screen.getByRole("button", { name: "تكبير الخريطة" }));
+    expect(screen.getByRole("button", { name: "تكبير الخريطة" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "إعادة الضبط" }));
     expect(screen.getByRole("searchbox")).toHaveValue(""); expect(screen.getAllByRole("button", { pressed: false })).toHaveLength(17);
   });
@@ -82,10 +81,12 @@ describe("source-bound subject mind maps", () => {
   });
   it("loads the selected lecture through the existing authenticated page, and resets stale selection on revision changes", () => {
     const { rerender } = mount(); fireEvent.click(screen.getByRole("button", { name: allPoints[0]!.label }));
+    expect(screen.getByRole("dialog", { name: allPoints[0]!.label })).toBeInTheDocument();
     fireEvent.change(screen.getByRole("combobox", { name: "اختيار المحاضرة" }), { target: { value: "lecture-2" } });
     expect(navigation.push).toHaveBeenCalledWith("/subjects/subject/mind-maps?lecture=lecture-2", { scroll: false });
     rerender(<SubjectMindMaps index={index} document={{ ...doc, lecture: { ...doc.lecture, id: "lecture-2" }, source: { ...doc.source, summaryRevision: "reviewed-2" } }} loadError={false} />);
-    expect(within(screen.getByRole("region", { name: "شرح المفهوم ومرجعه" })).getByText(/اختَر عقدة/)).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: allPoints[0]!.label })).toHaveAttribute("aria-pressed", "false");
   });
   it("offers a retry and another lecture when source verification fails, without displaying an old map", () => {
     render(<SubjectMindMaps index={index} selectedId="lecture-2" loadError />);
@@ -96,5 +97,27 @@ describe("source-bound subject mind maps", () => {
     const altered = structuredClone(doc); altered.sections[0]!.points[0]!.text = '<img src="x" onerror="alert(1)">';
     const { container } = mount(altered); fireEvent.click(screen.getByRole("button", { name: allPoints[0]!.label }));
     expect(screen.getByText('<img src="x" onerror="alert(1)">')).toBeInTheDocument(); expect(container.querySelector("img")).toBeNull();
+  });
+  it("opens concepts in a glass dialog that steps through the section and closes back to the map", () => {
+    mount(); const first = sections[0]!.points[0]!, second = sections[0]!.points[1]!;
+    fireEvent.click(screen.getByRole("button", { name: first.label }));
+    let dialog = screen.getByRole("dialog", { name: first.label });
+    expect(within(dialog).getByRole("button", { name: "السابق" })).toBeDisabled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "التالي" }));
+    dialog = screen.getByRole("dialog", { name: second.label });
+    expect(within(dialog).getByText(second.text)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "إغلاق" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: second.label })).toHaveAttribute("aria-pressed", "false");
+  });
+  it("folds a single section with its concept count and moves between nodes with RTL arrow keys", () => {
+    mount(); const section = sections[0]!;
+    const head = screen.getByRole("button", { name: new RegExp(section.title) });
+    fireEvent.click(head); expect(head).toHaveAttribute("aria-expanded", "false");
+    expect(head).toHaveTextContent(`+ ${section.points.length.toLocaleString("ar")}`);
+    fireEvent.keyDown(head, { key: "ArrowLeft" }); expect(head).toHaveAttribute("aria-expanded", "true");
+    head.focus(); fireEvent.keyDown(head, { key: "ArrowLeft" });
+    expect(screen.getByRole("button", { name: section.points[0]!.label })).toHaveFocus();
+    fireEvent.keyDown(document.activeElement!, { key: "ArrowRight" }); expect(head).toHaveFocus();
   });
 });
