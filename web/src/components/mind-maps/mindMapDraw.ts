@@ -7,8 +7,11 @@
  */
 export interface DrawTree { id: string; children: DrawTree[] }
 
-const FRAME = 380, LINK = 520, WORD = 55, FILL = 360, EASE_DRAW = "cubic-bezier(.2,.7,.3,1)";
-const stagger = (depth: number) => (depth === 0 ? 140 : depth === 1 ? 110 : 70);
+/** Pace multiplier: 1.5 slows the whole scene (about 4.5 s) so each stroke can be followed. */
+const PACE = 1.5;
+const ms = (value: number) => value * PACE;
+const FRAME = ms(380), LINK = ms(520), WORD = ms(55), FILL = ms(360), EASE_DRAW = "cubic-bezier(.2,.7,.3,1)";
+const stagger = (depth: number) => ms(depth === 0 ? 140 : depth === 1 ? 110 : 70);
 
 export function drawingDisabled(): boolean {
   return typeof window === "undefined" || typeof Element.prototype.animate !== "function"
@@ -28,19 +31,19 @@ export function drawMindMap(world: HTMLElement, pens: HTMLElement, tree: DrawTre
     if (!box) return;
     if (start >= 0) {
       const frame = box.querySelector("rect"), button = box.querySelector<HTMLElement>("button");
-      if (frame) run(frame, [{ opacity: 1, strokeDashoffset: 1 }, { opacity: 1, strokeDashoffset: 0, offset: .7 }, { opacity: 0, strokeDashoffset: 0 }], { duration: FRAME + 450, delay: start, easing: "ease-out" });
+      if (frame) run(frame, [{ opacity: 1, strokeDashoffset: 1 }, { opacity: 1, strokeDashoffset: 0, offset: .7 }, { opacity: 0, strokeDashoffset: 0 }], { duration: FRAME + ms(450), delay: start, easing: "ease-out" });
       if (button) run(button, [{ opacity: 0 }, { opacity: 1 }], { duration: FILL, delay: start + FRAME * .7, easing: "ease-in-out" });
-      box.querySelectorAll("[data-word]").forEach((word, index) => run(word, [{ opacity: 0, transform: "translateX(8px)" }, { opacity: 1, transform: "none" }], { duration: 350, delay: start + FRAME * .8 + index * WORD, easing: "ease-out" }));
+      box.querySelectorAll("[data-word]").forEach((word, index) => run(word, [{ opacity: 0, transform: "translateX(8px)" }, { opacity: 1, transform: "none" }], { duration: ms(350), delay: start + FRAME * .8 + index * WORD, easing: "ease-out" }));
     }
     const filled = start + FRAME;
     item.children.forEach((child, index) => {
       const begin = filled + index * stagger(depth), path = link(child.id);
       if (path) {
-        run(path, [{ strokeDashoffset: 1, stroke: "#E9C46A" }, { strokeDashoffset: 0, stroke: "#E9C46A", offset: .85 }, { strokeDashoffset: 0 }], { duration: LINK + 300, delay: begin, easing: EASE_DRAW });
+        run(path, [{ strokeDashoffset: 1, stroke: "#E9C46A" }, { strokeDashoffset: 0, stroke: "#E9C46A", offset: .85 }, { strokeDashoffset: 0 }], { duration: LINK + ms(300), delay: begin, easing: EASE_DRAW });
         const pen = window.document.createElement("span");
         pen.dataset.pen = ""; pen.style.offsetPath = `path("${path.getAttribute("d")}")`;
         pens.append(pen);
-        run(pen, [{ offsetDistance: "0%", opacity: 0 }, { offsetDistance: "2%", opacity: 1, offset: .02 }, { offsetDistance: "100%", opacity: 1, offset: .85 }, { offsetDistance: "100%", opacity: 0 }], { duration: LINK + 160, delay: begin, easing: EASE_DRAW, fill: "both" });
+        run(pen, [{ offsetDistance: "0%", opacity: 0 }, { offsetDistance: "2%", opacity: 1, offset: .02 }, { offsetDistance: "100%", opacity: 1, offset: .85 }, { offsetDistance: "100%", opacity: 0 }], { duration: LINK + ms(160), delay: begin, easing: EASE_DRAW, fill: "both" });
       }
       walk(child, begin + LINK, depth + 1);
     });
