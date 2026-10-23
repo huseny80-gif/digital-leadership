@@ -6,6 +6,7 @@ import { SubjectTabs } from "@/components/content/SubjectTabs";
 import { subjectTabs } from "@/components/content/subjectTabs.config";
 import { ExamMaterialWorkspace } from "@/components/exam-material/ExamMaterialWorkspace";
 import { ExamMaterialSections } from "@/components/exam-material/ExamMaterialSections";
+import { StudyModuleEntry } from "@/components/content/StudyModuleEntry";
 
 export default async function ExamMaterialPage({ params, searchParams }: {
   params: Promise<{ subjectId: string }>;
@@ -27,6 +28,7 @@ export default async function ExamMaterialPage({ params, searchParams }: {
     <h1 className="page-heading">المادة الامتحانية</h1>
     <p className="page-subheading">{index.subject.title}</p>
     <SubjectTabs tabs={subjectTabs(subjectId)} activeKey="exam-material" />
+    <StudyModuleEntry subjectId={subjectId} section="comprehensive" />
     <ExamMaterialSections subjectId={subjectId} active="groups" />
     <ExamMaterialWorkspace key={subjectId} initialIndex={index} initialDetail={detail} />
   </section>;

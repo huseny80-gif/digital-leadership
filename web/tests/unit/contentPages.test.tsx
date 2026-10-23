@@ -292,7 +292,7 @@ describe("LectureDetailPage", () => {
     render(await LectureDetailPage({ params: Promise.resolve({ subjectId: "cyber", lectureId: "sixth" }) }));
     expect(screen.getByText("يجب تحديد الأصول والتهديدات وتقدير أثر المخاطر.")).toBeInTheDocument();
     expect(screen.queryByText("تتضمن المعالجة توثيق المسؤوليات ومتابعة فعالية الضوابط.")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "عرض ملخص المحاضرة" })).toHaveAttribute("href", "/subjects/cyber/summaries#summary");
+    expect(screen.getByRole("link", { name: "عرض ملخص المحاضرة" })).toHaveAttribute("href", "/subjects/cyber/library?section=summaries&entry=summary");
     expect(screen.getByText(/رقم المحاضرة: [6٦]/u)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "الرجوع إلى المادة" })).toHaveAttribute("href", "/subjects/cyber");
   });

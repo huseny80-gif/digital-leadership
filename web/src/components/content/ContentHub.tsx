@@ -3,6 +3,7 @@ import type { Assignment, Lecture, LectureItemResponse, Quiz, Subject, SubjectLi
 import { apiGet, apiGetPaginated } from "@/lib/api/client";
 import { EmptyState, ErrorState } from "@/components/ui/States";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
+import { isStudyModuleDocument, studyModulesForSubject } from "./studyModules";
 
 export const contentViews = { lectures: "المحاضرات", summaries: "الملخصات", assignments: "الواجبات والأنشطة", assessments: "الاختبارات", files: "المصادر والملفات", search: "نتائج البحث" } as const;
 export type ContentView = keyof typeof contentViews;
@@ -15,6 +16,10 @@ export async function ContentHub({ subjects, view, query = "" }: { subjects: Sub
   for (let offset = 0; offset < subjects.length; offset += 5) {
     await Promise.all(subjects.slice(offset, offset + 5).map(async (subject) => {
       try {
+        const modules = studyModulesForSubject(subject.id);
+        if (modules && (view === "summaries" || view === "assessments")) {
+          entries.push({ id: `study-module-${view}`, title: view === "summaries" ? "الملخصات والبودكاست القيادي" : "الاختبار الشامل", subjectTitle: subject.title, href: view === "summaries" ? modules.summaries : modules.comprehensive, icon: view === "summaries" ? "document" : "quiz" });
+        }
         const reviewedLectures = new Set<string>();
         if (["summaries", "files", "search"].includes(view)) {
           try {
@@ -69,6 +74,9 @@ export async function ContentHub({ subjects, view, query = "" }: { subjects: Sub
     {view === "files" ? <p><Link href="/subjects/reports" className="button button-primary">إعداد تقرير أكاديمي وتصديره</Link></p> : null}
     {query ? <p className="page-subheading">نتائج البحث عن «{query}»</p> : null}
     {failed ? <ErrorState message="تعذّر تحميل بعض المحتوى. يرجى المحاولة مرة أخرى." retryHref={`/subjects?view=${view}${query ? `&q=${encodeURIComponent(query)}` : ""}`} /> : null}
-    {results.length ? <div className="dl-content-hub">{results.map((entry) => <Link href={entry.href} className="dl-hub-row" key={entry.id}><PlatformIcon name={entry.icon} /><span><strong>{entry.title}</strong><small>{entry.subjectTitle}</small></span></Link>)}</div> : !failed ? <EmptyState title="لا توجد نتائج متاحة" message="سيظهر المحتوى هنا فور نشره." /> : null}
+    {results.length ? <div className="dl-content-hub">{results.map((entry) => {
+      const EntryLink = isStudyModuleDocument(entry.href) ? "a" : Link;
+      return <EntryLink href={entry.href} className="dl-hub-row" key={entry.id}><PlatformIcon name={entry.icon} /><span><strong>{entry.title}</strong><small>{entry.subjectTitle}</small></span></EntryLink>;
+    })}</div> : !failed ? <EmptyState title="لا توجد نتائج متاحة" message="سيظهر المحتوى هنا فور نشره." /> : null}
   </section>;
 }

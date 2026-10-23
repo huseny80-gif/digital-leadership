@@ -5,12 +5,23 @@ import type { Subject } from "@shared/index";
 vi.mock("@/lib/api/client", () => ({ apiGetPaginated: vi.fn(), apiGet: vi.fn() }));
 import { apiGetPaginated, apiGet } from "@/lib/api/client";
 import { ContentHub } from "@/components/content/ContentHub";
+import { INNOVATION_STUDY_SUBJECT_ID } from "@/components/content/studyModules";
 
 const api = vi.mocked(apiGetPaginated);
 const subject = { id: "allowed", title: "التقنية" } as Subject;
 beforeEach(() => { api.mockReset(); vi.mocked(apiGet).mockReset(); vi.mocked(apiGet).mockImplementation(async path => ({ data: path.endsWith("/assessments") ? [{ id: "q1", title: "الأمن السيبراني" }] : { entries: [] } })); });
 
 describe("content navigation and search", () => {
+  it.each(["summaries", "assessments"] as const)("includes the published Innovation module in the authorized %s list", async view => {
+    api.mockResolvedValue({ data: [], page: 1, limit: 50, total: 0 });
+    render(await ContentHub({ subjects: [{ ...subject, id: INNOVATION_STUDY_SUBJECT_ID, title: "الابتكار وإدارة المشاريع" }], view }));
+    expect(screen.getByRole("link", { name: view === "summaries" ? /الملخصات والبودكاست القيادي/ : /الاختبار الشامل/ })).toHaveAttribute("href", view === "summaries" ? "/summaries.html" : "/exam-module.html");
+  });
+  it("does not offer Innovation content when only another subject is authorized", async () => {
+    api.mockResolvedValue({ data: [], page: 1, limit: 50, total: 0 });
+    render(await ContentHub({ subjects: [subject], view: "summaries" }));
+    expect(screen.queryByRole("link", { name: /الملخصات والبودكاست القيادي/ })).not.toBeInTheDocument();
+  });
   it("searches authorized course content and opens the actual matching quiz route", async () => {
     api.mockImplementation(async (path) => ({
       data: path.includes("/lectures?") ? [{ id: "l1", title: "الذكاء الاصطناعي" }] : [], page: 1, limit: 50, total: 1,

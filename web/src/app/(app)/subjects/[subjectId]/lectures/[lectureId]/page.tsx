@@ -9,6 +9,7 @@ import { LectureCompleteToggle } from "@/components/content/LectureCompleteToggl
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { LectureTabs } from "@/components/content/LectureTabs";
 import { LibrarySummaryPrint } from "@/components/printing/LibrarySummaryPrint";
+import { isStudyModuleDocument, lectureSummaryHref } from "@/components/content/studyModules";
 
 /**
  * Lecture detail (API_V1.md `GET /lectures/:lectureId`,
@@ -99,6 +100,8 @@ export default async function LectureDetailPage({
   const currentIndex = siblingLectures.findIndex((l) => l.id === lectureId);
   const libraryEntries = await getLectureLibraryEntries(lecture!.subjectId, lecture!.id);
   const summaryEntries = libraryEntries.filter(entry => entry.section === "summaries");
+  const summaryHref = summaryEntries[0] ? lectureSummaryHref(lecture!.subjectId, summaryEntries[0].id, lecture!.orderIndex) : null;
+  const SummaryLink = summaryHref && isStudyModuleDocument(summaryHref) ? "a" : Link;
   const hasReading = libraryEntries.some(entry => entry.section === "lectures" && entry.files.some(file => file.bodyHtml));
   const visibleLibraryEntries = hasReading ? libraryEntries.filter(entry => entry.section !== "summaries") : libraryEntries;
   const hasReviewedSummary = summaryEntries.some(entry => entry.files.some(file => file.id.startsWith("source-study-") && file.bodyHtml));
@@ -124,7 +127,7 @@ export default async function LectureDetailPage({
 
       <h1 className="page-heading">{lecture!.title}</h1>
       <LectureTabs subjectId={lecture!.subjectId} lectures={siblingLectures} activeId={lecture!.id} />
-      {hasReading && summaryEntries[0] ? <p><Link className="text-link" href={`/subjects/${subjectId}/summaries#${encodeURIComponent(summaryEntries[0].id)}`}>عرض ملخص المحاضرة</Link></p> : null}
+      {hasReading && summaryHref ? <p><SummaryLink className="text-link" href={summaryHref}>عرض ملخص المحاضرة</SummaryLink></p> : null}
       <div className="dl-library-list">{visibleLibraryEntries.map(entry => <LibraryEntryContent key={entry.id} subjectId={lecture!.subjectId} entry={entry} />)}</div>
       <p className="item-row-meta" style={{ marginBottom: "var(--space-2)" }}>
         {subjectTitle}
