@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useRef, useState, useSyncExternalStore, useTransition, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore, useTransition, type KeyboardEvent } from "react";
 import type { SummaryVisualDocument, SummaryVisualIndex, SummaryVisualPoint } from "@shared/index";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import { SummaryMindTree } from "./SummaryMindTree";
@@ -52,19 +52,48 @@ export function SummaryVisualViewer({ document }: { document: SummaryVisualDocum
         {view === tab.id && (tab.id === "mind" ? <>
           <div className={styles.toolbar}><label className={styles.search}><PlatformIcon name="search" /><input type="search" aria-label="البحث في مفاهيم الخريطة" placeholder="ابحث عن مفهوم أو شرح…" value={query} onChange={event => setQuery(event.target.value)} /></label><div className={styles.tools}>
             <button type="button" className={styles.quietButton} onClick={() => setCollapsed(new Set(collapsed.size === document.sections.length ? [] : document.sections.map(section => section.id)))}>{collapsed.size === document.sections.length ? "توسيع المحاور" : "طيّ المحاور"}</button>
-            <div className={styles.sizing} aria-label="حجم نص الخريطة"><button type="button" aria-label="تصغير النص" disabled={size <= 90} onClick={() => setSize(size - 10)}>−</button><output aria-label="حجم النص">{size.toLocaleString("ar")}%</output><button type="button" aria-label="تكبير النص" disabled={size >= 130} onClick={() => setSize(size + 10)}>+</button></div>
+            <div className={styles.sizing} aria-label="تكبير الخريطة وتصغيرها"><button type="button" aria-label="تصغير الخريطة" disabled={size <= 60} onClick={() => setSize(size - 10)}>−</button><output aria-label="نسبة التكبير">{size.toLocaleString("ar")}%</output><button type="button" aria-label="تكبير الخريطة" disabled={size >= 150} onClick={() => setSize(size + 10)}>+</button></div>
             <button type="button" className={styles.quietButton} onClick={reset}>إعادة الضبط</button>
-          </div></div><p className={styles.caption}>المحاضرة ← المحاور ← المفاهيم. يمكنك طيّ كل محور على حدة.</p>
-          <SummaryMindTree document={document} query={query} size={size} collapsed={collapsed} onToggle={id => { const next = new Set(collapsed); if (next.has(id)) next.delete(id); else next.add(id); setCollapsed(next); }} selectedId={selectedId} onSelect={setSelectedId} />
+          </div></div><p className={styles.caption}>المحاضرة ← المحاور ← المفاهيم. افتح المحور أو اطوِه، ثم اختر مفهومًا لعرض شرحه ومراجعه.</p>
+          <SummaryMindTree document={document} query={query} size={size} compact={compact} collapsed={collapsed} onToggle={id => { const next = new Set(collapsed); if (next.has(id)) next.delete(id); else next.add(id); setCollapsed(next); }} selectedId={selectedId} onSelect={setSelectedId} />
         </> : tab.id === "concepts" ? <SummaryConceptMap document={document} sectionId={sectionId} onSection={id => { setSectionId(id); setSelectedId(""); }} selectedId={selectedId} onSelect={setSelectedId} /> : <SummarySequence document={document} sequenceId={sequenceId} onSequence={id => { setSequenceId(id); setSelectedId(""); }} selectedId={selectedId} onSelect={setSelectedId} />)}
       </div>)}
-      <div className={styles.canvasFooter}><span>روابط بنيوية من الملخص المعتمد</span><span>{selectedId ? <a href={`#${id}-detail`}>قراءة الشرح والمرجع ↓</a> : "اختَر مفهومًا لعرض شرحه أدناه"}</span></div>
+      <div className={styles.canvasFooter}><span>روابط بنيوية من الملخص المعتمد</span><span>{view === "mind" ? "اختَر مفهومًا لعرض شرحه ومراجعه" : selectedId ? <a href={`#${id}-detail`}>قراءة الشرح والمرجع ↓</a> : "اختَر مفهومًا لعرض شرحه أدناه"}</span></div>
     </div>
-    <section id={`${id}-detail`} className={styles.detail} aria-label="شرح المفهوم ومرجعه" aria-live="polite">
+    {view === "mind" ? <ConceptDialog document={document} pointId={selectedPoint ? selectedPoint.id : ""} onSelect={setSelectedId} /> : <section id={`${id}-detail`} className={styles.detail} aria-label="شرح المفهوم ومرجعه" aria-live="polite">
       {selectedPoint ? <><p className={styles.eyebrow}>{document.sections.find(section => section.points.some(point => point.id === selectedPoint.id))?.title}</p><PointExplanation point={selectedPoint} filename={document.source.filename} /></> : selectedSection ? <><h2>{selectedSection.title}</h2><div className={styles.sectionPoints}>{selectedSection.points.map(point => <button key={point.id} type="button" className={styles.quietButton} onClick={() => setSelectedId(point.id)}>{point.label}</button>)}</div><p className={styles.muted}>اختَر مفهومًا من هذا المحور لقراءة شرحه واقتباساته.</p></> : <><h2>شرح المفهوم</h2><p className={styles.muted}>اختَر عقدة في الخريطة لعرض شرحها من الملخص المعتمد واقتباساتها من المحاضرة.</p></>}
       <Link className={styles.sourceLink} href={`/subjects/${document.subject.id}/lectures/${document.lecture.id}`}><PlatformIcon name="book" />فتح المحاضرة الأصلية</Link>
-    </section>
+    </section>}
   </>;
+}
+
+/** Glass dialog for a mind-map concept: explanation, source quotes, linked files, and stepping within its section. */
+function ConceptDialog({ document, pointId, onSelect }: { document: SummaryVisualDocument; pointId: string; onSelect: (id: string) => void }) {
+  const dialog = useRef<HTMLDialogElement>(null), titleId = useId();
+  const section = document.sections.find(item => item.points.some(point => point.id === pointId)), index = section?.points.findIndex(point => point.id === pointId) ?? -1, point = section?.points[index];
+  useEffect(() => {
+    const element = dialog.current; if (!element) return;
+    if (point && !element.open) { if (typeof element.showModal === "function") element.showModal(); else element.setAttribute("open", ""); }
+    if (!point && element.open) { if (typeof element.close === "function") element.close(); else element.removeAttribute("open"); }
+  }, [point]);
+  return <dialog ref={dialog} className={styles.dialog} aria-labelledby={titleId} onClose={() => { if (pointId) onSelect(""); }} onClick={event => { if (event.target === event.currentTarget) onSelect(""); }}>
+    {point && section ? <>
+      <div className={styles.dialogHead}><div className={styles.crumbs}><span>{document.lecture.title}</span><span>{section.title}</span></div><h2 id={titleId}>{point.label}</h2></div>
+      <div className={styles.dialogBody}>
+        <section><h3>الشرح</h3><p className={styles.explanation}>{point.text}</p></section>
+        <section><h3>من نص المحاضرة</h3><div className={styles.evidence}><p className={styles.muted}>الإحداثيات التالية أسطر في النص المستخرج، وليست أرقام صفحات PDF.</p><ul>{point.evidence.map((evidence, i) => <li key={i}><blockquote dir="auto">{evidence.quote}</blockquote><small><bdi>{document.source.filename}</bdi> · الأسطر {evidence.startLine.toLocaleString("ar")}–{evidence.endLine.toLocaleString("ar")}</small></li>)}</ul></div></section>
+        <section><h3>الملفات المرتبطة</h3><div className={styles.files}>
+          <Link href={`/subjects/${document.subject.id}/lectures/${document.lecture.id}`}><PlatformIcon name="book" />فتح المحاضرة الأصلية <bdi>({document.source.filename})</bdi></Link>
+          <Link href={`/subjects/${document.subject.id}/library?section=summaries`}><PlatformIcon name="document" />ملخصات المادة</Link>
+        </div></section>
+      </div>
+      <div className={styles.dialogFoot}>
+        <div><button type="button" className={styles.quietButton} disabled={index <= 0} onClick={() => onSelect(section.points[index - 1]!.id)}>السابق</button><button type="button" className={styles.quietButton} disabled={index >= section.points.length - 1} onClick={() => onSelect(section.points[index + 1]!.id)}>التالي</button></div>
+        <span className={styles.position}>{(index + 1).toLocaleString("ar")} / {section.points.length.toLocaleString("ar")}</span>
+        <button type="button" className={styles.quietButton} onClick={() => onSelect("")}>إغلاق</button>
+      </div>
+    </> : null}
+  </dialog>;
 }
 
 function PointExplanation({ point, filename }: { point: SummaryVisualPoint; filename: string }) {
