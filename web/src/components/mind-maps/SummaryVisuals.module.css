@@ -133,18 +133,27 @@
 .authStep { display:flex; flex:1; min-width:0; gap:16px; }.authNode { flex:1; min-width:0; text-align:center; }
 .authNode small { color:var(--mm-muted); font-size:14px; }.flowArrow { align-self:center; color:var(--mm-teal); font-size:24px; }
 .relationNote { font-size:14px; color:var(--mm-muted); text-align:center; margin-top:12px!important; }.complementary { margin-top:16px; }
-.conceptHub { text-align:center; margin-top:24px; }.conceptHub h3 { display:inline-block; padding:16px 24px; background:var(--mm-raised); border:1px solid var(--mm-teal); color:var(--mm-teal); border-radius:16px; font-size:18px; }.conceptHub>span { display:block; color:var(--mm-line); }
-.conceptGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; border-top:1px solid var(--mm-line); padding-top:20px; }
+.conceptHub { text-align:center; margin-top:24px; }.conceptHub h3 { display:inline-block; padding:16px 24px; background:var(--mm-raised); border:1px solid var(--mm-teal); color:var(--mm-teal); border-radius:16px; font-size:18px; }.hubStem { display:block; width:1px; height:24px; margin:0 auto; background:var(--mm-line); }
+.gridRule { display:block; height:1px; background:var(--mm-line); }
+.conceptGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; padding-top:20px; }
+.redraw { float:inline-end; margin-inline-start:12px; }
+:where(.shell [data-draw="card"]) { position:relative; }
+.shell [data-draw="card"] [data-word] { display:inline-block; }
+.principle>[data-word] { display:block; }
+.shell [data-draw-frame] { position:absolute; inset:0; width:auto; height:auto; overflow:visible; pointer-events:none; }
+.shell [data-draw-frame] rect { fill:none; stroke:var(--mm-gold); stroke-width:1.6; stroke-dasharray:1; opacity:0; filter:drop-shadow(0 0 4px var(--mm-gold-glow)); }
+.drawPath { stroke-dasharray:1; }
 .sequenceIntro { margin-block:24px 12px; }.sequenceIntro h3 { font-size:20px; }.sequenceIntro p { color:var(--mm-muted); font-size:14px; margin-top:8px; }
-.sequenceList { display:grid; gap:16px; list-style:none; padding:0; margin:24px 0; position:relative; }
-.sequenceList::before { content:""; position:absolute; right:16px; top:0; bottom:0; border-right:1px solid var(--mm-line); }
+.sequenceTrack { position:relative; margin:24px 0; }
+.sequenceList { display:grid; gap:16px; list-style:none; padding:0; margin:0; position:relative; }
+.sequenceSpine { position:absolute; right:16px; top:0; bottom:0; width:1px; background:var(--mm-line); }
 .sequenceList li { display:grid; grid-template-columns:34px minmax(0,1fr); gap:16px; align-items:center; position:relative; }
 .marker { position:relative; z-index:1; width:34px; height:34px; border:1px solid var(--mm-teal); border-radius:100%; background:var(--mm-raised); color:var(--mm-teal); display:grid; place-items:center; }
 .stage { position:relative; width:100%; min-height:76px; padding:16px; border:1px solid var(--mm-line); border-radius:12px; background:var(--mm-surface); font-size:15px!important; line-height:1.9; text-align:start; }
 .sequenceNote { padding:16px; border:1px solid var(--mm-soft); border-radius:12px; color:var(--mm-muted); font-size:14px; }
 @container (min-width:950px) {
   .sequenceList:has(li:nth-child(5)):not(:has(li:nth-child(6))) { grid-template-columns:repeat(5,minmax(0,1fr)); }
-  .sequenceList:has(li:nth-child(5)):not(:has(li:nth-child(6)))::before { right:0; left:0; top:17px; bottom:auto; border-right:0; border-top:1px solid var(--mm-line); }
+  .sequenceTrack:has(li:nth-child(5)):not(:has(li:nth-child(6))) .sequenceSpine { right:0; left:0; top:17px; bottom:auto; width:auto; height:1px; }
   .sequenceList:has(li:nth-child(5)):not(:has(li:nth-child(6))) li { display:block; }
   .sequenceList:has(li:nth-child(5)):not(:has(li:nth-child(6))) .marker { margin:0 auto 16px; }
   .sequenceList:has(li:nth-child(5)):not(:has(li:nth-child(6))) .stage { min-height:150px; text-align:center; }

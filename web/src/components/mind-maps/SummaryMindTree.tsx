@@ -6,7 +6,7 @@ import { drawingDisabled, drawMindMap, finishDrawing, type DrawTree } from "./mi
 import styles from "./SummaryVisuals.module.css";
 
 /** Whole words animate in one by one; splitting letters would break Arabic joining. */
-const words = (text: string) => text.split(" ").flatMap((word, index) => [index ? " " : "", <span key={index} data-word="">{word}</span>]);
+export const words = (text: string) => text.split(" ").flatMap((word, index) => [index ? " " : "", <span key={index} data-word="">{word}</span>]);
 
 /** Fixed node boxes keep the layout a pure function of the data; labels clamp to two lines. */
 const BOX = { root: { w: 250, h: 76 }, section: { w: 240, h: 66 }, point: { w: 270, h: 56 } } as const;

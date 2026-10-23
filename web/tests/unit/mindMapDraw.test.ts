@@ -40,3 +40,18 @@ describe("mind-map draw-on-click sequence", () => {
     expect(calls.some(call => call.target.closest('[data-at="root"]'))).toBe(false);
   });
 });
+
+describe("flow drawing for the concept map and sequence diagram", () => {
+  it("draws markers and cards in document order, words one by one, and blocks without words as a whole", async () => {
+    mockAnimate();
+    const { drawFlow } = await import("@/components/mind-maps/mindMapDraw");
+    const box = document.createElement("div");
+    box.innerHTML = `<span data-draw="track" id="t"></span><span data-draw="pop" id="m1"></span><button data-draw="card" id="c1"><span data-word>أولًا</span> <span data-word>التعريف</span></button><span data-draw="pop" id="m2"></span><button data-draw="card" id="c2"><b>بلا كلمات</b></button>`;
+    drawFlow(box);
+    const first = (id: string) => calls.find(call => call.target.id === id)?.delay ?? -1;
+    expect(first("m1")).toBeLessThan(first("c1")); expect(first("c1")).toBeLessThan(first("m2")); expect(first("m2")).toBeLessThan(first("c2"));
+    const words = calls.filter(call => call.target.matches("#c1 [data-word]")).map(call => call.delay);
+    expect(words).toHaveLength(2); expect(words[1]).toBeGreaterThan(words[0]!);
+    expect(calls.some(call => call.target.matches("#c2 > b"))).toBe(true);
+  });
+});
