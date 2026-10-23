@@ -30,22 +30,23 @@ describe("approved course study module navigation", () => {
     }
   });
 
-  it("places the comprehensive test beside ordinary quizzes without replacing quiz or group routes", () => {
+  it("keeps the comprehensive test inside exam material without a separate subject tab", () => {
     const tabs = subjectTabs(INNOVATION_STUDY_SUBJECT_ID);
-    expect(tabs.map(tab => tab.key)).toEqual(["lectures", "pdf", "summaries", "mind-maps", "assessments", "comprehensive", "exam-material", "assignments", "references", "resources", "updates"]);
+    expect(tabs.map(tab => tab.key)).toEqual(["lectures", "pdf", "summaries", "mind-maps", "assessments", "exam-material", "assignments", "references", "resources", "updates"]);
     expect(tabs.find(tab => tab.key === "assessments")?.href).toBe(`/subjects/${INNOVATION_STUDY_SUBJECT_ID}/assessments`);
     expect(tabs.find(tab => tab.key === "exam-material")?.href).toBe(`/subjects/${INNOVATION_STUDY_SUBJECT_ID}/exam-material`);
   });
 
   it("uses native document links for the published HTML and app navigation for existing sections", () => {
     render(<SubjectTabs tabs={subjectTabs(INNOVATION_STUDY_SUBJECT_ID)} activeKey="exam-material" />);
-    for (const [name, href] of [[/الملخصات/, "/summaries.html"], [/الاختبار الشامل/, "/exam-module.html"]] as const) {
+    for (const [name, href] of [[/الملخصات/, "/summaries.html"]] as const) {
       const link = screen.getByRole("link", { name });
       expect(link).toHaveAttribute("href", href);
       expect(link).not.toHaveAttribute("data-app-route");
       expect(link).not.toHaveAttribute("target");
     }
     expect(screen.getByRole("link", { name: /المادة الامتحانية/ })).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("link", { name: /الاختبار الشامل/ })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /المحاضرات/ })).toHaveAttribute("data-app-route", "true");
   });
 
@@ -87,8 +88,10 @@ describe("approved course study module navigation", () => {
     expect(screen.queryByTestId("exam-workspace")).not.toBeInTheDocument();
   });
 
-  it.each(["exam-module.html", "summaries.html"])("returns from %s to the actual course rather than the platform homepage", page => {
+  it.each(["exam-module.html", "summaries.html"])("keeps %s under its own parent with no cross-link in summaries", page => {
     const html = readFileSync(resolve(process.cwd(), "public", page), "utf8");
-    expect(html).toContain(`class="platform-link" href="https://web-husen4.vercel.app/subjects/${INNOVATION_STUDY_SUBJECT_ID}"`);
+    const parent = `/subjects/${INNOVATION_STUDY_SUBJECT_ID}${page === "exam-module.html" ? "/exam-material" : ""}`;
+    expect(html.match(/class="platform-link" href="([^"]+)"/)?.[1]).toBe(`https://web-husen4.vercel.app${parent}`);
+    if (page === "summaries.html") expect(/href=["'][^"']*exam-module\.html/.test(html)).toBe(false);
   });
 });

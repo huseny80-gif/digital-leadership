@@ -12,10 +12,17 @@ const subject = { id: "allowed", title: "التقنية" } as Subject;
 beforeEach(() => { api.mockReset(); vi.mocked(apiGet).mockReset(); vi.mocked(apiGet).mockImplementation(async path => ({ data: path.endsWith("/assessments") ? [{ id: "q1", title: "الأمن السيبراني" }] : { entries: [] } })); });
 
 describe("content navigation and search", () => {
-  it.each(["summaries", "assessments"] as const)("includes the published Innovation module in the authorized %s list", async view => {
+  it("includes the standalone summaries and podcast in its authorized list", async () => {
     api.mockResolvedValue({ data: [], page: 1, limit: 50, total: 0 });
-    render(await ContentHub({ subjects: [{ ...subject, id: INNOVATION_STUDY_SUBJECT_ID, title: "الابتكار وإدارة المشاريع" }], view }));
-    expect(screen.getByRole("link", { name: view === "summaries" ? /الملخصات والبودكاست القيادي/ : /الاختبار الشامل/ })).toHaveAttribute("href", view === "summaries" ? "/summaries.html" : "/exam-module.html");
+    render(await ContentHub({ subjects: [{ ...subject, id: INNOVATION_STUDY_SUBJECT_ID, title: "الابتكار وإدارة المشاريع" }], view: "summaries" }));
+    expect(screen.getByRole("link", { name: /الملخصات والبودكاست القيادي/ })).toHaveAttribute("href", "/summaries.html");
+    expect(screen.queryByRole("link", { name: /الاختبار الشامل/ })).not.toBeInTheDocument();
+  });
+  it("keeps the comprehensive test out of the general quiz list", async () => {
+    api.mockResolvedValue({ data: [], page: 1, limit: 50, total: 0 });
+    render(await ContentHub({ subjects: [{ ...subject, id: INNOVATION_STUDY_SUBJECT_ID }], view: "assessments" }));
+    expect(screen.queryByRole("link", { name: /الاختبار الشامل/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /الأمن السيبراني/ })).toHaveAttribute("href", "/quizzes/q1");
   });
   it("does not offer Innovation content when only another subject is authorized", async () => {
     api.mockResolvedValue({ data: [], page: 1, limit: 50, total: 0 });

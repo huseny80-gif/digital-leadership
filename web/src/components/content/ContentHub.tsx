@@ -17,8 +17,8 @@ export async function ContentHub({ subjects, view, query = "" }: { subjects: Sub
     await Promise.all(subjects.slice(offset, offset + 5).map(async (subject) => {
       try {
         const modules = studyModulesForSubject(subject.id);
-        if (modules && (view === "summaries" || view === "assessments")) {
-          entries.push({ id: `study-module-${view}`, title: view === "summaries" ? "الملخصات والبودكاست القيادي" : "الاختبار الشامل", subjectTitle: subject.title, href: view === "summaries" ? modules.summaries : modules.comprehensive, icon: view === "summaries" ? "document" : "quiz" });
+        if (modules && view === "summaries") {
+          entries.push({ id: "study-module-summaries", title: "الملخصات والبودكاست القيادي", subjectTitle: subject.title, href: modules.summaries, icon: "document" });
         }
         const reviewedLectures = new Set<string>();
         if (["summaries", "files", "search"].includes(view)) {

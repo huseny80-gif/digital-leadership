@@ -34,7 +34,7 @@ export function subjectTabs(
       count: counts.lectures,
     },
     { key: "pdf", href: `/subjects/${subjectId}/pdf`, label: "PDF", icon: "📁" },
-    { key: "summaries", href: modules?.summaries ?? `/subjects/${subjectId}/library?section=summaries`, label: "الملخصات", icon: "📄" },
+    { key: "summaries", href: modules?.summaries ?? `/subjects/${subjectId}/library?section=summaries`, label: modules ? "الملخصات والبودكاست" : "الملخصات", icon: "📄" },
     { key: "mind-maps", href: `/subjects/${subjectId}/mind-maps`, label: "خرائط ذهنية", icon: "◈" },
     {
       key: "assessments",
@@ -43,7 +43,6 @@ export function subjectTabs(
       icon: "❓",
       count: counts.assessments,
     },
-    ...(modules ? [{ key: "comprehensive", href: modules.comprehensive, label: "الاختبار الشامل", icon: "📝" }] : []),
     { key: "exam-material", href: `/subjects/${subjectId}/exam-material`, label: "المادة الامتحانية", icon: "📑" },
     {
       key: "assignments",
