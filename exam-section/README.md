@@ -1,0 +1,45 @@
+# ملخص القيادة الرقمية واتخاذ القرار الاستراتيجي
+
+هذا أصل صوتي تجريبي تعليمي عام، مولّد بالذكاء الاصطناعي. لا يمثل نطاق امتحان معتمدًا ولا يستبدل مصادر المحاضرات الخاصة أو الملخصات المحمية الحالية. المثال المتعلق بانتظار المستفيدين مثال افتراضي، وليس نتيجة بحث ميداني.
+
+## الملفات والصفحة
+
+- الأصل: `exam-section/audio/digital-leadership-summary.mp3`.
+- النص المقروء: `exam-section/audio/digital-leadership-summary.txt`.
+- الصفحة: `exam-module.html`، وتستخدم رابطًا نسبيًا إلى ملف MP3 دون تشغيل تلقائي.
+- نسخة النشر على Next.js: `web/public/exam-module.html` و`web/public/exam-section/audio/`.
+
+المسارات العامة بعد نجاح النشر هي `/exam-module.html` و`/exam-section/audio/digital-leadership-summary.mp3`. النسخة الجذرية تخدم أيضًا استضافة الملفات الثابتة. هذا المحتوى العام لا يكشف بيانات المحاضرات أو إجابات الاختبارات أو محتوى خاصًا، ولا يعدّل API السرد المحمي الموجود.
+
+## المزامنة
+
+بعد استبدال الأصل الصوتي أو النص أو الصفحة، نفّذ من جذر المستودع:
+
+```sh
+python3 -m venv /absolute/path/exam-audio-venv
+/absolute/path/exam-audio-venv/bin/python -m pip install -r scripts/requirements-exam-audio.txt
+/absolute/path/exam-audio-venv/bin/python scripts/generate-exam-summary-audio.py exam-section/audio/digital-leadership-summary.txt /absolute/path/narration.wav
+python3 scripts/prepare-exam-summary-audio.py /absolute/path/narration.wav exam-section/audio/digital-leadership-summary.mp3
+node scripts/sync-exam-audio.mjs
+node scripts/sync-exam-audio.mjs --check
+node --test scripts/sync-exam-audio.test.mjs
+```
+
+تُحفظ نسخ النشر في Git لتعمل مع إعداد النشر الحالي دون تغيير اعتماديات التطبيق. يفحص Workflow `Exam summary audio assets` تطابق الأصول واختبارات المزامنة عند تحديثها. المزامنة خطوة صريحة ضمن تحديث المحتوى، وليست خدمة مراقبة أو توليد صوت تلقائية تعمل في الخلفية. أداة تصدير MP3 تتطلب FFmpeg وFFprobe، ولا تحتاج مكتبات Python خارجية.
+
+## إعداد السرد
+
+بعد فشل مولّد الاستوديو في محاولتين، استُخدم مزوّد Edge Read Aloud العصبي عبر مكتبة `edge-tts`، بصوت `ar-IQ-BasselNeural` المتاح أيضًا في المنصة، وبالنص العربي الفصيح مع سرعة −5%. لم تُغيَّر خدمة الصوت المحمية أو إعدادات الأصوات في التطبيق. تنتج المكتبة MP3 أحادي القناة بدقة 24 كيلوهرتز ومعدل 48 كيلوبت/ثانية؛ يُفك إلى WAV لإجراء المعالجة، ثم يُصدّر إلى MP3 بمعدل 160 كيلوبت/ثانية لتقليل أثر إعادة الضغط. لا يضيف ذلك تفاصيل لم تكن موجودة في المصدر، ولا يُقدَّم بوصفه تسجيل استوديو بشريًا أو ملف WAV مولّدًا دون ضغط سابق.
+
+يُحتفظ بملف WAV الوسيط في مساحة العمل خارج المستودع، وتُطبق تسوية جهارة بمستهدف −16 LUFS وذروة حقيقية مستهدفة −1.5 dBTP قبل الترميز، مع الحفاظ على معدل العينة والقناة الأصليين. يُفحص الناتج بعد الضغط للتأكد من هامش الذروة الآمن. تفاصيل القياس الفعلي في تقرير التسليم. لا يحتاج مولّد التجربة إلى حساب مزوّد جديد، لكنه يتطلب اتصالًا بخدمة النطق وبيئة Python الاختيارية؛ قد تتغير إتاحتها أو صيغة بروتوكولها. لا تُثبت هذه المكتبة في اعتماديات التطبيق الإنتاجي ولا تُنشئ خدمة خلفية مستمرة.
+
+## أساس المحتوى
+
+استُفيد من محور القيادة الرقمية وكفاياتها ومراحل التحول في ملخص المحاضرة `ip-l6` داخل `backend/content/finquiz/academicSummaries.json`، دون نقل بيانات أو نسب توضيحية باعتبارها حقائق.
+
+يدعم مرجع OECD اعتبار البيانات أصلًا استراتيجيًا، وضرورة القيادة والحوكمة، واستخدام البيانات في التخطيط والتنفيذ والتقييم، مع مراعاة الخصوصية والأخلاق والثقة [1]. ويدعم المرجع الآخر صنع السياسات والخدمات المستند إلى الأدلة وارتباط البيانات بالإدارة والابتكار [2]. خطوات المقارنة بين البدائل والمثال والأسئلة الختامية صياغة تعليمية عامة للتجربة، وليست اقتباسًا حرفيًا من المنهج أو ادعاءً بمطابقة الامتحان.
+
+## المراجع
+
+[1]: https://www.oecd.org/en/publications/2019/11/the-path-to-becoming-a-data-driven-public-sector_9ed7e867.html "The Path to Becoming a Data-Driven Public Sector"
+[2]: https://www.oecd.org/en/publications/a-data-driven-public-sector_09ab162c-en.html "A data-driven public sector"

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="وحدة مستقلة للاستماع إلى ملخص تعليمي عام حول القيادة الرقمية واتخاذ القرار الاستراتيجي.">
+    <title>القيادة الرقمية واتخاذ القرار الاستراتيجي</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --navy-950: #032f3d;
+        --navy-900: #043847;
+        --teal-700: #075d68;
+        --teal-500: #0e8c93;
+        --gold: #d4a72c;
+        --gold-soft: #f1bc43;
+        --ink: #0f2426;
+        --muted: #546a6c;
+        --paper: #ffffff;
+        --wash: #f4f8f9;
+        --line: #d7e4e4;
+        --shadow: 0 18px 42px rgba(3, 55, 67, .14);
+      }
+
+      * { box-sizing: border-box; }
+      html { min-height: 100%; }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background: var(--wash);
+        color: var(--ink);
+        font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+        line-height: 1.8;
+      }
+      a { color: inherit; }
+      a:focus-visible, audio:focus-visible { outline: 3px solid var(--gold-soft); outline-offset: 4px; }
+      .page { min-height: 100vh; display: flex; flex-direction: column; }
+      .topbar {
+        color: #fff;
+        background: linear-gradient(100deg, var(--navy-900), var(--teal-700));
+        border-bottom: 1px solid rgba(255, 255, 255, .14);
+      }
+      .topbar-inner, main, footer { width: min(100% - 2rem, 70rem); margin-inline: auto; }
+      .topbar-inner { min-height: 4.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+      .brand { display: inline-flex; align-items: center; gap: .75rem; text-decoration: none; font-weight: 800; }
+      .brand-mark { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border: 1px solid rgba(255,255,255,.28); border-radius: .75rem; color: var(--gold-soft); font-size: 1.2rem; }
+      .topbar-note { color: #c7e2e3; font-size: .82rem; }
+      main { flex: 1; padding-block: clamp(1.5rem, 5vw, 4rem); }
+      .hero {
+        position: relative;
+        overflow: hidden;
+        padding: clamp(1.5rem, 5vw, 3.5rem);
+        border-radius: 1.35rem;
+        color: #fff;
+        background: radial-gradient(circle at 15% 15%, rgba(212,167,44,.22), transparent 24rem), linear-gradient(125deg, var(--navy-950), var(--teal-700) 68%, var(--navy-900));
+        box-shadow: var(--shadow);
+      }
+      .hero::after { content: ""; position: absolute; inset: auto -4rem -7rem auto; width: 17rem; height: 17rem; border: 1px solid rgba(255,255,255,.15); border-radius: 50%; box-shadow: 0 0 0 2rem rgba(255,255,255,.035), 0 0 0 4rem rgba(255,255,255,.02); }
+      .eyebrow { display: inline-block; margin-bottom: .6rem; color: var(--gold-soft); font-size: .83rem; font-weight: 800; letter-spacing: .04em; }
+      h1, h2, p { margin-block: 0; }
+      h1 { max-width: 15ch; font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.25; letter-spacing: -.03em; }
+      .lead { max-width: 54rem; margin-top: 1rem; color: #d9ebed; font-size: clamp(1rem, 2vw, 1.15rem); }
+      .content-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(16rem, .75fr); gap: 1rem; margin-top: 1rem; }
+      .card { padding: clamp(1.15rem, 3vw, 1.75rem); border: 1px solid var(--line); border-radius: 1rem; background: var(--paper); box-shadow: 0 5px 22px rgba(7,60,64,.06); }
+      .card h2 { color: var(--navy-900); font-size: clamp(1.2rem, 3vw, 1.55rem); line-height: 1.4; }
+      .card-intro { margin-top: .5rem; color: var(--muted); font-size: .95rem; }
+      .audio-wrap { margin-top: 1.2rem; padding: 1rem; border-radius: .8rem; background: #eef7f7; border: 1px solid #d6ebea; }
+      audio { display: block; width: 100%; min-height: 2.75rem; }
+      .file-links { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1rem; }
+      .file-link { display: inline-flex; align-items: center; min-height: 2.65rem; padding: .45rem .8rem; border-radius: .55rem; color: #fff; background: var(--teal-700); font-size: .88rem; font-weight: 700; text-decoration: none; }
+      .file-link.secondary { color: var(--navy-900); background: #fff; border: 1px solid var(--line); }
+      .file-link:hover { background: var(--navy-900); }
+      .file-link.secondary:hover { background: #f4f8f9; }
+      .disclosure { margin-top: 1rem; padding: .8rem 1rem; border-inline-start: 4px solid var(--gold); color: #4f4a32; background: #fff9e8; font-size: .88rem; }
+      .points { display: grid; gap: .7rem; margin: 1rem 0 0; padding: 0; list-style: none; }
+      .points li { display: flex; gap: .65rem; align-items: flex-start; color: var(--muted); font-size: .93rem; }
+      .points li::before { content: "✓"; flex: 0 0 auto; color: var(--gold); font-weight: 900; }
+      .notice { grid-column: 1 / -1; padding: 1rem 1.15rem; border: 1px solid #ead9a4; border-radius: .8rem; color: #55491f; background: #fffdf5; font-size: .92rem; }
+      footer { padding-block: 1.5rem 2rem; color: var(--muted); font-size: .8rem; text-align: center; }
+      @media (max-width: 720px) {
+        .topbar-inner, main, footer { width: min(100% - 1.25rem, 70rem); }
+        .topbar-inner { min-height: 4rem; }
+        .topbar-note { display: none; }
+        .content-grid { grid-template-columns: 1fr; }
+        .notice { grid-column: auto; }
+      }
+      @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <a class="brand" href="./exam-module.html" aria-label="العودة إلى وحدة القيادة الرقمية">
+            <span class="brand-mark" aria-hidden="true">◆</span>
+            <span>منصة القيادة الرقمية</span>
+          </a>
+          <span class="topbar-note">مادة مساندة للاستماع والتذكّر</span>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="page-title">
+          <span class="eyebrow">ملخص تعليمي عام</span>
+          <h1 id="page-title">القيادة الرقمية واتخاذ القرار الاستراتيجي</h1>
+          <p class="lead">استمع إلى مراجعة موجزة تساعد على تنظيم الأفكار حول قيادة التحول الرقمي، ومقارنة البدائل، وموازنة الأثر والمخاطر والأخلاقيات.</p>
+        </section>
+
+        <div class="content-grid">
+          <section class="card" aria-labelledby="audio-heading">
+            <span class="eyebrow">استمع إلى الملخص</span>
+            <h2 id="audio-heading">مراجعة صوتية قصيرة</h2>
+            <p class="card-intro">شغّل التسجيل من المتصفح أو نزّله للاستماع لاحقاً. لا يبدأ الصوت تلقائياً.</p>
+            <div class="audio-wrap">
+              <audio id="summary-audio" controls preload="metadata" aria-label="المقطع الصوتي لملخص القيادة الرقمية واتخاذ القرار الاستراتيجي">
+                <source src="exam-section/audio/digital-leadership-summary.mp3" type="audio/mpeg">
+                عذراً، لا يدعم متصفحك تشغيل الصوت المضمّن. استخدم رابط التنزيل أدناه.
+              </audio>
+            </div>
+            <nav class="file-links" aria-label="روابط ملفات الملخص">
+              <a class="file-link" href="exam-section/audio/digital-leadership-summary.mp3" download>تنزيل الملف الصوتي</a>
+              <a class="file-link secondary" href="exam-section/audio/digital-leadership-summary.txt">قراءة النص الصوتي</a>
+            </nav>
+            <p class="disclosure">تنبيه: هذا التسجيل الصوتي مولّد بالذكاء الاصطناعي لأغراض تعليمية، وقد لا يطابق نبرة المحاضر أو صياغته.</p>
+          </section>
+
+          <aside class="card" aria-labelledby="focus-heading">
+            <span class="eyebrow">نطاق التركيز</span>
+            <h2 id="focus-heading">ثلاثة محاور للتفكير</h2>
+            <ul class="points">
+              <li>دور القيادة في توجيه التحول الرقمي وبناء القدرة على التكيّف.</li>
+              <li>مقارنة بدائل القرار مع تقدير المخاطر والنتائج المحتملة.</li>
+              <li>ربط الأخلاقيات والحوكمة بمؤشرات قياس قابلة للمتابعة.</li>
+            </ul>
+          </aside>
+
+          <p class="notice"><strong>ملاحظة مهمة:</strong> ملخص تجريبي تعليمي عام، وليس بديلاً عن محاضرات المادة أو نطاق الامتحان المعتمد.</p>
+        </div>
+      </main>
+
+      <footer>منصة القيادة الرقمية · مراجعة تجريبية مساندة · ارجع إلى محاضرات المادة لتحديد نطاق الامتحان.</footer>
+    </div>
+  </body>
+</html>

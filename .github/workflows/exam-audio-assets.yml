@@ -1,0 +1,36 @@
+name: Exam summary audio assets
+on:
+  push:
+    paths:
+      - "exam-module.html"
+      - "exam-section/**"
+      - "scripts/*exam*audio*"
+      - "web/public/exam-module.html"
+      - "web/public/exam-section/**"
+      - ".github/workflows/exam-audio-assets.yml"
+  pull_request:
+    paths:
+      - "exam-module.html"
+      - "exam-section/**"
+      - "scripts/*exam*audio*"
+      - "web/public/exam-module.html"
+      - "web/public/exam-section/**"
+      - ".github/workflows/exam-audio-assets.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exam-audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test asset synchronization
+        run: node --test scripts/sync-exam-audio.test.mjs
+      - name: Verify published assets match canonical sources
+        run: node scripts/sync-exam-audio.mjs --check
+      - name: Check audio-tool syntax without generating bytecode
+        run: python3 -c "import ast, pathlib; [ast.parse(path.read_text()) for path in pathlib.Path('scripts').glob('*exam*audio.py')]"

@@ -1,0 +1,2 @@
+# Optional offline tooling environment; not an application runtime dependency.
+edge-tts==7.3.1
