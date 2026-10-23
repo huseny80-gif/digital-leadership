@@ -57,7 +57,7 @@ export function SummaryVisualViewer({ document }: { document: SummaryVisualDocum
             <button type="button" className={styles.quietButton} onClick={reset}>إعادة الضبط</button>
           </div></div><p className={styles.caption}>المحاضرة ← المحاور ← المفاهيم. افتح المحور أو اطوِه، ثم اختر مفهومًا لعرض شرحه ومراجعه.</p>
           <SummaryMindTree document={document} query={query} size={size} compact={compact} replay={replay} collapsed={collapsed} onToggle={id => { const next = new Set(collapsed); if (next.has(id)) next.delete(id); else next.add(id); setCollapsed(next); }} selectedId={selectedId} onSelect={setSelectedId} />
-        </> : tab.id === "concepts" ? <SummaryConceptMap document={document} sectionId={sectionId} onSection={id => { setSectionId(id); setSelectedId(""); }} selectedId={selectedId} onSelect={setSelectedId} /> : <SummarySequence document={document} sequenceId={sequenceId} onSequence={id => { setSequenceId(id); setSelectedId(""); }} selectedId={selectedId} onSelect={setSelectedId} />)}
+        </> : tab.id === "concepts" ? <SummaryConceptMap replay={replay} document={document} sectionId={sectionId} onSection={id => { setSectionId(id); setSelectedId(""); }} selectedId={selectedId} onSelect={setSelectedId} /> : <SummarySequence replay={replay} document={document} sequenceId={sequenceId} onSequence={id => { setSequenceId(id); setSelectedId(""); }} selectedId={selectedId} onSelect={setSelectedId} />)}
       </div>)}
       <div className={styles.canvasFooter}><span>روابط بنيوية من الملخص المعتمد</span><span>{view === "mind" ? "اختَر مفهومًا لعرض شرحه ومراجعه" : selectedId ? <a href={`#${id}-detail`}>قراءة الشرح والمرجع ↓</a> : "اختَر مفهومًا لعرض شرحه أدناه"}</span></div>
     </div>

@@ -76,7 +76,7 @@ describe("source-bound subject mind maps", () => {
     mount({ ...other, lecture: { id: "other", title: "محاضرة أخرى", number: 2 }, sections: [sections[0]!] });
     fireEvent.click(screen.getByRole("tab", { name: "خريطة المفاهيم" }));
     expect(screen.queryByText("مثلث CIA")).not.toBeInTheDocument(); expect(screen.getByLabelText("المحور")).toBeInTheDocument();
-    fireEvent.click(screen.getByText(allPoints[0]!.label).closest("button")!);
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(allPoints[0]!.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) }));
     expect(within(screen.getByRole("region", { name: "شرح المفهوم ومرجعه" })).getByText(allPoints[0]!.text)).toBeInTheDocument();
   });
   it("loads the selected lecture through the existing authenticated page, and resets stale selection on revision changes", () => {
