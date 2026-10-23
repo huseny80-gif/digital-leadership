@@ -1,19 +1,27 @@
-name: Exam summary audio assets
+name: Study pages and lecture audio assets
 on:
   push:
     paths:
       - "exam-module.html"
+      - "summaries.html"
+      - "assets/audio/**"
       - "exam-section/**"
       - "scripts/*exam*audio*"
       - "web/public/exam-module.html"
+      - "web/public/summaries.html"
+      - "web/public/assets/audio/**"
       - "web/public/exam-section/**"
       - ".github/workflows/exam-audio-assets.yml"
   pull_request:
     paths:
       - "exam-module.html"
+      - "summaries.html"
+      - "assets/audio/**"
       - "exam-section/**"
       - "scripts/*exam*audio*"
       - "web/public/exam-module.html"
+      - "web/public/summaries.html"
+      - "web/public/assets/audio/**"
       - "web/public/exam-section/**"
       - ".github/workflows/exam-audio-assets.yml"
   workflow_dispatch:

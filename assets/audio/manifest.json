@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "summaryRevision": "815bd704631091dc49cd",
+  "lectures": [
+    {
+      "id": "innovation-01",
+      "number": 1,
+      "title": "المحاضرة الأولى في الابتكار وإدارة المشاريع",
+      "sourceSha256": "1e265fd185ba2a5dc34f83589128f773f41a728d2e0ed3988beed2a55545e45e",
+      "summarySha256": "948cadd091a8f9f5e30d218c5ac5dff7bfd4db36703403c655c4945525131a95",
+      "transcript": "assets/audio/innovation-01/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/innovation-01/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/innovation-01/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/innovation-01/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/innovation-01/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/innovation-01/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/innovation-01/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "innovation-02",
+      "number": 2,
+      "title": "المحاضرة الثانية في الابتكار وإدارة المشاريع",
+      "sourceSha256": "4e5dc50d3aba76aa941f431b384d5246a9e4ebf7346d150b9fe39e6b5f5998db",
+      "summarySha256": "55463bb6728dc5455e5a9cb0d9136f7da831e8219ba8668ffd3164ae01a18094",
+      "transcript": "assets/audio/innovation-02/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/innovation-02/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/innovation-02/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/innovation-02/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/innovation-02/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/innovation-02/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/innovation-02/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "innovation-03",
+      "number": 3,
+      "title": "المحاضرة الثالثة في الابتكار وإدارة المشاريع",
+      "sourceSha256": "b51002203f61a96ef1e24ef9e17e026ba800de7627d4018ac0cd8859cec99d13",
+      "summarySha256": "b31b59132dd2b33840f8403e95b3e4b70b7e7f0437c9c73a9a3d8d3b44c0ac4f",
+      "transcript": "assets/audio/innovation-03/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/innovation-03/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/innovation-03/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/innovation-03/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/innovation-03/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/innovation-03/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/innovation-03/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "innovation-04",
+      "number": 4,
+      "title": "المحاضرة الرابعة في الابتكار وإدارة المشاريع",
+      "sourceSha256": "d0f9d4d0e612bb257d0e95415003e1529e41922e03b784a89820e6234007a333",
+      "summarySha256": "9bdee520c74c4c86e146441e92ee7f71218a15a545b2a2aae9e259739c39a7d0",
+      "transcript": "assets/audio/innovation-04/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/innovation-04/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/innovation-04/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/innovation-04/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/innovation-04/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/innovation-04/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/innovation-04/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "innovation-05",
+      "number": 5,
+      "title": "المحاضرة الخامسة في الابتكار وإدارة المشاريع",
+      "sourceSha256": "c549a1727941f8e8cd95d29fbbe8c67e3ad037a2b309d9edca822531aeb2790e",
+      "summarySha256": "b4149f35aa20dbbc751901dee688119d559325f651b8ecbeea7b2e08e9454858",
+      "transcript": "assets/audio/innovation-05/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/innovation-05/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/innovation-05/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/innovation-05/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/innovation-05/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/innovation-05/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/innovation-05/saudi-female.mp3",
+          "available": false
+        }
+      }
+    }
+  ]
+}
