@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <meta name="description" content="ملخصات محاضرات الابتكار وإدارة المشاريع المعتمدة، مع مشغل مستقل لكل محاضرة وخيارات الأصوات العربية الفصحى والعراقية والسعودية.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-GDfs23z5XpSNqldnBgKRVVc+fbslRyUHVDgrSNcwAl8='; style-src 'unsafe-inline'; media-src 'self'; img-src data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+0CyVpl9bqRREdb8B7nEJxxyQf+1x+E40b+Ib1eVKJA='; style-src 'unsafe-inline'; media-src 'self'; img-src data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230B3B3C'/%3E%3Cpath d='M16 10C12 7 8 8 6 9v15c4-1 7-1 10 1 3-2 6-2 10-1V9c-2-1-6-2-10 1Zm0 0v15' fill='none' stroke='%23D4AF37' stroke-width='2'/%3E%3C/svg%3E">
   <title>الملخصات والبودكاست القيادي | القيادة الرقمية</title>
   <style>
@@ -49,6 +49,7 @@
     .button.primary { background: var(--gold); color: var(--page); border-color: var(--gold); }
     .button.subtle { background: transparent; }
     .notice { border: 1px solid var(--error); padding: 16px; border-radius: 12px; color: var(--error); }
+    .audio-disclosure { border-color: var(--gold); color: var(--soft-gold); background: rgba(212,175,55,.08); margin-block: 20px 24px; }
     .error-text { color: var(--error) !important; }
     .lecture-index { margin-block-end: 24px; }
     .lecture-index summary { min-height: 48px; padding: 12px 20px; cursor: pointer; color: var(--soft-gold); font-weight: 600; }
@@ -103,6 +104,7 @@
     <p class="eyebrow">الابتكار وإدارة المشاريع</p>
     <h1>الملخصات والبودكاست القيادي</h1>
     <p class="intro-copy">راجع الأفكار الرئيسة وشرحها الأكاديمي في كل محاضرة، واختر صوت تسجيل ملخصها من المكان نفسه.</p>
+    <p class="notice audio-disclosure">هذه التسجيلات مولّدة بصوت عصبي آلي وليست تسجيلات بشرية؛ النسخ العراقية والسعودية صياغة لهجية للمحتوى نفسه. المصدر الصوتي مضغوط؛ رفع معدل الترميز لا يضيف جودة أصلية.</p>
     <div class="toolbar"><div><div class="counts"><span><strong id="lecture-count">—</strong>محاضرات</span><span><strong>٦</strong>خيارات صوتية لكل محاضرة</span><span id="recording-count" role="status">جارٍ التحقق من التسجيلات…</span></div><p id="manifest-status" role="status">تبقى الملخصات متاحة للقراءة أثناء التحقق من التسجيلات.</p></div><button class="button subtle" id="refresh-recordings" type="button">تحديث حالة التسجيلات</button></div>
     <details class="glass lecture-index"><summary>انتقل إلى ملخص محاضرة</summary><nav aria-label="فهرس المحاضرات"><ul id="lecture-index"></ul></nav></details>
     <div id="lecture-list"></div>
@@ -165,11 +167,22 @@
       preferenceStatus();
     }
     function sourceUrl(lecture) { return "https://github.com/huseny80-gif/digital-leadership/blob/" + DATA.sourceCommit + "/" + lecture.pdf; }
-    function downloadText(lecture) {
-      const url = URL.createObjectURL(new Blob(["\ufeff" + lecture.transcript], { type: "text/plain;charset=utf-8" }));
+    async function downloadText(player) {
+      let text = player.lecture.transcript;
+      if (player.transcriptPath !== "assets/audio/" + player.lecture.id + "/summary.txt") {
+        try {
+          const response = await fetch(player.transcriptPath, { cache: "no-store", credentials: "omit" });
+          if (!response.ok) throw new Error("Transcript not found");
+          text = await response.text();
+        } catch {
+          setStatus(player, "تعذّر تحميل نص التسجيل المختار. يمكنك فتح رابط النص مباشرة أو العودة إلى الملخص الأكاديمي.", true);
+          return;
+        }
+      }
+      const url = URL.createObjectURL(new Blob(["\ufeff" + text], { type: "text/plain;charset=utf-8" }));
       const link = element("a");
       link.href = url;
-      link.download = lecture.title + ".txt";
+      link.download = player.lecture.title + ".txt";
       document.body.append(link);
       link.click();
       link.remove();
@@ -202,10 +215,28 @@
       player.host.replaceChildren(audio);
       return audio;
     }
+    function transcriptPathFor(lecture, voice, recording) {
+      const original = "assets/audio/" + lecture.id + "/summary.txt";
+      const dialect = voice.split("-")[0];
+      const expected = "assets/audio/" + lecture.id + "/" + dialect + ".txt";
+      return recording?.available && recording.transcript === expected ? expected : original;
+    }
+    function updateTranscript(player) {
+      const original = "assets/audio/" + player.lecture.id + "/summary.txt";
+      let path = original;
+      if (manifestState === "ready") {
+        const entry = manifest.lectures.find(item => item.id === player.lecture.id)?.recordings[player.voice.value];
+        path = transcriptPathFor(player.lecture, player.voice.value, entry);
+      }
+      player.transcriptPath = path;
+      player.transcript.href = path;
+      player.transcript.textContent = path === original ? "قراءة نص الملخص الأكاديمي ←" : "قراءة نص التسجيل المطابق ←";
+    }
     function prepareAudio(player) {
       const audio = resetPlayer(player);
       const lecture = player.lecture;
       const voice = DATA.voices.find(item => item.id === player.voice.value);
+      updateTranscript(player);
       if (manifestState === "loading") { setStatus(player, "جارٍ التحقق من تسجيل هذه المحاضرة…"); return; }
       if (manifestState === "error") { setStatus(player, "تعذّر التحقق من التسجيلات. يبقى الملخص متاحًا؛ استخدم زر تحديث حالة التسجيلات للمحاولة مجددًا.", true); return; }
       const entry = manifest.lectures.find(item => item.id === lecture.id).recordings[voice.id];
@@ -319,11 +350,11 @@
       tools.append(back, forward, label("سرعة الاستماع", rate));
       const download = element("a", "button primary download-audio", "تحميل تسجيل هذه المحاضرة");
       const retry = button("إعادة تحميل التسجيل", "subtle retry");
-      const transcript = element("a", "transcript-link", "قراءة نص التسجيل المطابق للملخص ←");
+      const transcript = element("a", "transcript-link", "قراءة نص الملخص الأكاديمي ←");
       transcript.href = "assets/audio/" + lecture.id + "/summary.txt";
       transcript.target = "_blank";
       transcript.rel = "noopener noreferrer";
-      const player = { lecture, panel, voice, host, status, back, forward, rate, download, retry, transcript, audio: null, ready: false };
+      const player = { lecture, panel, voice, host, status, back, forward, rate, download, retry, transcript, transcriptPath: transcript.href, audio: null, ready: false };
       voice.addEventListener("change", () => { savePreference(player); prepareAudio(player); });
       rate.addEventListener("change", () => { if (player.ready) player.audio.playbackRate = Number(rate.value); savePreference(player); });
       back.addEventListener("click", () => { if (player.ready) player.audio.currentTime = Math.max(0, player.audio.currentTime - 15); });
@@ -364,7 +395,7 @@
         original.target = "_blank";
         original.rel = "noopener noreferrer";
         const download = button("تحميل نص هذا الملخص");
-        download.addEventListener("click", () => downloadText(lecture));
+        download.addEventListener("click", () => downloadText(player));
         actions.append(original, download);
         text.append(actions);
         content.append(renderPlayer(lecture), text);

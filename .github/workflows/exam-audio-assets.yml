@@ -7,6 +7,7 @@ on:
       - "assets/audio/**"
       - "exam-section/**"
       - "scripts/*exam*audio*"
+      - "scripts/produce-lecture-audio*"
       - "web/public/exam-module.html"
       - "web/public/summaries.html"
       - "web/public/assets/audio/**"
@@ -19,6 +20,7 @@ on:
       - "assets/audio/**"
       - "exam-section/**"
       - "scripts/*exam*audio*"
+      - "scripts/produce-lecture-audio*"
       - "web/public/exam-module.html"
       - "web/public/summaries.html"
       - "web/public/assets/audio/**"
@@ -42,3 +44,5 @@ jobs:
         run: node scripts/sync-exam-audio.mjs --check
       - name: Check audio-tool syntax without generating bytecode
         run: python3 -c "import ast, pathlib; [ast.parse(path.read_text()) for path in pathlib.Path('scripts').glob('*exam*audio.py')]"
+      - name: Test lecture production safety without provider calls
+        run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/produce-lecture-audio.test.py

@@ -13,6 +13,7 @@ const LECTURE_TRANSCRIPT = "assets/audio/innovation-01/summary.txt";
 const MP3 = "assets/audio/innovation-01/msa-male.mp3";
 const VOICES = ["msa-male", "msa-female", "iraqi-male", "iraqi-female", "saudi-male", "saudi-female"];
 const TEXT = "ملخص تجريبي لا يُنشر في المنصة.\n";
+const DIALECT_TEXT = "هذا نص تجريبي باللهجة العراقية.\n";
 const HASH = createHash("sha256").update(TEXT).digest("hex");
 const VALID_MP3_HEADER = Buffer.concat([Buffer.from("ID3"), Buffer.alloc(200)]);
 
@@ -40,6 +41,27 @@ async function updateManifest(root, change) {
   const manifest = JSON.parse(await readFile(join(root, MANIFEST), "utf8"));
   change(manifest);
   await write(root, MANIFEST, JSON.stringify(manifest));
+}
+async function addNewRecordingMetadata(root, voice = VOICES[0], overrides = {}) {
+  const dialect = voice.slice(0, voice.lastIndexOf("-"));
+  const audio = Buffer.from(VALID_MP3_HEADER);
+  await write(root, `assets/audio/innovation-01/${dialect}.txt`, DIALECT_TEXT);
+  await write(root, MP3, audio);
+  await updateManifest(root, value => {
+    Object.assign(value.lectures[0].recordings[voice], {
+      available: true,
+      transcript: `assets/audio/innovation-01/${dialect}.txt`,
+      transcriptSha256: createHash("sha256").update(DIALECT_TEXT).digest("hex"),
+      sha256: createHash("sha256").update(audio).digest("hex"),
+      bytes: audio.length,
+      durationSeconds: 12.5,
+      provider: "edge-tts",
+      voiceId: "ar-SY-LaithNeural",
+      generatedAt: "2026-10-24T00:00:00.000Z",
+      sourceSummarySha256: HASH,
+      ...overrides,
+    });
+  });
 }
 async function usingFixture(run) {
   const root = await fixture();
@@ -101,6 +123,31 @@ test("copies an available lecture MP3 byte for byte", () => usingFixture(async r
   await write(root, MP3, VALID_MP3_HEADER);
   await syncExamAudio(root);
   assert.deepEqual(await readFile(join(root, "web/public", MP3)), VALID_MP3_HEADER);
+}));
+
+test("rejects MP3 corruption against the declared audio hash and byte count", () => usingFixture(async root => {
+  await addNewRecordingMetadata(root);
+  const corrupted = Buffer.from(VALID_MP3_HEADER);
+  corrupted[20] ^= 1;
+  await write(root, MP3, corrupted);
+  await assert.rejects(syncExamAudio(root), /Recording audio hash mismatch/);
+}));
+
+test("rejects a dialect transcript path that does not match the selected voice prefix", () => usingFixture(async root => {
+  await addNewRecordingMetadata(root, "msa-male", { transcript: "assets/audio/innovation-01/iraqi.txt" });
+  await assert.rejects(syncExamAudio(root), /Invalid recording transcript path/);
+}));
+
+test("rejects a stale source summary hash on a generated recording", () => usingFixture(async root => {
+  await addNewRecordingMetadata(root, "msa-male", { sourceSummarySha256: "f".repeat(64) });
+  await assert.rejects(syncExamAudio(root), /Recording source summary mismatch/);
+}));
+
+test("accepts the real provider voice id and rejects a dropdown key as identity", () => usingFixture(async root => {
+  await addNewRecordingMetadata(root);
+  await syncExamAudio(root);
+  await updateManifest(root, value => { value.lectures[0].recordings["msa-male"].voiceId = "msa-male"; });
+  await assert.rejects(syncExamAudio(root), /Invalid recording voice id/);
 }));
 
 test("--check rejects missing public targets without writing", () => usingFixture(async root => {

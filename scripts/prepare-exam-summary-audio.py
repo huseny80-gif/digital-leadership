@@ -24,10 +24,10 @@ def probe(path):
     ]).stdout)
 
 
-def loudness(path):
+def loudness(path, true_peak=-1.5):
     result = run([
         "ffmpeg", "-hide_banner", "-nostats", "-i", str(path),
-        "-af", "loudnorm=I=-16:TP=-1.5:LRA=7:print_format=json",
+        "-af", f"loudnorm=I=-16:TP={true_peak}:LRA=7:print_format=json",
         "-f", "null", "-",
     ])
     matches = re.findall(r'\{\s*"input_i".*?\}', result.stderr, re.S)
@@ -44,7 +44,12 @@ def main():
     parser.add_argument("input", type=Path, help="Original generated WAV (kept unchanged)")
     parser.add_argument("output", type=Path, help="Destination MP3")
     parser.add_argument("--report", type=Path, help="Optional JSON measurement report")
+    parser.add_argument("--title", default="القيادة الرقمية واتخاذ القرار الاستراتيجي")
+    parser.add_argument("--comment", default="AI-generated educational demonstration; not an approved exam syllabus")
+    parser.add_argument("--true-peak", type=float, default=-1.5, help="Pre-encoding peak ceiling, -3 to -1.5 dBTP")
     args = parser.parse_args()
+    if not -3 <= args.true_peak <= -1.5:
+        parser.error("True peak ceiling must stay between -3 and -1.5 dBTP")
     for tool in ("ffmpeg", "ffprobe"):
         if not shutil.which(tool):
             parser.error(f"Required tool not found: {tool}")
@@ -58,9 +63,9 @@ def main():
     if rate not in (8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000) or channels not in (1, 2):
         parser.error("Source sample rate/channel count is not natively supported by this MP3 pipeline")
     bitrate = "160k" if rate < 32000 else "320k"
-    measured = loudness(args.input)
+    measured = loudness(args.input, args.true_peak)
     settings = ":".join([
-        "loudnorm=I=-16:TP=-1.5:LRA=7",
+        f"loudnorm=I=-16:TP={args.true_peak}:LRA=7",
         f"measured_I={measured['input_i']}", f"measured_TP={measured['input_tp']}",
         f"measured_LRA={measured['input_lra']}", f"measured_thresh={measured['input_thresh']}",
         f"offset={measured['target_offset']}", "linear=true", "print_format=json",
@@ -73,9 +78,9 @@ def main():
             "-map", "0:a:0", "-vn", "-af", settings,
             "-ar", str(rate), "-ac", str(channels), "-c:a", "libmp3lame",
             "-b:a", bitrate, "-compression_level", "0", "-id3v2_version", "3",
-            "-metadata", "title=القيادة الرقمية واتخاذ القرار الاستراتيجي",
+            "-metadata", f"title={args.title}",
             "-metadata", "artist=منصة القيادة الرقمية",
-            "-metadata", "comment=AI-generated educational demonstration; not an approved exam syllabus",
+            "-metadata", f"comment={args.comment}",
             str(staged),
         ])
         # Decode the complete output, not just its header, before replacing it.
@@ -89,7 +94,7 @@ def main():
             raise ValueError("MP3 true peak exceeded the mastering safety margin")
         staged.replace(args.output)
     report = {"source": original, "output": output, "source_loudness": measured,
-              "output_loudness": final, "target_lufs": -16, "target_true_peak_dbtp": -1.5,
+              "output_loudness": final, "target_lufs": -16, "target_true_peak_dbtp": args.true_peak,
               "native_sample_rate_preserved": True, "requested_bitrate": bitrate}
     if args.report:
         args.report.parent.mkdir(parents=True, exist_ok=True)

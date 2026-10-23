@@ -7,9 +7,23 @@ const EXAM = "exam-module.html";
 const SUMMARIES = "summaries.html";
 const MANIFEST = "assets/audio/manifest.json";
 const VOICES = ["msa-male", "msa-female", "iraqi-male", "iraqi-female", "saudi-male", "saudi-female"];
+const PROVIDER_VOICES = {
+  "msa-male": "ar-SY-LaithNeural", "msa-female": "ar-SY-AmanyNeural",
+  "iraqi-male": "ar-IQ-BasselNeural", "iraqi-female": "ar-IQ-RanaNeural",
+  "saudi-male": "ar-SA-HamedNeural", "saudi-female": "ar-SA-ZariyahNeural",
+};
 const AUDIO_RELATIVE = "exam-section/audio/digital-leadership-summary.mp3";
 const TRANSCRIPT_RELATIVE = "exam-section/audio/digital-leadership-summary.txt";
 const FILES = [EXAM, SUMMARIES, AUDIO_RELATIVE, TRANSCRIPT_RELATIVE];
+const RECORDING_METADATA = ["transcript", "transcriptSha256", "sha256", "bytes", "durationSeconds", "provider", "voiceId", "generatedAt", "sourceSummarySha256"];
+
+function dialectForVoice(voice) {
+  return voice.slice(0, voice.lastIndexOf("-"));
+}
+
+function recordingTranscriptPath(lecture, voice) {
+  return `assets/audio/${lecture.id}/${dialectForVoice(voice)}.txt`;
+}
 
 async function directoryFiles(root, relative) {
   let entries;
@@ -24,6 +38,34 @@ async function directoryFiles(root, relative) {
     else throw new Error(`Audio asset must be a regular file: ${path}`);
   }
   return files;
+}
+
+function validateRecordingMetadata(contents, lecture, entry, voice, recording, audio) {
+  const hasMetadata = RECORDING_METADATA.some(field => Object.prototype.hasOwnProperty.call(recording, field));
+  if (!hasMetadata) return;
+  if (recording.sourceSummarySha256 !== undefined && recording.sourceSummarySha256 !== entry.summarySha256) {
+    throw new Error(`Recording source summary mismatch: ${lecture.id}/${voice}`);
+  }
+  if (recording.transcript !== undefined || recording.transcriptSha256 !== undefined) {
+    const expectedTranscript = recordingTranscriptPath(lecture, voice);
+    if (recording.transcript !== expectedTranscript) throw new Error(`Invalid recording transcript path: ${lecture.id}/${voice}`);
+    if (!/^[a-f0-9]{64}$/.test(recording.transcriptSha256 || "")) throw new Error(`Invalid recording transcript hash: ${lecture.id}/${voice}`);
+    const transcript = contents[expectedTranscript];
+    if (!transcript) throw new Error(`Missing required ${expectedTranscript}`);
+    const transcriptHash = createHash("sha256").update(transcript).digest("hex");
+    if (recording.transcriptSha256 !== transcriptHash) throw new Error(`Recording transcript hash mismatch: ${expectedTranscript}`);
+  }
+  if (recording.sha256 !== undefined && !/^[a-f0-9]{64}$/.test(recording.sha256)) throw new Error(`Invalid recording audio hash: ${lecture.id}/${voice}`);
+  if (recording.bytes !== undefined && (!Number.isInteger(recording.bytes) || recording.bytes < 0)) throw new Error(`Invalid recording byte count: ${lecture.id}/${voice}`);
+  if (recording.durationSeconds !== undefined && (!Number.isFinite(recording.durationSeconds) || recording.durationSeconds <= 0)) throw new Error(`Invalid recording duration: ${lecture.id}/${voice}`);
+  if (recording.provider !== undefined && recording.provider !== "edge-tts") throw new Error(`Invalid recording provider: ${lecture.id}/${voice}`);
+  if (recording.voiceId !== undefined && recording.voiceId !== PROVIDER_VOICES[voice]) throw new Error(`Invalid recording voice id: ${lecture.id}/${voice}`);
+  if (recording.generatedAt !== undefined && (typeof recording.generatedAt !== "string" || !Number.isFinite(Date.parse(recording.generatedAt)))) throw new Error(`Invalid recording generation date: ${lecture.id}/${voice}`);
+  if (recording.available && (recording.sha256 !== undefined || recording.bytes !== undefined)) {
+    if (!audio) throw new Error(`Missing available recording bytes: ${lecture.id}/${voice}`);
+    if (recording.sha256 !== undefined && recording.sha256 !== createHash("sha256").update(audio).digest("hex")) throw new Error(`Recording audio hash mismatch: ${lecture.id}/${voice}`);
+    if (recording.bytes !== undefined && recording.bytes !== audio.length) throw new Error(`Recording byte count mismatch: ${lecture.id}/${voice}`);
+  }
 }
 
 async function validateStudyPages(root, contents) {
@@ -57,12 +99,14 @@ async function validateStudyPages(root, contents) {
       const recording = entry.recordings[voice];
       const expectedPath = `assets/audio/${lecture.id}/${voice}.mp3`;
       if (!recording || recording.path !== expectedPath || typeof recording.available !== "boolean") throw new Error(`Invalid recording path or availability: ${lecture.id}/${voice}`);
+      let audio;
       if (recording.available) {
-        const audio = await requiredFile(join(root, expectedPath), expectedPath);
+        audio = await requiredFile(join(root, expectedPath), expectedPath);
         const id3 = audio.subarray(0, 3).toString("ascii") === "ID3";
         const frame = audio.length >= 2 && audio[0] === 0xff && (audio[1] & 0xe0) === 0xe0;
         if (audio.length < 128 || (!id3 && !frame)) throw new Error(`Published recording is not an MP3: ${expectedPath}`);
       }
+      validateRecordingMetadata(contents, lecture, entry, voice, recording, audio);
     }
   }
 }
