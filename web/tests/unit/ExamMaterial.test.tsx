@@ -42,6 +42,18 @@ const renderWorkspace = (extra: Partial<ExamMaterialIndex> = {}) => render(<Exam
 const generateButton = () => screen.getByRole("button", { name: "توليد المحتوى الامتحاني الذكي" });
 
 describe("exam material selection and archive navigation", () => {
+  it.each([false, true])("keeps the exam summary text and revision tools without podcast controls (admin: %s)", async canGenerate => {
+    renderWorkspace({ canGenerate });
+    await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
+    expect(screen.getByRole("navigation", { name: "فهرس الملخص" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "طباعة الملخص الشامل PDF" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "بودكاست المراجعة الصوتية" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "تنزيل نص السرد الأكاديمي" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/مراجعة صوتية/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "الاختبار التفاعلي المتقدم" }));
+    expect(screen.getByRole("button", { name: "بدء الاختبار أو متابعة المحاولة" })).toBeInTheDocument();
+  });
+
   it("hides admin controls from visitors, renders selected sources safely, and retains links back to the course", async () => {
     renderWorkspace({ canGenerate: false });
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
