@@ -92,6 +92,18 @@ describe("current Read Aloud synthesis transport", () => {
     await vi.advanceTimersByTimeAsync(25000); await failure;
     expect(wire.sockets[0]!.terminate).toHaveBeenCalledOnce();
   });
+  it("keeps a long passage that is still streaming, but caps the whole request at two minutes", async () => {
+    vi.useFakeTimers();
+    const long = synthesizeAcademicSpeech("ملخص أكاديمي طويل", "ar-IQ-RanaNeural"), streaming = wire.sockets.at(-1)!;
+    streaming.readyState = 1; streaming.emit("open");
+    for (let second = 0; second < 60; second += 20) { await vi.advanceTimersByTimeAsync(20000); streaming.emit("message", audioPacket(mp3()), true); }
+    end(streaming, Buffer.alloc(0));
+    await expect(long).resolves.toEqual(Buffer.concat([mp3(), mp3(), mp3()]));
+    const endless = synthesizeAcademicSpeech("ملخص أكاديمي", "ar-IQ-BasselNeural"), trickle = wire.sockets.at(-1)!;
+    const failure = expect(endless).rejects.toMatchObject({ reason: "provider_timeout" });
+    for (let second = 0; second < 120; second += 20) { await vi.advanceTimersByTimeAsync(20000); trickle.emit("message", audioPacket(mp3()), true); }
+    await failure;
+  });
   it("corrects the token clock once from HTTPS provider Date without changing the chosen voice", async () => {
     vi.useFakeTimers(); const now = Date.UTC(2026, 9, 13, 8); vi.setSystemTime(now);
     const request = synthesizeAcademicSpeech("ملخص أكاديمي", "ar-IQ-RanaNeural"), resume = vi.fn();

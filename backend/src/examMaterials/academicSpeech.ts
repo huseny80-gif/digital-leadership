@@ -56,12 +56,16 @@ function synthesizeOnce(ssml: string, clockSkewMs = 0): Promise<Buffer> {
     });
     const buffers: Buffer[] = []; let length = 0; let finished = false;
     const finish = (error?: AcademicSpeechUnavailable) => {
-      if (finished) return; finished = true; clearTimeout(timeout);
+      if (finished) return; finished = true; clearTimeout(idle); clearTimeout(deadline);
       if (socket.readyState === WebSocket.OPEN) socket.close(); else socket.terminate();
       const bytes = Buffer.concat(buffers);
       if (!error && isAcademicMp3(bytes)) resolve(bytes); else reject(error ?? new AcademicSpeechUnavailable("invalid_audio"));
     };
-    const timeout = setTimeout(() => finish(new AcademicSpeechUnavailable("provider_timeout")), 25_000);
+    // A long passage streams for longer than a short one, so wait on silence
+    // (no frame for 25 s) rather than on total time, within a 2-minute cap.
+    const timedOut = () => finish(new AcademicSpeechUnavailable("provider_timeout"));
+    let idle = setTimeout(timedOut, 25_000);
+    const deadline = setTimeout(timedOut, 120_000);
     socket.on("error", () => finish(new AcademicSpeechUnavailable("transport_error")));
     socket.on("close", () => finish(new AcademicSpeechUnavailable("provider_closed")));
     socket.on("unexpected-response", (_request, response) => {
@@ -77,6 +81,7 @@ function synthesizeOnce(ssml: string, clockSkewMs = 0): Promise<Buffer> {
       socket.send(`X-RequestId:${id}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${stamp}Z\r\nPath:ssml\r\n\r\n${ssml}`);
     });
     socket.on("message", (raw, binary) => {
+      clearTimeout(idle); idle = setTimeout(timedOut, 25_000);
       const data = Array.isArray(raw) ? Buffer.concat(raw) : Buffer.from(raw as Buffer);
       if (!binary) { if (/^Path:turn\.end\r?$/m.test(data.toString())) finish(); return; }
       if (data.length < 2) { finish(new AcademicSpeechUnavailable("invalid_audio")); return; }
