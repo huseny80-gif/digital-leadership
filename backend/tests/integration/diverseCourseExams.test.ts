@@ -11,6 +11,7 @@ import { refreshDiverseAssessments } from "../../src/examMaterials/refreshDivers
 import { diverseAssessmentPolicy } from "../../src/examMaterials/diverseAssessment.js";
 import { readFileSync } from "node:fs";
 import { auditCyberComparisonQuestions } from "../../src/examMaterials/examCaseRevisionAudit.js";
+import type { GroundedQuestion } from "../../src/examMaterials/sourceGrounding.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 async function reset() {
@@ -53,12 +54,21 @@ describe("published six-format curriculum and exam material revisions", () => {
       expect(paper.answerKey).toHaveLength(group.question_count);
       expect(paper.answerKey!.every(answer => answer.rubric.length > 0 && answer.rubric.every(item => item.references.length > 0))).toBe(true);
       if (group.subject_id === subjectMapping["cybersecurity-governance"]) {
-        const cases = JSON.parse(readFileSync(new URL("../../content/finquiz/analyticalCases.json", import.meta.url), "utf8")) as { cases: Array<{ id: string; prompt: string }> };
+        const cases = JSON.parse(readFileSync(new URL("../../content/finquiz/analyticalCases.json", import.meta.url), "utf8")) as { cases: Array<{ id: string; criterion: string; sha256: string }> };
         // The catalog selection covers lectures 1–5 and ISO; the privately
         // uploaded sixth lecture is not part of this integration fixture.
         const comparisons = cases.cases.filter(question => question.id.startsWith("cmp-cyber") && !question.id.startsWith("cmp-cyber6-"));
         expect(comparisons).toHaveLength(5);
-        expect(paper.questions.map(question => question.prompt)).toEqual(expect.arrayContaining(comparisons.map(question => question.prompt)));
+        const stored = (await pool.query<{ id: string; prompt: string; program: GroundedQuestion }>("select q.id,q.prompt,q.rubric->'sourceProgram' as program from questions q join quiz_questions qq on qq.question_id=q.id where qq.quiz_id=$1", [group.quiz_id])).rows;
+        for (const comparison of comparisons) {
+          const matching = stored.filter(row => row.program?.assessment?.criterion === comparison.criterion);
+          expect(matching).toHaveLength(1);
+          const row = matching[0]!;
+          expect(row.program.assessment!.policy).toBe("source-case-assessment-v1");
+          expect(row.program.references.every(reference => reference.sha256 === comparison.sha256)).toBe(true);
+          expect(row.prompt).toBe(row.program.prompt);
+          expect(paper.questions.find(question => question.id === row.id)?.prompt).toBe(row.prompt);
+        }
       }
       const learner = await service.academicPaper(group.subject_id, group.id, { kind: "user", userId: admin }, false);
       expect(JSON.stringify(learner)).not.toMatch(/"(?:answerKey|modelAnswer|correctIndex|isCorrect|sourceProgram|matchingRightIds|excerpt)"/u);

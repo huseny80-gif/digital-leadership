@@ -51,7 +51,7 @@ describe("published weekly assessment access and exports", () => {
       const parser = new PDFParse({ data: response.body });
       try {
         const text = (await parser.getText()).text.normalize("NFKC");
-        expect(text).toContain("اختبارات د. ضياء الأسبوعية"); expect(text).toContain("الفرق بين");
+        expect(text).toContain("اختبارات د. ضياء الأسبوعية"); expect(text).toContain("بماذا تختلف المصادقة");
         expect(text).not.toMatch(/الاسم الثلاثي|gmail|Google Forms/u);
         // A PDF text extractor can place the LTR acronym before its Arabic
         // run. Check the complete Arabic feedback clause, not visual run order.

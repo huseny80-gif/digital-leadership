@@ -11,6 +11,8 @@ import { groundingVersion, groundedQuestionCandidates, validGroundedQuestion, ty
 import { generatedSourcePolicy } from "./questionGeneration.js";
 import { privateMatchingIds } from "../assessments/matchingIdentity.js";
 import { assessmentRevisionForSubject, assertCompleteInnovationBank, innovationAssessmentSubjectId } from "../examMaterials/reviewedInnovationAssessment.js";
+import { legacyQuestionCandidates } from "../examMaterials/diverseAssessment.js";
+import { courseQuestionWordingRevision, rewordCourseQuestions } from "../examMaterials/reviewedCourseQuestionWording.js";
 
 /** Changes whenever reviewed cases are added or edited (e.g. a new lecture),
  * so platform-managed course editions are rebuilt once for that revision. */
@@ -18,7 +20,7 @@ export const courseSourceRevision = (): string => createHash("sha256")
   .update(readFileSync(new URL("../../content/finquiz/analyticalCases.json", import.meta.url))).digest("hex").slice(0, 16);
 export const courseAssessmentReviewPolicy = "file-verified-course-assessments-v4-diverse";
 const weakFormat = /_{3,}|أكمل\s+(?:العبارة|النص)|الكلمة\s+المحذوفة|CamScanner|المسح الضوئي\s+ب/u;
-type Plan = { lecture: Lecture; questions: GroundedQuestion[]; links: Awaited<ReturnType<LectureSourceFiles["read"]>>["links"] };
+type Plan = { lecture: Lecture; questions: GroundedQuestion[]; previousCandidates: Map<string, string>; links: Awaited<ReturnType<LectureSourceFiles["read"]>>["links"] };
 const nativeQuestionIds = (subjectId: string) => manifest.subjects.find(subject => subjectMapping[subject.id] === subjectId)?.quizzes.flatMap(quiz => quiz.questions.flatMap(question => [
   finquizRecordId("question:" + question.id),
   ...(quiz.sourceReview ? [finquizRecordId(`${quiz.sourceReview}:question:${question.id}:${createHash("sha256").update(JSON.stringify(question)).digest("hex")}`)] : []),
@@ -47,6 +49,7 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
     const subject = await content.getSubjectOrThrow(subjectId, false);
     const auditSql = "select id from audit_logs where action='course_assessments.source_reviewed' and entity_id=$1 and metadata->>'policy'=$2 and ($3::text is null or metadata->>'sourceRevision'=$3)";
     const revision = assessmentRevisionForSubject(subjectId, sourceRevision);
+    const reviewedWording = Boolean(courseQuestionWordingRevision(subjectId));
     const auditParams = [subjectId, courseAssessmentReviewPolicy, revision ?? null];
     const currentAudit = await pool.query(auditSql, auditParams);
     if (currentAudit.rowCount && !await needsReview(pool, subjectId)) { courses.push(await courseAssessmentAudit(pool, subjectId, false)); continue; }
@@ -67,13 +70,22 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
         const questions = groundedQuestionCandidates(paragraphs).filter(question => validGroundedQuestion(question, paragraphs))
           .sort((a, b) => (a.classification?.number ?? 0) - (b.classification?.number ?? 0) || a.candidateId.localeCompare(b.candidateId));
         assertCompleteInnovationBank(paragraphs, questions);
-        plans.push({ lecture, questions, links });
+        // Editorial editions have different IDs, but their exact original
+        // source-generated programs still own the previous configured marks.
+        // Never infer that relationship from display order or similar text.
+        const originals = reviewedWording ? legacyQuestionCandidates(paragraphs) : [];
+        const previousCandidates = new Map(rewordCourseQuestions(originals, paragraphs).map((question, index) => [question.candidateId, originals[index]!.candidateId]));
+        plans.push({ lecture, questions, previousCandidates, links });
         if (!questions.length) unavailableLectures.push({ number: lecture.orderIndex, reason: "no_verified_assessment" });
       } catch { unavailableLectures.push({ number: lecture.orderIndex, reason: "source_unavailable" }); }
     }
     // A failed read never supplies fabricated replacement questions.
     if (subjectId === innovationAssessmentSubjectId && unavailableLectures.length) {
       courses.push({ subjectId, changed: false, unavailableLectures, reason: "innovation_assessment_evidence_incomplete" });
+      continue;
+    }
+    if (sourceRevision && reviewedWording && unavailableLectures.length) {
+      courses.push({ subjectId, changed: false, unavailableLectures, reason: "course_assessment_evidence_incomplete" });
       continue;
     }
     if (!plans.some(plan => plan.questions.length)) { courses.push({ subjectId, changed: false, unavailableLectures, reason: "no_verified_assessment" }); continue; }
@@ -98,10 +110,13 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
       const bankId = finquizRecordId(`${courseAssessmentReviewPolicy}:bank:${subjectId}`);
       await client.query("insert into question_banks(id,subject_id,title,description,created_by) values($1,$2,$3,$4,$5) on conflict(id) do nothing", [bankId, subjectId, `تقييم موثق: ${subject.title}`, courseAssessmentReviewPolicy, subject.createdBy]);
       const ids = new Map<string, string[]>();
+      const previousIds = new Map<string, string>();
       for (const plan of plans) {
         const questions: string[] = [];
         for (const question of plan.questions) {
           const id = finquizRecordId(`${courseAssessmentReviewPolicy}:question:${plan.lecture.id}:${question.candidateId}`);
+          const previousCandidate = plan.previousCandidates.get(question.candidateId);
+          if (previousCandidate) previousIds.set(id, finquizRecordId(`${courseAssessmentReviewPolicy}:question:${plan.lecture.id}:${previousCandidate}`));
           const pairIds = (question.pairs ?? []).map(() => randomUUID());
           const rubric = { grounding: groundingVersion, sourceReferences: question.references, assessment: question.assessment, points: question.rubric ?? [], sourceProgram: question,
             ...(pairIds.length ? { matchingRightIds: privateMatchingIds(pairIds) } : {}), courseReview: courseAssessmentReviewPolicy };
@@ -120,12 +135,18 @@ export async function reviewCourseAssessments(pool: Pool, subjectIds = Object.va
         const membership = (await client.query<{ question_id: string; points_override: number | null }>("select question_id,points_override from quiz_questions where quiz_id=$1 order by order_index", [previous.id])).rows;
         if (membership.length === questionIds.length && membership.every(row => questionIds.includes(row.question_id))) continue;
         const overrides = new Map(membership.map(row => [row.question_id, row.points_override]));
+        const knownIds = new Set(questionIds.flatMap(id => [id, ...(previousIds.has(id) ? [previousIds.get(id)!] : [])]));
+        if (sourceRevision && reviewedWording && membership.some(row => row.points_override !== null && !knownIds.has(row.question_id))) throw new Error("course_wording_override_identity_unavailable");
         const digest = createHash("sha256").update(JSON.stringify(questionIds)).digest("hex");
         const id = finquizRecordId(`${courseAssessmentReviewPolicy}:quiz:${previous.id}:${digest}`);
         await client.query(`insert into quizzes(id,subject_id,lecture_id,title,description,time_limit_seconds,status,created_by,due_at)
           select $1,subject_id,lecture_id,title,$3,time_limit_seconds,case when $4 then status else 'draft' end,created_by,due_at from quizzes where id=$2`,
         [id, previous.id, "اختبار متنوع الصيغ موثّق بملفات المحاضرات، مع التصحيح والتغذية الراجعة ونماذج الإجابات الكتابية.", questionIds.length > 0]);
-        for (const [order, questionId] of questionIds.entries()) await client.query("insert into quiz_questions(quiz_id,question_id,order_index,points_override) values($1,$2,$3,$4)", [id, questionId, order, overrides.get(questionId) ?? null]);
+        for (const [order, questionId] of questionIds.entries()) {
+          const previousId = previousIds.get(questionId);
+          const points = overrides.has(questionId) ? overrides.get(questionId) : previousId ? overrides.get(previousId) : null;
+          await client.query("insert into quiz_questions(quiz_id,question_id,order_index,points_override) values($1,$2,$3,$4)", [id, questionId, order, points ?? null]);
+        }
         await client.query("update quizzes set superseded_by=$2 where id=$1", [previous.id, id]);
         await client.query(`update content_imports set result_lectures=(select jsonb_agg(case when entry->>'quizId'=$1 then jsonb_set(entry,'{quizId}',to_jsonb($2::text)) else entry end order by ordinal)
           from jsonb_array_elements(result_lectures) with ordinality entries(entry,ordinal)),updated_at=now() where subject_id=$3 and result_lectures @> $4::jsonb`, [previous.id, id, subjectId, JSON.stringify([{ quizId: previous.id }])]);

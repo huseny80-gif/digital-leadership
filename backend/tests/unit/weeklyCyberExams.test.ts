@@ -46,7 +46,7 @@ describe("the six supplied Dr Dhia weekly quiz files", () => {
   it("keeps the image-only CISO scenario intact, distinguishes allowed assumptions and never invents an automatic essay grade", () => {
     const paper = service.paper(weeklyCyberSubjectId, "open-book"), question = paper.questions[0]!;
     expect(question.type).toBe("case_study"); expect(question.questionReference.page).toBe(2);
-    expect(question.prompt).toContain("ISO/IEC 27001 في العراق"); expect(question.prompt).toContain("يمكن فرض أي فرضية");
+    expect(question.prompt).toContain("ISO/IEC 27001 في العراق"); expect(question.prompt).toMatch(/(?:فرض|افتراض)\s+أي فرضية/u);
     const answer = service.check(weeklyCyberSubjectId, "open-book", question.id);
     expect(answer.grading).toBe("manual"); expect(answer).not.toHaveProperty("isCorrect");
     expect(JSON.stringify(answer.modelAnswer)).toContain("هذه فرضية تطبيقية مسموحة في السؤال");

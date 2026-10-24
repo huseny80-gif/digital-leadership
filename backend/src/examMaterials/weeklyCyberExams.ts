@@ -3,6 +3,7 @@ import type { WeeklyExamCollection, WeeklyExamPaper, WeeklyExamQuestion, WeeklyE
 import { notFound } from "../lib/httpError.js";
 import { ValidationError } from "../lib/validation.js";
 import { WEEKLY_CYBER_SUBJECT_ID } from "@digital-leadership/shared";
+import { rewordWeeklyQuestion } from "./reviewedCourseQuestionWording.js";
 
 interface StoredQuestion extends WeeklyExamQuestion {
   correctIndex: number | null; modelAnswer: WeeklyExamSolution["modelAnswer"]; rationale: string;
@@ -61,7 +62,7 @@ export class WeeklyCyberExams {
   }
   paper(subjectId: string, paperId: string): WeeklyExamPaper {
     const paper = this.stored(subjectId, paperId);
-    return { ...summary(paper), questions: paper.questions.map(publicQuestion) };
+    return { ...summary(paper), questions: paper.questions.map(question => publicQuestion(rewordWeeklyQuestion(paper.id, question))) };
   }
   solutions(subjectId: string, paperId: string): WeeklyExamSolution[] { return this.stored(subjectId, paperId).questions.map(solution); }
   check(subjectId: string, paperId: string, questionId: string, selectedIndex?: number): WeeklyExamSolution {
