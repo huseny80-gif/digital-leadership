@@ -12,7 +12,10 @@ describe("neural speech adapter and bounded cache", () => {
   });
   it("keeps the public protocol hash stable only within the same five-minute bucket", () => {
     const stamp = Date.UTC(2026, 9, 10, 10, 0);
-    expect(speechServiceHash(stamp)).toMatch(/^[A-F0-9]{64}$/);
+    expect(speechServiceHash(stamp)).toMatch(/^[A-F0-9]{16}-[A-F0-9]{64}$/);
+    // Reference vectors from edge-tts generate_sec_ms_gec_v2 for the same client identifier.
+    expect(speechServiceHash(0)).toBe("52BC7A17B50DFEC9-28C4394775C8751CD2F6859C030C06DB1489ACAB3B3A7651831FC26895177ED6");
+    expect(speechServiceHash(1792831460_000)).toBe("20A87CCEF6ECA7B6-18617316A5A7DB94A815ECAA196FBCBDA54F55CF82AD742ECE85B91FD114D513");
     expect(speechServiceHash(stamp + 299_000)).toBe(speechServiceHash(stamp));
     expect(speechServiceHash(stamp + 300_000)).not.toBe(speechServiceHash(stamp));
   });

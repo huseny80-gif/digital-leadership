@@ -41,13 +41,14 @@ beforeEach(() => { wire.sockets.length = 0; });
 afterEach(() => { vi.useRealTimers(); });
 
 describe("current Read Aloud synthesis transport", () => {
-  it("uses the current synthesis host and subscription parameter, retaining actual person and audio quality", async () => {
+  it("uses the current Read Aloud host and trusted client token, retaining actual person and audio quality", async () => {
     const request = synthesizeAcademicSpeech("محتوى <معتمد>", "ar-IQ-RanaNeural"), socket = wire.sockets[0]!;
     const url = new URL(socket.url);
-    expect(url.origin).toBe("wss://api.msedgeservices.com");
-    expect(url.pathname).toBe("/tts/cognitiveservices/websocket/v1");
-    expect(url.searchParams.has("Ocp-Apim-Subscription-Key")).toBe(true);
-    expect(url.searchParams.has("TrustedClientToken")).toBe(false);
+    expect(url.origin).toBe("wss://speech.platform.bing.com");
+    expect(url.pathname).toBe("/consumer/speech/synthesize/readaloud/edge/v1");
+    expect(url.searchParams.has("TrustedClientToken")).toBe(true);
+    expect(url.searchParams.has("Ocp-Apim-Subscription-Key")).toBe(false);
+    expect(url.searchParams.get("Sec-MS-GEC-Version")).toBe("2-143.0.3650.75");
     expect(socket.options.handshakeTimeout).toBe(10000);
     expect(socket.options.maxPayload).toBe(2 * 1024 * 1024);
     expect(Object.keys(socket.options.headers).map(key => key.toLowerCase())).not.toContain("authorization");
@@ -90,6 +91,18 @@ describe("current Read Aloud synthesis transport", () => {
     const failure = expect(request).rejects.toMatchObject({ reason: "provider_timeout" });
     await vi.advanceTimersByTimeAsync(25000); await failure;
     expect(wire.sockets[0]!.terminate).toHaveBeenCalledOnce();
+  });
+  it("keeps a long passage that is still streaming, but caps the whole request at two minutes", async () => {
+    vi.useFakeTimers();
+    const long = synthesizeAcademicSpeech("ملخص أكاديمي طويل", "ar-IQ-RanaNeural"), streaming = wire.sockets.at(-1)!;
+    streaming.readyState = 1; streaming.emit("open");
+    for (let second = 0; second < 60; second += 20) { await vi.advanceTimersByTimeAsync(20000); streaming.emit("message", audioPacket(mp3()), true); }
+    end(streaming, Buffer.alloc(0));
+    await expect(long).resolves.toEqual(Buffer.concat([mp3(), mp3(), mp3()]));
+    const endless = synthesizeAcademicSpeech("ملخص أكاديمي", "ar-IQ-BasselNeural"), trickle = wire.sockets.at(-1)!;
+    const failure = expect(endless).rejects.toMatchObject({ reason: "provider_timeout" });
+    for (let second = 0; second < 120; second += 20) { await vi.advanceTimersByTimeAsync(20000); trickle.emit("message", audioPacket(mp3()), true); }
+    await failure;
   });
   it("corrects the token clock once from HTTPS provider Date without changing the chosen voice", async () => {
     vi.useFakeTimers(); const now = Date.UTC(2026, 9, 13, 8); vi.setSystemTime(now);

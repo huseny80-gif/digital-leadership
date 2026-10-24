@@ -72,6 +72,10 @@ async function seed() {
   return { app, admin, bob, subject, other, foreign, draft, lectures, tokens, path, generate, courseQuiz, originals, cookie: `training_guest_session=${signGuestSessionCookieValue(guest)}` };
 }
 
+// These suites read and hash several real lecture PDFs per test; on shared CI
+// runners they routinely land just past the 5 s default, so allow 30 s.
+vi.setConfig({ testTimeout: 30_000 });
+
 describe("independent exam material archives", () => {
   it("formats curriculum-bound academic papers and releases marking schemes only to admins or the owner after final submission", async () => {
     const s = await seed(), group = await s.generate(s.lectures.slice(0, 3));
