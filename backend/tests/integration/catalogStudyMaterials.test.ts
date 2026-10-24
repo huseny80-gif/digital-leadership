@@ -37,7 +37,7 @@ describe("a verified curriculum review across all five materials", () => {
     await pool.query("update lectures set deleted_at=now() where id=$1", [deleted]);
     const result = await refreshCatalogStudyMaterials(pool);
     expect(result.courses).toHaveLength(5);
-    expect(result.courses.reduce((n, course) => n + course.verifiedFiles, 0)).toBe(26);
+    expect(result.courses.reduce((n, course) => n + course.verifiedFiles, 0)).toBe(27);
     expect(result.courses.every(course => course.groupId && course.questionCount > 0)).toBe(true);
     expect(result.courses.find(course => course.slug === "cybersecurity-governance")!.registered).toBe(1);
     const content = new ContentService(new PgContentRepository(pool));
