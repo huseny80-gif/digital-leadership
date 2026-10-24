@@ -28,6 +28,44 @@ const fileLinksSql = `select li.id as item_id,li.lecture_id,li.title,li.updated_
   and l.status='published' and l.deleted_at is null and f.status='active' and f.deleted_at is null
   order by li.lecture_id,li.order_index,li.id`;
 const extractionCache = new Map<string, Promise<string>>();
+// Uploaded originals already verified against their stored size and checksum.
+// Keyed by both, so a replaced or edited file is downloaded and checked again;
+// without this every study request re-downloaded every lecture's PDF.
+const uploadedCache = new Map<string, Promise<{ checksum: string; extracted: { text: string; sha256: string } }>>();
+// Catalog PDFs ship with the deployment and never change while it runs.
+const bundledFileCache = new Map<string, Promise<{ text: string; sha256: string }>>();
+function bundledFileText(paths: string[], filename: string) {
+  const key = JSON.stringify([paths, filename]);
+  let work = bundledFileCache.get(key);
+  if (!work) {
+    work = Promise.all(paths.map(path => readFile(path))).then(parts => actualFileText(Buffer.concat(parts), filename, "application/pdf"));
+    bundledFileCache.set(key, work);
+    work.catch(() => bundledFileCache.delete(key));
+  }
+  return work;
+}
+const STORAGE_READ_TIMEOUT_MS = 30_000;
+async function verifiedUpload(link: FileLink) {
+  const key = `${link.storage_key}\0${link.size_bytes}\0${link.checksum ?? ""}\0${link.original_filename}\0${link.mime_type}`;
+  let work = link.checksum ? uploadedCache.get(key) : undefined;
+  if (!work) {
+    const storage = getStorageProvider();
+    if (!storage.read) throw new Error("private_source_read_unavailable");
+    let timer: NodeJS.Timeout | undefined;
+    work = Promise.race([storage.read(link.storage_key), new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error("source_read_timeout")), STORAGE_READ_TIMEOUT_MS); })])
+      .finally(() => clearTimeout(timer)).then(async bytes => {
+        const checksum = sha(bytes);
+        if (Number(link.size_bytes) !== bytes.length || link.checksum && link.checksum !== checksum) throw new Error("uploaded_source_checksum_mismatch");
+        return { checksum, extracted: await actualFileText(bytes, link.original_filename, link.mime_type) };
+      });
+    if (link.checksum) {
+      if (uploadedCache.size >= 256) uploadedCache.delete(uploadedCache.keys().next().value!);
+      uploadedCache.set(key, work);
+      work.catch(() => uploadedCache.delete(key));
+    }
+  }
+  return work;
+}
 // Permanent catalog identities record the retired combined edition and its
 // standalone replacements. The retired file is now a resource, so it need not
 // appear in either lecture's current file list. Never infer this from names.
@@ -117,8 +155,7 @@ export class LectureSourceFiles {
       for (const asset of standalone.length ? standalone : assets) {
         try {
           const file = await this.library.file(subjectId, asset.id, false);
-          const bytes = Buffer.concat(await Promise.all(file.absolutePaths.map(path => readFile(path))));
-          const extracted = await actualFileText(bytes, file.filename, "application/pdf");
+          const extracted = await bundledFileText(file.absolutePaths, file.filename);
           if (manifest.assets[asset.id]?.sha256 !== extracted.sha256) throw new Error("catalog_source_checksum_mismatch");
           add({ id: asset.id, filename: file.filename, ...extracted }, assetOwners(asset.id).length > 1);
         } catch {
@@ -127,11 +164,7 @@ export class LectureSourceFiles {
       }
       for (const link of (scope === "catalog" && lecture.catalogSourceId !== cyberRiskPrivateSourceId ? [] : links).filter(link => link.lecture_id === lecture.id && !isAssessmentAppendixTitle(link.title) && !isAssessmentAppendixTitle(link.original_filename))) {
         try {
-          const storage = getStorageProvider();
-          if (!storage.read) throw new Error("private_source_read_unavailable");
-          const bytes = await storage.read(link.storage_key);
-          const checksum = sha(bytes);
-          if (Number(link.size_bytes) !== bytes.length || link.checksum && link.checksum !== checksum) throw new Error("uploaded_source_checksum_mismatch");
+          const { checksum, extracted } = await verifiedUpload(link);
           // The same superseded combined edition may also exist as an upload.
           // Identify it by actual bytes, never by filename or edited metadata.
           // Standalone files above have already been read and verified.
@@ -141,7 +174,6 @@ export class LectureSourceFiles {
             || (supersededUploadEditions[checksum] ?? []).some(id => standalone.some(asset => asset.id === id)
               && documents.some(document => document.id === id));
           if (superseded) continue;
-          const extracted = await actualFileText(bytes, link.original_filename, link.mime_type);
           add({ id: link.file_id, filename: link.original_filename, ...extracted }, link.owner_count > 1);
         } catch {
           throw new ValidationError(`تعذرت قراءة ملف «${link.original_filename}» المرتبط بـ«${lecture.title}» أو التحقق من حدوده. أعد رفع ملف واضح مستقل للمحاضرة.`);
@@ -154,6 +186,12 @@ export class LectureSourceFiles {
       sources.push({ lecture, documents, paragraphs: unique });
     }
     return { sources, links };
+  }
+
+  /** Cheap identity of every published file linked to these lectures. */
+  async linkSignature(lectures: Lecture[]): Promise<string> {
+    const rows = (await this.pool.query<FileLink>(fileLinksSql, [lectures.map(lecture => lecture.id)])).rows;
+    return sha(JSON.stringify(rows));
   }
 
   async assertUnchanged(client: PoolClient, lectures: Lecture[], links: FileLink[]): Promise<void> {

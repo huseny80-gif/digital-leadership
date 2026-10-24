@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import type { Pool } from "pg";
+import type { Lecture, SubjectLibrary } from "@shared/index";
 import { STUDY_COURSES, STUDY_VOICES, academicSpeechSegments, prepareAcademicSpeech, proofreadArabicText, proofreadAcademicContent, type StudyModuleLecture, type StudySummaryDocument, type StudyExamDocument, type StudyPracticeQuestion, type StudyPracticeReference } from "@digital-leadership/shared";
 import { ContentService } from "../content/contentService.js";
 import { PgContentRepository } from "../content/contentRepository.js";
@@ -19,6 +20,7 @@ const policy = "reviewed-course-study-modules-v1";
 const narrationPause = readFileSync(new URL("../../content/audio/academic-pause.mp3", import.meta.url));
 if (!isAcademicMp3(narrationPause)) throw new Error("Invalid academic narration pause asset");
 const narrationPauseMs = Math.round(narrationPause.length / 12_000 * 1000);
+const courseDocuments = new Map<string, { key: string; work: Promise<ReturnType<typeof courseStudyDocuments>> }>();
 const compiled = new Map<string, { lecture: StudyModuleLecture; omittedFiles: string[]; questions: Array<{ question: StudyPracticeQuestion; references: StudyPracticeReference[] }> }>();
 
 /** Build the public study view only after the original files have been read and
@@ -136,18 +138,30 @@ export class CourseStudyModules {
   async documents(subjectId: string) {
     const { subject, lectures } = await this.visible(subjectId);
     const library = await this.library.get(subjectId, false);
-    const sources: LectureFileSources[] = [], unavailable: StudySummaryDocument["unavailableLectures"] = [];
-    for (const lecture of lectures) {
+    // Reuse the compiled course while its title, published lectures, catalog
+    // files and uploaded file identities are unchanged; any edit rebuilds it.
+    const key = hash(JSON.stringify([policy, subjectId, subject.title, lectures, library, await this.reader.linkSignature(lectures)]));
+    const cached = courseDocuments.get(subjectId);
+    if (cached?.key === key) return cached.work;
+    const work = this.compileDocuments(subjectId, subject.title, lectures, library);
+    courseDocuments.set(subjectId, { key, work });
+    work.catch(() => { if (courseDocuments.get(subjectId)?.work === work) courseDocuments.delete(subjectId); });
+    return work;
+  }
+  private async compileDocuments(subjectId: string, title: string, lectures: Lecture[], library: SubjectLibrary) {
+    // Lectures are independent, so read their files concurrently.
+    const results = await Promise.all(lectures.map(async lecture => {
       try {
         const result = await this.reader.read(subjectId, [lecture], library);
         const reading = compileCourseLecture(subjectId, result.sources[0]!);
-        if (reading.omittedFiles.length) unavailable.push({ lectureId: lecture.id, title: lecture.title, reason: "تُعرض المراجعة من الملف المعتمد لهذه المحاضرة. استُبعدت ملفات مرفقة أخرى لعدم وجود قراءة معتمدة تخص المحاضرة نفسها." });
-        sources.push(result.sources[0]!);
+        return { source: result.sources[0]!, notice: reading.omittedFiles.length ? { lectureId: lecture.id, title: lecture.title, reason: "تُعرض المراجعة من الملف المعتمد لهذه المحاضرة. استُبعدت ملفات مرفقة أخرى لعدم وجود قراءة معتمدة تخص المحاضرة نفسها." } : undefined };
       } catch (error) {
-        unavailable.push({ lectureId: lecture.id, title: lecture.title, reason: error instanceof ValidationError ? error.message : "تعذرت مطابقة المحتوى مع ملف المحاضرة الحالي. يرجى إعادة معالجتها." });
+        return { notice: { lectureId: lecture.id, title: lecture.title, reason: error instanceof ValidationError ? error.message : "تعذرت مطابقة المحتوى مع ملف المحاضرة الحالي. يرجى إعادة معالجتها." } };
       }
-    }
-    return courseStudyDocuments(subjectId, subject.title, sources, unavailable);
+    }));
+    const sources: LectureFileSources[] = results.flatMap(result => result.source ? [result.source] : []);
+    const unavailable: StudySummaryDocument["unavailableLectures"] = results.flatMap(result => result.notice ? [result.notice] : []);
+    return courseStudyDocuments(subjectId, title, sources, unavailable);
   }
   async narration(subjectId: string, lectureId: string, revision: string, voice: string, signal?: AbortSignal) {
     const { lectures } = await this.visible(subjectId);

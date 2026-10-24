@@ -39,6 +39,8 @@ import { probePublishedPdfInventory } from "./files/pdfInventoryProbe.js";
 import { auditCyberComparisonQuestions } from "./examMaterials/examCaseRevisionAudit.js";
 import { reprocessCyberSecondLecture } from "./contentAutomation/reprocessCyberSecondLecture.js";
 import { probePublishedSummaryVisuals } from "./mindMaps/summaryVisualService.js";
+import { CourseStudyModules } from "./studyTools/courseStudyModules.js";
+import { STUDY_COURSES } from "@digital-leadership/shared";
 
 // force-redeploy-2: reviewed-innovation-curriculum-v1 (220 questions)
 initMonitoring();
@@ -93,6 +95,9 @@ async function refreshPublishedContent() {
     { name: "cyber_comparison_coverage", run: async () => { logger.info(await auditCyberComparisonQuestions(getPool()), "cyber_comparison_questions_verified"); } },
     { name: "pdf_inventory", run: async () => { logger.info(await probePublishedPdfInventory(getPool()), "published_pdf_inventory_verified"); } },
     { name: "summary_visuals", run: async () => { logger.info(await probePublishedSummaryVisuals(getPool()), "published_summary_visuals_verified"); } },
+    // Prepare each course's summaries and comprehensive exam once, so the first
+    // learner does not wait for every lecture file to be read and verified.
+    { name: "study_modules", run: async () => { const modules = new CourseStudyModules(getPool()); for (const course of STUDY_COURSES) { const { summaries, exam } = await modules.documents(course.id); logger.info({ course: course.slug, lectures: summaries.lectures.length, unavailable: summaries.unavailableLectures.length, questions: exam.questions.length }, "study_module_ready"); } } },
   ], (stage, error) => {
     const reason = error instanceof Error && /^[a-z0-9_]{1,100}$/u.test(error.message) ? error.message : undefined;
     logger.error({ stage, name: error instanceof Error ? error.name : "UnknownError", reason }, "published_content_review_failed");
