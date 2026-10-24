@@ -31,7 +31,8 @@ const extractionCache = new Map<string, Promise<string>>();
 // Uploaded originals already verified against their stored size and checksum.
 // Keyed by both, so a replaced or edited file is downloaded and checked again;
 // without this every study request re-downloaded every lecture's PDF.
-const uploadedCache = new Map<string, Promise<{ checksum: string; extracted: { text: string; sha256: string } }>>();
+type VerifiedUpload = { checksum: string; extract: () => Promise<{ text: string; sha256: string }> };
+const uploadedCache = new Map<string, Promise<VerifiedUpload>>();
 // Catalog PDFs ship with the deployment and never change while it runs.
 const bundledFileCache = new Map<string, Promise<{ text: string; sha256: string }>>();
 function bundledFileText(paths: string[], filename: string) {
@@ -56,7 +57,10 @@ async function verifiedUpload(link: FileLink) {
       .finally(() => clearTimeout(timer)).then(async bytes => {
         const checksum = sha(bytes);
         if (Number(link.size_bytes) !== bytes.length || link.checksum && link.checksum !== checksum) throw new Error("uploaded_source_checksum_mismatch");
-        return { checksum, extracted: await actualFileText(bytes, link.original_filename, link.mime_type) };
+        // Extract only on demand: a superseded edition is skipped unread. The
+        // bytes are released after the first extraction; text is cached by hash.
+        let held: Buffer | undefined = bytes, text: Promise<{ text: string; sha256: string }> | undefined;
+        return { checksum, extract: () => text ??= actualFileText(held!, link.original_filename, link.mime_type).finally(() => { held = undefined; }) };
       });
     if (link.checksum) {
       if (uploadedCache.size >= 256) uploadedCache.delete(uploadedCache.keys().next().value!);
@@ -164,7 +168,7 @@ export class LectureSourceFiles {
       }
       for (const link of (scope === "catalog" && lecture.catalogSourceId !== cyberRiskPrivateSourceId ? [] : links).filter(link => link.lecture_id === lecture.id && !isAssessmentAppendixTitle(link.title) && !isAssessmentAppendixTitle(link.original_filename))) {
         try {
-          const { checksum, extracted } = await verifiedUpload(link);
+          const { checksum, extract } = await verifiedUpload(link);
           // The same superseded combined edition may also exist as an upload.
           // Identify it by actual bytes, never by filename or edited metadata.
           // Standalone files above have already been read and verified.
@@ -174,7 +178,7 @@ export class LectureSourceFiles {
             || (supersededUploadEditions[checksum] ?? []).some(id => standalone.some(asset => asset.id === id)
               && documents.some(document => document.id === id));
           if (superseded) continue;
-          add({ id: link.file_id, filename: link.original_filename, ...extracted }, link.owner_count > 1);
+          add({ id: link.file_id, filename: link.original_filename, ...await extract() }, link.owner_count > 1);
         } catch {
           throw new ValidationError(`تعذرت قراءة ملف «${link.original_filename}» المرتبط بـ«${lecture.title}» أو التحقق من حدوده. أعد رفع ملف واضح مستقل للمحاضرة.`);
         }
