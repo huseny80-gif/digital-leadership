@@ -20,10 +20,19 @@ import ExamPage from "@/app/(app)/subjects/[subjectId]/exam-material/page";
 beforeEach(() => { vi.mocked(apiGet).mockReset(); });
 
 describe("approved course study module navigation", () => {
-  it("uses the actual existing Innovation UUID and preserves every other course's destinations", () => {
+  it("gives each supported course its own summaries and comprehensive exam rather than Innovation content", () => {
+    for (const subjectId of ["2d6c0980-e4d2-4687-9027-cf090b3d1a67", "ade09563-02ec-4a09-a97b-58857f6cd876", "bc861a76-620d-4646-81ca-c49d24665b75", "1f4d2071-d1c9-46ee-a848-d5c90eedf287"]) {
+      expect(studyModulesForSubject(subjectId)).toEqual({ summaries: `/summaries.html?subject=${subjectId}`, comprehensive: `/exam-module.html?subject=${subjectId}` });
+      expect(subjectTabs(subjectId).find(tab => tab.key === "summaries")?.label).toBe("الملخصات والبودكاست");
+      expect(subjectTabs(subjectId).some(tab => tab.key === "comprehensive")).toBe(false);
+    }
+  });
+
+  it("uses the canonical course identities and preserves unknown subjects' existing destinations", () => {
     const catalog = readFileSync(resolve(process.cwd(), "../backend/src/finquiz/catalog.ts"), "utf8");
-    expect(catalog).toContain(`"innovation-project-management": "${INNOVATION_STUDY_SUBJECT_ID}"`);
-    for (const subjectId of ["2d6c0980-e4d2-4687-9027-cf090b3d1a67", "ade09563-02ec-4a09-a97b-58857f6cd876", "bc861a76-620d-4646-81ca-c49d24665b75", "1f4d2071-d1c9-46ee-a848-d5c90eedf287", "innovation-project-management", "other"]) {
+    expect(catalog).toContain("STUDY_COURSES.map(course => [course.slug, course.id])");
+    expect(INNOVATION_STUDY_SUBJECT_ID).toBe("7eb2b714-570f-4ed0-a00e-10efec7a20e5");
+    for (const subjectId of ["innovation-project-management", "other"]) {
       expect(studyModulesForSubject(subjectId)).toBeNull();
       expect(subjectTabs(subjectId).find(tab => tab.key === "summaries")?.href).toBe(`/subjects/${subjectId}/library?section=summaries`);
       expect(subjectTabs(subjectId).some(tab => tab.key === "comprehensive")).toBe(false);
@@ -58,6 +67,7 @@ describe("approved course study module navigation", () => {
     expect(lectureSummaryHref("another", "entry/#", 1)).toBe("/subjects/another/library?section=summaries&entry=entry%2F%23");
     expect(isStudyModuleDocument("/summaries.html#innovation-02")).toBe(true);
     for (const value of ["https://example.com/summaries.html", "//example.com/exam-module.html", "/summaries.html.evil", "/exam-module.html/extra"]) expect(isStudyModuleDocument(value)).toBe(false);
+    expect(lectureSummaryHref("ade09563-02ec-4a09-a97b-58857f6cd876", "new-legal-lecture", 7)).toBe("/summaries.html?subject=ade09563-02ec-4a09-a97b-58857f6cd876#legal-07");
   });
 
   it.each(["summaries", "comprehensive"] as const)("shows the %s entry only in its matching course", section => {
@@ -65,6 +75,13 @@ describe("approved course study module navigation", () => {
     expect(screen.getByRole("link")).toHaveAttribute("href", section === "summaries" ? "/summaries.html" : "/exam-module.html");
     rerender(<StudyModuleEntry subjectId="other" section={section} />);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it.each(["summaries", "comprehensive"] as const)("uses each course's own %s entry with no Innovation-specific description", section => {
+    const subjectId = "ade09563-02ec-4a09-a97b-58857f6cd876";
+    render(<StudyModuleEntry subjectId={subjectId} section={section} />);
+    expect(screen.getByRole("link")).toHaveAttribute("href", (section === "summaries" ? "/summaries.html" : "/exam-module.html") + "?subject=" + subjectId);
+    expect(screen.queryByText(/محاضرات الابتكار/)).not.toBeInTheDocument();
   });
 
   it("keeps a bookmarked summaries URL readable and adds its podcast entry", async () => {

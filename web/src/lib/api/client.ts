@@ -25,7 +25,7 @@ import { readGuestSessionCookieValue, GUEST_SESSION_COOKIE } from "@/lib/api/gue
  * request actually has.
  */
 export class ApiError extends Error {
-  constructor(public readonly body: ApiErrorBody, public readonly status: number) {
+  constructor(public readonly body: ApiErrorBody, public readonly status: number, public readonly contentRange: string | null = null) {
     super(body.error.message);
   }
 }

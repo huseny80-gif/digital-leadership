@@ -4,6 +4,9 @@ import { ARABIC_PROOFREADING_POLICY, proofreadAcademicContent } from "@digital-l
 /** Read/presentation boundary only. Domain services still validate original
  * evidence and grade original option IDs before a display copy is returned. */
 export const academicPresentation: RequestHandler = (req, res, next) => {
+  // Study documents finalize proofreading before hashing the displayed/spoken
+  // text. Preserve their exact source quotations and content-addressed payload.
+  if (/^\/subjects\/[^/]+\/study-modules(?:\/|$)/u.test(req.path)) { next(); return; }
   if (!/^\/(?:subjects|lectures|quizzes|attempts|study-tools)(?:\/|$)/u.test(req.path)
     && !/^\/admin\/subjects\/[^/]+\/exam-material(?:\/|$)/u.test(req.path)) { next(); return; }
   const json = res.json;

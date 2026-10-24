@@ -34,6 +34,23 @@ describe("standalone study page script policy", () => {
     expect(standard).toContain("'strict-dynamic'");
   });
 
+  it("trusts the exact shared loader on the two study documents only, with matching SRI", () => {
+    const loader = readFileSync(resolve(process.cwd(), "..", "assets/study-module-loader.js"));
+    expect(readFileSync(resolve(process.cwd(), "public/assets/study-module-loader.js"))).toEqual(loader);
+    const hash = "sha256-" + createHash("sha256").update(loader).digest("base64");
+    for (const page of ["exam-module.html", "summaries.html"]) {
+      const text = readFileSync(resolve(process.cwd(), "public", page), "utf8");
+      expect(text).toContain(`src="assets/study-module-loader.js" integrity="${hash}"`);
+      expect(browserCsp("nonce", true, "/" + page)).toContain("'" + hash + "'");
+      const bootstrap = text.match(/<script id="study-bootstrap">([\s\S]*?)<\/script>/)![1];
+      const bootHash = "sha256-" + createHash("sha256").update(bootstrap).digest("base64");
+      expect(text).toContain("'" + bootHash + "'");
+      expect(browserCsp("nonce", true, "/" + page)).toContain("'" + bootHash + "'");
+      expect(browserCsp("nonce", true, "/subjects")).not.toContain(bootHash);
+    }
+    expect(browserCsp("nonce", true, "/subjects")).not.toContain(hash);
+  });
+
   it.each(["/exam-module.html", "/summaries.html"])("keeps framing, mixed-content and object protections on %s", path => {
     const csp = browserCsp("nonce", true, path);
     for (const directive of ["frame-ancestors 'self'", "object-src 'none'", "upgrade-insecure-requests"]) {

@@ -7,7 +7,7 @@ export function StudyModuleEntry({ subjectId, section }: { subjectId: string; se
   const summaries = section === "summaries";
   const title = summaries ? "الملخصات والبودكاست القيادي" : "الاختبار الشامل";
   return <aside className={styles.entry} aria-label={title}>
-    <div><h2>{title}</h2><p>{summaries ? "راجع ملخص كل محاضرة واختر صوت تسجيلها. تظهر حالة إتاحة التسجيل داخل الملخص." : "راجع محاضرات الابتكار بأسئلة متنوعة، مع التصحيح والتغذية الراجعة ونماذج الإجابات."}</p></div>
+    <div><h2>{title}</h2><p>{summaries ? "راجع ملخص كل محاضرة واختر صوت المراجعة من داخل ملخصها." : "راجع محاضرات المادة بأسئلة متنوعة، مع التصحيح والتغذية الراجعة ونماذج الإجابات."}</p></div>
     <a className={styles.action} href={modules[section]}>{summaries ? "افتح الملخصات والبودكاست" : "افتح الاختبار الشامل"}<span aria-hidden="true"> ←</span></a>
   </aside>;
 }
