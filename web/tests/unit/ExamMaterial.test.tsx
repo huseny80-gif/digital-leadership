@@ -42,11 +42,14 @@ const renderWorkspace = (extra: Partial<ExamMaterialIndex> = {}) => render(<Exam
 const generateButton = () => screen.getByRole("button", { name: "توليد المحتوى الامتحاني الذكي" });
 
 describe("exam material selection and archive navigation", () => {
-  it.each([false, true])("keeps the exam summary text and revision tools without podcast controls (admin: %s)", async canGenerate => {
+  it.each([false, true])("opens the quiz without the academic review or podcast for learners and admins (admin: %s)", async canGenerate => {
     renderWorkspace({ canGenerate });
-    await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
-    expect(screen.getByRole("navigation", { name: "فهرس الملخص" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "طباعة الملخص الشامل PDF" })).toBeInTheDocument();
+    await screen.findByRole("heading", { level: 2, name: group.title });
+    expect(screen.queryByRole("navigation", { name: "فهرس الملخص" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "طباعة الملخص الشامل PDF" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "الملخص الشامل" })).not.toBeInTheDocument();
+    expect(screen.queryByText("مراجعة أكاديمية للمحاضرات المختارة")).not.toBeInTheDocument();
+    expect(screen.queryByText("مفاهيم أكاديمية من المصدر الأول.")).not.toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "بودكاست المراجعة الصوتية" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "تنزيل نص السرد الأكاديمي" })).not.toBeInTheDocument();
     expect(screen.queryByText(/مراجعة صوتية/)).not.toBeInTheDocument();
@@ -54,14 +57,16 @@ describe("exam material selection and archive navigation", () => {
     expect(screen.getByRole("button", { name: "بدء الاختبار أو متابعة المحاولة" })).toBeInTheDocument();
   });
 
-  it("hides admin controls from visitors, renders selected sources safely, and retains links back to the course", async () => {
+  it("hides admin controls from visitors and retains links to the course and original lecture", async () => {
     renderWorkspace({ canGenerate: false });
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /توليد المحتوى/ })).not.toBeInTheDocument();
     expect(screen.queryByText("دليل المناقشة الذكي للمدير")).not.toBeInTheDocument();
-    await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
+    await screen.findByRole("heading", { level: 2, name: group.title });
     expect(screen.getByRole("link", { name: /العودة إلى المحاضرات/ })).toHaveAttribute("href", `/subjects/${subjectId}`);
-    expect(screen.getByRole("link", { name: /المحاضرة الأصلية/ })).toHaveAttribute("href", `/subjects/${subjectId}/lectures/l1`);
+    fireEvent.click(screen.getByRole("tab", { name: "خريطة المفاهيم" }));
+    fireEvent.click(screen.getByRole("button", { name: "المحاضرة الأولى" }));
+    expect(screen.getByRole("link", { name: "فتح المحاضرة الأصلية" })).toHaveAttribute("href", `/subjects/${subjectId}/lectures/l1`);
   });
   it("blocks empty generation, selects and clears lectures, then archives a new selection without replacing the old group", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(reply(second)).mockResolvedValueOnce(reply({ ...index, groups: [second, group], total: 2 })); vi.stubGlobal("fetch", fetchMock);
@@ -77,9 +82,9 @@ describe("exam material selection and archive navigation", () => {
     expect(tabs.getAllByRole("tab")).toHaveLength(2);
     expect(JSON.parse(fetchMock.mock.calls[0]![1].body).lectureIds).toEqual(["l2"]);
     expect(window.location.search).toContain(secondId);
-    await screen.findByText("ملخص مستقل للمحاضرة الثانية.");
+    await screen.findByRole("heading", { level: 2, name: second.title });
     fireEvent.click(tabs.getByRole("tab", { name: /\(1-2\)/ }));
-    await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
+    await screen.findByRole("heading", { level: 2, name: group.title });
     expect(fetchMock).toHaveBeenCalledTimes(2); // Generation + refreshed index; first snapshot is cached.
   });
   it("preserves selection on failure, reuses the request id on retry, and uses a new id for the next deliberate generation", async () => {
@@ -99,28 +104,29 @@ describe("exam material selection and archive navigation", () => {
     expect(JSON.parse(fetchMock.mock.calls[3]![1].body).requestId).not.toBe(initialBody.requestId);
     expect(within(screen.getByRole("tablist", { name: "مجموعات المحاضرات" })).getAllByRole("tab")).toHaveLength(2);
   });
-  it("supports keyboard tabs and returns from the quiz to the selected summary", async () => {
-    renderWorkspace({ canGenerate: false }); await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
-    fireEvent.keyDown(screen.getByRole("tab", { name: "خريطة المفاهيم" }), { key: "ArrowLeft" });
+  it("supports keyboard navigation among the quiz, concept map and package", async () => {
+    renderWorkspace({ canGenerate: false }); await screen.findByRole("heading", { level: 2, name: group.title });
+    fireEvent.keyDown(screen.getByRole("tab", { name: "خريطة المفاهيم" }), { key: "ArrowRight" });
     expect(screen.getByRole("tab", { name: "الاختبار التفاعلي المتقدم" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("button", { name: "بدء الاختبار أو متابعة المحاولة" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: "الملخص الشامل" })); await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
+    fireEvent.keyDown(screen.getByRole("tab", { name: "الاختبار التفاعلي المتقدم" }), { key: "ArrowLeft" });
+    expect(screen.getByRole("tab", { name: "خريطة المفاهيم" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("heading", { name: "خريطة المفاهيم التفاعلية" })).toBeInTheDocument();
   });
-  it("shows academic topics, objectives, a concept glossary and a source-linked summary index", async () => {
+  it("opens legacy summary bookmarks in the quiz without rendering their academic paragraphs, objectives or glossary", async () => {
     const academic = { ...group, summary: { ...group.summary, version: 2, sections: [{ ...group.summary.sections[0]!, topics: [{ title: "تعريف المفهوم", text: "تعريف أكاديمي مستند إلى المصدر الأول." }, { title: "التطبيق وحدود القرار", text: "تطبيق من المصدر مع توثيق شروط القرار وحدوده." }], objectives: ["التمييز بين المعرفة بالخطر وأثرها في القرار."], concepts: [{ term: "مالك الخطر", definition: "من يمتلك القرار اللازم لتغيير مستوى الخطر." }] }] } };
+    window.history.replaceState(null, "", `/subjects/${subjectId}/exam-material?group=${firstId}&tab=summary#summary-lecture-l1`);
     render(<ExamMaterialWorkspace initialIndex={{ ...index, canGenerate: false }} initialDetail={academic} />);
-    await screen.findByRole("heading", { name: /التطبيق وحدود القرار/ });
-    const contents = within(screen.getByRole("navigation", { name: "فهرس الملخص" }));
-    expect(contents.getByRole("link", { name: /المحاضرة الأولى/ })).toHaveAttribute("href", "#summary-lecture-l1");
-    expect(screen.getByText("من يمتلك القرار اللازم لتغيير مستوى الخطر.")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("أهداف المحاضرة"));
-    expect(screen.getByText("التمييز بين المعرفة بالخطر وأثرها في القرار.")).toBeVisible();
+    await screen.findByRole("button", { name: "بدء الاختبار أو متابعة المحاولة" });
+    expect(screen.getByRole("tab", { name: "الاختبار التفاعلي المتقدم" })).toHaveAttribute("aria-selected", "true");
+    for (const text of ["تعريف أكاديمي مستند إلى المصدر الأول.", "تطبيق من المصدر مع توثيق شروط القرار وحدوده.", "من يمتلك القرار اللازم لتغيير مستوى الخطر.", "التمييز بين المعرفة بالخطر وأثرها في القرار."]) expect(screen.queryByText(text)).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "فهرس الملخص" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "إنشاء مراجعة محدّثة" })).not.toBeInTheDocument();
   });
-  it("lets an admin refresh the current selection into a new archived group while retaining the original summary", async () => {
+  it("lets an admin refresh the current selection and navigate its original archived group", async () => {
     const revised = { ...group, id: secondId, sequence: 2, revisionCount: 2, summary: { ...group.summary, introduction: "مراجعة محدثة.", sections: [{ ...group.summary.sections[0]!, text: "ملخص محدث للمحاضرتين." }] } };
     const fetchMock = vi.fn().mockResolvedValueOnce(reply(revised)).mockResolvedValueOnce(reply({ ...index, groups: [revised] })).mockResolvedValueOnce(reply({ revisions: [group], latestId: revised.id, total: 1, page: 1 })); vi.stubGlobal("fetch", fetchMock);
-    renderWorkspace(); await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
+    renderWorkspace(); await screen.findByRole("heading", { level: 2, name: group.title });
     fireEvent.click(screen.getByRole("button", { name: "إنشاء مراجعة محدّثة" }));
     await screen.findByText(/تم توليد المحتوى الامتحاني وحفظ المجموعة بنجاح/);
     expect(JSON.parse(fetchMock.mock.calls[0]![1].body).lectureIds).toEqual(["l1", "l2"]);
@@ -128,23 +134,23 @@ describe("exam material selection and archive navigation", () => {
     expect(archives.getAllByRole("tab")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: /المراجعات السابقة/ }));
     fireEvent.click(await screen.findByRole("button", { name: /مراجعة محفوظة/ }));
-    await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
+    await screen.findByRole("heading", { level: 2, name: group.title });
     expect(screen.getByText("أنت تعرض مراجعة سابقة لهذه المجموعة.")).toBeInTheDocument();
     expect(archives.getAllByRole("tab")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "عرض أحدث مراجعة" }));
-    await screen.findByText("ملخص محدث للمحاضرتين.");
+    await waitFor(() => expect(window.location.search).toContain(secondId));
   });
   it("ignores an aborted archive response when another group is selected", async () => {
     let complete!: (value: unknown) => void;
     const fetchMock = vi.fn().mockImplementation(() => new Promise(resolve => { complete = resolve; })); vi.stubGlobal("fetch", fetchMock);
-    renderWorkspace({ groups: [second, group], total: 2 }); await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
+    renderWorkspace({ groups: [second, group], total: 2 }); await screen.findByRole("heading", { level: 2, name: group.title });
     const tabs = within(screen.getByRole("tablist", { name: "مجموعات المحاضرات" }));
     fireEvent.click(tabs.getByRole("tab", { name: /\(2\)/ })); await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     fireEvent.click(tabs.getByRole("tab", { name: /\(1-2\)/ }));
-    await screen.findByText("مفاهيم أكاديمية من المصدر الأول.");
+    await screen.findByRole("heading", { level: 2, name: group.title });
     complete(reply(second));
     await waitFor(() => expect(tabs.getByRole("tab", { name: /\(1-2\)/ })).toHaveAttribute("aria-selected", "true"));
-    expect(screen.queryByText("ملخص مستقل للمحاضرة الثانية.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: second.title })).not.toBeInTheDocument();
   });
   it("keeps a bookmarked old quiz on its own snapshot while the main list selects the latest revision", async () => {
     const current = { ...group, id: secondId, sequence: 4, revisionCount: 2, quizId: "new-quiz" };
@@ -167,7 +173,7 @@ describe("exam material selection and archive navigation", () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(reply(second)).mockResolvedValueOnce(reply(null, 503)).mockResolvedValueOnce(reply({ ...index, groups: [second, group], total: 2 }));
     vi.stubGlobal("fetch", fetchMock); renderWorkspace();
     fireEvent.click(screen.getByRole("checkbox", { name: /المحاضرة الثانية/ })); fireEvent.click(generateButton());
-    await screen.findByText("ملخص مستقل للمحاضرة الثانية.");
+    await screen.findByRole("heading", { level: 2, name: second.title });
     fireEvent.click(await screen.findByRole("button", { name: "تحديث قائمة المجموعات" }));
     await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1);

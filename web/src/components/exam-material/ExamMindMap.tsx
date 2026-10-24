@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type { ExamReviewArtifacts } from "@shared/index";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import styles from "./examMaterial.module.css";
 
-export function ExamMindMap({ map }: { map: ExamReviewArtifacts["mindMap"] }) {
+export function ExamMindMap({ map, subjectId }: { map: ExamReviewArtifacts["mindMap"]; subjectId: string }) {
   const root = map.nodes.find(node => node.kind === "root")!;
   const lectures = map.nodes.filter(node => node.kind === "lecture");
   const [selectedId, setSelectedId] = useState(root.id);
@@ -45,7 +46,7 @@ export function ExamMindMap({ map }: { map: ExamReviewArtifacts["mindMap"] }) {
       <aside className={styles.mapDetails} aria-label="شرح المفهوم المحدد" aria-live="polite">
         <span className={styles.eyebrow}>{selected.kind === "concept" ? "مفهوم من المحاضرة" : selected.kind === "topic" ? "محور من المحاضرة" : "المحتوى المختار"}</span><h4>{selected.label}</h4>
         <div className={styles.mapDescription}>{selected.description.split(/\n{2,}/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
-        {selected.lectureId ? <a className={styles.sourceLink} href={`#summary-lecture-${selected.lectureId}`} onClick={event => { event.preventDefault(); const url = new URL(window.location.href); url.searchParams.set("tab", "summary"); url.hash = `summary-lecture-${selected.lectureId}`; window.history.pushState(null, "", url); }}>عرض المفهوم في الملخص <PlatformIcon name="arrow" /></a> : null}
+        {selected.lectureId ? <Link className={styles.sourceLink} href={`/subjects/${subjectId}/lectures/${selected.lectureId}`}>فتح المحاضرة الأصلية <PlatformIcon name="arrow" /></Link> : null}
         {related.length ? <div className={styles.mapRelated}><h5>يرد المصطلح أيضاً في</h5>{related.map(node => <button type="button" className={styles.quiet} key={node.id} onClick={() => setSelectedId(node.id)}>{lectures.find(lecture => lecture.lectureId === node.lectureId)?.label}</button>)}</div> : null}
       </aside>
     </div>

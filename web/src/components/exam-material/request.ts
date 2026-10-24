@@ -6,7 +6,7 @@ export async function examRequest<T>(url: string, init?: RequestInit): Promise<T
   if (!response.ok || !("data" in body)) throw new Error(body.error?.message || "تعذر إتمام الطلب. حاول مرة أخرى.");
   return body.data;
 }
-export type ExamMaterialTab = "summary" | "map" | "quiz" | "package";
+export type ExamMaterialTab = "map" | "quiz" | "package";
 export const examHref = (subjectId: string, groupId: string, tab: ExamMaterialTab, attemptId?: string) => {
   const query = new URLSearchParams({ group: groupId, tab });
   if (attemptId) query.set("attempt", attemptId);

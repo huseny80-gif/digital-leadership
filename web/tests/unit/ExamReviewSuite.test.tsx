@@ -24,11 +24,13 @@ afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("interactive source mind map", () => {
   it("shows definitions, follows shared references, filters lectures, searches and collapses branches", () => {
-    render(<ExamMindMap map={generateExamReviewArtifacts(summary, group.title).mindMap} />);
+    render(<ExamMindMap map={generateExamReviewArtifacts(summary, group.title).mindMap} subjectId={group.subjectId} />);
     fireEvent.click(screen.getAllByRole("button", { name: /مالك الخطر/ })[0]!);
     expect(screen.getByText("صاحب مسؤولية التعامل مع الخطر.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "فتح المحاضرة الأصلية" })).toHaveAttribute("href", "/subjects/subject/lectures/one");
     fireEvent.click(within(screen.getByRole("complementary", { name: "شرح المفهوم المحدد" })).getByRole("button", { name: "المحاضرة الثانية" }));
     expect(screen.getByText("تعريف معتمد من المحاضرة الثانية.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "فتح المحاضرة الأصلية" })).toHaveAttribute("href", "/subjects/subject/lectures/two");
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "التصعيد" } });
     expect(screen.getByRole("button", { name: "التصعيد" })).toBeInTheDocument();
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "مفهوم غير موجود" } });
