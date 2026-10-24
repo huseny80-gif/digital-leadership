@@ -78,6 +78,9 @@ async function refreshPublishedContent() {
   logger.info({ ...sixth, sourcesQueued: generationSources.length }, "legal_sixth_lecture_separated");
   logger.info({ courses: await refreshStudyCourses(getPool()) }, "study_courses_content_refreshed");
   await runIndependentContentReviews([
+    // First, so learners are not kept waiting behind the slower content
+    // reviews below: prepare each course's summaries and comprehensive exam.
+    { name: "study_modules", run: async () => { const modules = new CourseStudyModules(getPool()); for (const course of STUDY_COURSES) { const { summaries, exam } = await modules.documents(course.id); logger.info({ course: course.slug, lectures: summaries.lectures.length, unavailable: summaries.unavailableLectures.length, questions: exam.questions.length }, "study_module_ready"); } } },
     { name: "pdf_file_identities", run: async () => { logger.info(await repairPdfIdentities(getPool()), "original_pdf_identities_verified"); } },
     { name: "weekly_cyber_exams", run: async () => { const papers = new WeeklyCyberExams().index(weeklyCyberSubjectId); logger.info({ policy: papers.policy, subjectId: weeklyCyberSubjectId, papers: papers.papers.map(paper => ({ id: paper.id, questions: paper.questionCount })), questions: papers.papers.reduce((sum, paper) => sum + paper.questionCount, 0) }, "weekly_cyber_exams_ready"); } },
     { name: "innovation_curriculum", run: async () => { logger.info(await reviewInnovationCurriculum(getPool()), "innovation_curriculum_reviewed"); } },
@@ -95,9 +98,6 @@ async function refreshPublishedContent() {
     { name: "cyber_comparison_coverage", run: async () => { logger.info(await auditCyberComparisonQuestions(getPool()), "cyber_comparison_questions_verified"); } },
     { name: "pdf_inventory", run: async () => { logger.info(await probePublishedPdfInventory(getPool()), "published_pdf_inventory_verified"); } },
     { name: "summary_visuals", run: async () => { logger.info(await probePublishedSummaryVisuals(getPool()), "published_summary_visuals_verified"); } },
-    // Prepare each course's summaries and comprehensive exam once, so the first
-    // learner does not wait for every lecture file to be read and verified.
-    { name: "study_modules", run: async () => { const modules = new CourseStudyModules(getPool()); for (const course of STUDY_COURSES) { const { summaries, exam } = await modules.documents(course.id); logger.info({ course: course.slug, lectures: summaries.lectures.length, unavailable: summaries.unavailableLectures.length, questions: exam.questions.length }, "study_module_ready"); } } },
   ], (stage, error) => {
     const reason = error instanceof Error && /^[a-z0-9_]{1,100}$/u.test(error.message) ? error.message : undefined;
     logger.error({ stage, name: error instanceof Error ? error.name : "UnknownError", reason }, "published_content_review_failed");

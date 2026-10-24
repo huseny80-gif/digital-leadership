@@ -80,6 +80,18 @@ describe("protected all-course study routes", () => {
     f.setUser("another-verified-learner");
     await request(f.app).get(url).expect(200);
   });
+  it("answers a still-preparing course with a retryable 503 instead of holding the page, then serves it", async () => {
+    let finish!: (value: unknown) => void;
+    const documents = vi.fn().mockReturnValueOnce(new Promise(resolve => { finish = resolve; })).mockResolvedValue({ summaries: { subjectId: subject }, exam: { subjectId: subject } });
+    const app = express();
+    app.use((req, _res, next) => { req.user = { id: "fixture", role: "student", status: "active" } as NonNullable<Request["user"]>; next(); });
+    app.use(courseStudyRoutes(() => ({ documents, narration: vi.fn() }), 50));
+    app.use(((error, _req, res, _next) => { res.status(error.status ?? 500).json({ error: { code: error.code } }); }) as ErrorRequestHandler);
+    const response = await request(app).get(`${path}/summaries`).expect(503);
+    expect(response.body.error.code).toBe("study_module_preparing"); expect(response.headers["retry-after"]).toBe("10");
+    finish({ summaries: { subjectId: subject }, exam: { subjectId: subject } });
+    await request(app).get(`${path}/summaries`).expect(200);
+  });
   it("rejects an inactive registered account before reading source content", async () => {
     const f = fixture(); f.setUser("inactive-fixture", "disabled");
     await request(f.app).get(`${path}/summaries`).expect(403);
