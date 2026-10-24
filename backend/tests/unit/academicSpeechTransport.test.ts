@@ -41,13 +41,14 @@ beforeEach(() => { wire.sockets.length = 0; });
 afterEach(() => { vi.useRealTimers(); });
 
 describe("current Read Aloud synthesis transport", () => {
-  it("uses the current synthesis host and subscription parameter, retaining actual person and audio quality", async () => {
+  it("uses the current Read Aloud host and trusted client token, retaining actual person and audio quality", async () => {
     const request = synthesizeAcademicSpeech("محتوى <معتمد>", "ar-IQ-RanaNeural"), socket = wire.sockets[0]!;
     const url = new URL(socket.url);
-    expect(url.origin).toBe("wss://api.msedgeservices.com");
-    expect(url.pathname).toBe("/tts/cognitiveservices/websocket/v1");
-    expect(url.searchParams.has("Ocp-Apim-Subscription-Key")).toBe(true);
-    expect(url.searchParams.has("TrustedClientToken")).toBe(false);
+    expect(url.origin).toBe("wss://speech.platform.bing.com");
+    expect(url.pathname).toBe("/consumer/speech/synthesize/readaloud/edge/v1");
+    expect(url.searchParams.has("TrustedClientToken")).toBe(true);
+    expect(url.searchParams.has("Ocp-Apim-Subscription-Key")).toBe(false);
+    expect(url.searchParams.get("Sec-MS-GEC-Version")).toBe("2-143.0.3650.75");
     expect(socket.options.handshakeTimeout).toBe(10000);
     expect(socket.options.maxPayload).toBe(2 * 1024 * 1024);
     expect(Object.keys(socket.options.headers).map(key => key.toLowerCase())).not.toContain("authorization");
