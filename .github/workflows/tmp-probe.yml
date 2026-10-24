@@ -1,0 +1,19 @@
+name: tmp probe production study modules
+on:
+  push:
+    branches: [claude/educational-platform-phase-1-29felh]
+    paths: [".github/workflows/tmp-probe.yml"]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          B=https://web-husen4.vercel.app
+          for path in /summaries.html /assets/study-module-loader.js "/summaries.html?subject=ade09563-02ec-4a09-a97b-58857f6cd876" /api/study-modules/ade09563-02ec-4a09-a97b-58857f6cd876/summaries /api/study-modules/2d6c0980-e4d2-4687-9027-cf090b3d1a67/exam /api/health /subjects; do
+            echo "== $path"
+            curl -s -o body -D hdr -w "status=%{http_code} time=%{time_total} size=%{size_download}\n" --max-time 130 "$B$path" || echo "curl exit $?"
+            grep -iE "^(content-type|content-security-policy|x-vercel-cache|location|age|x-matched-path)" hdr | cut -c1-400
+            head -c 300 body; echo
+          done
+          echo "== loader sri"; curl -s $B/assets/study-module-loader.js | openssl dgst -sha256 -binary | base64
+          curl -s "$B/summaries.html?subject=x" | grep -o 'study-module-loader.js" integrity="[^"]*"'
