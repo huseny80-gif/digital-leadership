@@ -44,13 +44,23 @@
     const params = new URLSearchParams(location.search), subject = params.get("subject");
     let responseStatus = 0;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30000);
+    let timer = setTimeout(() => controller.abort(), 30000);
     try {
       if (params.getAll("subject").length !== 1 || !uuid.test(subject || "")) throw new Error("invalid_subject");
       const parent = `/subjects/${subject}${kind === "exam" ? "/exam-material" : ""}`;
       document.querySelector(".platform-link").href = "https://web-husen4.vercel.app" + parent;
       if (location.hostname.endsWith(".github.io")) throw new Error("platform_required");
-      const response = await fetch(`/api/study-modules/${subject}/${kind}`, { credentials: "same-origin", cache: "no-store", signal: controller.signal });
+      // A course is prepared once after each deployment; the server answers
+      // 503 "study_module_preparing" instead of holding the page, so wait and
+      // retry with a visible message rather than spinning without feedback.
+      let response;
+      for (let attempt = 0; ; attempt++) {
+        response = await fetch(`/api/study-modules/${subject}/${kind}`, { credentials: "same-origin", cache: "no-store", signal: controller.signal });
+        if (response.status !== 503 || attempt >= 8 || (await response.clone().json().catch(() => null))?.error?.code !== "study_module_preparing") break;
+        clearTimeout(timer); timer = setTimeout(() => controller.abort(), 30000);
+        status.textContent = "جارٍ تجهيز محتوى هذه المادة لأول مرة بعد التحديث… ستُعاد المحاولة تلقائيًا.";
+        await new Promise(resolve => setTimeout(resolve, 10000));
+      }
       responseStatus = response.status;
       if (!response.ok) throw new Error("course_unavailable");
       const data = validate((await response.json()).data, subject, kind);

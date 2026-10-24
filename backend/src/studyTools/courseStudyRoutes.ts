@@ -10,7 +10,7 @@ import { CourseStudyModules } from "./courseStudyModules.js";
 import { ACADEMIC_NARRATION_VERSION, STUDY_VOICES } from "@digital-leadership/shared";
 
 type StudyService = Pick<CourseStudyModules, "documents" | "narration">;
-export function courseStudyRoutes(service: () => StudyService = () => new CourseStudyModules(getPool())) {
+export function courseStudyRoutes(service: () => StudyService = () => new CourseStudyModules(getPool()), prepareWaitMs = 20_000) {
   const router = Router();
   const message = { error: { code: "rate_limited", message: "طلبات كثيرة خلال وقت قصير. انتظر قليلًا ثم أعد المحاولة." } };
   const keyGenerator = (req: Request) => req.user ? `user:${req.user.id}` : `guest:${req.guestSession!.id}`;
@@ -24,7 +24,14 @@ export function courseStudyRoutes(service: () => StudyService = () => new Course
   for (const kind of ["summaries", "exam"] as const) router.get(`/subjects/:subjectId/study-modules/${kind}`, readLimit, async (req, res, next) => {
     try {
       if (Object.keys(req.query).length) throw new ValidationError("بيانات الطلب غير صالحة.");
-      res.json({ data: (await service().documents(req.params.subjectId as string))[kind] });
+      // Never hold a learner on a spinner: if the course is still being
+      // prepared (first read after a deploy), answer 503 within 20 s and let
+      // the shared build finish in the background for the page's retry.
+      let timer: NodeJS.Timeout | undefined;
+      const preparing = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new HttpError(503, "study_module_preparing", "جارٍ تجهيز محتوى هذه المادة. ستُعاد المحاولة تلقائيًا خلال لحظات.")), prepareWaitMs); });
+      try { res.json({ data: (await Promise.race([service().documents(req.params.subjectId as string), preparing]))[kind] }); }
+      catch (error) { if (error instanceof HttpError && error.code === "study_module_preparing") res.set("Retry-After", "10"); throw error; }
+      finally { clearTimeout(timer); }
     } catch (error) { next(error); }
   });
   router.get("/subjects/:subjectId/study-modules/:lectureId/audio.mp3", requireUuidParam("lectureId"), audioLimit, async (req, res, next) => {
