@@ -53,9 +53,9 @@ describe("reviewed summary visuals and original transcript coordinates", () => {
     // The global response presentation layer must never rewrite evidence.
     expect(proofreadAcademicContent(visual).sections.flatMap(section => section.points.flatMap(point => point.evidence))).toEqual(points.flatMap(point => point.evidence));
   });
-  it("covers the current 27 lectures and 492 points, without duplicate point identities", () => {
-    expect(summaries).toHaveLength(27);
-    expect(summaries.flatMap(summary => summary.sections.flatMap(section => section.points))).toHaveLength(492);
+  it("covers the current 28 lectures and 521 points, without duplicate point identities", () => {
+    expect(summaries).toHaveLength(28);
+    expect(summaries.flatMap(summary => summary.sections.flatMap(section => section.points))).toHaveLength(521);
     for (const summary of summaries) { const points = build(summary).sections.flatMap(section => section.points); expect(new Set(points.map(point => point.id)).size).toBe(points.length); }
   });
   it("fails closed on forged explanation, evidence, checksum and a changed transcript", () => {

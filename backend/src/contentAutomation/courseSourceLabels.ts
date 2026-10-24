@@ -47,7 +47,7 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
   const aliases = new Map(source.lectures.filter(lecture => lecture.id !== "cs-iso-roadmap" && lecture.id !== "ip-l2").flatMap(lecture => [lecture.title, ...(lecture.legacyTitles ?? [])].map(title => [normalizeText(title), lecture.number] as const)));
   const legacyNumber = (value: string) => {
     const text = normalizeText(cleanArabicDisplayLabel(value)).replace(/\.(?:pdf|pptx)$/i, "").trim();
-    const expression = slug === "ai-data" ? /^(?:ai|lecture|مقرر\s*الذكاء الاصطناعي|الذكاء الاصطناعي)[\s_-]*([1-9]|10)$/ : slug === "risk-management" ? /^(?:risk(?:\s*management)?)[\s_-]*([1-3])$/ : slug === "legal-regulatory" ? /^legal[\s_-]*([1-6])$/ : slug === "innovation-project-management" ? /^(?:innovation|project(?:\s*management)?)[\s_-]*([1-9]|10)$/ : /^(?:cyber\s*secur(?:i|e)ty|مقرر\s*(?:حوكمة\s*)?الامن السيبراني|(?:حوكمة\s*)?الامن السيبراني)[\s_-]*([1-9]|10)$/;
+    const expression = slug === "ai-data" ? /^(?:ai|lecture|مقرر\s*الذكاء الاصطناعي|الذكاء الاصطناعي)[\s_-]*([1-9]|10)$/ : slug === "risk-management" ? /^(?:risk(?:\s*management)?)[\s_-]*([1-3])$/ : slug === "legal-regulatory" ? /^legal[\s_-]*([1-7])$/ : slug === "innovation-project-management" ? /^(?:innovation|project(?:\s*management)?)[\s_-]*([1-9]|10)$/ : /^(?:cyber\s*secur(?:i|e)ty|مقرر\s*(?:حوكمة\s*)?الامن السيبراني|(?:حوكمة\s*)?الامن السيبراني)[\s_-]*([1-9]|10)$/;
     const match = expression.exec(text);
     return match ? Number(match[1]) : null;
   };

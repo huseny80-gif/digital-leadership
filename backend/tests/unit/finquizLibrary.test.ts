@@ -20,7 +20,7 @@ function contentFor(slug: string, hiddenLecture = "") {
 
 describe("Finquiz educational library", () => {
   it("carries the entire source inventory without delivering quiz answers or source styling", async () => {
-    expect(manifest.counts).toEqual({ lectures: 26, summaries: 32, assignments: 52, quizzes: 14, references: 10, resources: 30, updates: 31, questions: 295 });
+    expect(manifest.counts).toEqual({ lectures: 27, summaries: 33, assignments: 52, quizzes: 14, references: 10, resources: 30, updates: 31, questions: 295 });
     for (const source of manifest.subjects) {
       const library = await new LibraryService(contentFor(source.id) as unknown as ContentService).get(subjectMapping[source.id]!, false);
       for (const section of ["lectures", "assignments", "references", "updates"] as const) expect(library.entries.filter(e => e.section === section)).toHaveLength(source[section].filter(row => row.status === "published").length);
@@ -50,7 +50,7 @@ describe("Finquiz educational library", () => {
     content.listLecturesForSubjectOrThrow.mockResolvedValue({ items: source.lectures.map(l => ({ id: finquizRecordId("lecture:" + l.id), title: "عنوان عدّله المدرّب" })) });
     const service = new LibraryService(content as unknown as ContentService);
     const library = await service.get(subjectMapping["legal-regulatory"]!, false);
-    expect(library.entries.filter(e => e.section === "summaries")).toHaveLength(6);
+    expect(library.entries.filter(e => e.section === "summaries")).toHaveLength(7);
     const fourth = library.entries.find(e => e.id === "lg-s2")!;
     expect(fourth.lectureId).toBe(finquizRecordId("lecture:lg-l2"));
     expect(fourth.files[0]!.filename).toBe("المحاضرة الرابعة قانونية.pdf");
