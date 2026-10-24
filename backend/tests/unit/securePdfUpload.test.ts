@@ -26,11 +26,11 @@ describe("passive PDF upload inspection", () => {
   it("rejects embedded file attachments", async () => {
     await expect(validate(passivePdf("attachment", { catalog: "/Names << /EmbeddedFiles << /Names [(evil) 6 0 R] >> >>", objects: ["<< /Type /Filespec /F (evil.exe) /EF << /F 7 0 R >> >>", "<< /Type /EmbeddedFile /Length 2 >>\nstream\nMZ\nendstream"] }))).rejects.toThrow(/attachments/);
   });
-  it("keeps the 27 reviewed original lecture PDFs uploadable", async () => {
+  it("keeps the 28 reviewed original lecture PDFs uploadable", async () => {
     const sources = JSON.parse(await readFile(new URL("../../content/finquiz/extractedSources.json", import.meta.url), "utf8")) as { sources: Array<{ sha256: string }> };
     const hashes = new Set(sources.sources.map(source => source.sha256));
     const files = Object.values(manifest.assets).filter(asset => !asset.bodyHtml && hashes.has(asset.sha256));
-    expect(files).toHaveLength(27);
+    expect(files).toHaveLength(28);
     for (const file of files) await expect(validateSafePdfUpload({ buffer: await readAsset(file, catalogRoot), originalFilename: file.filename, declaredMimeType: "application/pdf", maxSizeBytes: 20 * 1024 * 1024 }), file.filename).resolves.toBeUndefined();
   }, 30_000);
 });
