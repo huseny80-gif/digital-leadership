@@ -7,8 +7,8 @@
  */
 export interface DrawTree { id: string; children: DrawTree[] }
 
-/** Pace multiplier: 1.5 slows the whole scene (about 4.5 s) so each stroke can be followed. */
-const PACE = 1.5;
+/** Pace multiplier: 2.5 slows the whole scene (about 7.5 s) so each stroke can be followed. */
+const PACE = 2.5;
 export const ms = (value: number) => value * PACE;
 const FRAME = ms(380), LINK = ms(520), WORD = ms(55), FILL = ms(360), EASE_DRAW = "cubic-bezier(.2,.7,.3,1)";
 const stagger = (depth: number) => ms(depth === 0 ? 140 : depth === 1 ? 110 : 70);
