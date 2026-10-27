@@ -64,6 +64,10 @@ if (env.DATABASE_URL) {
 }
 
 async function refreshPublishedContent() {
+  // Repair existing cards even if an unrelated legacy content stage fails.
+  // The independent stage below retries after new assessments are generated.
+  try { logger.info(await repairRiskQuizSourceLabels(getPool()), "risk_quiz_source_labels_repaired"); }
+  catch (error) { logger.error({ name: error instanceof Error ? error.name : "UnknownError" }, "risk_quiz_source_labels_repair_failed"); }
   const result = await synchronizeFinquizCore(getPool());
   logger.info(result, "finquiz_core_content_synchronized");
   const moved = await relocateIso27001Roadmap(getPool());
@@ -78,9 +82,6 @@ async function refreshPublishedContent() {
   for (const source of generationSources) await getContentImportService().submitText({ actorId: source.actorId, text: source.text, title: legalLectureTitle(6), subjectId: LEGAL_SUBJECT_ID, lectureId: sixth.lectureId!, itemId: source.itemId });
   logger.info({ ...sixth, sourcesQueued: generationSources.length }, "legal_sixth_lecture_separated");
   logger.info({ courses: await refreshStudyCourses(getPool()) }, "study_courses_content_refreshed");
-  // Correct existing cards before slower source-generation stages; repeat
-  // after course assessment refresh to cover newly rebuilt editions too.
-  logger.info(await repairRiskQuizSourceLabels(getPool()), "risk_quiz_source_labels_repaired");
   await runIndependentContentReviews([
     // First, so learners are not kept waiting behind the slower content
     // reviews below: prepare each course's summaries and comprehensive exam.
