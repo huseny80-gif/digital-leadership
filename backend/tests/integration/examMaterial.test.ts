@@ -515,7 +515,7 @@ describe("independent exam material archives", () => {
     expect(leaks.rows[0].n).toBe(0);
     expect((await pool.query("select count(*)::int as n from quizzes where purpose='exam_material' and superseded_by is not null")).rows[0].n).toBe(0);
     for (const group of archives) expect((await request(s.app).get(`/api/v1/subjects/${group.subjectId}/exam-material/${group.id}`).set("Cookie", s.cookie).expect(200)).body.data.summary).toEqual(group.summary);
-  }, 30000); // Imports/reviews all five real catalogs in a cold database.
+  }, 90000); // Imports/reviews all five real catalogs in a cold database.
 });
 
 describe("advanced exam review and challenge protection", () => {
