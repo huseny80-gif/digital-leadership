@@ -4,7 +4,7 @@ export const STUDY_COURSES = [
   { slug: "legal-regulatory", id: "ade09563-02ec-4a09-a97b-58857f6cd876", anchor: "legal", lectures: 7 },
   { slug: "cybersecurity-governance", id: "bc861a76-620d-4646-81ca-c49d24665b75", anchor: "cyber", lectures: 7 },
   { slug: "innovation-project-management", id: "7eb2b714-570f-4ed0-a00e-10efec7a20e5", anchor: "innovation", lectures: 5 },
-  { slug: "risk-management", id: "1f4d2071-d1c9-46ee-a848-d5c90eedf287", anchor: "risk", lectures: 3 },
+  { slug: "risk-management", id: "1f4d2071-d1c9-46ee-a848-d5c90eedf287", anchor: "risk", lectures: 5 },
 ] as const;
 
 export const STUDY_VOICES = [
