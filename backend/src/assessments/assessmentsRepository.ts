@@ -15,6 +15,7 @@ import { fillAnswerMatches } from "./fillNormalization.js";
 import { ValidationError } from "../lib/validation.js";
 import { examQuizVisible } from "../examMaterials/visibility.js";
 import { conflict } from "../lib/httpError.js";
+import { subjectMapping } from "../finquiz/catalog.js";
 
 export interface AttemptExperienceOptions { mode: "learning" | "challenge"; timeLimitSeconds?: number }
 
@@ -53,6 +54,8 @@ export function normalizeAnswerRubric(value: unknown): AnswerRubricPoint[] {
  * site.
  */
 export interface AssessmentsRepository {
+  /** Explicit, audited source-scope repairs only; ordinary redirects must keep their lecture. */
+  isVerifiedQuizScopeRepair?(previousQuizId: string, nextQuizId: string): Promise<boolean>;
   listQuizzesForSubject(subjectId: string, isAdmin: boolean): Promise<Quiz[]>;
   getQuizById(quizId: string, isAdmin: boolean): Promise<Quiz | null>;
   listQuestionsForAttempt(quizId: string): Promise<QuestionForAttempt[]>;
@@ -217,6 +220,25 @@ function quizVisibilityClause(isAdmin: boolean): string {
 
 export class PgAssessmentsRepository implements AssessmentsRepository {
   constructor(private readonly pool: Pool) {}
+
+  async isVerifiedQuizScopeRepair(previousQuizId: string, nextQuizId: string): Promise<boolean> {
+    const result = await this.pool.query<{ allowed: boolean }>(`select exists(
+      select 1 from quizzes old join quizzes next on next.id=old.superseded_by
+      join audit_logs a on a.entity_id=old.subject_id and a.entity_type='subject'
+        and a.action='risk_quizzes.source_labels_repaired' and a.metadata->>'policy'='risk-quiz-source-labels-v1'
+      where old.id=$1 and next.id=$2 and old.subject_id=$3 and next.subject_id=old.subject_id
+        and old.purpose='course' and next.purpose='course' and old.deleted_at is null and next.deleted_at is null
+        and a.metadata->'repaired' @> jsonb_build_array(jsonb_build_object('previousId',$1::text,'quizId',$2::text))
+        and not exists (
+          (select question_id,order_index,points_override from quiz_questions where quiz_id=$1
+           except select question_id,order_index,points_override from quiz_questions where quiz_id=$2)
+          union all
+          (select question_id,order_index,points_override from quiz_questions where quiz_id=$2
+           except select question_id,order_index,points_override from quiz_questions where quiz_id=$1)
+        )
+    ) as allowed`, [previousQuizId, nextQuizId, subjectMapping["risk-management"]]);
+    return result.rows[0]?.allowed === true;
+  }
 
   async listQuizzesForSubject(subjectId: string, isAdmin: boolean): Promise<Quiz[]> {
     const visibility = quizVisibilityClause(isAdmin);

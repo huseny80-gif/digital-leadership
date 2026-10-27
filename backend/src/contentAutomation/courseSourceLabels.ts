@@ -44,6 +44,10 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
   if (slug === "ai-data") for (const number of [3, 4]) {
     if (!source.lectures.some(lecture => lecture.number === number)) source.lectures.push({ id: `ai-reviewed-${number}`, number, title: titleOf(number), legacyTitles: [`مقرر الذكاء الاصطناعي${number}`, `Lecture ${number}`] });
   }
+  // A generic upload number alone is not evidence of an additional risk
+  // lecture. Extend this set only by registering an actual curriculum source.
+  const sourceNumbers = new Set(source.lectures.map(lecture => lecture.number));
+  const supportedNumber = (number: number | null) => number !== null && (slug !== "risk-management" || sourceNumbers.has(number)) ? number : null;
   const aliases = new Map(source.lectures.filter(lecture => lecture.id !== "cs-iso-roadmap" && lecture.id !== "ip-l2").flatMap(lecture => [lecture.title, ...(lecture.legacyTitles ?? [])].map(title => [normalizeText(title), lecture.number] as const)));
   const legacyNumber = (value: string) => {
     const text = normalizeText(cleanArabicDisplayLabel(value)).replace(/\.(?:pdf|pptx)$/i, "").trim();
@@ -59,7 +63,7 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
     const generic = /^(?:lecture|المحاضرة|محاضرة)[\s_-]*(?:رقم\s*)?([1-9]|10)$/u.exec(text);
     const bareOrdinal = /^(?:المحاضرة|محاضرة)[\s_-]+/u.test(text)
       ? ordinals.map(normalizeText).indexOf(text.replace(/^(?:المحاضرة|محاضرة)[\s_-]+/u, "")) + 1 : 0;
-    return legacyNumber(text) ?? aliases.get(text) ?? (ordinal || bareOrdinal || (generic ? Number(generic[1]) : null));
+    return supportedNumber(legacyNumber(text) ?? aliases.get(text) ?? (ordinal || bareOrdinal || (generic ? Number(generic[1]) : null)));
   };
   const label = (value: string) => {
     value = cleanArabicDisplayLabel(value);
@@ -77,7 +81,7 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
       : slug === "innovation-project-management" ? /(?<![\p{L}\p{N}])(?:Innovation|Project(?:\s*Management)?)[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
       : /(?<![\p{L}\p{N}])Cyber\s*secur(?:i|e)ty[\s_-]*([1-9]|10)(?![\p{L}\p{N}])/giu;
     let result = value.replace(pattern, (_, digit: string) => titleOf(Number(normalizeText(digit))));
-    if (slug !== "ai-data") result = result.replace(/(?<![\p{L}\p{N}])Lecture[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu, (_, digit: string) => titleOf(Number(digit)));
+    if (slug !== "ai-data") result = result.replace(/(?<![\p{L}\p{N}])Lecture[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu, (match, digit: string) => supportedNumber(Number(digit)) ? titleOf(Number(digit)) : match);
     if (slug === "risk-management") for (const lecture of source.lectures) {
       for (const alias of [lecture.title, ...(lecture.legacyTitles ?? [])]) if (!legacyNumber(alias)) result = result.replaceAll(alias, titleOf(lecture.number));
     }

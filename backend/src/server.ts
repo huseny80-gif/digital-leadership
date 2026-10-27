@@ -41,6 +41,7 @@ import { reprocessCyberSecondLecture } from "./contentAutomation/reprocessCyberS
 import { probePublishedSummaryVisuals } from "./mindMaps/summaryVisualService.js";
 import { CourseStudyModules } from "./studyTools/courseStudyModules.js";
 import { STUDY_COURSES } from "@digital-leadership/shared";
+import { repairRiskQuizSourceLabels } from "./contentAutomation/repairRiskQuizSourceLabels.js";
 
 // force-redeploy-2: reviewed-innovation-curriculum-v1 (220 questions)
 initMonitoring();
@@ -77,6 +78,9 @@ async function refreshPublishedContent() {
   for (const source of generationSources) await getContentImportService().submitText({ actorId: source.actorId, text: source.text, title: legalLectureTitle(6), subjectId: LEGAL_SUBJECT_ID, lectureId: sixth.lectureId!, itemId: source.itemId });
   logger.info({ ...sixth, sourcesQueued: generationSources.length }, "legal_sixth_lecture_separated");
   logger.info({ courses: await refreshStudyCourses(getPool()) }, "study_courses_content_refreshed");
+  // Correct existing cards before slower source-generation stages; repeat
+  // after course assessment refresh to cover newly rebuilt editions too.
+  logger.info(await repairRiskQuizSourceLabels(getPool()), "risk_quiz_source_labels_repaired");
   await runIndependentContentReviews([
     // First, so learners are not kept waiting behind the slower content
     // reviews below: prepare each course's summaries and comprehensive exam.
@@ -92,6 +96,7 @@ async function refreshPublishedContent() {
     { name: "arabic_lecture_labels", run: async () => { logger.info(await normalizeArabicLectureLabels(getPool()), "arabic_lecture_labels_normalized"); } },
     { name: "cyber_second_upload", run: async () => { logger.info(await reprocessCyberSecondLecture(getPool()), "cyber_second_upload_reprocessed"); } },
     { name: "course_assessments", run: async () => { logger.info(await reviewCourseAssessments(getPool(), undefined, courseSourceRevision()), "course_assessments_source_verified"); } },
+    { name: "risk_quiz_source_labels", run: async () => { logger.info(await repairRiskQuizSourceLabels(getPool()), "risk_quiz_source_labels_repaired"); } },
     { name: "exam_archives", run: async () => { logger.info(await refreshAcademicSummaries(getPool()), "academic_exam_summaries_refreshed"); } },
     { name: "diverse_assessments", run: async () => { logger.info(await refreshDiverseAssessments(getPool(), courseSourceRevision()), "diverse_exam_groups_refreshed"); } },
     { name: "instructor_guides", run: async () => { logger.info(await refreshInstructorGuides(getPool()), "instructor_guides_source_verified"); } },
