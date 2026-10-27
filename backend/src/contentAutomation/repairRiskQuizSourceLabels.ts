@@ -35,7 +35,7 @@ export async function repairRiskQuizSourceLabels(pool: Pool) {
     await client.query("set local lock_timeout='30s'");
     await client.query("select id from content_imports where subject_id=$1 order by id for update", [subjectId]);
     await client.query("select pg_advisory_xact_lock(hashtext($1))", [subjectId]);
-    const owner = (await client.query<{ created_by: string }>("select created_by from subjects where id=$1 and deleted_at is null for share", [subjectId])).rows[0];
+    const owner = (await client.query<{ created_by: string }>("select created_by from subjects where id=$1 and status='published' and deleted_at is null for share", [subjectId])).rows[0];
     if (!owner) { await client.query("commit"); return result; }
     const lectures = (await client.query<{ id: string; title: string; catalogSourceId: string | null }>(`select l.id,l.title,${catalogSourceBindingSql} as "catalogSourceId" from lectures l where l.subject_id=$1 and l.status='published' and l.deleted_at is null for share of l`, [subjectId])).rows;
     const byHash = new Map<string, Scope[]>();
@@ -47,7 +47,12 @@ export async function repairRiskQuizSourceLabels(pool: Pool) {
         byHash.set(asset.sha256, [...(byHash.get(asset.sha256) ?? []), scope]);
       }
     }
-    const quizzes = (await client.query<{ id: string; title: string; lecture_id: string | null }>("select id,title,lecture_id from quizzes where subject_id=$1 and purpose='course' and status='published' and deleted_at is null and superseded_by is null order by id for update", [subjectId])).rows;
+    // Correct only currently learner-visible records. A scope repair must
+    // never publish a quiz hidden by its original parent lecture.
+    const quizzes = (await client.query<{ id: string; title: string; lecture_id: string | null }>(`select z.id,z.title,z.lecture_id from quizzes z
+      where z.subject_id=$1 and z.purpose='course' and z.status='published' and z.deleted_at is null and z.superseded_by is null
+        and (z.lecture_id is null or exists(select 1 from lectures parent where parent.id=z.lecture_id and parent.subject_id=z.subject_id and parent.status='published' and parent.deleted_at is null))
+      order by z.id for update of z`, [subjectId])).rows;
     const repaired: Array<{ previousId: string; previousTitle: string; previousLectureId: string | null; quizId: string; lectureIds: string[] }> = [];
     for (const quiz of quizzes) {
       if (!managedTitle(quiz.title)) continue;

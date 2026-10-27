@@ -107,4 +107,23 @@ describe("risk quiz labels follow verified question sources, not legacy lecture 
     expect(await s.repository.isVerifiedQuizScopeRepair(old, successor)).toBe(false);
     await expect(service.startAttempt(old, principal, false)).rejects.toMatchObject({ status: 409 });
   }, 60000);
+
+  it("never makes an effectively hidden quiz visible by changing its lecture scope", async () => {
+    const s = await seed();
+    const draft = await createLecture(pool, { subjectId, title: "محاضرة مخفية", status: "draft", createdBy: s.actor });
+    const deleted = await createLecture(pool, { subjectId, title: "محاضرة محذوفة", status: "published", createdBy: s.actor });
+    await pool.query("update lectures set deleted_at=now() where id=$1", [deleted]);
+    const foreign = await createLecture(pool, { subjectId: subjectMapping["legal-regulatory"]!, title: "محاضرة في مادة أخرى", status: "published", createdBy: s.actor });
+    const hidden = [];
+    for (const lecture of [draft, deleted, foreign]) {
+      const quiz = await s.copy("اختبار المحاضرة السادسة مخاطر", lecture);
+      expect(await s.repository.getQuizById(quiz, false)).toBeNull();
+      hidden.push(quiz);
+    }
+    const before = (await pool.query("select * from quizzes where id=any($1::uuid[]) order by id", [hidden])).rows;
+    await repairRiskQuizSourceLabels(pool);
+    expect((await pool.query("select * from quizzes where id=any($1::uuid[]) order by id", [hidden])).rows).toEqual(before);
+    expect((await pool.query("select count(*)::int n from quizzes where id=any($1::uuid[]) and superseded_by is not null", [hidden])).rows[0].n).toBe(0);
+    for (const quiz of hidden) expect(await s.repository.getQuizById(quiz, false)).toBeNull();
+  }, 60000);
 });
