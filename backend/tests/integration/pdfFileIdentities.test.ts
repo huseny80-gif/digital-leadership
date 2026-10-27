@@ -11,7 +11,9 @@ import { passivePdf } from "../helpers/passivePdf.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const subjectId = subjectMapping["risk-management"]!;
-const source = manifest.subjects.find(subject => subject.id === "risk-management")!;
+const fullCourse = manifest.subjects.find(subject => subject.id === "risk-management")!;
+// Lectures 4 and 5 were added after the pinned source review of the first three.
+const source = { ...fullCourse, lectures: fullCourse.lectures.slice(0, 3) };
 const bytes = new Map<string, Buffer>();
 const read = vi.fn(async (key: string) => {
   const value = bytes.get(key);

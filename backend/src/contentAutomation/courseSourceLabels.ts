@@ -47,7 +47,7 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
   const aliases = new Map(source.lectures.filter(lecture => lecture.id !== "cs-iso-roadmap" && lecture.id !== "ip-l2").flatMap(lecture => [lecture.title, ...(lecture.legacyTitles ?? [])].map(title => [normalizeText(title), lecture.number] as const)));
   const legacyNumber = (value: string) => {
     const text = normalizeText(cleanArabicDisplayLabel(value)).replace(/\.(?:pdf|pptx)$/i, "").trim();
-    const expression = slug === "ai-data" ? /^(?:ai|lecture|مقرر\s*الذكاء الاصطناعي|الذكاء الاصطناعي)[\s_-]*([1-9]|10)$/ : slug === "risk-management" ? /^(?:risk(?:\s*management)?)[\s_-]*([1-3])$/ : slug === "legal-regulatory" ? /^legal[\s_-]*([1-7])$/ : slug === "innovation-project-management" ? /^(?:innovation|project(?:\s*management)?)[\s_-]*([1-9]|10)$/ : /^(?:cyber\s*secur(?:i|e)ty|مقرر\s*(?:حوكمة\s*)?الامن السيبراني|(?:حوكمة\s*)?الامن السيبراني)[\s_-]*([1-9]|10)$/;
+    const expression = slug === "ai-data" ? /^(?:ai|lecture|مقرر\s*الذكاء الاصطناعي|الذكاء الاصطناعي)[\s_-]*([1-9]|10)$/ : slug === "risk-management" ? /^(?:risk(?:\s*management)?)[\s_-]*([1-5])$/ : slug === "legal-regulatory" ? /^legal[\s_-]*([1-7])$/ : slug === "innovation-project-management" ? /^(?:innovation|project(?:\s*management)?)[\s_-]*([1-9]|10)$/ : /^(?:cyber\s*secur(?:i|e)ty|مقرر\s*(?:حوكمة\s*)?الامن السيبراني|(?:حوكمة\s*)?الامن السيبراني)[\s_-]*([1-9]|10)$/;
     const match = expression.exec(text);
     return match ? Number(match[1]) : null;
   };
@@ -72,8 +72,8 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
     if (number) return titleOf(number) + extension;
     const pattern = slug === "ai-data"
       ? /(?<![\p{L}\p{N}])(?:Ai|Lecture|مقرر\s*الذكاء الاصطناعي)[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
-      : slug === "risk-management" ? /(?<![\p{L}\p{N}])Risk(?:\s*Management)?[\s_-]*([1-3])(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
-      : slug === "legal-regulatory" ? /(?<![\p{L}\p{N}])Legal[\s_-]*([1-6١-٦۱-۶])(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
+      : slug === "risk-management" ? /(?<![\p{L}\p{N}])Risk(?:\s*Management)?[\s_-]*([1-5])(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
+      : slug === "legal-regulatory" ? /(?<![\p{L}\p{N}])Legal[\s_-]*([1-7١-٧۱-۷])(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
       : slug === "innovation-project-management" ? /(?<![\p{L}\p{N}])(?:Innovation|Project(?:\s*Management)?)[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
       : /(?<![\p{L}\p{N}])Cyber\s*secur(?:i|e)ty[\s_-]*([1-9]|10)(?![\p{L}\p{N}])/giu;
     let result = value.replace(pattern, (_, digit: string) => titleOf(Number(normalizeText(digit))));
