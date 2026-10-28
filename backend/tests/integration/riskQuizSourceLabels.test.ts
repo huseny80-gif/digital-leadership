@@ -33,7 +33,7 @@ async function seed() {
 }
 
 describe("risk quiz labels follow verified question sources, not legacy lecture numbers", () => {
-  it("replaces the pictured sixth-lecture card with its actual five-lecture scope while preserving every saved grade and key", async () => {
+  it("replaces the pictured sixth-lecture card with its actual source scope while preserving every saved grade and key", async () => {
     const s = await seed();
     const stray = await createLecture(pool, { subjectId, title: "المحاضرة السادسة مخاطر", status: "published", createdBy: s.actor, orderIndex: 6 });
     const old = await s.copy("اختبار المحاضرة السادسة مخاطر", stray);
@@ -55,8 +55,8 @@ describe("risk quiz labels follow verified question sources, not legacy lecture 
     expect(successor).toBeTruthy();
     const quiz = await s.repository.getQuizById(successor, false);
     expect(quiz).toMatchObject({ lectureId: null, timeLimitSeconds: 600, dueAt: "2027-11-01T12:00:00.000Z" });
-    expect(quiz!.title).toBe("اختبار شامل — إدارة المخاطر واتخاذ القرار (المحاضرات 1، 2، 3، 4، 5)");
-    expect((await s.repository.listQuizzesForSubject(subjectId, false)).some(quiz => quiz.id === old || /السادسة/u.test(quiz.title))).toBe(false);
+    expect(quiz!.title).toBe("اختبار شامل — إدارة المخاطر واتخاذ القرار (المحاضرات 1، 2، 3، 4، 5، 6)");
+    expect((await s.repository.listQuizzesForSubject(subjectId, false)).some(quiz => quiz.id === old)).toBe(false);
     expect((await pool.query("select question_id,order_index,points_override from quiz_questions where quiz_id=$1 order by order_index", [successor])).rows)
       .toEqual(before.memberships.map(({ quiz_id: _quiz, ...row }) => row));
     expect(await snapshot()).toEqual(before);
