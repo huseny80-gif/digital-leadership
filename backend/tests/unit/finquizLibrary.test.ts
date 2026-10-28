@@ -20,7 +20,7 @@ function contentFor(slug: string, hiddenLecture = "") {
 
 describe("Finquiz educational library", () => {
   it("carries the entire source inventory without delivering quiz answers or source styling", async () => {
-    expect(manifest.counts).toEqual({ lectures: 30, summaries: 35, assignments: 52, quizzes: 14, references: 10, resources: 30, updates: 31, questions: 295 });
+    expect(manifest.counts).toEqual({ lectures: 31, summaries: 36, assignments: 52, quizzes: 14, references: 10, resources: 30, updates: 31, questions: 295 });
     for (const source of manifest.subjects) {
       const library = await new LibraryService(contentFor(source.id) as unknown as ContentService).get(subjectMapping[source.id]!, false);
       for (const section of ["lectures", "assignments", "references", "updates"] as const) expect(library.entries.filter(e => e.section === section)).toHaveLength(source[section].filter(row => row.status === "published").length);
