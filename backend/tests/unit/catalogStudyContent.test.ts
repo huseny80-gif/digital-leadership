@@ -28,7 +28,7 @@ describe("current academic content from the approved PDFs", () => {
       }
       checked++;
     }
-    expect(checked).toBe({ "ai-data": 6, "legal-regulatory": 7, "cybersecurity-governance": 6, "innovation-project-management": 5, "risk-management": 5 }[course.id]);
+    expect(checked).toBe({ "ai-data": 6, "legal-regulatory": 7, "cybersecurity-governance": 7, "innovation-project-management": 5, "risk-management": 5 }[course.id]);
   }, 30000);
   it("rejects a changed original instead of recycling its earlier summary", async () => {
     const lecture = manifest.subjects[0]!.lectures[0]!;
