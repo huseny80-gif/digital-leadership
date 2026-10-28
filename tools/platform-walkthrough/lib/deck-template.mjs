@@ -54,7 +54,7 @@ html,body{height:100%;background:#020d0e;overflow:hidden;font-family:"Noto Naskh
 #prog{position:absolute;left:70px;right:70px;bottom:46px;height:5px;border-radius:5px;background:rgba(255,255,255,.1);direction:ltr}
 #prog div{height:100%;width:0;border-radius:5px;background:linear-gradient(90deg,var(--t400),var(--gold));transition:width .5s}
 #hint{position:absolute;left:70px;bottom:62px;font-size:16px;color:var(--mut);opacity:.7;direction:ltr}
-.card{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:26px;text-align:center;z-index:20;background:radial-gradient(900px 600px at 50% 40%,rgba(14,140,147,.28),transparent 70%)}
+.card{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:26px;text-align:center;z-index:20;background:radial-gradient(900px 600px at 50% 40%,rgba(14,140,147,.32),transparent 70%),linear-gradient(160deg,#03171a,#05262a 55%,#031214)}
 .card.on{display:flex;animation:up 1s both}
 .card h1{font-size:92px;font-weight:900;line-height:1.25;background:linear-gradient(90deg,#fff,var(--t300) 55%,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
 .card p{font-size:34px;color:var(--mut)}

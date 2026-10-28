@@ -14,6 +14,7 @@ export const CURSOR_INIT_SCRIPT = () => {
       .__wt_ripple{position:fixed;z-index:2147483646;pointer-events:none;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;
         border:3px solid #d4a72c;background:rgba(47,169,173,.35);animation:__wt_ripple .75s ease-out forwards}
       @keyframes __wt_ripple{to{transform:scale(6);opacity:0}}`;
+    style.textContent += "nextjs-portal,#__next-build-watcher,[data-nextjs-dev-tools-button]{display:none!important}";
     document.documentElement.appendChild(style);
     const cursor = document.createElement("div");
     cursor.id = "__wt_cursor";

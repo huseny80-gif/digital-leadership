@@ -79,8 +79,28 @@ async function settle() {
   await mouse.wait(800);
 }
 
-/** Take the screenshot + documentation entry for the current state of the page. */
+let welcomeShown = false;
+/** Pages open a modal welcome dialog; show it once, then close it like a visitor would so it never hides the content. */
+async function clearModal() {
+  const dialog = page.locator("dialog[open]").first();
+  if (!(await dialog.count())) return;
+  if (!welcomeShown) {
+    welcomeShown = true;
+    await captureCore("page", { caption: "نافذة الترحيب", description: "تظهر عند فتح المنصة: اختيار بين تصفح المنصة واستخدام المساعد الدراسي.", note: "welcome dialog" });
+  }
+  const choice = dialog.locator("button:not([data-destination])").first();
+  if (await choice.count()) { await mouse.clickLocator(choice); } else { await page.keyboard.press("Escape"); }
+  await mouse.wait(900);
+}
+
 async function capture(kind, extra = {}) {
+  await settle();
+  await clearModal();
+  return captureCore(kind, extra);
+}
+
+/** Take the screenshot + documentation entry for the current state of the page. */
+async function captureCore(kind, extra = {}) {
   await settle();
   const url = new URL(page.url());
   const path = url.pathname;
@@ -94,7 +114,7 @@ async function capture(kind, extra = {}) {
     scrollY: Math.round(scrollY),
   })).catch(() => ({ title: "", h1: "", headings: [], links: 0, buttons: 0, scrollHeight: 0, scrollY: 0 }));
   const index = steps.length + 1;
-  const file = `${pad(index)}-${slugOf(path + url.search)}${kind === "page" ? "" : "-" + kind}.png`;
+  const file = `${pad(index)}-${slugOf(redact(path) + url.search)}${kind === "page" ? "" : "-" + kind}.png`;
   await page.screenshot({ path: join(shotsDir, file), type: "png" });
   let fullFile = null;
   if (kind === "page" && cfg.fullPageShots && info.scrollHeight > cfg.viewport.height * 1.15) {
