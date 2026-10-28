@@ -76,8 +76,10 @@ export async function separateCyberRiskSixthLecture(pool: Pool, storage: Storage
     if (current.length !== selected.length || current.some(row => row.updated_at.toISOString() !== selected.find(link => link.id === row.id)!.updated_at.toISOString())) throw new Error("cyber_risk_source_changed");
     const currentFiles = (await client.query<{ id: string; storage_key: string; checksum: string | null; size_bytes: string }>("select id,storage_key,checksum,size_bytes::text from files where id=any($1::uuid[]) and status='active' and deleted_at is null order by id for update", [fileIds])).rows;
     if (currentFiles.length !== fileIds.length || currentFiles.some(file => { const before = selected.find(link => link.file_id === file.id)!; return file.storage_key !== before.storage_key || file.checksum !== before.checksum || file.size_bytes !== before.size_bytes; })) throw new Error("cyber_risk_source_changed");
-    const roadmap = findSourceLecture(course.lectures.find(lecture => lecture.id === "cs-iso-roadmap")!, visible);
-    if (roadmap) await client.query("update lectures set order_index=7 where id=$1 and subject_id=$2 and deleted_at is null and order_index=6", [roadmap.id, subjectId]);
+    const roadmapSource = course.lectures.find(lecture => lecture.id === "cs-iso-roadmap");
+    if (!roadmapSource) throw new Error("cyber_iso_roadmap_source_missing");
+    const roadmap = findSourceLecture(roadmapSource, visible);
+    if (roadmap) await client.query("update lectures set order_index=$3 where id=$1 and subject_id=$2 and deleted_at is null and order_index=6", [roadmap.id, subjectId, roadmapSource.number]);
     const occupied = await client.query("select id from lectures where subject_id=$1 and order_index=6 and deleted_at is null", [subjectId]);
     if (occupied.rowCount) throw new Error("cyber_risk_sixth_occupied");
     const published = parent.status === "published" && selected.some(link => link.status === "published");
