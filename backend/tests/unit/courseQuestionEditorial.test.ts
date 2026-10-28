@@ -115,12 +115,14 @@ const canon=(value:unknown):string=>Array.isArray(value)?`[${value.map(canon).jo
 const fullEditorial=JSON.parse(readFileSync(new URL("../../content/finquiz/courseQuestionEditorial.json",import.meta.url),"utf8")) as {courses:Array<{slug:string;edits:Array<{key:string;prompt:string;manualModel?:string[];supportingEvidence?:unknown[];cognitiveReview:{origin:string;level:string;reason:string}}>}>};
 describe("complete four-course preservation and archive contract",()=>{
  it.each(STUDY_COURSES)("preserves all programs and source proof in $slug, excluding Innovation from rewording",async course=>{
-  // Lectures added after the wording review (risk 4 and 5) carry newly written cases and have no previous program to preserve.
-  const numbers=manifest.subjects.find(s=>s.id===course.slug)!.lectures.map(l=>l.number).filter(number=>pins.some(p=>p.subject===course.slug&&p.lecture===number));
-  if(course.slug==="cybersecurity-governance")numbers.push(6);
+  // Pins retain the historical lecture numbers. New source originals have no
+  // previous program; the permanent ISO source identity now follows week seven.
+  const numbers=[...new Set(pins.filter(pin=>pin.subject===course.slug).map(pin=>pin.lecture))];
   let checked=0;
   for(const number of numbers){
-   const input=await loadLecture(course.slug,number);
+   const currentNumber=course.slug==="cybersecurity-governance"&&number===7
+    ?manifest.subjects.find(subject=>subject.id===course.slug)!.lectures.find(lecture=>lecture.id==="cs-iso-roadmap")!.number:number;
+   const input=await loadLecture(course.slug,currentNumber);
    const before=course.slug==="innovation-project-management"?reviewedInnovationQuestions(input.paragraphs):legacyQuestionCandidates(input.paragraphs);
    const after=groundedQuestionCandidates(input.paragraphs);
    expect(after).toHaveLength(before.length);

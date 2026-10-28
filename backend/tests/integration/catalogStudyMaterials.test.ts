@@ -37,7 +37,7 @@ describe("a verified curriculum review across all five materials", () => {
     await pool.query("update lectures set deleted_at=now() where id=$1", [deleted]);
     const result = await refreshCatalogStudyMaterials(pool);
     expect(result.courses).toHaveLength(5);
-    expect(result.courses.reduce((n, course) => n + course.verifiedFiles, 0)).toBe(29);
+    expect(result.courses.reduce((n, course) => n + course.verifiedFiles, 0)).toBe(30);
     expect(result.courses.every(course => course.groupId && course.questionCount > 0)).toBe(true);
     expect(result.courses.find(course => course.slug === "cybersecurity-governance")!.registered).toBe(1);
     const content = new ContentService(new PgContentRepository(pool));
@@ -83,7 +83,7 @@ describe("a verified curriculum review across all five materials", () => {
     const result = await refreshCatalogStudyMaterials(pool, [subjectId]);
     expect(result.courses[0]!.registered).toBe(0);
     expect(result.courses[0]!.issues).toContainEqual({ sourceLectureId: "cs-l3", code: "source_slot_removed" });
-    expect(result.courses[0]!.currentLectures).toBe(5);
+    expect(result.courses[0]!.currentLectures).toBe(6);
     expect((await pool.query("select status from lectures where id=$1", [finquizRecordId("lecture:cs-l2")])).rows[0].status).toBe("published");
   }, 60000);
 });

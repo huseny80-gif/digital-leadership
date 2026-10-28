@@ -80,7 +80,7 @@ describe("cyber risk is sixth, Cybersecurety5 remains fifth", () => {
     expect(result).toMatchObject({ status: "separated", fifthId: s.fifth, sixthId: s.sixth, number: 6, questions: 1, quizzes: 2 });
     expect((await pool.query("select subject_id,title,order_index from lectures where id=$1", [s.fifth])).rows[0]).toEqual({ subject_id: subjectId, title: "المحاضرة الخامسة في حوكمة الأمن السيبراني", order_index: 5 });
     expect((await pool.query("select subject_id,title,order_index from lectures where id=$1", [s.sixth])).rows[0]).toEqual({ subject_id: subjectId, title: cyberRiskSixthTitle, order_index: 6 });
-    expect((await pool.query("select order_index from lectures where id=$1", [finquizRecordId("lecture:cs-iso-roadmap")])).rows[0].order_index).toBe(7);
+    expect((await pool.query("select order_index from lectures where id=$1", [finquizRecordId("lecture:cs-iso-roadmap")])).rows[0].order_index).toBe(8);
     expect((await pool.query("select subject_id,order_index from lectures where id=$1", [s.unrelated])).rows[0]).toEqual({ subject_id: riskSubject, order_index: 6 });
     expect((await pool.query("select * from files where id=$1", [s.files.cobit!.id])).rows[0]).toEqual(beforeFile);
     expect((await pool.query("select lecture_id from lecture_items where id=$1", [s.files.risk!.item])).rows[0].lecture_id).toBe(s.sixth);
