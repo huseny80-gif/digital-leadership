@@ -8,11 +8,12 @@ describe("source-based Arabic course names", () => {
   it("translates generic legacy uploads in every folder without renumbering or fabricating source records", () => {
     const innovation = allCourseLabels.find(profile => profile.slug === "innovation-project-management")!;
     for (const [before, after] of [["lecture2", "المحاضرة الثانية في الابتكار وإدارة المشاريع"], ["lecture1", "المحاضرة الأولى في الابتكار وإدارة المشاريع"], ["Lecture 1", "المحاضرة الأولى في الابتكار وإدارة المشاريع"], ["المحاضرة الثانية", "المحاضرة الثانية في الابتكار وإدارة المشاريع"]]) expect(innovation.label(before!)).toBe(after);
-    expect(risk!.label("Lecture 6")).toBe("Lecture 6");
-    expect(risk!.label("اختبار Lecture 6")).toBe("اختبار Lecture 6");
-    for (const title of ["Lecture 6", "المحاضرة السادسة", "المحاضرة السادسة مخاطر", "Lecture 10"]) expect(risk!.numberOf(title)).toBeNull();
+    expect(risk!.label("Lecture 7")).toBe("Lecture 7");
+    expect(risk!.label("اختبار Lecture 7")).toBe("اختبار Lecture 7");
+    expect(risk!.label("Lecture 6")).toBe("المحاضرة السادسة مخاطر");
+    for (const title of ["Lecture 7", "المحاضرة السابعة", "المحاضرة السابعة مخاطر", "Lecture 10"]) expect(risk!.numberOf(title)).toBeNull();
     expect(risk!.label("اختبار Lecture 5")).toBe("اختبار المحاضرة الخامسة مخاطر");
-    expect(risk!.source.lectures.map(lecture => lecture.number)).toEqual([1, 2, 3, 4, 5]);
+    expect(risk!.source.lectures.map(lecture => lecture.number)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(cyber!.label("المحاضرة الأولى في حوكمة الأمن السيبراني&2")).toBe("المحاضرتان الأولى والثانية في حوكمة الأمن السيبراني");
     expect(cyber!.label("ملخص المحاضرة الأولى في حوكمة الأمن السيبراني&2.pdf")).toBe("ملخص المحاضرتين الأولى والثانية في حوكمة الأمن السيبراني.pdf");
     for (const profile of allCourseLabels) for (const title of ["Lecture14", "Lecture1-3", "ISO 27001"]) expect(profile.label(title)).toBe(title);

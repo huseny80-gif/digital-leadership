@@ -11,7 +11,7 @@ describe("risk lecture source review", () => {
     await validateOneDriveSources(riskSourceReview);
     expect(riskSourceReview.files).toHaveLength(3);
     const course = manifest.subjects.find(subject => subject.id === "risk-management")!;
-    expect(course.lectures.map(lecture => lecture.title)).toEqual(["المحاضرة الأولى مخاطر", "المحاضرة الثانية مخاطر", "المحاضرة الثالثة مخاطر", "المحاضرة الرابعة مخاطر", "المحاضرة الخامسة مخاطر"]);
+    expect(course.lectures.map(lecture => lecture.title)).toEqual(["المحاضرة الأولى مخاطر", "المحاضرة الثانية مخاطر", "المحاضرة الثالثة مخاطر", "المحاضرة الرابعة مخاطر", "المحاضرة الخامسة مخاطر", "المحاضرة السادسة مخاطر"]);
     for (const review of riskSourceReview.quizzes) {
       const quiz = course.quizzes.find(quiz => quiz.id === review.quizId)!;
       expect(quiz.questions).toHaveLength(12);
