@@ -113,7 +113,7 @@ describe("reviewed legal study content and narration", () => {
   });
   it("verifies all bundled file bytes and the physical page limits used by the citations", async () => {
     const report = await probeLegalAcademicReadings();
-    expect(report).toMatchObject({ policy: legalReadingPolicy, verifiedFiles: 7, topics: 70 });
+    expect(report).toMatchObject({ policy: legalReadingPolicy, verifiedFiles: 8, topics: 77 });
     const data = JSON.parse(await readFile(new URL("legalAcademicReadings.json", catalogRoot), "utf8")) as { sources: Array<{ sha256: string; pageCount: number }> };
     for (const source of data.sources) {
       const asset = Object.values(manifest.assets).find(asset => asset.sha256 === source.sha256)!;

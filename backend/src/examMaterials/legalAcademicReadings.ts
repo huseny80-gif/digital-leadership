@@ -21,7 +21,7 @@ const checked = new Map<string, Promise<void>>();
  * scan marks, bibliography and lecture metadata are deliberately not passages. */
 function validateReading(reading: LegalReading) {
   if (data.policy !== legalReadingPolicy || !/^[a-f0-9]{64}$/u.test(reading.sha256)
-    || !Number.isInteger(reading.lectureNumber) || reading.lectureNumber < 1 || reading.lectureNumber > 7
+    || !Number.isInteger(reading.lectureNumber) || reading.lectureNumber < 1 || reading.lectureNumber > 8
     || !Number.isInteger(reading.pageCount) || reading.pageCount < 1 || reading.topics.length < 4) throw new Error("invalid_legal_reading");
   const seen = new Set<string>();
   for (const topic of reading.topics) {

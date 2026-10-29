@@ -88,7 +88,7 @@ export async function consolidateCourseContent(pool: Pool, profile: CourseConsol
       join questions q on q.prompt=expected.prompt and q.question_type::text=expected.question_type and q.deleted_at is null
       join question_banks b on b.id=q.question_bank_id and b.subject_id=$1 and b.deleted_at is null
       join lectures l on l.id=q.lecture_id and l.subject_id=$1 and l.deleted_at is null`, [subjectId, JSON.stringify(expectedQuestions)])).rows;
-    for (const number of [1, 2, 3, 4, 5, 6, 7]) {
+    for (const number of [1, 2, 3, 4, 5, 6, 7, 8]) {
       const group = lectures.filter(lecture => numberOf(lecture.title) === number);
       const old = group.filter(lecture => legacyIds.has(lecture.id));
       let canonical = group.filter(lecture => !legacyIds.has(lecture.id));
