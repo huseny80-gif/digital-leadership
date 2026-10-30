@@ -13,8 +13,8 @@ describe("Arabic legal lecture labels", () => {
     expect(legalLectureNumber("المحاضرة الاولى قانونية")).toBe(1);
   });
 
-  it("leaves unrelated words, legal numbering above seven and explicit topic titles intact", () => {
-    for (const title of ["Illegal1", "Legal10", "Legal8", "Cyber Legal2Course", "الخصوصية وحماية البيانات"])
+  it("leaves unrelated words, legal numbering above eight and explicit topic titles intact", () => {
+    for (const title of ["Illegal1", "Legal10", "Legal9", "Cyber Legal2Course", "الخصوصية وحماية البيانات"])
       expect(legalLectureNumber(title)).toBeNull();
     expect(replaceLegalLabels("اختبار Legal1 — Legal 6.pdf؛ Legal10 وIllegal1")).toBe("اختبار المحاضرة الأولى قانونية — المحاضرة السادسة قانونية.pdf؛ Legal10 وIllegal1");
   });
