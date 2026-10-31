@@ -34,8 +34,8 @@ def prepare(root, check=False):
     manifest_path = root / "assets/audio/manifest.json"
     previous = json.loads(manifest_path.read_text())
     old = {entry["id"]: entry for entry in previous["lectures"]}
-    html = (root / "summaries.html").read_text()
-    embedded = json.loads(re.search(r'<script type="application/json" id="summaries-data">([\s\S]*?)</script>', html).group(1))
+    # Offline recording metadata is independent of the subject-owned app UI.
+    embedded = json.loads((root / "assets/audio/study-data.json").read_text())
     old_display = {entry["id"]: entry for entry in embedded["lectures"]}
     subjects, lectures, entries = [], [], []
     source_mapping = (root / "backend/src/finquiz/catalog.ts").read_text()
@@ -95,12 +95,8 @@ def prepare(root, check=False):
     if available == len(entries) * len(VOICES):
         manifest["audioProduction"] = {"provider": "edge-tts", "recordingCount": available,
                                        "neuralNotHuman": True, "dialectAdaptations": True, "complete": True}
-    encoded = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
-    new_html = re.sub(r'(<script type="application/json" id="summaries-data">)[\s\S]*?(</script>)',
-                      lambda match: match.group(1) + encoded + match.group(2), html, count=1)
     expected_files = {manifest_path: json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-                      root / "assets/audio/study-data.json": json.dumps(data, ensure_ascii=False, indent=2) + "\n",
-                      root / "summaries.html": new_html}
+                      root / "assets/audio/study-data.json": json.dumps(data, ensure_ascii=False, indent=2) + "\n"}
     for path, content in expected_files.items():
         if check:
             if not path.is_file() or path.read_text() != content:

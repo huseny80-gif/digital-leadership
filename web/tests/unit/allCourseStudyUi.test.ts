@@ -33,42 +33,8 @@ beforeEach(() => {
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); document.documentElement.innerHTML = ""; localStorage.clear(); window.history.replaceState(null, "", "/"); });
 
-describe("shared study experience for every course", () => {
-  it.each(STUDY_COURSES)("loads $slug summaries and six voices with only that course's source/audio paths", async course => {
-    const data = fixture(course.id).summaries;
-    await render("summaries", course.id, data);
-    expect(document.querySelector("main .eyebrow")!.textContent).toBe(data.courseTitle);
-    expect(document.querySelectorAll(".lecture-card")).toHaveLength(1);
-    expect(document.querySelector("#recording-count")!.textContent).toContain("يُجهّز عند التشغيل");
-    const card = document.getElementById(data.lectures[0]!.id)!, select = card.querySelector<HTMLSelectElement>(".player select")!;
-    expect(select.options).toHaveLength(6);
-    for (const voice of STUDY_VOICES) {
-      select.value = voice.id; select.dispatchEvent(new Event("change"));
-      const audio = card.querySelector<HTMLAudioElement>("audio")!;
-      expect(audio.querySelector("source")!.getAttribute("src")).toBe(data.lectures[0]!.audioUrl + "&voice=" + voice.id);
-      expect(audio.autoplay).toBe(false); expect(audio.preload).toBe("none");
-    }
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch).toHaveBeenCalledWith(`/api/study-modules/${course.id}/summaries`, expect.objectContaining({ credentials: "same-origin", cache: "no-store" }));
-    expect(card.querySelector(".summary-actions a")!.getAttribute("href")).toBe(data.lectures[0]!.sourceHref);
-    expect(document.querySelector<HTMLAnchorElement>(".platform-link")!.href).toContain(`/subjects/${course.id}`);
-  });
-  it("keeps native seek/rate/download bound to the selected voice and ignores old audio events", async () => {
-    const data = fixture().summaries; await render("summaries", data.subjectId, data);
-    const card = document.querySelector(".lecture-card")!, first = card.querySelector<HTMLAudioElement>("audio")!, select = card.querySelector<HTMLSelectElement>(".player select")!;
-    select.value = "iraqi-female"; select.dispatchEvent(new Event("change"));
-    const audio = card.querySelector<HTMLAudioElement>("audio")!;
-    first.dispatchEvent(new Event("loadedmetadata"));
-    expect(card.querySelector<HTMLButtonElement>(".audio-back")!.disabled).toBe(true);
-    Object.defineProperty(audio, "duration", { value: 300 }); audio.dispatchEvent(new Event("loadedmetadata"));
-    audio.currentTime = 20;
-    card.querySelector<HTMLButtonElement>(".audio-back")!.click(); expect(audio.currentTime).toBe(5);
-    card.querySelector<HTMLButtonElement>(".audio-forward")!.click(); expect(audio.currentTime).toBe(20);
-    const rate = card.querySelector<HTMLSelectElement>(".audio-rate")!; rate.value = "1.15"; rate.dispatchEvent(new Event("change")); expect(audio.playbackRate).toBe(1.15);
-    expect(card.querySelector(".download-audio")!.getAttribute("href")).toContain("voice=iraqi-female");
-    expect(card.querySelector(".transcript-link")!.getAttribute("href")).toBe("#text-" + data.lectures[0]!.id);
-  });
-  it.each(STUDY_COURSES)("loads $slug's comprehensive exam with all six formats and source-based feedback", async course => {
+describe("subject-bound comprehensive exam legacy document", () => {
+  it.each(STUDY_COURSES)("loads $slug's comprehensive exam with all six formats and source feedback", async course => {
     const data = fixture(course.id).exam; await render("exam", course.id, data);
     expect(document.querySelector("main .eyebrow")!.textContent).toBe(data.courseTitle);
     expect(document.querySelector("#bank-count")!.textContent).toBe("٦");
@@ -81,25 +47,15 @@ describe("shared study experience for every course", () => {
     expect(document.querySelector<HTMLAnchorElement>(".platform-link")!.href).toContain(`/subjects/${course.id}/exam-material`);
     expect(fetch).toHaveBeenCalledWith(`/api/study-modules/${course.id}/exam`, expect.objectContaining({ credentials: "same-origin" }));
   });
-  it.each([401, 404, 503])("shows an actionable status %s without rendering Innovation as a fallback", async status => {
-    const subject = STUDY_COURSES[1].id; await render("summaries", subject, null, status);
+  it.each([401, 404, 503])("shows actionable exam status %s without another course as fallback", async status => {
+    const subject = STUDY_COURSES[1].id; await render("exam", subject, null, status);
     expect(document.querySelector<HTMLElement>("#main")!.hidden).toBe(true);
-    expect(document.querySelectorAll(".lecture-card")).toHaveLength(0);
     expect(document.querySelector("#study-load-status")!.getAttribute("role")).toBe("alert");
     expect(document.querySelector("#study-load-status button")!.textContent).toBe("إعادة المحاولة");
   });
-  it("rejects a cross-course payload and an injected audio/source URL before rendering", async () => {
-    const requested = STUDY_COURSES[1].id, wrong = fixture(STUDY_COURSES[0].id).summaries;
-    await render("summaries", requested, wrong);
+  it("rejects another course's question bank", async () => {
+    const requested = STUDY_COURSES[1].id;
+    await render("exam", requested, fixture(STUDY_COURSES[0].id).exam);
     expect(document.querySelector<HTMLElement>("#main")!.hidden).toBe(true);
-    const data = fixture(requested).summaries; data.lectures[0]!.audioUrl = "https://example.com/not-the-source.mp3";
-    await render("summaries", requested, data);
-    expect(document.querySelector<HTMLElement>("#main")!.hidden).toBe(true); expect(document.querySelector("audio")).toBeNull();
-  });
-  it("lists unavailable source files explicitly while keeping the verified summaries usable", async () => {
-    const data = fixture().summaries; data.unavailableLectures.push({ lectureId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", title: "محاضرة تجريبية تحتاج معالجة", reason: "لم يُعتمد ملخص مطابق بعد." });
-    await render("summaries", data.subjectId, data);
-    expect(document.querySelector('[aria-label="محاضرات تحتاج مراجعة"]')!.textContent).toContain(data.unavailableLectures[0]!.reason);
-    expect(document.querySelectorAll(".lecture-card")).toHaveLength(1);
   });
 });

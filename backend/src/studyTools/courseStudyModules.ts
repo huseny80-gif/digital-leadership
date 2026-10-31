@@ -12,6 +12,7 @@ import { groundedQuestionCandidates, validGroundedQuestion } from "../examMateri
 import { academicSpeechCache, isAcademicMp3, AcademicSpeechUnavailable } from "../examMaterials/academicSpeech.js";
 import { notFound, conflict } from "../lib/httpError.js";
 import { ValidationError } from "../lib/validation.js";
+import { courseNarrationCache } from "./courseNarrationCache.js";
 
 const hash = (text: string) => createHash("sha256").update(text).digest("hex");
 const policy = "reviewed-course-study-modules-v1";
@@ -51,6 +52,7 @@ export function compileCourseLecture(subjectId: string, source: LectureFileSourc
   const summarySha256 = hash(transcript);
   const lecture: StudyModuleLecture = {
     id: `${course.anchor}-${String(source.lecture.orderIndex).padStart(2, "0")}`, lectureId: source.lecture.id,
+    ...(expectedLecture ? { catalogId: expectedLecture } : {}),
     number: source.lecture.orderIndex, title, filename: readings.map(item => item.document.filename).join("، "),
     sha256: readings[0]!.document.sha256, sourceHref: `/subjects/${subjectId}/lectures/${source.lecture.id}`,
     overview, sections, transcript, summarySha256,
@@ -164,23 +166,25 @@ export class CourseStudyModules {
     return courseStudyDocuments(subjectId, title, sources, unavailable);
   }
   async narration(subjectId: string, lectureId: string, revision: string, voice: string, signal?: AbortSignal) {
+    signal?.throwIfAborted();
     const { lectures } = await this.visible(subjectId);
     const lecture = lectures.find(item => item.id === lectureId);
     if (!lecture) throw notFound("Lecture");
     const source = await this.reader.read(subjectId, [lecture], await this.library.get(subjectId, false));
     const current = compileCourseLecture(subjectId, source.sources[0]!).lecture;
     const plan = studyNarrationPlan(current, revision, voice);
-    const parts: Buffer[] = [];
-    for (const [index, segment] of plan.segments.entries()) {
-      signal?.throwIfAborted();
-      const bytes = await academicSpeechCache.audio(segment, plan.voice);
-      if (!isAcademicMp3(bytes)) throw new AcademicSpeechUnavailable("invalid_audio");
-      parts.push(bytes);
-      if (plan.pauseAfter[index]) parts.push(narrationPause);
-    }
     signal?.throwIfAborted();
-    const bytes = Buffer.concat(parts);
-    if (!isAcademicMp3(bytes)) throw new AcademicSpeechUnavailable("invalid_audio");
-    return { bytes, voice: plan.voice };
+    const audio = await courseNarrationCache.audio({ subjectId, lectureId, sourceRevision: hash(JSON.stringify(source.sources[0]!.documents)), summaryRevision: current.summarySha256, voice: plan.voice }, async append => {
+      // This work is shared by retries and other authorized listeners. A
+      // disconnected waiter must not cancel the recording for those callers.
+      for (const [index, segment] of plan.segments.entries()) {
+        const bytes = await academicSpeechCache.audio(segment, plan.voice);
+        if (!isAcademicMp3(bytes)) throw new AcademicSpeechUnavailable("invalid_audio");
+        append(bytes);
+        if (plan.pauseAfter[index]) append(narrationPause);
+      }
+    });
+    signal?.throwIfAborted();
+    return audio;
   }
 }

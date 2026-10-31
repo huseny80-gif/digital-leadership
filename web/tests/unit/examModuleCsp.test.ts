@@ -34,11 +34,11 @@ describe("standalone study page script policy", () => {
     expect(standard).toContain("'strict-dynamic'");
   });
 
-  it("trusts the exact shared loader on the two study documents only, with matching SRI", () => {
+  it("trusts the exact exam loader with matching SRI while summaries only redirect to the subject page", () => {
     const loader = readFileSync(resolve(process.cwd(), "..", "assets/study-module-loader.js"));
     expect(readFileSync(resolve(process.cwd(), "public/assets/study-module-loader.js"))).toEqual(loader);
     const hash = "sha256-" + createHash("sha256").update(loader).digest("base64");
-    for (const page of ["exam-module.html", "summaries.html"]) {
+    for (const page of ["exam-module.html"]) {
       const text = readFileSync(resolve(process.cwd(), "public", page), "utf8");
       expect(text).toContain(`src="assets/study-module-loader.js" integrity="${hash}"`);
       expect(browserCsp("nonce", true, "/" + page)).toContain("'" + hash + "'");
@@ -48,6 +48,10 @@ describe("standalone study page script policy", () => {
       expect(browserCsp("nonce", true, "/" + page)).toContain("'" + bootHash + "'");
       expect(browserCsp("nonce", true, "/subjects")).not.toContain(bootHash);
     }
+    const summary = readFileSync(resolve(process.cwd(), "public/summaries.html"), "utf8");
+    expect(summary).not.toContain('id="summaries-data"');
+    expect(summary).not.toContain('id="subject-select"');
+    expect(browserCsp("nonce", true, "/summaries.html")).not.toContain(hash);
     expect(browserCsp("nonce", true, "/subjects")).not.toContain(hash);
   });
 
