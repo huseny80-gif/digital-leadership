@@ -85,9 +85,22 @@ async function validateStudyPages(root, contents) {
   }
   if (JSON.stringify(data.voices?.map(voice => voice.id)) !== JSON.stringify(VOICES)) throw new Error("Six MSA/Iraqi/Saudi male/female voice options are required");
   if (new Set(manifest.lectures.map(lecture => lecture.id)).size !== data.lectures.length) throw new Error("Audio manifest contains duplicate lectures");
+  const subjects = data.subjects || [];
+  const subjectIds = new Set(subjects.map(subject => subject.id));
+  if (subjects.length) {
+    if (subjectIds.size !== subjects.length || subjects.some(subject => !/^[a-f0-9-]{36}$/.test(subject.id) || typeof subject.title !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(subject.slug))) {
+      throw new Error("Invalid or duplicate course subject metadata");
+    }
+    if (JSON.stringify(manifest.subjects) !== JSON.stringify(subjects) || manifest.defaultSubjectId !== data.defaultSubjectId || !subjectIds.has(data.defaultSubjectId)) {
+      throw new Error("Audio manifest subject metadata must match published summaries");
+    }
+  }
   for (const lecture of data.lectures) {
-    if (!/^innovation-\d{2}$/.test(lecture.id)) throw new Error("Invalid lecture asset identifier");
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(lecture.id)) throw new Error("Invalid lecture asset identifier");
     const entry = manifest.lectures.find(item => item.id === lecture.id);
+    if (subjects.length && (!subjectIds.has(lecture.subjectId) || entry?.subjectId !== lecture.subjectId || entry?.subjectSlug !== lecture.subjectSlug || entry?.catalogLectureId !== lecture.catalogLectureId)) {
+      throw new Error(`Lecture subject mismatch: ${lecture.id}`);
+    }
     const transcript = `assets/audio/${lecture.id}/summary.txt`;
     const expectedHash = createHash("sha256").update(lecture.transcript).digest("hex");
     if (!entry || entry.sourceSha256 !== lecture.sha256 || !/^[a-f0-9]{64}$/.test(lecture.sha256) || entry.summarySha256 !== expectedHash || lecture.summarySha256 !== expectedHash || entry.transcript !== transcript) {

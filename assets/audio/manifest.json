@@ -1,11 +1,491 @@
 {
   "version": 1,
-  "summaryRevision": "815bd704631091dc49cd",
+  "summaryRevision": "35db90610bebac11448e",
+  "defaultSubjectId": "7eb2b714-570f-4ed0-a00e-10efec7a20e5",
+  "subjects": [
+    {
+      "id": "2d6c0980-e4d2-4687-9027-cf090b3d1a67",
+      "slug": "ai-data",
+      "title": "الذكاء الاصطناعي وتحليل البيانات"
+    },
+    {
+      "id": "bc861a76-620d-4646-81ca-c49d24665b75",
+      "slug": "cybersecurity-governance",
+      "title": "حوكمة الأمن السيبراني"
+    },
+    {
+      "id": "7eb2b714-570f-4ed0-a00e-10efec7a20e5",
+      "slug": "innovation-project-management",
+      "title": "الابتكار وإدارة المشاريع"
+    },
+    {
+      "id": "ade09563-02ec-4a09-a97b-58857f6cd876",
+      "slug": "legal-regulatory",
+      "title": "الثقافة القانونية والتنظيمية"
+    },
+    {
+      "id": "1f4d2071-d1c9-46ee-a848-d5c90eedf287",
+      "slug": "risk-management",
+      "title": "إدارة المخاطر"
+    }
+  ],
   "lectures": [
+    {
+      "id": "ai-l1",
+      "number": 1,
+      "title": "المحاضرة الأولى في الذكاء الاصطناعي",
+      "subjectId": "2d6c0980-e4d2-4687-9027-cf090b3d1a67",
+      "subjectSlug": "ai-data",
+      "catalogLectureId": "ai-l1",
+      "sourceSha256": "a5a1cbd077be245238eb8673bdd75cef45644867cb2853f0de38b1abe2e4598f",
+      "summarySha256": "ec93f877591c52cf1944480f07bbc32bd66b5ce60e116bd67078e6c86e5b4983",
+      "transcript": "assets/audio/ai-l1/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/ai-l1/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/ai-l1/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/ai-l1/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/ai-l1/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/ai-l1/saudi-elevenlabs-part-01.mp3",
+          "available": true,
+          "transcript": "assets/audio/ai-l1/saudi.txt",
+          "provider": "ElevenLabs",
+          "voiceId": "nPczCjzI2devNBz1zQrb",
+          "voiceName": "Brian - Deep, Resonant and Comforting",
+          "complete": true
+        },
+        "saudi-female": {
+          "path": "assets/audio/ai-l1/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "ai-l2",
+      "number": 2,
+      "title": "المحاضرة الثانية في الذكاء الاصطناعي",
+      "subjectId": "2d6c0980-e4d2-4687-9027-cf090b3d1a67",
+      "subjectSlug": "ai-data",
+      "catalogLectureId": "ai-l2",
+      "sourceSha256": "99339d60fce911b1326130020c36a0ed3d9633e575fdc066f3d765a67d240f1e",
+      "summarySha256": "6c26ae2e87ccbe0214583df97646bf46f16eb7c02cf8fa4ac25a0e2ed5c68c59",
+      "transcript": "assets/audio/ai-l2/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/ai-l2/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/ai-l2/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/ai-l2/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/ai-l2/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/ai-l2/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/ai-l2/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "ai-l3",
+      "number": 3,
+      "title": "المحاضرة الثالثة في الذكاء الاصطناعي",
+      "subjectId": "2d6c0980-e4d2-4687-9027-cf090b3d1a67",
+      "subjectSlug": "ai-data",
+      "catalogLectureId": "ai-l3",
+      "sourceSha256": "c2c10579067f939d928903315ee2d89997e8fcb740abe96eb83c5c350d07110f",
+      "summarySha256": "6ad062442a91f3bd1176588b57da36098b855db670b112cc145f8211ab2bd178",
+      "transcript": "assets/audio/ai-l3/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/ai-l3/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/ai-l3/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/ai-l3/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/ai-l3/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/ai-l3/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/ai-l3/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "ai-l4",
+      "number": 4,
+      "title": "المحاضرة الرابعة في الذكاء الاصطناعي",
+      "subjectId": "2d6c0980-e4d2-4687-9027-cf090b3d1a67",
+      "subjectSlug": "ai-data",
+      "catalogLectureId": "ai-l4",
+      "sourceSha256": "41db58597769ec8a30c2c9dc12ab2dece450dad9c37838ff6fcee68b999a1bf5",
+      "summarySha256": "6a788a567890a591e5e9010b1209a42a2ad492578ae1c3281ef760214cb68010",
+      "transcript": "assets/audio/ai-l4/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/ai-l4/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/ai-l4/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/ai-l4/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/ai-l4/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/ai-l4/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/ai-l4/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "ai-l5",
+      "number": 5,
+      "title": "المحاضرة الخامسة في الذكاء الاصطناعي",
+      "subjectId": "2d6c0980-e4d2-4687-9027-cf090b3d1a67",
+      "subjectSlug": "ai-data",
+      "catalogLectureId": "ai-l5",
+      "sourceSha256": "e787492f7ae801026a4c87da1bfd787c016b53aa05c04f71d57ac82a1b18d9fa",
+      "summarySha256": "9dcdb7f4c5a1ec9854fc08e6fa073958d7a1481ca8143f3bef216a01c3423f11",
+      "transcript": "assets/audio/ai-l5/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/ai-l5/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/ai-l5/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/ai-l5/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/ai-l5/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/ai-l5/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/ai-l5/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "ai-l6",
+      "number": 6,
+      "title": "المحاضرة السادسة في الذكاء الاصطناعي",
+      "subjectId": "2d6c0980-e4d2-4687-9027-cf090b3d1a67",
+      "subjectSlug": "ai-data",
+      "catalogLectureId": "ai-l6",
+      "sourceSha256": "aa900f78d33bbf6177a58d1cb013ca194f1323ad08670f26142a3bfa0ff4f993",
+      "summarySha256": "99491b0b0a3eb93cd477a274096de2880b3fe5e8f3fbac86a499990b8f63da2a",
+      "transcript": "assets/audio/ai-l6/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/ai-l6/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/ai-l6/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/ai-l6/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/ai-l6/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/ai-l6/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/ai-l6/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "cs-l1",
+      "number": 1,
+      "title": "المحاضرة الأولى في حوكمة الأمن السيبراني",
+      "subjectId": "bc861a76-620d-4646-81ca-c49d24665b75",
+      "subjectSlug": "cybersecurity-governance",
+      "catalogLectureId": "cs-l1",
+      "sourceSha256": "c89f4141e173e4cf52cbe14b47131875050564f411ccba752431890e743c44c2",
+      "summarySha256": "9aad677bc4e90306ed33119338ff64b9ceda13c2054e5cb62ad8589ddaa0a56e",
+      "transcript": "assets/audio/cs-l1/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/cs-l1/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/cs-l1/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/cs-l1/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/cs-l1/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/cs-l1/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/cs-l1/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "cs-l2",
+      "number": 2,
+      "title": "المحاضرة الثانية في حوكمة الأمن السيبراني",
+      "subjectId": "bc861a76-620d-4646-81ca-c49d24665b75",
+      "subjectSlug": "cybersecurity-governance",
+      "catalogLectureId": "cs-l2",
+      "sourceSha256": "a9575490de2eb2ee2076b9905dfb749c095e0afdf48046c40444f7668a37921c",
+      "summarySha256": "bdeecf948ea341e30bae120790c3591a89ad4528178aee18105ab38046f481a9",
+      "transcript": "assets/audio/cs-l2/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/cs-l2/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/cs-l2/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/cs-l2/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/cs-l2/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/cs-l2/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/cs-l2/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "cs-l3",
+      "number": 3,
+      "title": "المحاضرة الثالثة في حوكمة الأمن السيبراني",
+      "subjectId": "bc861a76-620d-4646-81ca-c49d24665b75",
+      "subjectSlug": "cybersecurity-governance",
+      "catalogLectureId": "cs-l3",
+      "sourceSha256": "0c91653e8afe2aa80f910c9040c5a994f59d3bed6f9ae16184915fc654ab1828",
+      "summarySha256": "516a5c1e9ba1e47a7415a612ae712eabf41566df3662a6432e73aaf219aa05ca",
+      "transcript": "assets/audio/cs-l3/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/cs-l3/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/cs-l3/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/cs-l3/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/cs-l3/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/cs-l3/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/cs-l3/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "cs-l4",
+      "number": 4,
+      "title": "المحاضرة الرابعة في حوكمة الأمن السيبراني",
+      "subjectId": "bc861a76-620d-4646-81ca-c49d24665b75",
+      "subjectSlug": "cybersecurity-governance",
+      "catalogLectureId": "cs-l4",
+      "sourceSha256": "b2c10f2ccae2d4102ff73a0a7cfcfcaad5511a0cecac42e04ffff9f5cd6b15bd",
+      "summarySha256": "a0e0a69c0c07155538f788fceefa8b01e61b5abc92e6900bccbe07df32653d8b",
+      "transcript": "assets/audio/cs-l4/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/cs-l4/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/cs-l4/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/cs-l4/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/cs-l4/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/cs-l4/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/cs-l4/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "cs-l5",
+      "number": 5,
+      "title": "المحاضرة الخامسة في حوكمة الأمن السيبراني",
+      "subjectId": "bc861a76-620d-4646-81ca-c49d24665b75",
+      "subjectSlug": "cybersecurity-governance",
+      "catalogLectureId": "cs-l5",
+      "sourceSha256": "ffd344cb81930393fa4c7622b79c4cd6add69cb8efa9f392e641b8036517e6ef",
+      "summarySha256": "cf1501cbbcb79e252380ca3a4529d7beb8cba8bea56fe0c66337a36ab147f71a",
+      "transcript": "assets/audio/cs-l5/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/cs-l5/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/cs-l5/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/cs-l5/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/cs-l5/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/cs-l5/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/cs-l5/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "cs-iso-roadmap",
+      "number": 7,
+      "title": "خارطة الطريق للحصول على الشهادة الدولية ISO 27001",
+      "subjectId": "bc861a76-620d-4646-81ca-c49d24665b75",
+      "subjectSlug": "cybersecurity-governance",
+      "catalogLectureId": "cs-iso-roadmap",
+      "sourceSha256": "71e68863275b8b5bee0fb43e602edf37c9f83ab8e6b9023a6f0d26fe897bb7bf",
+      "summarySha256": "ffea4ba3963dfd24574e4f210e93df3f4b84a79e908e92df086d8fc8b8669707",
+      "transcript": "assets/audio/cs-iso-roadmap/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/cs-iso-roadmap/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/cs-iso-roadmap/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/cs-iso-roadmap/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/cs-iso-roadmap/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/cs-iso-roadmap/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/cs-iso-roadmap/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
     {
       "id": "innovation-01",
       "number": 1,
       "title": "المحاضرة الأولى في الابتكار وإدارة المشاريع",
+      "subjectId": "7eb2b714-570f-4ed0-a00e-10efec7a20e5",
+      "subjectSlug": "innovation-project-management",
+      "catalogLectureId": "ip-l1",
       "sourceSha256": "1e265fd185ba2a5dc34f83589128f773f41a728d2e0ed3988beed2a55545e45e",
       "summarySha256": "948cadd091a8f9f5e30d218c5ac5dff7bfd4db36703403c655c4945525131a95",
       "transcript": "assets/audio/innovation-01/summary.txt",
@@ -150,6 +630,9 @@
       "id": "innovation-02",
       "number": 2,
       "title": "المحاضرة الثانية في الابتكار وإدارة المشاريع",
+      "subjectId": "7eb2b714-570f-4ed0-a00e-10efec7a20e5",
+      "subjectSlug": "innovation-project-management",
+      "catalogLectureId": "ip-l3",
       "sourceSha256": "4e5dc50d3aba76aa941f431b384d5246a9e4ebf7346d150b9fe39e6b5f5998db",
       "summarySha256": "55463bb6728dc5455e5a9cb0d9136f7da831e8219ba8668ffd3164ae01a18094",
       "transcript": "assets/audio/innovation-02/summary.txt",
@@ -292,6 +775,9 @@
       "id": "innovation-03",
       "number": 3,
       "title": "المحاضرة الثالثة في الابتكار وإدارة المشاريع",
+      "subjectId": "7eb2b714-570f-4ed0-a00e-10efec7a20e5",
+      "subjectSlug": "innovation-project-management",
+      "catalogLectureId": "ip-l4",
       "sourceSha256": "b51002203f61a96ef1e24ef9e17e026ba800de7627d4018ac0cd8859cec99d13",
       "summarySha256": "b31b59132dd2b33840f8403e95b3e4b70b7e7f0437c9c73a9a3d8d3b44c0ac4f",
       "transcript": "assets/audio/innovation-03/summary.txt",
@@ -434,6 +920,9 @@
       "id": "innovation-04",
       "number": 4,
       "title": "المحاضرة الرابعة في الابتكار وإدارة المشاريع",
+      "subjectId": "7eb2b714-570f-4ed0-a00e-10efec7a20e5",
+      "subjectSlug": "innovation-project-management",
+      "catalogLectureId": "ip-l2",
       "sourceSha256": "d0f9d4d0e612bb257d0e95415003e1529e41922e03b784a89820e6234007a333",
       "summarySha256": "9bdee520c74c4c86e146441e92ee7f71218a15a545b2a2aae9e259739c39a7d0",
       "transcript": "assets/audio/innovation-04/summary.txt",
@@ -576,6 +1065,9 @@
       "id": "innovation-05",
       "number": 5,
       "title": "المحاضرة الخامسة في الابتكار وإدارة المشاريع",
+      "subjectId": "7eb2b714-570f-4ed0-a00e-10efec7a20e5",
+      "subjectSlug": "innovation-project-management",
+      "catalogLectureId": "ip-l6",
       "sourceSha256": "c549a1727941f8e8cd95d29fbbe8c67e3ad037a2b309d9edca822531aeb2790e",
       "summarySha256": "b4149f35aa20dbbc751901dee688119d559325f651b8ecbeea7b2e08e9454858",
       "transcript": "assets/audio/innovation-05/summary.txt",
@@ -715,13 +1207,339 @@
           "qualityDisclosure": "AI neural voice; lossy source, not a human studio recording"
         }
       }
+    },
+    {
+      "id": "lg-l1",
+      "number": 1,
+      "title": "المحاضرة الأولى قانونية",
+      "subjectId": "ade09563-02ec-4a09-a97b-58857f6cd876",
+      "subjectSlug": "legal-regulatory",
+      "catalogLectureId": "lg-l1",
+      "sourceSha256": "da41ca3230a60d9457fd824aafa430a8cae50cfa4254b54d463dfe6f925f6525",
+      "summarySha256": "f2793a49089b0b35ef3e3bd27fa1c35fb7312f36be0bcd04cfbe027ab743a1b5",
+      "transcript": "assets/audio/lg-l1/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/lg-l1/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/lg-l1/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/lg-l1/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/lg-l1/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/lg-l1/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/lg-l1/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "lg-l3",
+      "number": 2,
+      "title": "المحاضرة الثانية قانونية",
+      "subjectId": "ade09563-02ec-4a09-a97b-58857f6cd876",
+      "subjectSlug": "legal-regulatory",
+      "catalogLectureId": "lg-l3",
+      "sourceSha256": "39071aab222754463ca122e0b7569f83cb4465c17e25695d5f66f545cdb4805d",
+      "summarySha256": "65260cd84710362d0e4e51c1c61f8d14c039ee430da918c496bbe27211a42404",
+      "transcript": "assets/audio/lg-l3/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/lg-l3/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/lg-l3/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/lg-l3/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/lg-l3/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/lg-l3/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/lg-l3/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "lg-l4",
+      "number": 3,
+      "title": "المحاضرة الثالثة قانونية",
+      "subjectId": "ade09563-02ec-4a09-a97b-58857f6cd876",
+      "subjectSlug": "legal-regulatory",
+      "catalogLectureId": "lg-l4",
+      "sourceSha256": "4eab73b57ce72e440204ff2f03e72ebce455da0dc6279e788260fc270553b3e3",
+      "summarySha256": "8ff10c302c8eeb130fdea5fc2cd75f2e84f152c9c6463e2374ae2fc54ba0e76f",
+      "transcript": "assets/audio/lg-l4/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/lg-l4/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/lg-l4/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/lg-l4/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/lg-l4/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/lg-l4/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/lg-l4/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "lg-l2",
+      "number": 4,
+      "title": "المحاضرة الرابعة قانونية",
+      "subjectId": "ade09563-02ec-4a09-a97b-58857f6cd876",
+      "subjectSlug": "legal-regulatory",
+      "catalogLectureId": "lg-l2",
+      "sourceSha256": "5dd095f391eead84c648efbe328c21d4e4cd0dee381de206eb60b1ab2dc721a4",
+      "summarySha256": "0c002ed53d195b079d680920dca61362a704a7235d141b28197217c1cbc90604",
+      "transcript": "assets/audio/lg-l2/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/lg-l2/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/lg-l2/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/lg-l2/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/lg-l2/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/lg-l2/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/lg-l2/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "lg-l5",
+      "number": 5,
+      "title": "المحاضرة الخامسة قانونية",
+      "subjectId": "ade09563-02ec-4a09-a97b-58857f6cd876",
+      "subjectSlug": "legal-regulatory",
+      "catalogLectureId": "lg-l5",
+      "sourceSha256": "50fc2a6268300608e0a432e92f3d802be6cca53793d602a49422a8df11a4b793",
+      "summarySha256": "426f096378b930898ab238d160e85a3ead60835647fbde9d455904cb240d9600",
+      "transcript": "assets/audio/lg-l5/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/lg-l5/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/lg-l5/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/lg-l5/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/lg-l5/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/lg-l5/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/lg-l5/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "lg-l6",
+      "number": 6,
+      "title": "المحاضرة السادسة قانونية",
+      "subjectId": "ade09563-02ec-4a09-a97b-58857f6cd876",
+      "subjectSlug": "legal-regulatory",
+      "catalogLectureId": "lg-l6",
+      "sourceSha256": "c82ca3cfd8e1bcd9a788f30e75a4ddb76d7bdac6153e98c43849a19ec1626fe7",
+      "summarySha256": "648e166a5348103a34d05d97603112312472768bb22ddb718bc6497761c356a8",
+      "transcript": "assets/audio/lg-l6/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/lg-l6/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/lg-l6/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/lg-l6/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/lg-l6/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/lg-l6/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/lg-l6/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "rm-l1",
+      "number": 1,
+      "title": "المحاضرة الأولى مخاطر",
+      "subjectId": "1f4d2071-d1c9-46ee-a848-d5c90eedf287",
+      "subjectSlug": "risk-management",
+      "catalogLectureId": "rm-l1",
+      "sourceSha256": "f567de9bd8df8d0bbd6606bed669499854d539a0da55cfeafb526383f7b8f7ec",
+      "summarySha256": "f3d03bdc542fd98de90897815a0ee842f2dff486dbb17b082e3cb065f4d7b8e9",
+      "transcript": "assets/audio/rm-l1/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/rm-l1/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/rm-l1/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/rm-l1/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/rm-l1/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/rm-l1/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/rm-l1/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "rm-l2",
+      "number": 2,
+      "title": "المحاضرة الثانية مخاطر",
+      "subjectId": "1f4d2071-d1c9-46ee-a848-d5c90eedf287",
+      "subjectSlug": "risk-management",
+      "catalogLectureId": "rm-l2",
+      "sourceSha256": "55341ea2a940428c8fc3212ac6b9c57bf991daf1987f9f4c0766e98befba19f2",
+      "summarySha256": "08fe7e2e8cabf0862da009d56d13da237ac57983d05a390907e1a889c2b68811",
+      "transcript": "assets/audio/rm-l2/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/rm-l2/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/rm-l2/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/rm-l2/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/rm-l2/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/rm-l2/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/rm-l2/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "rm-l3",
+      "number": 3,
+      "title": "المحاضرة الثالثة مخاطر",
+      "subjectId": "1f4d2071-d1c9-46ee-a848-d5c90eedf287",
+      "subjectSlug": "risk-management",
+      "catalogLectureId": "rm-l3",
+      "sourceSha256": "ea9b8f2a66c5a50627529720e4b81788cbdd8bba3b4e62d6053efa6072635af9",
+      "summarySha256": "d42f23f87b4b973b3a1290d5f88dcd0affc654b11c32c99f17bc779e89e02a56",
+      "transcript": "assets/audio/rm-l3/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/rm-l3/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/rm-l3/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/rm-l3/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/rm-l3/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/rm-l3/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/rm-l3/saudi-female.mp3",
+          "available": false
+        }
+      }
     }
-  ],
-  "audioProduction": {
-    "provider": "edge-tts",
-    "recordingCount": 30,
-    "neuralNotHuman": true,
-    "dialectAdaptations": true,
-    "complete": true
-  }
+  ]
 }

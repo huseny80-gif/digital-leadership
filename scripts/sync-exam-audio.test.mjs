@@ -186,3 +186,44 @@ test("rejects symlink public targets rather than overwriting their destinations"
   await symlink(join(root, "summaries.html"), target);
   await assert.rejects(syncExamAudio(root), /must not be a symlink/);
 }));
+
+async function addSubjects(root) {
+  const html = await readFile(join(root, "summaries.html"), "utf8");
+  const data = JSON.parse(html.match(/id="summaries-data">([\s\S]*?)<\/script>/)[1]);
+  const manifest = JSON.parse(await readFile(join(root, MANIFEST), "utf8"));
+  const subjects = [
+    { id: "2d6c0980-e4d2-4687-9027-cf090b3d1a67", slug: "ai-data", title: "الذكاء الاصطناعي" },
+    { id: "7eb2b714-570f-4ed0-a00e-10efec7a20e5", slug: "innovation-project-management", title: "الابتكار" },
+  ];
+  data.subjects = subjects;
+  data.defaultSubjectId = subjects[1].id;
+  Object.assign(data.lectures[0], { subjectId: subjects[1].id, subjectSlug: subjects[1].slug, catalogLectureId: "ip-l1" });
+  Object.assign(manifest, { subjects, defaultSubjectId: data.defaultSubjectId });
+  Object.assign(manifest.lectures[0], { subjectId: subjects[1].id, subjectSlug: subjects[1].slug, catalogLectureId: "ip-l1" });
+  data.lectures.push({ ...data.lectures[0], id: "ai-l1", subjectId: subjects[0].id, subjectSlug: subjects[0].slug, catalogLectureId: "ai-l1" });
+  manifest.lectures.push({ ...manifest.lectures[0], id: "ai-l1", subjectId: subjects[0].id, subjectSlug: subjects[0].slug,
+    catalogLectureId: "ai-l1", transcript: "assets/audio/ai-l1/summary.txt",
+    recordings: Object.fromEntries(VOICES.map(voice => [voice, { path: `assets/audio/ai-l1/${voice}.mp3`, available: false }])) });
+  await write(root, "assets/audio/ai-l1/summary.txt", TEXT);
+  await write(root, "summaries.html", html.replace(/(<script type="application\/json" id="summaries-data">)[\s\S]*?(<\/script>)/, (_, start, end) => start + JSON.stringify(data) + end));
+  await write(root, MANIFEST, JSON.stringify(manifest));
+}
+
+test("accepts multiple published subjects with safe non-innovation lecture IDs", () => usingFixture(async root => {
+  await addSubjects(root);
+  await syncExamAudio(root);
+  await syncExamAudio(root, { check: true });
+  assert.equal(await readFile(join(root, "web/public/assets/audio/ai-l1/summary.txt"), "utf8"), TEXT);
+}));
+
+test("rejects a lecture assigned to a different subject in the audio manifest", () => usingFixture(async root => {
+  await addSubjects(root);
+  await updateManifest(root, manifest => { manifest.lectures[1].subjectId = manifest.subjects[1].id; });
+  await assert.rejects(syncExamAudio(root), /Lecture subject mismatch/);
+}));
+
+test("rejects changed course metadata and default selection", () => usingFixture(async root => {
+  await addSubjects(root);
+  await updateManifest(root, manifest => { manifest.defaultSubjectId = "not-a-course"; });
+  await assert.rejects(syncExamAudio(root), /subject metadata must match/);
+}));

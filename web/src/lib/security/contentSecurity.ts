@@ -5,7 +5,7 @@ export function browserCsp(nonce: string, production: boolean, pathname?: string
   const standaloneHash = pathname === "/exam-module.html"
     ? " 'sha256-q6+DnNt2cIOmxB2bHgEOn2C/EChKG7g6/Gi/gMJJgvI='"
     : pathname === "/summaries.html"
-      ? " 'sha256-+0CyVpl9bqRREdb8B7nEJxxyQf+1x+E40b+Ib1eVKJA='" : "";
+      ? " 'sha256-7c19bRehcjffsSDXMreoyNXGKHbKKAaTee3euondB9o='" : "";
   return ["default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${standaloneHash}${production ? "" : " 'unsafe-eval'"}`,
     "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob: https:", "font-src 'self' data:",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co" + (production ? "" : " http://localhost:* ws://localhost:*"),

@@ -8,6 +8,8 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
+import sys
 
 spec = importlib.util.spec_from_file_location("producer", Path(__file__).with_name("produce-lecture-audio.py"))
 producer = importlib.util.module_from_spec(spec)
@@ -67,6 +69,51 @@ class ProductionTests(unittest.TestCase):
         report = json.loads((self.work / "production-report.json").read_text())
         self.assertEqual(report["completed"], 0)
         self.assertEqual(len(report["failures"]), 30)
+
+
+    def test_short_chunks_preserve_every_word(self):
+        text = ("هذا النص لا يُختصر ولا تتغير مفاهيمه. " * 150) + "\n\nهذه خاتمة الملخص."
+        parts = producer.split_text(text)
+        self.assertTrue(all(len(part) <= 1800 for part in parts))
+        self.assertGreater(len(parts), 1)
+        self.assertEqual(producer.normalized(" ".join(parts)), producer.normalized(text))
+
+    def test_reject_unsafe_identifier(self):
+        self.data["lectures"][0]["id"] = "../outside"
+        self.manifest.write_text(json.dumps(self.data))
+        with self.assertRaisesRegex(ValueError, "Unsafe lecture identifier"):
+            asyncio.run(producer.produce(self.args))
+
+    def test_unknown_subject_is_not_generated(self):
+        self.args.subject = "unknown"
+        with self.assertRaisesRegex(ValueError, "Unknown subject"):
+            asyncio.run(producer.produce(self.args))
+
+    def test_stale_content_verification_cannot_enable(self):
+        qa = self.work / "qa.json"
+        self.work.mkdir()
+        qa.write_text(json.dumps({"results": [{"lectureId": "ai-l1", "key": "msa-male", "audioSha256": "old", "passesAutomaticCompleteness": True}]}))
+        with self.assertRaisesRegex(ValueError, "Missing or stale"):
+            producer.validate_content_qa(qa, [{"lectureId": "ai-l1", "key": "msa-male", "sha256": "new"}])
+
+    def test_current_content_verification_can_enable(self):
+        qa = self.work / "qa.json"
+        self.work.mkdir()
+        qa.write_text(json.dumps({"results": [{"lectureId": "ai-l1", "key": "msa-male", "audioSha256": "current", "passesAutomaticCompleteness": True}]}))
+        producer.validate_content_qa(qa, [{"lectureId": "ai-l1", "key": "msa-male", "sha256": "current"}])
+
+    def test_resume_available_manifest_without_old_work_receipt(self):
+        lecture = self.data["lectures"][0]
+        recording = lecture["recordings"]["msa-male"]
+        audio = self.root / recording["path"]
+        audio.write_bytes(b"ID3" + b"A" * 200)
+        recording.update({"available": True, "sourceSummarySha256": lecture["summarySha256"],
+                          "transcriptSha256": producer.digest(self.root / "assets/audio/innovation-01/msa.txt"),
+                          "voiceId": "ar-SY-LaithNeural", "sha256": producer.digest(audio)})
+        with patch.dict(sys.modules, {"edge_tts": SimpleNamespace(__version__="test")}), patch.object(producer, "synthesize_parts") as synthesis:
+            result = asyncio.run(producer.generate_one(self.root, self.work, lecture, "msa-male", asyncio.Semaphore(1)))
+        synthesis.assert_not_called()
+        self.assertEqual(result["sha256"], producer.digest(audio))
 
 
 if __name__ == "__main__":

@@ -7,7 +7,8 @@ on:
       - "assets/audio/**"
       - "exam-section/**"
       - "scripts/*exam*audio*"
-      - "scripts/produce-lecture-audio*"
+      - "scripts/*lecture*audio*"
+      - "scripts/*subject*audio*"
       - "web/public/exam-module.html"
       - "web/public/summaries.html"
       - "web/public/assets/audio/**"
@@ -20,7 +21,8 @@ on:
       - "assets/audio/**"
       - "exam-section/**"
       - "scripts/*exam*audio*"
-      - "scripts/produce-lecture-audio*"
+      - "scripts/*lecture*audio*"
+      - "scripts/*subject*audio*"
       - "web/public/exam-module.html"
       - "web/public/summaries.html"
       - "web/public/assets/audio/**"
@@ -40,9 +42,11 @@ jobs:
           node-version: "22"
       - name: Test asset synchronization
         run: node --test scripts/sync-exam-audio.test.mjs
+      - name: Verify all published subjects match approved catalog summaries
+        run: python3 scripts/prepare-all-subject-audio.py --check
       - name: Verify published assets match canonical sources
         run: node scripts/sync-exam-audio.mjs --check
       - name: Check audio-tool syntax without generating bytecode
-        run: python3 -c "import ast, pathlib; [ast.parse(path.read_text()) for path in pathlib.Path('scripts').glob('*exam*audio.py')]"
+        run: python3 -c "import ast, pathlib; [ast.parse(path.read_text()) for path in pathlib.Path('scripts').glob('*audio*.py')]"
       - name: Test lecture production safety without provider calls
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/produce-lecture-audio.test.py
