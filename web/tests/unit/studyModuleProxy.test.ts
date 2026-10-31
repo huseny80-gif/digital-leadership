@@ -17,7 +17,7 @@ describe("same-origin study module proxy", () => {
   it("rejects unsupported courses, traversal and untrusted voice/text parameters without forwarding", async () => {
     for (const path of [["other", "summaries"], ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "exam"], [subject, ".."], [subject, "summaries", "extra"]]) expect((await invoke(path)).status).toBe(404);
     expect((await invoke([subject, "summaries"], "?subject=other")).status).toBe(400);
-    for (const query of [`?voice=unknown&revision=${revision}`, `?voice=saudi-male&revision=${revision}&text=injected`, `?voice=saudi-male&voice=saudi-female&revision=${revision}`]) expect((await invoke([subject, lecture, "audio.mp3"], query)).status).toBe(400);
+    for (const query of [`?voice=unknown&revision=${revision}`, `?voice=msa-male&revision=${revision}&text=injected`, `?voice=msa-male&voice=msa-female&revision=${revision}`]) expect((await invoke([subject, lecture, "audio.mp3"], query)).status).toBe(400);
     expect(api.get).not.toHaveBeenCalled(); expect(api.download).not.toHaveBeenCalled();
   });
   it("streams MP3 byte ranges with private caching and the actual provider voice header", async () => {
@@ -34,7 +34,7 @@ describe("same-origin study module proxy", () => {
   });
   it("retains the actual resource length on an unsatisfiable audio range", async () => {
     api.download.mockRejectedValue(Object.assign(new ApiError({ error: { code: "range_error", message: "Range unavailable" } }, 416), { contentRange: "bytes */12345" }));
-    const response = await invoke([subject, lecture, "audio.mp3"], `?voice=saudi-male&revision=${revision}`, { range: "bytes=12345-" });
+    const response = await invoke([subject, lecture, "audio.mp3"], `?voice=msa-male&revision=${revision}`, { range: "bytes=12345-" });
     expect(response.status).toBe(416);
     expect(response.headers.get("content-range")).toBe("bytes */12345");
     expect(response.headers.get("cache-control")).toBe("private, no-store");

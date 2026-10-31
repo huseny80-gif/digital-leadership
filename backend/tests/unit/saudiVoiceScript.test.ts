@@ -29,7 +29,7 @@ describe("Saudi narration script", () => {
     for (const sentence of text.split(/(?<=\.)\s+/)) expect(sentence.split(/\s+/).length).toBeLessThanOrEqual(SAUDI_SCRIPT_MAX_WORDS + 2);
     expect(saudiVoiceScript(Array(30).fill("كلمة").join(" ")).stats.overlong).toBe(1);
   });
-  it("offers only the Saudi voices", () => {
-    expect(STUDY_VOICES.map(voice => voice.voice)).toEqual(["ar-SA-HamedNeural", "ar-SA-ZariyahNeural"]);
+  it("keeps both Saudi voices available for the narration script", () => {
+    expect(STUDY_VOICES.filter(voice => voice.id.startsWith("saudi")).map(voice => voice.voice)).toEqual(["ar-SA-HamedNeural", "ar-SA-ZariyahNeural"]);
   });
 });

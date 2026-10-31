@@ -104,8 +104,8 @@ export function studyNarrationPlan(lecture: StudyModuleLecture, revision: string
   if (!selected) throw new ValidationError("اختر صوتًا من الأصوات المتاحة.");
   if (lecture.summarySha256 !== revision || hash(lecture.transcript) !== revision) throw conflict("تغير ملخص المحاضرة. حدّث الصفحة للاستماع إلى النسخة المطابقة.");
   const blocks = lecture.transcript.split(/\n{2,}/u).map((block, blockIndex) => block.split("\n").map((line, lineIndex) => {
-    const spoken = blockIndex === 0 && lineIndex === 0 ? `خلّونا نشوف ملخص ${line}.` : line;
-    const text = prepareAcademicSpeech(saudiVoiceScript(spoken).text);
+    // The Saudi script rewrites speech only for the Saudi voices; other voices keep the plain source text.
+    const text = prepareAcademicSpeech(selected.id.startsWith("saudi") ? saudiVoiceScript(blockIndex === 0 && lineIndex === 0 ? `خلّونا نشوف ملخص ${line}.` : line).text : line);
     return text && !/[.!?؟؛:]$/.test(text) ? `${text}.` : text;
   }).filter(Boolean).join("\n\n")).filter(Boolean);
   const text = blocks.join("\n\n");

@@ -15,7 +15,7 @@ describe("content navigation and search", () => {
   it("includes the standalone summaries and podcast in its authorized list", async () => {
     api.mockResolvedValue({ data: [], page: 1, limit: 50, total: 0 });
     render(await ContentHub({ subjects: [{ ...subject, id: INNOVATION_STUDY_SUBJECT_ID, title: "الابتكار وإدارة المشاريع" }], view: "summaries" }));
-    expect(screen.getByRole("link", { name: /الملخصات والبودكاست القيادي/ })).toHaveAttribute("href", "/summaries.html");
+    expect(screen.getByRole("link", { name: /الملخصات والبودكاست القيادي/ })).toHaveAttribute("href", `/summaries.html?subject=${INNOVATION_STUDY_SUBJECT_ID}`);
     expect(screen.queryByRole("link", { name: /الاختبار الشامل/ })).not.toBeInTheDocument();
   });
   it("keeps the comprehensive test out of the general quiz list", async () => {

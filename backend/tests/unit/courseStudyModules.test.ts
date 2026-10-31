@@ -80,26 +80,31 @@ describe("all-course source-bound study modules", () => {
     for (const voice of STUDY_VOICES) {
       const plan = studyNarrationPlan(lecture, lecture.summarySha256, voice.id);
       expect(plan.voice).toBe(voice.voice);
-      // The Saudi script may change punctuation, spell numbers and acronyms and swap a few
-      // function words, but every other word of the source stays, in order.
-      const spoken = plan.segments.join(" ").match(/[\p{L}\p{M}]+/gu)!;
-      const swapped = new Set(["لذلك", "لأن", "الآن", "ماذا", "لماذا"]);
-      const kept = prepareAcademicSpeech(lecture.transcript).match(/[\p{L}\p{M}]+/gu)!.filter(word => !swapped.has(word) && !/^[A-Za-z]+$/.test(word));
-      let at = 0;
-      for (const word of kept) { const found = spoken.indexOf(word, at); expect(found, word).toBeGreaterThanOrEqual(at); at = found + 1; }
-      expect(plan.segments[0]).toMatch(/^خلّونا نشوف ملخص/u);
-      expect(plan.segments.join(" ")).not.toMatch(/\d/u);
+      if (voice.id.startsWith("saudi")) {
+        // The Saudi script may change punctuation, spell numbers and acronyms and swap a few
+        // function words, but every other word of the source stays, in order.
+        const spoken = plan.segments.join(" ").match(/[\p{L}\p{M}]+/gu)!;
+        const swapped = new Set(["لذلك", "لأن", "الآن", "ماذا", "لماذا"]);
+        const kept = prepareAcademicSpeech(lecture.transcript).match(/[\p{L}\p{M}]+/gu)!.filter(word => !swapped.has(word) && !/^[A-Za-z]+$/.test(word));
+        let at = 0;
+        for (const word of kept) { const found = spoken.indexOf(word, at); expect(found, word).toBeGreaterThanOrEqual(at); at = found + 1; }
+        expect(plan.segments[0]).toMatch(/^خلّونا نشوف ملخص/u);
+        expect(plan.segments.join(" ")).not.toMatch(/\d/u);
+      } else {
+        // Editorial sentence stops may change punctuation, never content words, numbers, their order or the source's negation/conditions.
+        expect(plan.segments.join(" ").match(/[\p{L}\p{M}\p{N}]+/gu)).toEqual(prepareAcademicSpeech(lecture.transcript).match(/[\p{L}\p{M}\p{N}]+/gu));
+      }
       expect(plan.segments.every(text => text.length <= 2500)).toBe(true);
     }
-    expect(() => studyNarrationPlan(lecture, "0".repeat(64), "saudi-male")).toThrow(/تغير ملخص/);
-    expect(() => studyNarrationPlan({ ...lecture, transcript: "نص محاضرة أخرى." }, lecture.summarySha256, "saudi-male")).toThrow(/تغير ملخص/);
+    expect(() => studyNarrationPlan(lecture, "0".repeat(64), "msa-male")).toThrow(/تغير ملخص/);
+    expect(() => studyNarrationPlan({ ...lecture, transcript: "نص محاضرة أخرى." }, lecture.summarySha256, "msa-male")).toThrow(/تغير ملخص/);
     expect(() => studyNarrationPlan(lecture, lecture.summarySha256, "unlisted-person")).toThrow(/اختر صوتًا/);
   });
 
   it("preserves a perceptible pause at title and section boundaries without introducing new content", async () => {
     const source = await sourceFor("risk-management");
     const lecture = compileCourseLecture(source.lecture.subjectId, source).lecture;
-    const plan = studyNarrationPlan(lecture, lecture.summarySha256, "saudi-male");
+    const plan = studyNarrationPlan(lecture, lecture.summarySha256, "msa-male");
     const pauses = (plan as { pauseAfter?: number[] }).pauseAfter ?? [];
     expect(pauses.filter(duration => duration >= 350).length).toBeGreaterThanOrEqual(lecture.sections.length);
   });
