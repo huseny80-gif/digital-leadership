@@ -6,13 +6,6 @@ import json
 from pathlib import Path
 import re
 
-SUBJECT_UUIDS = {
-    "ai-data": "2d6c0980-e4d2-4687-9027-cf090b3d1a67",
-    "cybersecurity-governance": "bc861a76-620d-4646-81ca-c49d24665b75",
-    "innovation-project-management": "7eb2b714-570f-4ed0-a00e-10efec7a20e5",
-    "legal-regulatory": "ade09563-02ec-4a09-a97b-58857f6cd876",
-    "risk-management": "1f4d2071-d1c9-46ee-a848-d5c90eedf287",
-}
 VOICES = ("msa-male", "msa-female", "iraqi-male", "iraqi-female", "saudi-male", "saudi-female")
 
 
@@ -28,6 +21,18 @@ def canonical(lecture, summary):
 
 
 def prepare(root, check=False):
+    # The app and backend share these identities. Do not maintain a second map
+    # or require UUID literals in catalog.ts, which imports this same authority.
+    course_source = (root / "shared/src/studyCourses.ts").read_text()
+    course_block = re.search(r"export const STUDY_COURSES\s*=\s*\[([\s\S]*?)\]\s*as const", course_source)
+    if not course_block:
+        raise ValueError("Shared study course identities could not be read")
+    pairs = re.findall(r'\{\s*slug:\s*"([a-z0-9-]+)",\s*id:\s*"([a-f0-9-]+)"', course_block[1])
+    subject_uuids = dict(pairs)
+    if not pairs or len(subject_uuids) != len(pairs) or len(set(subject_uuids.values())) != len(pairs) or any(
+        not re.fullmatch(r"[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}", uuid) for uuid in subject_uuids.values()
+    ):
+        raise ValueError("Shared study course identities are invalid or duplicated")
     catalog = json.loads((root / "backend/content/finquiz/catalog.json").read_text())
     summaries = json.loads((root / "backend/content/finquiz/academicSummaries.json").read_text())
     lookup = {summary["lectureId"]: summary for summary in summaries["summaries"]}
@@ -38,12 +43,11 @@ def prepare(root, check=False):
     embedded = json.loads((root / "assets/audio/study-data.json").read_text())
     old_display = {entry["id"]: entry for entry in embedded["lectures"]}
     subjects, lectures, entries = [], [], []
-    source_mapping = (root / "backend/src/finquiz/catalog.ts").read_text()
     for subject in catalog["subjects"]:
         slug = subject["id"]
-        uuid = SUBJECT_UUIDS[slug]
-        if uuid not in source_mapping:
-            raise ValueError(f"Subject UUID not present in source mapping: {slug}")
+        if slug not in subject_uuids:
+            raise ValueError(f"Subject UUID not present in shared study courses: {slug}")
+        uuid = subject_uuids[slug]
         subjects.append({"id": uuid, "slug": slug, "title": subject["title"]})
         for lecture in subject["lectures"]:
             summary = lookup.get(lecture["id"])
@@ -73,7 +77,13 @@ def prepare(root, check=False):
             for voice in VOICES:
                 path = f"assets/audio/{id_}/{voice}.mp3"
                 recording = prior.get("recordings", {}).get(voice)
-                if recording and prior.get("summarySha256") == sha(text) and recording.get("path") == path:
+                # Preserve the complete custom recording already accepted by
+                # the asset publisher, without accepting arbitrary file paths.
+                prior_path = (f"assets/audio/{id_}/saudi-elevenlabs-part-01.mp3"
+                              if recording and recording.get("provider") == "ElevenLabs"
+                              and voice == "saudi-male" and recording.get("complete") is True else path)
+                if (recording and prior.get("summarySha256") == sha(text)
+                        and prior.get("sourceSha256") == summary["sha256"] and recording.get("path") == prior_path):
                     entry["recordings"][voice] = dict(recording)
                 else:
                     entry["recordings"][voice] = {"path": path, "available": False}
@@ -87,7 +97,7 @@ def prepare(root, check=False):
     stable = {"subjects": subjects, "lectures": lectures}
     revision = sha(json.dumps(stable, ensure_ascii=False, sort_keys=True, separators=(",", ":")))[:20]
     data = {"revision": revision, "courseTitle": "المواد الدراسية", "sourceCommit": catalog["sourceCommit"],
-            "defaultSubjectId": SUBJECT_UUIDS["innovation-project-management"], "subjects": subjects,
+            "defaultSubjectId": subject_uuids["innovation-project-management"], "subjects": subjects,
             "voices": embedded["voices"], "lectures": lectures}
     manifest = {"version": 1, "summaryRevision": revision, "defaultSubjectId": data["defaultSubjectId"],
                 "subjects": subjects, "lectures": entries}
