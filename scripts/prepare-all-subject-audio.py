@@ -73,7 +73,7 @@ def prepare(root, check=False):
             for voice in VOICES:
                 path = f"assets/audio/{id_}/{voice}.mp3"
                 recording = prior.get("recordings", {}).get(voice)
-                if recording and prior.get("summarySha256") == sha(text) and recording.get("path") == path:
+                if recording and prior.get("summarySha256") == sha(text) and (recording.get("path") == path or recording.get("available")):
                     entry["recordings"][voice] = dict(recording)
                 else:
                     entry["recordings"][voice] = {"path": path, "available": False}

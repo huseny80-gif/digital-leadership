@@ -444,8 +444,45 @@
       }
     },
     {
-      "id": "cs-iso-roadmap",
+      "id": "cs-l7",
       "number": 7,
+      "title": "المحاضرة السابعة في حوكمة الأمن السيبراني",
+      "subjectId": "bc861a76-620d-4646-81ca-c49d24665b75",
+      "subjectSlug": "cybersecurity-governance",
+      "catalogLectureId": "cs-l7",
+      "sourceSha256": "de079540644f0532a6e25cc77ac797c31630c6077ed5732cdb64e9155e1a289d",
+      "summarySha256": "b23464a4726dd730b695ce36d2687364a9d81c2184b477e69d30de62fc35cfd4",
+      "transcript": "assets/audio/cs-l7/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/cs-l7/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/cs-l7/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/cs-l7/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/cs-l7/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/cs-l7/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/cs-l7/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "cs-iso-roadmap",
+      "number": 8,
       "title": "خارطة الطريق للحصول على الشهادة الدولية ISO 27001",
       "subjectId": "bc861a76-620d-4646-81ca-c49d24665b75",
       "subjectSlug": "cybersecurity-governance",
@@ -1432,6 +1469,80 @@
       }
     },
     {
+      "id": "lg-l7",
+      "number": 7,
+      "title": "المحاضرة السابعة قانونية",
+      "subjectId": "ade09563-02ec-4a09-a97b-58857f6cd876",
+      "subjectSlug": "legal-regulatory",
+      "catalogLectureId": "lg-l7",
+      "sourceSha256": "ef27a0efeb78e9acbeeab5cb6592f5445f8255d9702277242392d59e0b5992b1",
+      "summarySha256": "c00cfd45b6477b75c1f75092eb0d0babc3da682bf5e324ee0a0600dc40c1f464",
+      "transcript": "assets/audio/lg-l7/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/lg-l7/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/lg-l7/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/lg-l7/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/lg-l7/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/lg-l7/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/lg-l7/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "lg-l8",
+      "number": 8,
+      "title": "المحاضرة الثامنة قانونية",
+      "subjectId": "ade09563-02ec-4a09-a97b-58857f6cd876",
+      "subjectSlug": "legal-regulatory",
+      "catalogLectureId": "lg-l8",
+      "sourceSha256": "f713fb401b4bdbe4ee9e2587b438bd4a3324bf5d23b36341f856d164a1cad44b",
+      "summarySha256": "24c4561debabb58fa9cf6cd2d436a5f5a728e39c1fc6a5c5162f0ee4006cc349",
+      "transcript": "assets/audio/lg-l8/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/lg-l8/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/lg-l8/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/lg-l8/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/lg-l8/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/lg-l8/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/lg-l8/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
       "id": "rm-l1",
       "number": 1,
       "title": "المحاضرة الأولى مخاطر",
@@ -1538,117 +1649,6 @@
         },
         "saudi-female": {
           "path": "assets/audio/rm-l3/saudi-female.mp3",
-          "available": false
-        }
-      }
-    },
-    {
-      "id": "cs-l7",
-      "number": 7,
-      "title": "المحاضرة السابعة في حوكمة الأمن السيبراني",
-      "subjectId": "bc861a76-620d-4646-81ca-c49d24665b75",
-      "subjectSlug": "cybersecurity-governance",
-      "catalogLectureId": "cs-l7",
-      "sourceSha256": "de079540644f0532a6e25cc77ac797c31630c6077ed5732cdb64e9155e1a289d",
-      "summarySha256": "b23464a4726dd730b695ce36d2687364a9d81c2184b477e69d30de62fc35cfd4",
-      "transcript": "assets/audio/cs-l7/summary.txt",
-      "recordings": {
-        "msa-male": {
-          "path": "assets/audio/cs-l7/msa-male.mp3",
-          "available": false
-        },
-        "msa-female": {
-          "path": "assets/audio/cs-l7/msa-female.mp3",
-          "available": false
-        },
-        "iraqi-male": {
-          "path": "assets/audio/cs-l7/iraqi-male.mp3",
-          "available": false
-        },
-        "iraqi-female": {
-          "path": "assets/audio/cs-l7/iraqi-female.mp3",
-          "available": false
-        },
-        "saudi-male": {
-          "path": "assets/audio/cs-l7/saudi-male.mp3",
-          "available": false
-        },
-        "saudi-female": {
-          "path": "assets/audio/cs-l7/saudi-female.mp3",
-          "available": false
-        }
-      }
-    },
-    {
-      "id": "lg-l7",
-      "number": 7,
-      "title": "المحاضرة السابعة قانونية",
-      "subjectId": "ade09563-02ec-4a09-a97b-58857f6cd876",
-      "subjectSlug": "legal-regulatory",
-      "catalogLectureId": "lg-l7",
-      "sourceSha256": "ef27a0efeb78e9acbeeab5cb6592f5445f8255d9702277242392d59e0b5992b1",
-      "summarySha256": "c00cfd45b6477b75c1f75092eb0d0babc3da682bf5e324ee0a0600dc40c1f464",
-      "transcript": "assets/audio/lg-l7/summary.txt",
-      "recordings": {
-        "msa-male": {
-          "path": "assets/audio/lg-l7/msa-male.mp3",
-          "available": false
-        },
-        "msa-female": {
-          "path": "assets/audio/lg-l7/msa-female.mp3",
-          "available": false
-        },
-        "iraqi-male": {
-          "path": "assets/audio/lg-l7/iraqi-male.mp3",
-          "available": false
-        },
-        "iraqi-female": {
-          "path": "assets/audio/lg-l7/iraqi-female.mp3",
-          "available": false
-        },
-        "saudi-male": {
-          "path": "assets/audio/lg-l7/saudi-male.mp3",
-          "available": false
-        },
-        "saudi-female": {
-          "path": "assets/audio/lg-l7/saudi-female.mp3",
-          "available": false
-        }
-      }
-    },
-    {
-      "id": "lg-l8",
-      "number": 8,
-      "title": "المحاضرة الثامنة قانونية",
-      "subjectId": "ade09563-02ec-4a09-a97b-58857f6cd876",
-      "subjectSlug": "legal-regulatory",
-      "catalogLectureId": "lg-l8",
-      "sourceSha256": "f713fb401b4bdbe4ee9e2587b438bd4a3324bf5d23b36341f856d164a1cad44b",
-      "summarySha256": "24c4561debabb58fa9cf6cd2d436a5f5a728e39c1fc6a5c5162f0ee4006cc349",
-      "transcript": "assets/audio/lg-l8/summary.txt",
-      "recordings": {
-        "msa-male": {
-          "path": "assets/audio/lg-l8/msa-male.mp3",
-          "available": false
-        },
-        "msa-female": {
-          "path": "assets/audio/lg-l8/msa-female.mp3",
-          "available": false
-        },
-        "iraqi-male": {
-          "path": "assets/audio/lg-l8/iraqi-male.mp3",
-          "available": false
-        },
-        "iraqi-female": {
-          "path": "assets/audio/lg-l8/iraqi-female.mp3",
-          "available": false
-        },
-        "saudi-male": {
-          "path": "assets/audio/lg-l8/saudi-male.mp3",
-          "available": false
-        },
-        "saudi-female": {
-          "path": "assets/audio/lg-l8/saudi-female.mp3",
           "available": false
         }
       }
