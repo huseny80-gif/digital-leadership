@@ -81,10 +81,10 @@ describe("published summary audio choices", () => {
 
   it.each([
     [subjects.ai, 6],
-    [subjects.cybersecurity, 6],
+    [subjects.cybersecurity, 7],
     [subjects.innovation, 5],
-    [subjects.legal, 6],
-    [subjects.risk, 3],
+    [subjects.legal, 8],
+    [subjects.risk, 6],
   ] as const)("filters the selected subject to %s lectures", async (subjectId, count) => {
     await render(availableManifest(), subjectId);
     expect(document.querySelector<HTMLSelectElement>("#subject-select")!.options).toHaveLength(5);
@@ -101,7 +101,7 @@ describe("published summary audio choices", () => {
     select.dispatchEvent(new Event("change"));
     await new Promise(resolve => queueMicrotask(() => resolve(undefined)));
     expect(window.location.search).toBe(`?subject=${subjects.risk}`);
-    expect(document.querySelectorAll(".lecture-card")).toHaveLength(3);
+    expect(document.querySelectorAll(".lecture-card")).toHaveLength(6);
     expect(document.querySelector("#platform-link")!.getAttribute("href")).toContain(`/subjects/${subjects.risk}`);
     expect(document.title).toContain("إدارة المخاطر");
   });
@@ -120,7 +120,7 @@ describe("published summary audio choices", () => {
     select.dispatchEvent(new Event("change"));
     await new Promise(resolve => queueMicrotask(() => resolve(undefined)));
     expect(document.querySelector("#subject-error")!.hasAttribute("hidden")).toBe(true);
-    expect(document.querySelectorAll(".lecture-card")).toHaveLength(3);
+    expect(document.querySelectorAll(".lecture-card")).toHaveLength(6);
   });
 
   it("does not request a missing recording and keeps the original transcript fallback", async () => {

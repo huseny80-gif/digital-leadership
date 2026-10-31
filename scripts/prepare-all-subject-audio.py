@@ -38,7 +38,7 @@ def prepare(root, check=False):
     embedded = json.loads(re.search(r'<script type="application/json" id="summaries-data">([\s\S]*?)</script>', html).group(1))
     old_display = {entry["id"]: entry for entry in embedded["lectures"]}
     subjects, lectures, entries = [], [], []
-    source_mapping = (root / "backend/src/finquiz/catalog.ts").read_text()
+    source_mapping = (root / "backend/src/finquiz/catalog.ts").read_text() + (root / "shared/src/studyCourses.ts").read_text()
     for subject in catalog["subjects"]:
         slug = subject["id"]
         uuid = SUBJECT_UUIDS[slug]
@@ -73,7 +73,7 @@ def prepare(root, check=False):
             for voice in VOICES:
                 path = f"assets/audio/{id_}/{voice}.mp3"
                 recording = prior.get("recordings", {}).get(voice)
-                if recording and prior.get("summarySha256") == sha(text) and recording.get("path") == path:
+                if recording and prior.get("summarySha256") == sha(text) and (recording.get("path") == path or recording.get("available")):
                     entry["recordings"][voice] = dict(recording)
                 else:
                     entry["recordings"][voice] = {"path": path, "available": False}
