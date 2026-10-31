@@ -1,13 +1,18 @@
-import { createHash } from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { createHash, randomUUID } from "node:crypto";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Pool } from "pg";
 import type { Lecture } from "@shared/index";
 import { STUDY_COURSES, STUDY_VOICES, prepareAcademicSpeech, proofreadAcademicContent } from "@digital-leadership/shared";
-import { manifest, catalogRoot } from "../../src/finquiz/catalog.js";
+import { manifest, catalogRoot, LibraryService } from "../../src/finquiz/catalog.js";
 import { readAsset } from "../../src/finquiz/assetFiles.js";
-import { actualFileText, scopeSharedSource, type LectureFileSources } from "../../src/examMaterials/lectureSourceFiles.js";
+import { actualFileText, scopeSharedSource, LectureSourceFiles, type LectureFileSources } from "../../src/examMaterials/lectureSourceFiles.js";
 import { sourceParagraphs } from "../../src/examMaterials/sourceGrounding.js";
 import { academicSummaryFor } from "../../src/finquiz/academicSummaries.js";
-import { compileCourseLecture, courseStudyDocuments, studyNarrationPlan } from "../../src/studyTools/courseStudyModules.js";
+import { compileCourseLecture, courseStudyDocuments, studyNarrationPlan, CourseStudyModules } from "../../src/studyTools/courseStudyModules.js";
+import { ContentService } from "../../src/content/contentService.js";
+import { academicSpeechCache, AcademicSpeechUnavailable } from "../../src/examMaterials/academicSpeech.js";
+
+afterEach(() => { vi.restoreAllMocks(); });
 
 async function sourceFor(slug: string, number = 1): Promise<LectureFileSources> {
   const course = STUDY_COURSES.find(course => course.slug === slug)!;
@@ -20,6 +25,94 @@ async function sourceFor(slug: string, number = 1): Promise<LectureFileSources> 
   return { lecture, documents: [document.document], paragraphs: sourceParagraphs(document.document, document.lineOffset) };
 }
 
+function completeMp3() {
+  return Buffer.concat(Array.from({ length: 2 }, () => {
+    const frame = Buffer.alloc(144); frame.set([0xff, 0xf3, 0x64, 0xc4]); return frame;
+  }));
+}
+
+async function narrationFixture() {
+  let source = await sourceFor("risk-management"), published = true;
+  source = { ...source, lecture: { ...source.lecture, id: randomUUID() } };
+  vi.spyOn(ContentService.prototype, "getSubjectOrThrow").mockResolvedValue({ id: source.lecture.subjectId, title: "إدارة المخاطر" } as Awaited<ReturnType<ContentService["getSubjectOrThrow"]>>);
+  vi.spyOn(ContentService.prototype, "listLecturesForSubjectOrThrow").mockImplementation(async () => ({ items: published ? [source.lecture] : [], total: published ? 1 : 0, page: 1, limit: 100 }));
+  vi.spyOn(LibraryService.prototype, "get").mockResolvedValue({ subjectId: source.lecture.subjectId, entries: [], sourceQuestionCount: 0 });
+  const read = vi.spyOn(LectureSourceFiles.prototype, "read").mockImplementation(async () => ({ sources: [source], links: [] }));
+  const pool = {} as Pool;
+  return {
+    service: new CourseStudyModules(pool), anotherService: () => new CourseStudyModules(pool), read,
+    current: () => compileCourseLecture(source.lecture.subjectId, source).lecture,
+    source: () => source,
+    replace: (next: LectureFileSources) => { source = next; },
+    hide: () => { published = false; },
+  };
+}
+
+describe("source-validated assembled lecture audio", () => {
+  it("shares one cold lecture build across service instances and reuses its complete MP3", async () => {
+    const f = await narrationFixture(), lecture = f.current(), subjectId = f.source().lecture.subjectId;
+    const synthesize = vi.spyOn(academicSpeechCache, "audio").mockResolvedValue(completeMp3());
+    const [first, shared] = await Promise.all([
+      f.service.narration(subjectId, lecture.lectureId, lecture.summarySha256, "msa-male"),
+      f.anotherService().narration(subjectId, lecture.lectureId, lecture.summarySha256, "msa-male"),
+    ]);
+    const segments = studyNarrationPlan(lecture, lecture.summarySha256, "msa-male").segments.length;
+    expect(synthesize).toHaveBeenCalledTimes(segments);
+    expect(shared.bytes).toBe(first.bytes);
+    const ready = await f.anotherService().narration(subjectId, lecture.lectureId, lecture.summarySha256, "msa-male");
+    expect(ready.bytes).toBe(first.bytes);
+    expect(ready.voice).toBe("ar-SY-LaithNeural");
+    expect(synthesize).toHaveBeenCalledTimes(segments);
+    expect(f.read).toHaveBeenCalledTimes(3);
+  });
+  it("revalidates source identity, revision and visibility before reusing audio, and separates voices", async () => {
+    const f = await narrationFixture(), lecture = f.current(), subjectId = f.source().lecture.subjectId;
+    const synthesize = vi.spyOn(academicSpeechCache, "audio").mockResolvedValue(completeMp3());
+    const narrate = (voice = "msa-male", revision = lecture.summarySha256) => f.service.narration(subjectId, lecture.lectureId, revision, voice);
+    const first = await narrate();
+    expect((await narrate()).bytes).toBe(first.bytes);
+    const calls = synthesize.mock.calls.length;
+    const female = await narrate("iraqi-female");
+    expect(female.voice).toBe("ar-IQ-RanaNeural"); expect(female.bytes).not.toBe(first.bytes);
+    expect(synthesize.mock.calls.length).toBeGreaterThan(calls);
+    const original = f.source();
+    f.replace({ ...original, documents: original.documents.map(document => ({ ...document, id: "replacement-source-file" })) });
+    const replaced = await narrate();
+    expect(replaced.bytes).not.toBe(first.bytes);
+    f.replace({ ...original, documents: original.documents.map(document => ({ ...document, text: "مصدر تغير ولم يعد يدعم القراءة السابقة." })) });
+    await expect(narrate()).rejects.toThrow(/مطابقة/);
+    f.replace({ ...original, lecture: { ...original.lecture, title: "عنوان مراجع جديد" } });
+    await expect(narrate()).rejects.toMatchObject({ status: 409 });
+    f.hide();
+    await expect(narrate()).rejects.toMatchObject({ status: 404 });
+  });
+  it("surfaces a completed provider failure on retries and frees failed work for a later attempt", async () => {
+    const f = await narrationFixture(), lecture = f.current(), subjectId = f.source().lecture.subjectId;
+    const synthesize = vi.spyOn(academicSpeechCache, "audio").mockRejectedValueOnce(new AcademicSpeechUnavailable("provider_timeout")).mockResolvedValue(completeMp3());
+    const narrate = () => f.service.narration(subjectId, lecture.lectureId, lecture.summarySha256, "msa-male");
+    expect(await narrate().then(() => "unexpected_success", error => error.reason)).toBe("provider_timeout");
+    expect(await narrate().then(() => "unexpected_success", error => error.reason)).toBe("provider_timeout");
+    expect(synthesize).toHaveBeenCalledOnce();
+    vi.spyOn(Date, "now").mockReturnValue(Date.now() + 60_001);
+    await expect(narrate()).resolves.toMatchObject({ voice: "ar-SY-LaithNeural" });
+    expect(synthesize.mock.calls.length).toBeGreaterThan(1);
+  });
+  it("finishes shared preparation when one listener cancels and lets another listener reuse it", async () => {
+    const f = await narrationFixture(), lecture = f.current(), subjectId = f.source().lecture.subjectId;
+    let finish!: (bytes: Buffer) => void, started!: () => void;
+    const gate = new Promise<Buffer>(resolve => { finish = resolve; }), starting = new Promise<void>(resolve => { started = resolve; });
+    const synthesize = vi.spyOn(academicSpeechCache, "audio").mockImplementationOnce(() => { started(); return gate; }).mockResolvedValue(completeMp3());
+    const controller = new AbortController();
+    const cancelled = f.service.narration(subjectId, lecture.lectureId, lecture.summarySha256, "msa-male", controller.signal);
+    const rejected = expect(cancelled).rejects.toMatchObject({ name: "AbortError" });
+    const listening = f.anotherService().narration(subjectId, lecture.lectureId, lecture.summarySha256, "msa-male");
+    await starting; controller.abort(); finish(completeMp3());
+    const audio = await listening; await rejected;
+    expect((await f.service.narration(subjectId, lecture.lectureId, lecture.summarySha256, "msa-male")).bytes === audio.bytes).toBe(true);
+    expect(synthesize).toHaveBeenCalledTimes(studyNarrationPlan(lecture, lecture.summarySha256, "msa-male").segments.length);
+  });
+});
+
 describe("all-course source-bound study modules", () => {
   it.each(STUDY_COURSES)("builds $slug summaries and practice from every actual byte-verified catalog lecture", async course => {
     const numbers = manifest.subjects.find(subject => subject.id === course.slug)!.lectures.map(lecture => lecture.number);
@@ -31,6 +124,7 @@ describe("all-course source-bound study modules", () => {
     for (const lecture of documents.summaries.lectures) {
       const source = sources.find(source => source.lecture.id === lecture.lectureId)!;
       const academic = academicSummaryFor(source.documents[0]!.sha256)!;
+      expect(lecture.catalogId).toBe(academic.lectureId);
       expect(lecture.sections.flatMap(section => section.points)).toEqual(proofreadAcademicContent(academic.sections.flatMap(section => section.points.map(({ term, text }) => ({ term, text })))));
       expect(lecture.sourceHref).toBe(`/subjects/${course.id}/lectures/${source.lecture.id}`);
     }

@@ -30,7 +30,8 @@ async function fixture() {
     recordings: Object.fromEntries(VOICES.map(voice => [voice, { path: `assets/audio/innovation-01/${voice}.mp3`, available: false }])),
   }] };
   await write(root, "exam-module.html", '<!doctype html><html lang="ar" dir="rtl"><a href="summaries.html">الملخصات</a></html>');
-  await write(root, "summaries.html", `<html lang="ar" dir="rtl"><script type="application/json" id="summaries-data">${JSON.stringify(data)}</script><script id="summaries-script">const mime = "audio/mpeg";</script></html>`);
+  await write(root, "summaries.html", '<html lang="ar" dir="rtl" data-summary-redirect><script id="summaries-script">const destination = "/subjects";</script></html>');
+  await write(root, "assets/audio/study-data.json", JSON.stringify(data));
   await write(root, MANIFEST, JSON.stringify(manifest));
   await write(root, LECTURE_TRANSCRIPT, TEXT);
   await write(root, AUDIO, VALID_MP3_HEADER);
@@ -72,8 +73,8 @@ async function usingFixture(run) {
 
 test("copies both pages, manifests and transcripts without requiring pending MP3s", () => usingFixture(async root => {
   const result = await syncExamAudio(root);
-  assert.equal(result.files.length, 7);
-  for (const path of ["exam-module.html", "summaries.html", "assets/study-module-loader.js", MANIFEST, LECTURE_TRANSCRIPT, AUDIO, TRANSCRIPT]) {
+  assert.equal(result.files.length, 8);
+  for (const path of ["exam-module.html", "summaries.html", "assets/study-module-loader.js", "assets/audio/study-data.json", MANIFEST, LECTURE_TRANSCRIPT, AUDIO, TRANSCRIPT]) {
     assert.deepEqual(await readFile(join(root, "web/public", path)), await readFile(join(root, path)));
   }
   await assert.rejects(readFile(join(root, "web/public", MP3)), /ENOENT/);
@@ -189,8 +190,7 @@ test("rejects symlink public targets rather than overwriting their destinations"
 }));
 
 async function addSubjects(root) {
-  const html = await readFile(join(root, "summaries.html"), "utf8");
-  const data = JSON.parse(html.match(/id="summaries-data">([\s\S]*?)<\/script>/)[1]);
+  const data = JSON.parse(await readFile(join(root, "assets/audio/study-data.json"), "utf8"));
   const manifest = JSON.parse(await readFile(join(root, MANIFEST), "utf8"));
   const subjects = [
     { id: "2d6c0980-e4d2-4687-9027-cf090b3d1a67", slug: "ai-data", title: "الذكاء الاصطناعي" },
@@ -206,7 +206,7 @@ async function addSubjects(root) {
     catalogLectureId: "ai-l1", transcript: "assets/audio/ai-l1/summary.txt",
     recordings: Object.fromEntries(VOICES.map(voice => [voice, { path: `assets/audio/ai-l1/${voice}.mp3`, available: false }])) });
   await write(root, "assets/audio/ai-l1/summary.txt", TEXT);
-  await write(root, "summaries.html", html.replace(/(<script type="application\/json" id="summaries-data">)[\s\S]*?(<\/script>)/, (_, start, end) => start + JSON.stringify(data) + end));
+  await write(root, "assets/audio/study-data.json", JSON.stringify(data));
   await write(root, MANIFEST, JSON.stringify(manifest));
 }
 

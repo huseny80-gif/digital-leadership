@@ -36,6 +36,7 @@ export function courseStudyRoutes(service: () => StudyService = () => new Course
   });
   router.get("/subjects/:subjectId/study-modules/:lectureId/audio.mp3", requireUuidParam("lectureId"), audioLimit, async (req, res, next) => {
     const controller = new AbortController();
+    let timer: NodeJS.Timeout | undefined;
     const onClose = () => { if (!res.writableEnded) controller.abort(); };
     res.on("close", onClose);
     try {
@@ -43,7 +44,10 @@ export function courseStudyRoutes(service: () => StudyService = () => new Course
       if (!query.success) throw new ValidationError("بيانات التسجيل غير صالحة. حدّث الصفحة واختر صوتًا متاحًا.");
       const range = req.get("range");
       if (range && !/^bytes=(?:\d+-\d*|-\d+)$/.test(range)) throw new ValidationError("نطاق الصوت المطلوب غير صالح.");
-      const { bytes, voice } = await service().narration(req.params.subjectId as string, req.params.lectureId as string, query.data.revision, query.data.voice, controller.signal);
+      const preparing = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new HttpError(503, "audio_preparing", "جارٍ تجهيز تسجيل هذه المحاضرة. ستُعاد المحاولة خلال لحظات.")), prepareWaitMs);
+      });
+      const { bytes, voice } = await Promise.race([service().narration(req.params.subjectId as string, req.params.lectureId as string, query.data.revision, query.data.voice, controller.signal), preparing]);
       res.set({ "Content-Type": "audio/mpeg", "Accept-Ranges": "bytes", "X-Audio-Voice": voice, "X-Narration-Version": ACADEMIC_NARRATION_VERSION });
       if (range) {
         const match = /^bytes=(\d*)-(\d*)$/.exec(range);
@@ -53,8 +57,10 @@ export function courseStudyRoutes(service: () => StudyService = () => new Course
         res.set("Content-Range", `bytes ${start}-${end}/${bytes.length}`); res.status(206).send(bytes.subarray(start, end + 1)); return;
       }
       res.send(bytes);
-    } catch (error) { if (!controller.signal.aborted) next(error instanceof AcademicSpeechUnavailable ? new HttpError(503, "audio_unavailable", "تعذر تجهيز الصوت مؤقتًا. أعد المحاولة أو اختر صوتًا آخر.") : error); }
-    finally { res.off("close", onClose); }
+    } catch (error) {
+      if (error instanceof HttpError && error.code === "audio_preparing") res.set("Retry-After", "10");
+      if (!controller.signal.aborted) next(error instanceof AcademicSpeechUnavailable ? new HttpError(503, "audio_unavailable", "تعذر تجهيز الصوت مؤقتًا. أعد المحاولة أو اختر صوتًا آخر.") : error);
+    } finally { clearTimeout(timer); res.off("close", onClose); }
   });
   return router;
 }
