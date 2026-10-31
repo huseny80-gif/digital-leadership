@@ -17,7 +17,6 @@ export * from "./types/summaryVisuals.js";
 export * from "./search.js";
 export * from "./examReview.js";
 export * from "./academicNarration.js";
-export * from "./saudiVoiceScript.js";
 export * from "./academicSpeech.js";
 export * from "./studyPresentation.js";
 export * from "./studyLayout.js";
