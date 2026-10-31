@@ -58,8 +58,13 @@ function validateRecordingMetadata(contents, lecture, entry, voice, recording, a
   if (recording.sha256 !== undefined && !/^[a-f0-9]{64}$/.test(recording.sha256)) throw new Error(`Invalid recording audio hash: ${lecture.id}/${voice}`);
   if (recording.bytes !== undefined && (!Number.isInteger(recording.bytes) || recording.bytes < 0)) throw new Error(`Invalid recording byte count: ${lecture.id}/${voice}`);
   if (recording.durationSeconds !== undefined && (!Number.isFinite(recording.durationSeconds) || recording.durationSeconds <= 0)) throw new Error(`Invalid recording duration: ${lecture.id}/${voice}`);
-  if (recording.provider !== undefined && recording.provider !== "edge-tts") throw new Error(`Invalid recording provider: ${lecture.id}/${voice}`);
-  if (recording.voiceId !== undefined && recording.voiceId !== PROVIDER_VOICES[voice]) throw new Error(`Invalid recording voice id: ${lecture.id}/${voice}`);
+  if (recording.provider !== undefined && recording.provider !== "edge-tts" && recording.provider !== "ElevenLabs") throw new Error(`Invalid recording provider: ${lecture.id}/${voice}`);
+  if (recording.voiceId !== undefined) {
+    const validVoiceId = recording.provider === "ElevenLabs"
+      ? (voice === "saudi-male" && recording.voiceId === "nPczCjzI2devNBz1zQrb")
+      : recording.voiceId === PROVIDER_VOICES[voice];
+    if (!validVoiceId) throw new Error(`Invalid recording voice id: ${lecture.id}/${voice}`);
+  }
   if (recording.generatedAt !== undefined && (typeof recording.generatedAt !== "string" || !Number.isFinite(Date.parse(recording.generatedAt)))) throw new Error(`Invalid recording generation date: ${lecture.id}/${voice}`);
   if (recording.available && (recording.sha256 !== undefined || recording.bytes !== undefined)) {
     if (!audio) throw new Error(`Missing available recording bytes: ${lecture.id}/${voice}`);
@@ -111,10 +116,13 @@ async function validateStudyPages(root, contents) {
     for (const voice of VOICES) {
       const recording = entry.recordings[voice];
       const expectedPath = `assets/audio/${lecture.id}/${voice}.mp3`;
-      if (!recording || recording.path !== expectedPath || typeof recording.available !== "boolean") throw new Error(`Invalid recording path or availability: ${lecture.id}/${voice}`);
+      const customElevenLabsPath = `assets/audio/${lecture.id}/saudi-elevenlabs-part-01.mp3`;
+      const recordingPath = recording?.provider === "ElevenLabs" && voice === "saudi-male" && recording?.complete === true
+        ? customElevenLabsPath : expectedPath;
+      if (!recording || recording.path !== recordingPath || typeof recording.available !== "boolean") throw new Error(`Invalid recording path or availability: ${lecture.id}/${voice}`);
       let audio;
       if (recording.available) {
-        audio = await requiredFile(join(root, expectedPath), expectedPath);
+        audio = await requiredFile(join(root, recordingPath), recordingPath);
         const id3 = audio.subarray(0, 3).toString("ascii") === "ID3";
         const frame = audio.length >= 2 && audio[0] === 0xff && (audio[1] & 0xe0) === 0xe0;
         if (audio.length < 128 || (!id3 && !frame)) throw new Error(`Published recording is not an MP3: ${expectedPath}`);
