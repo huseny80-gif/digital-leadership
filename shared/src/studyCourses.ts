@@ -8,12 +8,8 @@ export const STUDY_COURSES = [
 ] as const;
 
 export const STUDY_VOICES = [
-  { id: "msa-male", voice: "ar-SY-LaithNeural", label: "العربية الفصحى — ليث (رجل)" },
-  { id: "msa-female", voice: "ar-SY-AmanyNeural", label: "العربية الفصحى — أماني (امرأة)" },
-  { id: "iraqi-male", voice: "ar-IQ-BasselNeural", label: "فصحى بلكنة عراقية — باسل (رجل)" },
-  { id: "iraqi-female", voice: "ar-IQ-RanaNeural", label: "فصحى بلكنة عراقية — رنا (امرأة)" },
-  { id: "saudi-male", voice: "ar-SA-HamedNeural", label: "فصحى بلكنة سعودية — حامد (رجل)" },
-  { id: "saudi-female", voice: "ar-SA-ZariyahNeural", label: "فصحى بلكنة سعودية — زارية (امرأة)" },
+  { id: "saudi-male", voice: "ar-SA-HamedNeural", label: "بلكنة سعودية — حامد (رجل)" },
+  { id: "saudi-female", voice: "ar-SA-ZariyahNeural", label: "بلكنة سعودية — زارية (امرأة)" },
 ] as const;
 
 export interface StudyModuleLecture {

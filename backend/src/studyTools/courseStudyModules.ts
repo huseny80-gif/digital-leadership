@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import type { Pool } from "pg";
 import type { Lecture, SubjectLibrary } from "@shared/index";
-import { STUDY_COURSES, STUDY_VOICES, academicSpeechSegments, prepareAcademicSpeech, proofreadArabicText, proofreadAcademicContent, type StudyModuleLecture, type StudySummaryDocument, type StudyExamDocument, type StudyPracticeQuestion, type StudyPracticeReference } from "@digital-leadership/shared";
+import { STUDY_COURSES, STUDY_VOICES, academicSpeechSegments, prepareAcademicSpeech, saudiVoiceScript, proofreadArabicText, proofreadAcademicContent, type StudyModuleLecture, type StudySummaryDocument, type StudyExamDocument, type StudyPracticeQuestion, type StudyPracticeReference } from "@digital-leadership/shared";
 import { ContentService } from "../content/contentService.js";
 import { PgContentRepository } from "../content/contentRepository.js";
 import { LibraryService, manifest } from "../finquiz/catalog.js";
@@ -103,8 +103,9 @@ export function studyNarrationPlan(lecture: StudyModuleLecture, revision: string
   const selected = STUDY_VOICES.find(item => item.id === voice);
   if (!selected) throw new ValidationError("اختر صوتًا من الأصوات المتاحة.");
   if (lecture.summarySha256 !== revision || hash(lecture.transcript) !== revision) throw conflict("تغير ملخص المحاضرة. حدّث الصفحة للاستماع إلى النسخة المطابقة.");
-  const blocks = lecture.transcript.split(/\n{2,}/u).map(block => block.split("\n").map(line => {
-    const text = prepareAcademicSpeech(line);
+  const blocks = lecture.transcript.split(/\n{2,}/u).map((block, blockIndex) => block.split("\n").map((line, lineIndex) => {
+    const spoken = blockIndex === 0 && lineIndex === 0 ? `خلّونا نشوف ملخص ${line}.` : line;
+    const text = prepareAcademicSpeech(saudiVoiceScript(spoken).text);
     return text && !/[.!?؟؛:]$/.test(text) ? `${text}.` : text;
   }).filter(Boolean).join("\n\n")).filter(Boolean);
   const text = blocks.join("\n\n");

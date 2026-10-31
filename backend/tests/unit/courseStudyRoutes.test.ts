@@ -28,7 +28,7 @@ function fixture(identity: "user" | "guest" | "anonymous" = "user") {
   return { app, documents, narration, setUser: (id: string, status = "active") => { userId = id; userStatus = status; } };
 }
 describe("protected all-course study routes", () => {
-  it.each(["summaries", "exam", `${lecture}/audio.mp3?revision=${revision}&voice=msa-male`])("rejects anonymous %s before reading or synthesizing", async suffix => {
+  it.each(["summaries", "exam", `${lecture}/audio.mp3?revision=${revision}&voice=saudi-male`])("rejects anonymous %s before reading or synthesizing", async suffix => {
     const f = fixture("anonymous"); await request(f.app).get(`${path}/${suffix}`).expect(401);
     expect(f.documents).not.toHaveBeenCalled(); expect(f.narration).not.toHaveBeenCalled();
   });
@@ -41,11 +41,11 @@ describe("protected all-course study routes", () => {
   });
   it("rejects invalid subject/lecture IDs and extra query data before using a provider", async () => {
     const f = fixture();
-    for (const url of ["/subjects/not-a-uuid/study-modules/summaries", `${path}/summaries?text=untrusted`, `${path}/not-a-uuid/audio.mp3?revision=${revision}&voice=msa-male`, `${path}/${lecture}/audio.mp3?revision=${revision}&voice=unknown`, `${path}/${lecture}/audio.mp3?revision=${revision}&voice=msa-male&text=injected`, `${path}/${lecture}/audio.mp3?revision=bad&voice=msa-male`]) await request(f.app).get(url).expect(400);
+    for (const url of ["/subjects/not-a-uuid/study-modules/summaries", `${path}/summaries?text=untrusted`, `${path}/not-a-uuid/audio.mp3?revision=${revision}&voice=saudi-male`, `${path}/${lecture}/audio.mp3?revision=${revision}&voice=unknown`, `${path}/${lecture}/audio.mp3?revision=${revision}&voice=saudi-male&text=injected`, `${path}/${lecture}/audio.mp3?revision=bad&voice=saudi-male`]) await request(f.app).get(url).expect(400);
     expect(f.documents).not.toHaveBeenCalled(); expect(f.narration).not.toHaveBeenCalled();
   });
   it("serves the requested voice, standard and suffix ranges, and rejects unsatisfiable ranges", async () => {
-    const f = fixture(), url = `${path}/${lecture}/audio.mp3?revision=${revision}&voice=iraqi-male`;
+    const f = fixture(), url = `${path}/${lecture}/audio.mp3?revision=${revision}&voice=saudi-male`;
     const full = await request(f.app).get(url).expect(200);
     expect(full.headers["content-type"]).toContain("audio/mpeg");
     expect(full.headers["x-audio-voice"]).toBe("ar-IQ-BasselNeural");
@@ -55,10 +55,10 @@ describe("protected all-course study routes", () => {
     const suffix = await request(f.app).get(url).set("Range", "bytes=-2").expect(206);
     expect(suffix.body).toEqual(Buffer.from("89"));
     await request(f.app).get(url).set("Range", "bytes=10-").expect(416);
-    expect(f.narration).toHaveBeenCalledWith(subject, lecture, revision, "iraqi-male", expect.any(AbortSignal));
+    expect(f.narration).toHaveBeenCalledWith(subject, lecture, revision, "saudi-male", expect.any(AbortSignal));
   });
   it("rejects malformed ranges before speech generation and returns a retryable provider failure", async () => {
-    const f = fixture(), url = `${path}/${lecture}/audio.mp3?revision=${revision}&voice=msa-male`;
+    const f = fixture(), url = `${path}/${lecture}/audio.mp3?revision=${revision}&voice=saudi-male`;
     await request(f.app).get(url).set("Range", "bytes=0-1,4-5").expect(400);
     expect(f.narration).not.toHaveBeenCalled();
     f.narration.mockRejectedValueOnce(new AcademicSpeechUnavailable("provider_timeout"));
@@ -71,10 +71,10 @@ describe("protected all-course study routes", () => {
     f.documents.mockRejectedValueOnce(new HttpError(404, "not_found", "Subject not found."));
     await request(f.app).get(`${path}/exam`).expect(404);
     f.narration.mockRejectedValueOnce(new HttpError(409, "conflict", "تغير ملخص المحاضرة."));
-    await request(f.app).get(`${path}/${lecture}/audio.mp3?revision=${revision}&voice=msa-male`).expect(409);
+    await request(f.app).get(`${path}/${lecture}/audio.mp3?revision=${revision}&voice=saudi-male`).expect(409);
   });
   it("does not let one learner exhaust another learner's audio budget on a shared network", async () => {
-    const f = fixture(), url = `${path}/${lecture}/audio.mp3?revision=${revision}&voice=msa-male`;
+    const f = fixture(), url = `${path}/${lecture}/audio.mp3?revision=${revision}&voice=saudi-male`;
     for (let index = 0; index < 12; index++) await request(f.app).get(url).expect(200);
     await request(f.app).get(url).expect(429);
     f.setUser("another-verified-learner");

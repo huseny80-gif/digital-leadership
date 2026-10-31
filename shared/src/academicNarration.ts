@@ -3,7 +3,7 @@ import { examSectionPresentation } from "./studyPresentation.js";
 import { cleanStudyLayout } from "./studyLayout.js";
 import { proofreadArabicText } from "./arabicProofreading.js";
 
-export const ACADEMIC_NARRATION_VERSION = "academic-ar-v3-proofread";
+export const ACADEMIC_NARRATION_VERSION = "academic-ar-v4-saudi-script";
 export const DEFAULT_ACADEMIC_PLAYBACK_RATE = 1;
 export const ACADEMIC_SPEECH_SEGMENT_LIMIT = 1400;
 export const ACADEMIC_VOICES = [

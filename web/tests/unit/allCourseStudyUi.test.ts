@@ -34,14 +34,14 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); document.documentElement.innerHTML = ""; localStorage.clear(); window.history.replaceState(null, "", "/"); });
 
 describe("shared study experience for every course", () => {
-  it.each(STUDY_COURSES)("loads $slug summaries and six voices with only that course's source/audio paths", async course => {
+  it.each(STUDY_COURSES)("loads $slug summaries and its Saudi voices with only that course's source/audio paths", async course => {
     const data = fixture(course.id).summaries;
     await render("summaries", course.id, data);
     expect(document.querySelector("main .eyebrow")!.textContent).toBe(data.courseTitle);
     expect(document.querySelectorAll(".lecture-card")).toHaveLength(1);
     expect(document.querySelector("#recording-count")!.textContent).toContain("يُجهّز عند التشغيل");
     const card = document.getElementById(data.lectures[0]!.id)!, select = card.querySelector<HTMLSelectElement>(".player select")!;
-    expect(select.options).toHaveLength(6);
+    expect(select.options).toHaveLength(STUDY_VOICES.length);
     for (const voice of STUDY_VOICES) {
       select.value = voice.id; select.dispatchEvent(new Event("change"));
       const audio = card.querySelector<HTMLAudioElement>("audio")!;
@@ -56,7 +56,7 @@ describe("shared study experience for every course", () => {
   it("keeps native seek/rate/download bound to the selected voice and ignores old audio events", async () => {
     const data = fixture().summaries; await render("summaries", data.subjectId, data);
     const card = document.querySelector(".lecture-card")!, first = card.querySelector<HTMLAudioElement>("audio")!, select = card.querySelector<HTMLSelectElement>(".player select")!;
-    select.value = "iraqi-female"; select.dispatchEvent(new Event("change"));
+    select.value = "saudi-female"; select.dispatchEvent(new Event("change"));
     const audio = card.querySelector<HTMLAudioElement>("audio")!;
     first.dispatchEvent(new Event("loadedmetadata"));
     expect(card.querySelector<HTMLButtonElement>(".audio-back")!.disabled).toBe(true);
@@ -65,7 +65,7 @@ describe("shared study experience for every course", () => {
     card.querySelector<HTMLButtonElement>(".audio-back")!.click(); expect(audio.currentTime).toBe(5);
     card.querySelector<HTMLButtonElement>(".audio-forward")!.click(); expect(audio.currentTime).toBe(20);
     const rate = card.querySelector<HTMLSelectElement>(".audio-rate")!; rate.value = "1.15"; rate.dispatchEvent(new Event("change")); expect(audio.playbackRate).toBe(1.15);
-    expect(card.querySelector(".download-audio")!.getAttribute("href")).toContain("voice=iraqi-female");
+    expect(card.querySelector(".download-audio")!.getAttribute("href")).toContain("voice=saudi-female");
     expect(card.querySelector(".transcript-link")!.getAttribute("href")).toBe("#text-" + data.lectures[0]!.id);
   });
   it.each(STUDY_COURSES)("loads $slug's comprehensive exam with all six formats and source-based feedback", async course => {

@@ -2,7 +2,7 @@
 (() => {
   const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
   const checksum = /^[a-f0-9]{64}$/;
-  const voiceIds = ["msa-male", "msa-female", "iraqi-male", "iraqi-female", "saudi-male", "saudi-female"];
+  const voiceIds = ["saudi-male", "saudi-female"];
   const formats = ["multiple_choice", "true_false", "match", "order", "essay", "short_scenario"];
   const string = value => typeof value === "string" && value.trim().length > 0;
   function validate(data, subject, kind) {
