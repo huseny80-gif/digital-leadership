@@ -39,6 +39,9 @@ import { probePublishedPdfInventory } from "./files/pdfInventoryProbe.js";
 import { auditCyberComparisonQuestions } from "./examMaterials/examCaseRevisionAudit.js";
 import { reprocessCyberSecondLecture } from "./contentAutomation/reprocessCyberSecondLecture.js";
 import { probePublishedSummaryVisuals } from "./mindMaps/summaryVisualService.js";
+import { CourseStudyModules } from "./studyTools/courseStudyModules.js";
+import { STUDY_COURSES } from "@digital-leadership/shared";
+import { repairRiskQuizSourceLabels } from "./contentAutomation/repairRiskQuizSourceLabels.js";
 
 // force-redeploy-2: reviewed-innovation-curriculum-v1 (220 questions)
 initMonitoring();
@@ -61,6 +64,10 @@ if (env.DATABASE_URL) {
 }
 
 async function refreshPublishedContent() {
+  // Repair existing cards even if an unrelated legacy content stage fails.
+  // The independent stage below retries after new assessments are generated.
+  try { logger.info(await repairRiskQuizSourceLabels(getPool()), "risk_quiz_source_labels_repaired"); }
+  catch (error) { logger.error({ name: error instanceof Error ? error.name : "UnknownError" }, "risk_quiz_source_labels_repair_failed"); }
   const result = await synchronizeFinquizCore(getPool());
   logger.info(result, "finquiz_core_content_synchronized");
   const moved = await relocateIso27001Roadmap(getPool());
@@ -76,6 +83,9 @@ async function refreshPublishedContent() {
   logger.info({ ...sixth, sourcesQueued: generationSources.length }, "legal_sixth_lecture_separated");
   logger.info({ courses: await refreshStudyCourses(getPool()) }, "study_courses_content_refreshed");
   await runIndependentContentReviews([
+    // First, so learners are not kept waiting behind the slower content
+    // reviews below: prepare each course's summaries and comprehensive exam.
+    { name: "study_modules", run: async () => { const modules = new CourseStudyModules(getPool()); for (const course of STUDY_COURSES) { const { summaries, exam } = await modules.documents(course.id); logger.info({ course: course.slug, lectures: summaries.lectures.length, unavailable: summaries.unavailableLectures.length, questions: exam.questions.length }, "study_module_ready"); } } },
     { name: "pdf_file_identities", run: async () => { logger.info(await repairPdfIdentities(getPool()), "original_pdf_identities_verified"); } },
     { name: "weekly_cyber_exams", run: async () => { const papers = new WeeklyCyberExams().index(weeklyCyberSubjectId); logger.info({ policy: papers.policy, subjectId: weeklyCyberSubjectId, papers: papers.papers.map(paper => ({ id: paper.id, questions: paper.questionCount })), questions: papers.papers.reduce((sum, paper) => sum + paper.questionCount, 0) }, "weekly_cyber_exams_ready"); } },
     { name: "innovation_curriculum", run: async () => { logger.info(await reviewInnovationCurriculum(getPool()), "innovation_curriculum_reviewed"); } },
@@ -87,6 +97,7 @@ async function refreshPublishedContent() {
     { name: "arabic_lecture_labels", run: async () => { logger.info(await normalizeArabicLectureLabels(getPool()), "arabic_lecture_labels_normalized"); } },
     { name: "cyber_second_upload", run: async () => { logger.info(await reprocessCyberSecondLecture(getPool()), "cyber_second_upload_reprocessed"); } },
     { name: "course_assessments", run: async () => { logger.info(await reviewCourseAssessments(getPool(), undefined, courseSourceRevision()), "course_assessments_source_verified"); } },
+    { name: "risk_quiz_source_labels", run: async () => { logger.info(await repairRiskQuizSourceLabels(getPool()), "risk_quiz_source_labels_repaired"); } },
     { name: "exam_archives", run: async () => { logger.info(await refreshAcademicSummaries(getPool()), "academic_exam_summaries_refreshed"); } },
     { name: "diverse_assessments", run: async () => { logger.info(await refreshDiverseAssessments(getPool(), courseSourceRevision()), "diverse_exam_groups_refreshed"); } },
     { name: "instructor_guides", run: async () => { logger.info(await refreshInstructorGuides(getPool()), "instructor_guides_source_verified"); } },

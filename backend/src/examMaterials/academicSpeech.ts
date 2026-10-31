@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import { speechServiceToken } from "./speechToken.js";
 import WebSocket from "ws";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { ACADEMIC_NARRATION_VERSION, ACADEMIC_VOICES, type AcademicVoiceId } from "@digital-leadership/shared";
@@ -7,9 +8,10 @@ import { ACADEMIC_NARRATION_VERSION, ACADEMIC_VOICES, type AcademicVoiceId } fro
 // follows the Edge Read Aloud protocol; no learner cookie reaches the provider.
 const CLIENT_ID = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
 const CLIENT_VERSION = "143.0.3650.75";
-// Edge moved synthesis here in October 2026. The old Bing voice-list host
-// still answers catalog requests, but rejects synthesis handshakes with 403.
-const SPEECH_ENDPOINT = "wss://api.msedgeservices.com/tts/cognitiveservices/websocket/v1";
+// Late October 2026 Edge returned synthesis to the Bing Read Aloud host with a
+// version 2 Sec-MS-GEC token; the interim msedgeservices endpoint now answers
+// handshakes with a plain 200 instead of upgrading the socket.
+const SPEECH_ENDPOINT = "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1";
 export const SPEECH_AUDIO_FORMAT = "audio-24khz-96kbitrate-mono-mp3";
 type SpeechFailure = "invalid_request" | "transport_error" | "provider_rejected" | "provider_closed" | "provider_timeout" | "invalid_audio" | "capacity";
 export class AcademicSpeechUnavailable extends Error {
@@ -19,9 +21,7 @@ export class AcademicSpeechUnavailable extends Error {
 }
 
 export function speechServiceHash(now = Date.now()): string {
-  const seconds = Math.floor((now / 1000 + 11644473600) / 300) * 300;
-  const ticks = BigInt(seconds) * 10000000n;
-  return createHash("sha256").update(`${ticks}${CLIENT_ID}`).digest("hex").toUpperCase();
+  return speechServiceToken(CLIENT_ID, now);
 }
 const xml = (text: string) => text.replace(/[&<>"']/g, value => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[value]!);
 export function academicSpeechSsml(text: string, voiceId: AcademicVoiceId): string {
@@ -47,7 +47,7 @@ export async function synthesizeAcademicSpeech(text: string, voiceId: AcademicVo
 
 function synthesizeOnce(ssml: string, clockSkewMs = 0): Promise<Buffer> {
   const id = randomBytes(16).toString("hex");
-  const url = `${SPEECH_ENDPOINT}?Ocp-Apim-Subscription-Key=${CLIENT_ID}&ConnectionId=${id}&Sec-MS-GEC=${speechServiceHash(Date.now() + clockSkewMs)}&Sec-MS-GEC-Version=1-${CLIENT_VERSION}`;
+  const url = `${SPEECH_ENDPOINT}?TrustedClientToken=${CLIENT_ID}&ConnectionId=${id}&Sec-MS-GEC=${speechServiceHash(Date.now() + clockSkewMs)}&Sec-MS-GEC-Version=2-${CLIENT_VERSION}`;
   const proxy = process.env.HTTPS_PROXY ?? process.env.https_proxy;
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(url, {
@@ -56,12 +56,16 @@ function synthesizeOnce(ssml: string, clockSkewMs = 0): Promise<Buffer> {
     });
     const buffers: Buffer[] = []; let length = 0; let finished = false;
     const finish = (error?: AcademicSpeechUnavailable) => {
-      if (finished) return; finished = true; clearTimeout(timeout);
+      if (finished) return; finished = true; clearTimeout(idle); clearTimeout(deadline);
       if (socket.readyState === WebSocket.OPEN) socket.close(); else socket.terminate();
       const bytes = Buffer.concat(buffers);
       if (!error && isAcademicMp3(bytes)) resolve(bytes); else reject(error ?? new AcademicSpeechUnavailable("invalid_audio"));
     };
-    const timeout = setTimeout(() => finish(new AcademicSpeechUnavailable("provider_timeout")), 25_000);
+    // A long passage streams for longer than a short one, so wait on silence
+    // (no frame for 25 s) rather than on total time, within a 2-minute cap.
+    const timedOut = () => finish(new AcademicSpeechUnavailable("provider_timeout"));
+    let idle = setTimeout(timedOut, 25_000);
+    const deadline = setTimeout(timedOut, 120_000);
     socket.on("error", () => finish(new AcademicSpeechUnavailable("transport_error")));
     socket.on("close", () => finish(new AcademicSpeechUnavailable("provider_closed")));
     socket.on("unexpected-response", (_request, response) => {
@@ -77,6 +81,7 @@ function synthesizeOnce(ssml: string, clockSkewMs = 0): Promise<Buffer> {
       socket.send(`X-RequestId:${id}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${stamp}Z\r\nPath:ssml\r\n\r\n${ssml}`);
     });
     socket.on("message", (raw, binary) => {
+      clearTimeout(idle); idle = setTimeout(timedOut, 25_000);
       const data = Array.isArray(raw) ? Buffer.concat(raw) : Buffer.from(raw as Buffer);
       if (!binary) { if (/^Path:turn\.end\r?$/m.test(data.toString())) finish(); return; }
       if (data.length < 2) { finish(new AcademicSpeechUnavailable("invalid_audio")); return; }

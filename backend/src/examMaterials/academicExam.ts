@@ -113,7 +113,7 @@ function shuffled<T>(items: T[]): T[] {
   }
   return result;
 }
-function archivedParagraphs(references: SourceReference[]): SourceParagraph[] {
+export function archivedParagraphs(references: SourceReference[]): SourceParagraph[] {
   const paragraphs = new Map<string, SourceParagraph>();
   for (const reference of references) {
     const prior = paragraphs.get(reference.paragraphId);

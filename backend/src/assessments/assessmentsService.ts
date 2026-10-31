@@ -88,7 +88,7 @@ export class AssessmentsService {
       if (visited.has(quiz.id) || visited.size >= 100) throw conflict("تعذر تحديد أحدث نسخة من الاختبار.");
       visited.add(quiz.id);
       const next = await this.getQuizOrThrow(quiz.supersededBy, isAdmin);
-      if (next.subjectId !== quiz.subjectId || next.lectureId !== quiz.lectureId) throw conflict("تعذر تحديد نسخة مطابقة لهذا الاختبار.");
+      if (next.subjectId !== quiz.subjectId || (next.lectureId !== quiz.lectureId && !await this.repository.isVerifiedQuizScopeRepair?.(quiz.id, next.id))) throw conflict("تعذر تحديد نسخة مطابقة لهذا الاختبار.");
       quiz = next;
     }
     quizId = quiz.id;

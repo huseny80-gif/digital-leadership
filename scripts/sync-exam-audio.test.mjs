@@ -34,6 +34,7 @@ async function fixture() {
   await write(root, MANIFEST, JSON.stringify(manifest));
   await write(root, LECTURE_TRANSCRIPT, TEXT);
   await write(root, AUDIO, VALID_MP3_HEADER);
+  await write(root, "assets/study-module-loader.js", '"use strict";');
   await write(root, TRANSCRIPT, "تجربة عامة مستقلة");
   return root;
 }
@@ -71,8 +72,8 @@ async function usingFixture(run) {
 
 test("copies both pages, manifests and transcripts without requiring pending MP3s", () => usingFixture(async root => {
   const result = await syncExamAudio(root);
-  assert.equal(result.files.length, 6);
-  for (const path of ["exam-module.html", "summaries.html", MANIFEST, LECTURE_TRANSCRIPT, AUDIO, TRANSCRIPT]) {
+  assert.equal(result.files.length, 7);
+  for (const path of ["exam-module.html", "summaries.html", "assets/study-module-loader.js", MANIFEST, LECTURE_TRANSCRIPT, AUDIO, TRANSCRIPT]) {
     assert.deepEqual(await readFile(join(root, "web/public", path)), await readFile(join(root, path)));
   }
   await assert.rejects(readFile(join(root, "web/public", MP3)), /ENOENT/);

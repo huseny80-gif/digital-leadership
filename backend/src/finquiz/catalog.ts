@@ -7,6 +7,7 @@ import { findSourceLecture } from "./recordIdentity.js";
 import { assetPaths } from "./assetFiles.js";
 import { cyberRiskPrivateSourceId } from "../contentAutomation/cyberRiskSixthSource.js";
 import type { uploadedStudyContent } from "./uploadedStudyContent.js";
+import { STUDY_COURSES } from "@digital-leadership/shared";
 
 interface SourceRow {
   id: string; title: string; legacyTitles?: string[]; status?: string; lectureId?: string;
@@ -30,13 +31,7 @@ export const catalogRoot = new URL("../../content/finquiz/", import.meta.url);
 export const manifest = JSON.parse(readFileSync(new URL("catalog.json", catalogRoot), "utf8")) as CatalogManifest;
 // Reuse the existing, previously approved subject identifiers. No parallel
 // subject tree, database, authentication system or learner progress is created.
-export const subjectMapping: Record<string, string> = {
-  "ai-data": "2d6c0980-e4d2-4687-9027-cf090b3d1a67",
-  "legal-regulatory": "ade09563-02ec-4a09-a97b-58857f6cd876",
-  "cybersecurity-governance": "bc861a76-620d-4646-81ca-c49d24665b75",
-  "innovation-project-management": "7eb2b714-570f-4ed0-a00e-10efec7a20e5",
-  "risk-management": "1f4d2071-d1c9-46ee-a848-d5c90eedf287",
-};
+export const subjectMapping: Record<string, string> = Object.fromEntries(STUDY_COURSES.map(course => [course.slug, course.id]));
 const sections: LibrarySection[] = ["lectures", "summaries", "assignments", "references", "resources", "updates"];
 const normalize = (s: string) => s.normalize("NFKC").replace(/[\u064B-\u065F\u0670]/g, "").replace(/[أإآ]/g, "ا");
 // Asset IDs are permanent download identities, independent of display names

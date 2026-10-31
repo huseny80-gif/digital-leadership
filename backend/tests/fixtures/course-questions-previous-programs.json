@@ -1,0 +1,1486 @@
+[
+  {
+    "subject": "ai-data",
+    "lecture": 1,
+    "candidateId": "5a76349c405eecd458722bf2",
+    "programSha256": "8fe0ce5acf9552a25c8c9f4cb7876042f8dc1d11bd632307a2d29a9b1f255c7b",
+    "key": "d6d42c0d486963f0a55a811d776e0c621b643bd6e7e7112b5a1960772438bdab"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 1,
+    "candidateId": "783bed471bb8e9c6c68aeafa",
+    "programSha256": "67ce32f6698cf92a1510167db5ad5a40081e62a77f42e4af0ab5c2e739b09f08",
+    "key": "71a096247e45e6b92e010070bf168fbdadfe2cd9a86d6f7324923135fca0aa6b"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 1,
+    "candidateId": "b7a92425d81b04f76c6d2531",
+    "programSha256": "043f91281192c7699e3b756bbb7387cca3e35bf283bfe47a73d4a250ed296029",
+    "key": "2683df8fbd0c4f8bca53cb28be9c6313a0ff7961dce19a0bf00673758aa81ea0"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 1,
+    "candidateId": "98a5a68a6f6d34b2d0941953",
+    "programSha256": "17e05b4011d33727f49c004e7dcd02cad28ffd6a016c1760ddd4fc1cece58981",
+    "key": "3a2412b662d237448d70df19f6a5628189605ae087ee4c4415eec2ccfe76a230"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 1,
+    "candidateId": "a0a1ae6e7630f18ec1d4ff29",
+    "programSha256": "739d69fe03502df43e1aba5a3532b1ed87a758f3155c32f156cceae52882d9bf",
+    "key": "b9820b3825d452edfbb5e0a804c51c7fb34b7a9db9fbfe70d78f077e20d3b75f"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 1,
+    "candidateId": "ee8e7971e15bff0db9b107cb61d5822fce4fde832916bac120c185a21a4293a0",
+    "programSha256": "18fb269c030e043b5ca2a09caf0534652bb153bbde5812c41b29a15358ac4535",
+    "key": "0bdaa5dd6e9a4248d948be21c6c165054f13563b969bbcc2ece7d09ddde0b89c"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 1,
+    "candidateId": "fa04eafcfaa54ae8fcd7e94d909eb3db7ae484eb116e65b2b766f097757b9d73",
+    "programSha256": "5712c5393d735001d7e11659587ae432f76fb2ca54f180d4e908eb4d10e3ed84",
+    "key": "a1dec4ffaa1a6fef5cdc420fb13c879544929aae7952ebf35a213f6de668e1e4"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 1,
+    "candidateId": "f0cfed077ee186f31f22cb4aac4fc31b6ec4e3840570a15c09ec678459a3970c",
+    "programSha256": "d83cadf8ae61ebfbb97a698fbf49d60d0698c0dc48e9825604d0b1f345d7ce4a",
+    "key": "52854098bd291f09f438abaa5a208bdaf370f4cb700e07f178f08e865dfce3fe"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 1,
+    "candidateId": "dea86cde737623611a481bbe13b89622acba32fdbb88626eff28fdad49b3d4fa",
+    "programSha256": "e64ead9b1203408df0b32e22c687208c271b20f01c9b520eb8df4d4148d30d12",
+    "key": "3a9fa6f389ab098591a9bf82e5bbc91721340a5d5a558e941a8ea85b3cc0f2c3"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 1,
+    "candidateId": "95a527082294e8c3273f4eae1f9bd2b148a402fb5f050452a61fef08a3126a1f",
+    "programSha256": "edf64a24e581e3ddf524adad34a5f298a6f24bbac060e8ffdbb1a2a5d7cc765f",
+    "key": "f8469fd94dd36b27648b48b0662ec8c2757416411be9879e7b2a2e57246db60d"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 2,
+    "candidateId": "fcee2a06b13e76672c11ed1f",
+    "programSha256": "6d018ebbdc2acd6bee88f8b936807eb26880d1d686013116090858eae550654e",
+    "key": "1e737fd7c53ef555b76de67456e8cf1d239a77f155b66df1949d835948841972"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 2,
+    "candidateId": "9529d502111ff3fa0310bbe6",
+    "programSha256": "11829432ed6848dd2333e405c206db7654b4c138dbeee716b2076bd8ae1c03d8",
+    "key": "f9cbd7a8a8ab9fdec9c206715919f6d3c27e4b2920d11cdbed7540d81cd24f79"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 2,
+    "candidateId": "93e8d4ba145d7e87bf915932",
+    "programSha256": "d6a82937221683df2458559e10f8d31408be1b45d35db063cf7cfb1c2719b0bd",
+    "key": "d61711d28abd99d3cd1b5ffb6f3da684abe47c5743a758fcd30e6063052ef006"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 2,
+    "candidateId": "040fb5473c5a7c6a9c0f097a",
+    "programSha256": "97e6bcec300d7e78a0e1035331e0380d3d80ec44cc2f085a9c505f2142d36457",
+    "key": "52e0ee3c417cf5f15df7f3fa000fad428cf820e3a7b7089fbc929b1f1114967d"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 2,
+    "candidateId": "a387f5b96d66bc07330392fe309899b0efbf2d60247cc8ae87e90ddb96e2bfb9",
+    "programSha256": "a8d623e4ba7b58d478c57e70d1b5a2222966cb0cb1e1ee5a0d7d572ce354cc55",
+    "key": "484289d77b9d95cbd3cfa3f8545eb6596c669e526af2ebf8af63e839c90395f8"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 2,
+    "candidateId": "e071a77d3cb304e4b8d0a6f2485c05347a4000320fc1b67d96e9bd50a8e63f1b",
+    "programSha256": "560283675261db30d1b15ff5781c689d68f065f92d919ec2ba07ddd01645da0d",
+    "key": "6911ef69cf13591e76246069fced6d9737ca63e1d041c63d00f34c62d6d53bf5"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 2,
+    "candidateId": "16acc9395b4291c19d7f33603e6786e75a71cda118b2d2dd5f322c0ee641b43f",
+    "programSha256": "447ce3be9c85a21d51673e48f8f86bd760f0df6306fd0f45f36446792991db2b",
+    "key": "8e1f985d32f44a51ee714bff08ba165db18c4943520af1d3757fd2d07a681601"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 3,
+    "candidateId": "4089f125b7039112c0e08768",
+    "programSha256": "5bba58d3ca13a1bd4c758395dde724242602204c343774f4dd9e652b3b41eaa4",
+    "key": "e3d19ffc4c4a9e6164bfae32d86d8768c8fd722feb75275b9fe5f93dea562246"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 3,
+    "candidateId": "0e9d97846726ce103f24f18c",
+    "programSha256": "65821449f14c062547aef9351202c7cf287bbe36dfebc45789b5e218fcd90a53",
+    "key": "d3d95ea1066088d2136faaa2a2a673265253d0de17db5013fd9d6aa3854dcf0c"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 3,
+    "candidateId": "d9503ded8bd8c7234bff7d45",
+    "programSha256": "f44ef18ebbd5d3aed5e4638a5d0fbe4d5f8855c68ddd8a6b0c535ea9d3bf720b",
+    "key": "a925c7e662893ab0421847f61a40108f60ba7c51497e970d794f31e473208710"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 3,
+    "candidateId": "38305f386691403af9049324",
+    "programSha256": "227c2a821936f5e67709beb54ce89baa33cb3e71662c1011acf09ac00573dcb2",
+    "key": "01e2af0579774397ef02d75866df940d835fff29601a6db4a4b061db9330ecac"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 3,
+    "candidateId": "913c503fd3b9217aa1ad2977",
+    "programSha256": "acfa5df565274b806c0b304f6e24d69c6fd28477d02da25f122c29307e9123ec",
+    "key": "0f6fc776177d9328c90133803299cf24054541c71668b6897523c54eb621365e"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 3,
+    "candidateId": "b4ed2fb0629a6f157a54a87d74390882476b1ad2bf11a371db952524aa0d7a7b",
+    "programSha256": "798436ee9a76c272bc63f26d8d4b9b0b97fb3094138e9772016c95a85ecd2dbf",
+    "key": "58d904a1e20ecd77ac107c3b0c684c0c3038291240ccda9982be7efb4776c125"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 3,
+    "candidateId": "c5bd4fd046def9ffb97fba45bbf450f0c029fb8f4b34cb3bafcc44cb0e397973",
+    "programSha256": "40e78292291237a1d9cdb2a528db5bc4fbc575515624965d9d072d9f88e8634a",
+    "key": "ba976cc9badd4cc75d1e34b22395d25d8f7e1a2e00addbf596869dd78cc632d2"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 3,
+    "candidateId": "07f33f76e4537b9f3329507655bcffccced96064fb74ef102d7b144f5eb10c38",
+    "programSha256": "b60640cbb690eabe1dfd462109a16fc79cc9cd99152666002f0584c5a138bdcc",
+    "key": "6dc9b3ce28af06d98e514991c0910b4ac9250f0926837e0ad9bde400ba78309b"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 4,
+    "candidateId": "2b3b59b3f7916f4235e1f320",
+    "programSha256": "d0b1da423bde6a68abc967aba453f32f597f894424333ffa84d19144b6ca3289",
+    "key": "16215e79afe30f16a3cce3471b9d7c83a1e00f64517f70eebfaec28c2a9511b1"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 4,
+    "candidateId": "7a25a028e71ae6cbc5a960a7",
+    "programSha256": "ffe970b86da114e5887d39da230397c627b47827f38c84a8e20b4af2887e8909",
+    "key": "595ab087ddfd2ef1192858c1205f4b919bfb59a137252d696231d8b08c346af8"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 4,
+    "candidateId": "6513bb6fea76151fadbfe376",
+    "programSha256": "53431b92453982bcfad699837aa69e50f17d3f3d4a27eeb0231167ec62cae572",
+    "key": "bc713ce373de6711e50106bb0af743bfeab04052d82967d3d2b354db224ebfdc"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 4,
+    "candidateId": "0289ee710c6722fd1a1687b7664619a9960a9396e75567959e337688ede2be66",
+    "programSha256": "b4934be952bafa6498f29c00f8c91df3eee7cf4896c2fdb8f5fa8fd15910bfb0",
+    "key": "836e331b309b939dd7717865b57d76fe54199e58febb965e93dac8b189a96069"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 4,
+    "candidateId": "6cf83a261364d83a7cbe9406703af8dacb6c9b643550e54549c67192e912fc0f",
+    "programSha256": "c1ba76453a7130d272060def049e1e21fba5a478673b9a7e524c5d8dc2d9404f",
+    "key": "f7e6212afdabc9f50263338f5d27b5c5fc7b4e46975ef6a4c397760ecadb3c98"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 4,
+    "candidateId": "d99c405fa5265955563ef0d39effacf517e658412885fe8d2a99884c3342320d",
+    "programSha256": "109ab01042714e0c72425455d768a954117cdce02384f9e390637510ce018770",
+    "key": "deba1a3078edcc6cda919190951a0ea5ded81823960a2ddff4f63e80f76d0e29"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 5,
+    "candidateId": "bba6d5d5a77a9115e9c880e8",
+    "programSha256": "031e9f40c46049877b33629325392a235609593a4340ce11c83b58cf1fcc21e7",
+    "key": "285ca5805482198de261d96547c256ed9d3f4631cc1192d0e7517323100333cc"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 5,
+    "candidateId": "5eb000c6092a361e6e7cf2b5",
+    "programSha256": "6b3dc26cb0c43de5895fd07f1737706c9244796663f9c3e21f28c8118ae2a7c3",
+    "key": "551b5dc971bb7a4af0d7c09b0f0bea72015619ba4d2bf2d9c824c7f1110d6578"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 5,
+    "candidateId": "1834a4a2946e1d286f343542",
+    "programSha256": "b98759baa8ca92b98df787589d60eaf4a2cf3fd68f3bcf6018e2e37ed467ec40",
+    "key": "56ec6aa6008fffa232358d74e6be19541f0c61920bc22553ad4f0c87f6923f8b"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 5,
+    "candidateId": "20ac82ec510c0bbfce9a9a814ce892a472485a6a5e8067ee36623493fe16f9f8",
+    "programSha256": "3c1128fbefa47828ce0c7e30aa077aa364922092be666fdb33ac819b21c6a040",
+    "key": "f114c7085306b983e0ddcb6cfb56e428b73ef63f461c22adf409442446769670"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 5,
+    "candidateId": "3afd0c130cf31358dcb2ba888af5f74878a21bcfcc09e2c4d46e7aa4f6eb05f0",
+    "programSha256": "ace20e8001ff7a5eb7546e781780f20b79c5d314bcebd220751e15189ab13179",
+    "key": "373fa46ef153725ce341ebe170cb633c18427859ea8b0daba37c64d136234773"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 5,
+    "candidateId": "84d4c3080d5f9a4daf9c65e7119c6a18673a192bc408691daca81b4abc4ff12a",
+    "programSha256": "ddb3dcf8c87acec5cf068eef4b929075eb72c2a1f7aa5235cc47a418cc23ffc1",
+    "key": "0dac4d1fe25ee4c588da13c7285934bbab2c691d5022816426edcd05d1981893"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 6,
+    "candidateId": "4d7cb9017663403ee484037b",
+    "programSha256": "59971fd86672bb3ce576311e2bec8a6abf649019ce242330d38a3a1411da18d0",
+    "key": "ba33909a09a5ce1f5d9ed1cd3b6bba5e7fec69fcfce02041322e35d6b9d8f345"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 6,
+    "candidateId": "883647d919fed79559cbc35a",
+    "programSha256": "899abfac5dba4978e21a0e533b892c4c28abb67037a6035bfd3605b61eae9b85",
+    "key": "f709b34c18ecf8feb4120ee040df9fe5dda80d37ac8bf5635cf9cb044d9bba55"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 6,
+    "candidateId": "67f5c7b058066e0e6cba09cc",
+    "programSha256": "e67c719f5d283c38b4d3e46f96583be95f2045f47cfc4c037660a500a681b6b3",
+    "key": "109d210cf7b2d3b1e6e9be8c2b930a7edd68036321e1bb43d1c46e25f383685e"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 6,
+    "candidateId": "1c8726365f25852a24544d84d02250d78d3a194d34e5aadbd1b6eab8589ac6f8",
+    "programSha256": "15db73779a320b394b234c92ae1d48c63b752d0a511d12be539038871f0dfc67",
+    "key": "725c97049a6102f6fc7bfc5a0a817567d852e36706d82ccf101f25d4684912c7"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 6,
+    "candidateId": "679e4eb71ab5639488db8ed4fc12bff8252434aa5a6f07804174b0f93e8390b3",
+    "programSha256": "ab020efb2577a22b3f194310037284668b724981b3bb32dba534af48fc506158",
+    "key": "c1d20fbf879630476bdf7ef1d8848fe754d4157558f405e5aa1d584e7dbb9550"
+  },
+  {
+    "subject": "ai-data",
+    "lecture": 6,
+    "candidateId": "65d01198d79d5463a0f21948e5cc1fe6cfb95b9005f3da06366337cd62db79d5",
+    "programSha256": "3b6e7dc523e520257a420612ac9b278177efb71c0cb89dc022b54ba9fea0b884",
+    "key": "27f6413935b613205ab56417d6602dec118a9f1f9224294ebf628fad35d1ef2e"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 1,
+    "candidateId": "b34407ca98bd4758b12d819b",
+    "programSha256": "dee33ec3a76c3435b4ebcc61a029c6bb8b4e47b5d45e933a3eda1a9b2b0dfecf",
+    "key": "beb48a3c045e3c503a78e3c47a4bd51dbeb7f74d367e799bc4d2433a0908ac2c"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 1,
+    "candidateId": "c1236c2817b9ee1057d14fa0",
+    "programSha256": "778d15e59916bdb56be015cf5d6b6883878fd35fdec5c8088609621075a65aa9",
+    "key": "33e5d07ab29ec1fb97a7506332f6eb51601a159a7d14bcba726b55f27902ca50"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 1,
+    "candidateId": "64d9613bf14b587a5a8d2a42",
+    "programSha256": "388b43904f317674ede02ba2bd91f84cbd2936f4f360dc433e9d3a1bc1977c71",
+    "key": "a1603760b326c17bf18167c6fa3956d1878a6ce1517d9794e4b03a68c54727d0"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 1,
+    "candidateId": "858aeba62b0ab8a8da16a9d6",
+    "programSha256": "f875a0fa806615e526f6dee45373164fded4ab29ccc83c7db1fb92a83974e655",
+    "key": "0039cbf55743da85d3429f2db33a1a30fd0c86f01f35897b66705476b7c59df9"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 1,
+    "candidateId": "bd87feaf0137f42a3984d938a0bf645de486aca38a3a0c3583c223c73802a672",
+    "programSha256": "1d5ad33c1fb66b23a194f302cbb43d6200e738329f6b009c9acfef5ce26ece58",
+    "key": "6056b14b2ab3f7a35be96397a9bb900faf3bd5fe788645bd9c5ece86ad3b8a9a"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 1,
+    "candidateId": "538f4649ebfc5df6cbadf5c573a8d2700ce36c36629bcd68ecd08d4aab779f5d",
+    "programSha256": "70bf2aa21a9f3965dfddb1112c728ce479efde89e5714c67ed830e81300dbb9c",
+    "key": "397c9c8878b6ad01dad49b8a0f56460bd35fc711246d215f7a38191ccb2645b3"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 1,
+    "candidateId": "bcf051b2db3b7e98044ea7bbeb6bce0d9f2a0a7d2bcf4ca674f508505a033921",
+    "programSha256": "411c84afc6b61d544e701a4d12bc815aad91b0d9a4c90f8dbd4c369ef89cdd8b",
+    "key": "0e28ad331e81544d489d751adf8ade1e5e07595d28aed426a26b2fde4fcf7cbc"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 2,
+    "candidateId": "05ff8353135f673cab81cda9",
+    "programSha256": "e5dcefa4b84b3f38bee38a0020c1c7a3b73c0203053425b0ac0dda07b2d9d92e",
+    "key": "1e25407294c8000892156ec746d0dd8a46b7c623077f5ed47c93a2e02efe326c"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 2,
+    "candidateId": "03d4beae38c2b6038e66afde",
+    "programSha256": "e5996aff8b1ea9bf8b67cb23f8036eee55932bcf6c5fd92787e044f625f487af",
+    "key": "acd7bca47ec26bede49022ddeecf4b757988e2767d57bafddb1679906a4ac592"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 2,
+    "candidateId": "2b4b5a8d12d5749dfb0f9d17",
+    "programSha256": "9213387122cfbb8b6622941bd2b5d8a2fd6f6ef37e26be112b3094a5df60600f",
+    "key": "8727424f8a53b6a929fbecf36d6ffdae39c638f4d25ed0692f851616c2792faf"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 2,
+    "candidateId": "f645b198506e3c759c156818",
+    "programSha256": "98766c689a8a12762ff03acfc72069f9b69dc30ab702df068d840fc893b9e7ac",
+    "key": "9ae554be96d8ca680362f7a6e8271e6cf088a1f0faca75b0497726de06982b4e"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 2,
+    "candidateId": "61d58dc337e86ded6da55a61",
+    "programSha256": "a35b4a921413e2c83dc72b6fba41ae26fc20ac001fd783af842c5cd1c77f0b4d",
+    "key": "4f5ba0264adc0527b8dfa1a8d3067ec4debbee3732c917ce5d0cec3fd4e4f7a3"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 2,
+    "candidateId": "8b0ed71b9814da9e1047e427934674a7685fb78d1795382894308c3451a5c17f",
+    "programSha256": "34d98edf1506c1640147dec0e06b0189e1394e5a129dd0d9759eecdd1be03a2e",
+    "key": "d876d865c2c21417c593de7004509bfd5188603c562f3b88e7f05048b403f30c"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 2,
+    "candidateId": "d13395d08caa8a3b4edf14dfae54e9ddcb0c02b7220c20f7f8824fba8acffe38",
+    "programSha256": "fac4797727c050d7e6ca361aa311882b438fcfd9216288f1d3c339c4bbe3d2d1",
+    "key": "b449d707b0bbcaf4438c35a4154fc5201e51efcb8431a8fe37d901fb84dc9f3d"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 2,
+    "candidateId": "4af0845078095c27a4caf3cc3977c9dffd949d98b13193ce65285d8b924df7fe",
+    "programSha256": "e71555d38a9267f9ffe083414ae69f0448d75cbb3d3cfc5b20d4f579144f03fa",
+    "key": "6477c72701ef15abd91bd79e6b7227a2d52a8ff2933a767f39015dd33d6d87a7"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 3,
+    "candidateId": "5656159cb8726a987d1af1e0",
+    "programSha256": "bbef86ba7f1fe8ba3cb8ea8c27399bf4359367726f5372616eae75f2defb3308",
+    "key": "3aec9419e53fa63d6f24e295d4d7931d45f3569032001025d8fbd0743228e224"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 3,
+    "candidateId": "8449822e29602176dc564984",
+    "programSha256": "2cdbb6fdeb7aa9e1851b037151d2bb595e2c58ee2ca331a7873882e3454ed9ba",
+    "key": "9247c2596cbbd9a74646eef3d3290b79ea403a5d3106b516ae7e6e0226b9a331"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 3,
+    "candidateId": "701888809686a7763cdd2b51",
+    "programSha256": "0b5bb49f5a888d1d72534306adadceb2891874f7b3d0c118ad9ca33a84c7eed6",
+    "key": "ea683f9bfb6693d3e708efe09e2db3f9132574c18402df70e983bcdf863386bb"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 3,
+    "candidateId": "fd963592e040a45dcec2ea50",
+    "programSha256": "75d4366219245db614fea55332d8013af1aa0bb074783193560bee31a09c9891",
+    "key": "06165c2ddbdede0f0ee20ffe1a3e8efe9ef8703586a5a95f115e1d41aa61a647"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 3,
+    "candidateId": "5873abc604594e45de20bf88",
+    "programSha256": "549b622d53d5fee0b9183e7b4c11408ef6d7cf14e03d8d8a872a2c16c9b2c59a",
+    "key": "10368a04382dd781b6810cfade0cd3c4bd84ab6c5f89acc69f0cb5278beb6acd"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 3,
+    "candidateId": "d53af01f4e4a5483c147a9572767d0f111c85b3c375131d69c5e499dfcc23cee",
+    "programSha256": "7d79ab12d2edf33b247e0b1a011204e4f5863649adb635d45466300d568aa791",
+    "key": "ab6f8f3dad3d60336e9ea3fde47ddb3731c73391de32e3124a5220011e6f8977"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 3,
+    "candidateId": "37d0683131a3ec836ab918fc6e356597257ff4abe01ac292255f04f88ee58d14",
+    "programSha256": "49e55d8fb57a241d4d1bab8a4576d823530a14fbdc02b94d5225779fd7523bbc",
+    "key": "d680b5df3f30dd4de6155fab22109364605531b453d4d679d1d1d373b933a0fc"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 3,
+    "candidateId": "4150befa28ae669f9809f1e4758aca49ca4f5b2eb57df021cc847a3fd69dedb6",
+    "programSha256": "9e1ce13b9eabb9fb30e82f82d0227ed54e7f4e562061d0198cdd6f448bc984d9",
+    "key": "6ec9ec622c74737dafd24b731cbff9c705aad54b7db974c20b1b38f53a89b2a9"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 4,
+    "candidateId": "4c97478d338623580561a588",
+    "programSha256": "a25d9ae2d0a4c2ea4ac2cebec53d7dcef7ace13cbbcef4bcd38839ac4f4c49cf",
+    "key": "0b314e96ee21fb999acb167b928a370ee7a9b60bc9572e31ca4eab7fc36d0fd3"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 4,
+    "candidateId": "f0a57c8d99e62612bbf04600",
+    "programSha256": "eb6324722588ec646886aa5b42b91a27c32228378e039f6accdb89dfe749af9d",
+    "key": "bff6fa3dc5c6f6440abe2c5ca652e1b0361f504cb99240b822b47ec7b7021634"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 4,
+    "candidateId": "61c224b956075ad566544a49",
+    "programSha256": "6f0eed84e4dfe53037e355f42ea9f00a58b5949460fa5ac1fd6e87884093d355",
+    "key": "e46832749d0f6eee440ffe439fc2fef8e1967a08079bb576e66415e4083821cd"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 4,
+    "candidateId": "1276bad2f35a18438d61452f79bf16cfc9a23dfb1f28093bc7baa1cb756384d9",
+    "programSha256": "e4275d9bb0a98d02132f2fe4e3e02f9a16756f01a624f7161dda2f404efa7a29",
+    "key": "f463c7647479fd55d64f8a4d5ca3c3918511a74c629d995adf2acdad2dfa615e"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 4,
+    "candidateId": "1ff27b125940a508741a3000c2222d1859713d3975989ee5ef583fbe5ace7d49",
+    "programSha256": "f7a9644a1ec52128cf8e22d3dbb812e80906d12888415042552a4de19f35b802",
+    "key": "b784518cae8982ac2bc583b0efa873dbf98f3a52efc7e151cac8bcf9017d0d4c"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 4,
+    "candidateId": "edde0c84d8ec3191b8f5e2812dbb49b9ef9a950bf10ba6488c469b8b09e8a702",
+    "programSha256": "98fa6cac2877cffa960cd5042addf1624cc01439cbaec3cf6a67f2bdcc4ccb8d",
+    "key": "b81a888c65728ac8fefd5831b23c797f5be114bc227112e57b621ecf7602d74c"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 5,
+    "candidateId": "6b02384cb6dcc47a86729c30",
+    "programSha256": "b7a5e124c3706f35f508d6a657a8cedab5ec4f530120a0167eff253523b8781f",
+    "key": "4d2858c27016e67ac949687c663d280be9b51d14cc9eacb1facee7d8cff33bf1"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 5,
+    "candidateId": "b7466bfd1cb919745fcf3791",
+    "programSha256": "a18c594b97ee4dd83fc17dec8cee81204b757076a0960ff5a6bb9b345633fb0a",
+    "key": "d396786bcc805dcc8624c2a201d94fe8d995ab62105ef6e832b2b812c3c7d715"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 5,
+    "candidateId": "55660cf4402b61e3a600d47b",
+    "programSha256": "2e69d4f171484f7fe2e2f05b3d76bbb724cfaa8aad0e8ec3e663e5bee9a6c086",
+    "key": "8261577b57662c846a428c54d563e3f7f095bf23badc46e8f0e65d42f77eaf25"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 5,
+    "candidateId": "d76c9d866e93274950273dcb",
+    "programSha256": "5686605c6825d06372b1821bd702c23a85ff286d53bea32d31baa05e21cc295a",
+    "key": "a7544c4feb1281309a9f77c598eb270d733baddd02a753ec5e8c7d7fae3aea86"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 5,
+    "candidateId": "a9844058a2c43b96d79d87a6614d5b83f6b5471bd1da269ef95cdf69126b2a40",
+    "programSha256": "6ae47721c2788f581c64023fbc22edddd29b8473b10611200a1cd87ba149a6c5",
+    "key": "e3c307cbdbd99a43c9eddecf3d809762a1687aa5766d35c36894b4825d45c5c2"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 5,
+    "candidateId": "432a618d905bcae7d33e305fcdc18950c3ff57faa6c024ff63d1bfe4e08cbba9",
+    "programSha256": "620a328573db2ce400c6009fac45c17ddce74146e24b8d6bb8e618fb1119fcce",
+    "key": "d777317291d871e664e762043bb5de123303714c2a73a6bd95955a2a84127417"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 5,
+    "candidateId": "de6b7be50a315dc8d4bbd14a0c42d16c1a95f79799ca5787352ebd38085a43d1",
+    "programSha256": "dda51e2da0798e3b2d2d75413bd9d537534bc42aa6c31b3f4c8d25a9caacd8b9",
+    "key": "10cea3b2b29e98f65ba6d4101e6bbe83ece0793d2dd650eeee9c0d002d19dda0"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 5,
+    "candidateId": "72e288684bbfbb39cd2c0e469c35d8fecd1399bbb1091d20bc7c27d7f76a4588",
+    "programSha256": "0d80296f98ce8bd680a4ca6c5a26035238ea9d4f730ac9a2c3ee556b90308145",
+    "key": "6c796774a2a2592a559b5d4edad6dd5444d1aefadca96d3f80462ddfe09dbda0"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 5,
+    "candidateId": "6e51d94df09f4e82574db520fea70882a038a4e75a48774e151d5a42edd5374a",
+    "programSha256": "512d1d9507ca80b28251c7df188e020fd7380db94ae7ee8eb79f7112a3c7c0a0",
+    "key": "68a1ba9ec36af450449653684d398e7785cde2799d9c805636bbc5726f7c55f4"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 6,
+    "candidateId": "708397184ad782490180d92d",
+    "programSha256": "0e6b150fd78c35d1aade0c4ca080c88b8adbe79415ce58cc586bb62a680033de",
+    "key": "af9889057719dbdb98fef4ce1bda1b4401327c86080250d788ab93b1be41b688"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 6,
+    "candidateId": "23edf791843b63ce8a68b2dc",
+    "programSha256": "9f1306a271218ea3092fc1f203eb5dbdcdc217e1865c18f390751de01aee06d6",
+    "key": "3083eae725f2c506a7ac4cadac95bf99ef447bcdad9e5d8b8464f535fcd31af2"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 6,
+    "candidateId": "9b96b537727e2af8ec77ba54",
+    "programSha256": "d97fd20efdb6e738be75244abf8c36f6d6459ae7883f29d1fd95311681f1c09c",
+    "key": "ac49c33f099a6fdd7ba285f15712da9675b7fc1643041bb4b5447c44a2f10f99"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 6,
+    "candidateId": "8f967b91d815efc41ea5199a43f7142c5d8ebbb92dd8bc3513c9382daf32d1d2",
+    "programSha256": "5e992941cd319c7b5177120bee22d34ad79379095291f56242595b3fc2ccc963",
+    "key": "6e450b95b4e258140bdd38ba2bc1868c24282cc51f04359ff2d031f3675d05d6"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 6,
+    "candidateId": "cba9606f0b6fc73fe2395c926cda51a9164954ce792ed83a88a72fcd39f77524",
+    "programSha256": "598a659f32f5fc83aa36dfd31f82057b8a4b65388fe42ce36b1968eabcebf71f",
+    "key": "9e49b619e338861118fadb945e1a305077a373594adadd9c8f10abf643e5cbdb"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 6,
+    "candidateId": "e4afb896b8e89d54316fa54a98650e8b66068b6f0460ebcafb1230836059ebf2",
+    "programSha256": "5127c6f5dbe4db163a7dfb7aae7c81d87d2794a2a409959cb88d07861b6eafc1",
+    "key": "918d5f1dfd7e5cf6029c78b289d758254d295de8e342d1a3fc3f0ab5a1fd9858"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "e267e9a9ec232eb062e76c5b",
+    "programSha256": "5d47a1df7ab0b176acf86bc8024d3ff635cf0d4c04ea23baa149db29384696bc",
+    "key": "27c08ddf48b0ee61d82fa78cb28170e4e53bfa8bf8195dd4a59150c304cce358"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "a2a48c77d2c4c36c59e88137",
+    "programSha256": "bc39808ee17ea48fb38b4040af6484cc062174a6360dcaa817decf3d5b2f98ff",
+    "key": "80ad4c76f3dee68df853bfce7e4e7482d36e19d559124af8d90037cfd41943fd"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "17a8945fd64a8dd48a225ed2",
+    "programSha256": "1170f2190b5f20aed6598787d2c04eab860c733c087edd5f0861ae1e22879fd1",
+    "key": "c9863f84e21e55808d723179774411d4110a5753ae84730e1240cdc45eef5317"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "7865402de2c9c1a03e210c7a",
+    "programSha256": "4437d0e3788c3a5f1793ef7c121ca37a8669b32911334e00522b1aec71d6c11a",
+    "key": "bb5de7823682698b07378d57d4b25cc77e7cfae631c9bbd1dae934ba0752cc5b"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "de079464f2575d9b56b2a123",
+    "programSha256": "53928ef970811e63cfd46a49f9dca2e03a08c6927f5a633f671b5bcfbc59d8ca",
+    "key": "ac13c5cd97104cf8e979f42da42e601dd8af5ed601b1e98ed069b7bf5a1dff8b"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "8c32fef2d902ec1466ebfb56",
+    "programSha256": "4202e49b7f0224f2960f5f23c5d4093b44fdc0e163415dea81459ccb35c1603e",
+    "key": "e867fcd18440cb67213a3a328c220a6d2cd0f117ccc852081de6232494ac2e0b"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "b8d265054b44b8470cccb71f",
+    "programSha256": "ad4c84afb6621e034b1d9d9b2183a7337a60feb5b6fe8651794733d1a4ec730a",
+    "key": "11f600bebc38804dc12321ea61ba9bf92f4464b703c14b60e087da41a92f7191"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "c612cf1fb6451ded16f6e1e3",
+    "programSha256": "6d69bbe8b46a909d547261ecbeb56129bc632f87c50f1d783ee1e0180f255f99",
+    "key": "579cb6f1692c1a97f57588bd81ae14cb46f12f08087a6dd3f1408be0a6dbeb4c"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "ce28d516b37def4e56ec0008e3ce285df5a88bd11c55024a6d64324a566ae4a0",
+    "programSha256": "4384520326dd19cc4f3681e2b52a2802e87be65b5fb786eb3850994e81a39f6d",
+    "key": "a71cede5010f10d8c381b8567994b649ef0e39f09fc7d6b576c9a08ff1e1bdee"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "b565b7c44f76c4efaf9c6e6f9c2bdf5369c35ab4b53b333f417b482158d84afe",
+    "programSha256": "f96a380e29abe568977a5fa9d9764d1c5d348326107379f077d7787aad8c1da0",
+    "key": "424652a9f121bd2623a7bf1189a176ea4380f364c2a3dee8ea3a75aba42f8b63"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "e389c0c5e600eb88d32c43ffd30b7b88bf4ecabbd06de3c4bbcfedf3ce330578",
+    "programSha256": "ef1c12f1b712739ac9ae87a459c4af5aeb56c8ce73dbe7001caf8aafa86a4c74",
+    "key": "f9fb6ee9a8323ab06f47f5ba65a7491bee81b38ff4d0184f1c6fc9cc85ed6b61"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "f95c9fba3217fc8e728ee66a3e402ca55e8890c55a8ac4c77e2fe85c44672dea",
+    "programSha256": "c0a675a0c5748475c5232793ef663edc934622e3b39ce5a15959d4cfd830324d",
+    "key": "d73e1b2892d2fe3860706772872c9bf086fd1dd0a11101ada38bd6915fd7a06d"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "eafdee54250f36284cde8dd7314a893db835e4573baddb2839e8cf2e25c83fe1",
+    "programSha256": "56e8ced2350faf86377172876ae427ba66c79014851c2023896f8459257bed6f",
+    "key": "781b695fc32e716e036cd0f70a540f4260e2213184c8b444d7546cbb69c8b163"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "f480d1c32856d4b6dd2b6fd63592460debf31eac1534e209abf4abfef4bd8ec2",
+    "programSha256": "a2b32437ffe4910a55be7be3b336f2fc04e7a190a874f3e3406bc7d5736c880d",
+    "key": "4dea91b8b8eca88b1ed3de8a21bf70670db438deb28a75a1eb8252ea26e3d758"
+  },
+  {
+    "subject": "legal-regulatory",
+    "lecture": 7,
+    "candidateId": "5f8ded09edbf51d877fd44c793e3ba9f1f5c5183bc033c40577d8458c3046917",
+    "programSha256": "0479b542cabb0064ff241bb36141625a567dc3aa611e7ddc99398dc932810039",
+    "key": "4970d026d4de26f682b71b28a0ac943d9cd52def3101a17007f6f68e4f772836"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "17a1338930aba84d2bd1fbf2",
+    "programSha256": "f2ea9d0dd608855f70573413a547d1696e4187f1a7502b647867740bf38ccb06",
+    "key": "3fc9ff1e76d6acd7eaf889f3880571da2349164600f524c058cbfb9fc280a089"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "5f76dd212f7baa3739bcc5ed",
+    "programSha256": "61fe99b1ad11f717b6ee18bed65ea3ddb90ca19f402de87431a23cd317c155a0",
+    "key": "3c5b61c718466a1aeb5c42a732d5693ca00fbe782fb4d3811b9b16860b1a94f9"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "2e021135f3b418c0d34ca9e4",
+    "programSha256": "0ebd5a6d5cf8452e88b7d78900507ae91ecb95acbbc8416fbf81f30c4e2adb58",
+    "key": "4530c0fa47d0cd6dd8b9aa8d645a9a44d2a0e06cff97327a5709af46742142d2"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "112f0c62c8b8c0c9404fbab3",
+    "programSha256": "5c6758090857b1e8993cfc0d4de887bdd7f2e613060885cf9d2e9d68a0cb1c8a",
+    "key": "43864cb745cfe13acd5ca9fb7e042ab03d32031da3fae8dd93b6c3f8b3fbf10e"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "b5ad7dd2f662aecddf4558f9",
+    "programSha256": "c1a2feb62756b6b883a6e73437923eff1a8db102f504b7f7e95fe8e2671b2ac4",
+    "key": "891e7bf2c2b24b2c5638d32efd4c06dfd58bcdda35edc81e17a7429290c6d490"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "e7e4fca2e90b88173e0fef53",
+    "programSha256": "ea362887ee2314abf1890f2a267ed53ddcec827aa02c0137e7ac9d9867d9100f",
+    "key": "c2eca31f48a577398b1ee3834f057084723c7d47a2e3a439ff6d39fc4a39454e"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "3053056ac7bf865393e79497",
+    "programSha256": "d59b84c1477f6517d78d7861ec88e58f26e67bec2e7e30fb9737fc56f432b657",
+    "key": "414190e6cfcc3c5b48a4abc91b9d334131dee466ff4a21b8c902b01a0693e79f"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "cb80458cf33bc62a995f42602bf4af68859df55aead0f3c78be4f4074369326d",
+    "programSha256": "d54a7b264b70729eec7657e5450356ac6c6947ebe767e8fb0f6e5078c4c42a3a",
+    "key": "f90cb70e9529168e68ebb91819d4dd1838a5656a562b2567251bb866cd3aef06"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "57fc2e2e34820783732f4ebaf842f59d06e1d5c91e6aac3539f16d87038706ac",
+    "programSha256": "743b780bc20e98b9e4fe5a55c7690c1e5c63d7a95837c4c808979e667e0a08e4",
+    "key": "25c5f5fdc44fb525f5291eeb844314936d0f3f700b1a3e39085a1877d0e11084"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "f4b3363566235b5c3ab8e15ffb04bce407b17c044bf0b44292772500f68789b7",
+    "programSha256": "36dd56c4bea8cce5815a7367f78b070d5ee456ec79209cc40b8ad270d6ecb565",
+    "key": "eaeca45cf91a4c975f7d07757aa6055f707ec11ce3bfee4d3f8cc977ca7d5339"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "6e90120539d830edcc52da8dad0522c77bd9ca130838913257cd86e28df2db5f",
+    "programSha256": "995867bfdd8e91e5ff2c440fb9716cd4d703195bf6480c915f8eacf2b0553a72",
+    "key": "1cef7a58aeec745b5c6e766e4863dfc1792aacaf3c5863cfa96eb57861473526"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "32fec211fbd6256cbd188a5d1ae770fee9c3e94aaaeae48e2cab71e7a3c788d8",
+    "programSha256": "a1eaa5dcb1994d19e4c4fbf08763cc97f50e307cafb79442ac94f416da0d8375",
+    "key": "a94ed8c933e0fd1cacd39390c8cc043cdeb1ff608b844d333267db3568a10698"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "5265116b05899c2d7bf50cc6b4351ad82b18a50ca575d1736b20dd0e446c6867",
+    "programSha256": "34a5ca5dd636665556e91e056b0cb3f629bd640115d9e711b130d7f50046f36c",
+    "key": "b527b6f6333c95e0d1bad486252c790b48125f03ae767946e44e11c9b78b70e7"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 1,
+    "candidateId": "172c94c1469069cc37ea12df86a97713c914290fe1c2b31d58d468ad61876f8e",
+    "programSha256": "bb0432a05dfd1f9345091098f826bdc108d44c9216fc1a7826f5e3659d5ecf6a",
+    "key": "09c9bc857cf95dc5b6e39b57e41914be265e1dde4e6f59b56c71e8a03025116c"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "f67733b2d224a52e09074f3c",
+    "programSha256": "2f567ccdd704e8c5f1ee926fe306190eccbc9fff73f13e686b70fd13be782300",
+    "key": "8fe86a5290affdbe6a40c8514dcd95be49ea7a3ff14a95958b765f97eb1337b5"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "99470d0e2f1e99b758452b9e",
+    "programSha256": "d8da68137228c4ca325598e2623d405ad57af58be67f74ef3ba740d73e017f6f",
+    "key": "e6a5b8baa078ab502f34b4f7de149bd6645f87cad8d2dfaf138faebf9e1db87b"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "3b6fb4f1405eea028f00602d",
+    "programSha256": "73199ac760d3c8f8c254b30b1419052c81da8525ef36b0259edc5cee027f3b16",
+    "key": "a3031b2388436c5dc23b48808339bf393a54b4a62709ed021fe777bd6b50a595"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "144e93342c73b8a5a5adfad1",
+    "programSha256": "2bcdab56592b3b49b15529eeb6fd195bdb86453448eff0a527b9f4b4c37047d1",
+    "key": "9412bf80c43bed878f07eed06d49bb1537ea656156d2d2d7ede755f6a5f8f189"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "a48dccca817cb85713119418",
+    "programSha256": "85795b5f698a0c7686bd7aea7e713c2f5af2f63232b2e0fa546859cc84e9dd0a",
+    "key": "e74a1829e6e2c7dab1db6c06c2218f607cc46c64a65743115f6f96b806fc9115"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "fc9f84c7b0699cca7bf46952",
+    "programSha256": "cfcda628432f13c4e60b7d7e40bb3d93cb8871dfc9a99fb9550d09c4f0364fbb",
+    "key": "9a217b24b79092007cb36180a418e76492029126793146f29dba2336170bc59e"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "73d990da0fb8082eebfe875f",
+    "programSha256": "a3de9344ed7722b2a7106491bcfa602fc3615040cd5ead0ee36b7e1f9cfbcc44",
+    "key": "fca4fc71dbee7e405d8d031aab34996888eb95015398be68341cdac2deffddf2"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "188202d10af48d467be612db",
+    "programSha256": "d0b2a1aee352cb48dfc4d6db9e2b6a87b79601a30b706751e5675edb82a84622",
+    "key": "22d87504bc326e784e26fe54719e3b5d09962f9f257e13433a5596a185bb88b6"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "74df8423638b3769b155a8fe",
+    "programSha256": "c656950bacd64283c4a01fe7a8c17670770ab7323ba522f32f3f1bfb752dc539",
+    "key": "91a0d4e86603fa50a3d1d632c0341013c56db5e832b7fbe1b434c13f01adc876"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "4788c30284ec0448a1264d57",
+    "programSha256": "6d64276440c5e96a2e19823dbbb14e7fb147454511017ed84f88cf85d8f14944",
+    "key": "4078e950eebf7c8d34ac89033c25a8716fcef2f1137b274e9874dd33c893a53a"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "da6d06a4bf94dc2b4c43c70d",
+    "programSha256": "e109ad0da7113199fc9e238ab6cbbdefea91f6b276f8c449689a8506303b95f3",
+    "key": "4b16609bc2ad9d7d9af6d12ae921d44721de198a83af04f1f08d6cf170084726"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "4cccd3519916dddb0a9559265db0633d4d796b221bcb2a955b3fc7658ecb19cb",
+    "programSha256": "85e3d359c47a666c33b0327fdf5ddbac4321c955b77984d3240f481778c66362",
+    "key": "27c23a63f764289a14398e3efc5d656d27019b719779417155cdca771ab29e91"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "899ac05913879734fda489b7ad6c1e6bcd4f9c5d418b9eb140b420f44948e9c2",
+    "programSha256": "4c7ed81c645e70401d0e2fdc4edd440d1887c49b089d50299809c29875ca999c",
+    "key": "af709e71c1b13cdb8500eb0167922c864abda465c8dfb9c5fa3362476e0e3d3b"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "df4d104e8de9a0a8810eb5140f6344bdffe3867220c5c9fc27eebfed0ae14d48",
+    "programSha256": "c174ce191dd913609006523f29041983189264c5c15b4b87276d460a65d92011",
+    "key": "3fa5fdb77d8692d6fb47a3bf8383bebd53913e3e097699347c02054393c9d64e"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "5fa7bbc451d7c75cdb773d401abf710cc904d19845a88970e6d79b042fec9f34",
+    "programSha256": "d4200ea0484a2b6434ffa238dbabb40e9a9c2e25f832a9d6518b2b2fa8b38dd6",
+    "key": "37c54e18a6593bb481d06e55748bc30851c1790bbfc834d710cbc987a910cf70"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "cb0e6e87f80c338f554d547b6a1e51697ac4f308e899ee641783b419ef904c93",
+    "programSha256": "62e12d534960546fed1fbd53dc89f2cd6e6f1b9cfbef7f79e44ad27a9369b22c",
+    "key": "83932e2efc3cbfa9c89759c5285cd8236000154223753b70cd713465ef5dd9c4"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "43ee5c1fe558394425e13d7f77b6f61988c70f79d14f5426bd081a09c5f49b11",
+    "programSha256": "0a17427f52dd2880a7c43bd6dfdd9b43582eb2dde1d384a76f195b79631f1bc8",
+    "key": "8cc7ef79dbf244f8b4c7b573b92d8df37caa3e74aee756c49e5ade9427dd770f"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 2,
+    "candidateId": "af7d110b35a70e1e6744950d389434f8f5e0d868d1bbfde7c9819e6efb305342",
+    "programSha256": "cc84e77d505daea1fea9865e4f57b696a564c184b7fe955a8fed05a4927c759f",
+    "key": "bfd1f21801dc3b21b0eddfe70361840b9aeec0f7ac617228f16cef3b16830774"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 3,
+    "candidateId": "314cc84aa6b4a11d6a05a900",
+    "programSha256": "765b086479a63ad7c978938165f178e055fe9876188df49c3ebdd73ba9c0b07d",
+    "key": "e53c8b13b83341d6bea19e550ae7b7797951ce7565076dbc8a92c8b78b62d77d"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 3,
+    "candidateId": "514afb4ff086ad39e27d1c53",
+    "programSha256": "82070a684549654f232d13e73decf07df376a5e34464757596e77a310d0e6c46",
+    "key": "0744f780235a5b6038c3177157565d5bdff4e32e7cc5415174adc921accdafcd"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 3,
+    "candidateId": "daeb8d71b5071aebf4a94b72",
+    "programSha256": "75d1f39ccf82183cfa086fef83fac6c5db27af85ba19dbbd9e48512ec2506c59",
+    "key": "52836c32d79275909db2cbd99e04144684027cdc8136f88bc48c4f1fe19526d7"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 3,
+    "candidateId": "e2824556a091888404b30117",
+    "programSha256": "d46cbbd7e02c732c4dd9e4fc4710df97e8b8712469db18664dd276f18ba52519",
+    "key": "ce908fef4990caee339f7fc7e70d48c24a025be0ba02ddfc12e095d004f2ec19"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 3,
+    "candidateId": "17c8c28f3b5daec04d6ae9a4",
+    "programSha256": "5dbccd999f3725262d1bba3473dae47266cfef447eb2ac135939fecf76deecdb",
+    "key": "b4a1bf7d65709a817976f7bbf73902059b6918f989fc45771d9f0cdb034e6cbc"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 3,
+    "candidateId": "1d0b3e092280bf0fea77e0a5",
+    "programSha256": "5a92f5adb29b3337a526d0b4a807d8d8da8db6306e2fb0ee29ba8af55eec6a3c",
+    "key": "871bd969f043aa1c44fb205236543dff503cf9d5fa9992cc83c7f1f9d1b6cddb"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 3,
+    "candidateId": "1ceede25610f8e919f4d8a6c",
+    "programSha256": "40ab9e7354b5bafa26af4936579092f502ce9dc4b87217c7afef408c3380bdee",
+    "key": "be863906b82a57e0c3731f686295bc28ae95e83e3695aff9af657ef54e7f95de"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 3,
+    "candidateId": "61f9c55353de549a2cdde751a1c0cfe05160e56079e68209d924eca8e260eb05",
+    "programSha256": "c5ba9c0b266b151274707af54658a7304408bf7dea6142b592e449e55192a5e4",
+    "key": "dc9e6bff88b3d819b08e47d75655ca39423626d704fcff45b3f8a11747d02e34"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 3,
+    "candidateId": "01646c07d528da462c056d414e2191b8071540f1c129bd814c1a7bb73a54d799",
+    "programSha256": "a296975e93994e25798bf54515b34a4209ac17febff31e558f58d7794f9fe391",
+    "key": "5db9953a6f816a16757ee71f2000081c4aee370a08af620f390c8b2408eb7cde"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 3,
+    "candidateId": "2caa6f1e6738afa7e7101cc0c71a23f796b956925bf7edad5183c6a385dd0c20",
+    "programSha256": "86c0ea8dd6426bac1b87c8ec1e7ab650c27f5ce41cf3460d77d9e69cf845f07d",
+    "key": "0d85c44158746c8cb43299d8e5aee92441821e787dcde0d9730985a3f115194c"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 4,
+    "candidateId": "b407c210366856f69a3481a2",
+    "programSha256": "63f43cf8d36171069dc666cff401be5eacb406fa4dc91e411b13d47ad86769ae",
+    "key": "774072e338e516e5d5bf4f466ebec0bb108e2ce627639e25d0eb2c24af3923de"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 4,
+    "candidateId": "f6e587ccf87ebdf24a25647b",
+    "programSha256": "4c876f7f93ea75ff298ceeb6e0dc5c589969541e80f467d767a306eabdf13c26",
+    "key": "8d9ef06b76ac5a78cf71ea242598ad098e1acf083c749f6c1c0f56cf47203290"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 4,
+    "candidateId": "7bf0b51ac9f5521944e98174",
+    "programSha256": "bbb8d4d39d6a65de8e4f0eede216dba0e4c67d0541da6b3d0d4ace8baca0e7c8",
+    "key": "03681ca06c45213b3ea4d50e1bd3122c51995ba72ff822018401a73d5e40cbc8"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 4,
+    "candidateId": "ba4c41741d3e7b29b5935ada",
+    "programSha256": "3859d9455db265f34d2bd48a68686ecb9ffe5f91dede4754611bad4dadc3c1aa",
+    "key": "1191ecdf9f5d32ecdb49859d0edde64878915a3b2b0f3d2732475f71147d8b9e"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 4,
+    "candidateId": "0ba5e65488365de356b12b3c",
+    "programSha256": "defc0d285f103b0610974d7c2278801bceba5ad7d436dc467ff01fb4227e5332",
+    "key": "97420a004c208a9b1d4d013543adc5b52734d8d059efd12b8fa546d5b6d398b7"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 4,
+    "candidateId": "4875b31455937cef352a5ac7",
+    "programSha256": "2b92559603b5c9991315f7ffee775247b71b54df0b6ed78207b85e38965b08aa",
+    "key": "ccd1ba6145f8add5fbdaeee80f27e902ce91f8a9bba60be77c543697885331a4"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 4,
+    "candidateId": "416e55d8c8f886c2c509306d2a1f037f80c7198539130b6bd7293cf09a4af921",
+    "programSha256": "dae523eed4a694f5a9d43735d22a2b19c8d973a38a05b8072edf635e6b300277",
+    "key": "83de972de20e60755985e0cc6feb2467d0b7c1896c5eb08211cfd677b9dfe16e"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 4,
+    "candidateId": "f5dfe938f41bc9287f48ec11a3a2a44a10d3198ecfe2713d0dde63e652e7a9fd",
+    "programSha256": "d45313349b55bfec8805bc35f9b1b4bf2dba3fbb99c736248b45072c38e11029",
+    "key": "8f247db1ca1861d9bb51046f352cce21b56db2d203b57cb773a41f642f34fd0c"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 4,
+    "candidateId": "e2998d684f456d6c6035a0c3431412033779f7243ee378732d10e0c5d6fd9b5b",
+    "programSha256": "d33e74549627ae713f750e57e683b6cf64aef7cf3c2631b93cdb1d15debed50d",
+    "key": "c55dd0cb971a93f5aa4fa809067c361049a7be6a31efdf805321fe435b0a3bb4"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 4,
+    "candidateId": "94d9af9630a3c15d66392b849e34f8203008d21f3757c88d60f14d51e631486a",
+    "programSha256": "629ab63e99bbeb07d8721ec8e09842910e8740408c521d148af0c96a3ffc8bd2",
+    "key": "3fd2bb88175b5c0a1527ca572b4371dfe02e982f177f18c7c3567dd3be315c7a"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 4,
+    "candidateId": "804fa9a4eaa3041fb1cb7169d5f539e561ef01008832c8968a23556a7dbcec56",
+    "programSha256": "e36679e0b5488e07eb1fe2338923020b33c503216562ab282b12f346ede1bb1d",
+    "key": "f706978b85eab7f6bc252dd2df6e6bf564a3d38a7dfb6e4827682c919bca5cdc"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 5,
+    "candidateId": "db8239eb24df495673bf3c20",
+    "programSha256": "c9e7c7cbc7463903d8f26859cc92bdc690fa77c03e0d24437256e15560603d66",
+    "key": "8e0c96f14ad09990ccb287940d0859b50f686f1c3f0117e0c70f4801f73414ea"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 5,
+    "candidateId": "c187003e7e42a007d7ef8dd8",
+    "programSha256": "e968d70db7fcf5c90c386b4b44df3021d5a782d0eaa81c8f205c56b336ad4556",
+    "key": "4ad806dfdfe97412fe916521b8b1e65b9454fd08a95c9ce9bcc53a9311951c53"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 5,
+    "candidateId": "69afe7366b6c0d73ddcd0324",
+    "programSha256": "1d0e3a16e5a8f2187fcd571b0561f2fc07771178d10a8ed0c17a72917e75011e",
+    "key": "6fa6102023b98464f83fe153d1b82260053a8e8f16cbb80269530ddeb3efd45f"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 5,
+    "candidateId": "f96539e6550983b262b0a089",
+    "programSha256": "a85035963575067781acad1716be0e4e5d16a6afbe673b07c616e4d649bf7227",
+    "key": "f4aad1efe1828303ab4e75f1db6b6ea8124043888a190337df38a5b3d7669d75"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 5,
+    "candidateId": "952dbf1f226ab7d44420793c737c1e55d59bad38877b51f0fa9190b64277142f",
+    "programSha256": "ebbc65a75571ec9d381e2966a2091ffe24cc780a7ba0549130bb32da9c617969",
+    "key": "d8b3b2b45d72be8d3d2911f3072a7fa800daf7b4327c83503c470fe2c1f3841b"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 5,
+    "candidateId": "bcda463556b2be73c24d09899abbc27b9dc95825eff7ebe6de03cba6132791a5",
+    "programSha256": "d66faf6f5be94ed15ccebce5a3e49e4aec7d8acbfd6ff213780295b7b49df161",
+    "key": "802c9d754e87ec76d877e238dc80e760aca35f068cf518d00e5e031ee1196c9c"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 5,
+    "candidateId": "896dffd530bf7462bb9593c561b1c8a9e17005b1b058d5f286e83bfbb2eb3371",
+    "programSha256": "e3acef81927761fcb73d4891efb2a5f64caa8ec9c95ace3c517d3d155fd48b4a",
+    "key": "63fcd265ca6f0fe10aded5f2c525f8cba3d33a54604f08d7e151e1454d7a8d23"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 6,
+    "candidateId": "bc96629c1bc3a3b8e4e9bd9b",
+    "programSha256": "aa58c4e71e9546a8725dd027f4c5e0da86b903d760414ac7afef05ee1c152e6e",
+    "key": "bef3854e1b587bd5cf2e83928bae5810ab964f458ce036c830e1f0cbdd9ab74a"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 6,
+    "candidateId": "bc2592b005d91ee697b9f298",
+    "programSha256": "df1d6a374f59ed762617c16413383c59d1bf457d159ec4b05614bb74ff96fa3e",
+    "key": "4b311db908fcffaf0b518cb63de2cc6a9542e3556633c3912d60be65a029600b"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 6,
+    "candidateId": "9cf700664e8b4c442a24592d",
+    "programSha256": "587e577a2e586a94e7dc83a007634f8a62ba538ad715956bb5cde3b226b5315e",
+    "key": "573a1c771440b0d2f6a7afe16e9170b287d944c8b80b698a73df7a8ec6a991a5"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 6,
+    "candidateId": "842b2fd3a49d3236e003ad6b",
+    "programSha256": "9df43d1cd2e82842ab1e30245ef0e4bbd6d0898966607f0189d0edf14409968d",
+    "key": "6f1364ee018549f6c535d6d4462df03cfe640ff7d1be2131212560ea71aeecb1"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 6,
+    "candidateId": "4bc1adbd1c7bc94be89ec109",
+    "programSha256": "8a2e1993a832de0be1fc61bb82fed3e4d29b8de820df68df5254d9fa7ed12afb",
+    "key": "fdcd896b54429a0062a05b81057deb0ceb8d14f1e515fe60f45f0b0f572c7a38"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 6,
+    "candidateId": "84182c643169e929e7868caf",
+    "programSha256": "8b39df651b043417f3d75dde37a3d9882879857f9ae7ef44784ae73fad4fa6ac",
+    "key": "af8f3419a43a5cbf61d0f45dc2039b8c21dc3824306fd273738ef57459a5b8e8"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 6,
+    "candidateId": "781ee6613d3100f2cc4b528f",
+    "programSha256": "2957ebf53d02cbdc74f8035bbc26732e3284b3bc5f8eeba533fa55975830c64d",
+    "key": "6f1d000f573cd9b22dfc7997ccabed53d59203173235f7277d3b02a121b52dbe"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 6,
+    "candidateId": "c0271b47dfdc1ac155b1ee8d",
+    "programSha256": "3d5a6bae7fbc1990e2fb98cd3d5b980dac8ec0fc2199b33f17ec3e5ee74a42a8",
+    "key": "c81c3dfbce5f99db0dc52a21e0b03fb6d0df987adfe8719dad09ef59d539b62a"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 6,
+    "candidateId": "39c8cc72de1771cb7df102f3037c3ca4bfdeef966a69b2f893db542d9065b515",
+    "programSha256": "0506ac8022ee803d02e4b827370ba86a1bd756eee1c06165ab501faf3d922f41",
+    "key": "fcafb763eb739f6b91f2e229cb45f5f93a069592d5f096a612c3b2dcd252428c"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 6,
+    "candidateId": "5cd540a7ea6ba8720a19f27cdf585fafcd5d52eb95b356f7bb7111d73f43d521",
+    "programSha256": "055ba7b35f216a3cf59658215894965eb7f7b3246e3914d380d9be57374c7592",
+    "key": "cd486cbee0753448ab4a6c19123dc4775411229055acd15fe0d6e02b5f2e36e5"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 6,
+    "candidateId": "9f1a44f632ad5e9ec77cdf837c35b42ed9755a12422381f41b996c17af40333b",
+    "programSha256": "5b724991a16f097335f3351cc4a558b81e4986d45c6a523863ce3af74ad9ea1f",
+    "key": "8eb47f8de5a6fa359e1b98341e092e983faded8942eed81e1cb0d2fecb77b941"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 6,
+    "candidateId": "5b0b7a934338ea412c37a241a85ecae88003e049363c241a04502aeb642723dd",
+    "programSha256": "87fd473ea896a6803290fbf9ce0234547f5f2b4c315456e6cf17ef8a2824b456",
+    "key": "cfd1dbefb5a0614635788f8a713d45479484cfe8df297d4f339566e8e136c89c"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 6,
+    "candidateId": "013f235b3569421820514077400d0ab6162c22e862486bea784fed451688e7fe",
+    "programSha256": "2fcba5c7a76dd2e9d5368ce65196394718fd035b8dbec57ef2eb6ad9c1aa2281",
+    "key": "cd5a34b45ca59b5411f757a483abbd0b8a71d6b022db236b9e4dcf9b6738dd5f"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 7,
+    "candidateId": "8878963c17009dec3546310d",
+    "programSha256": "6822b9300b027c26f640c5e19e0870d994742936fe82a2ca6689d25c614cc3c8",
+    "key": "0e2e10db1c9b5aa73f23c9d06b6576b4a43634b7d2540f38d36b3d4c7dcbe03b"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 7,
+    "candidateId": "6b6a0803a4b0721553885d3e",
+    "programSha256": "770bcc221a93d3468466da508a348678b576eb73d14e55e1622f03ef12856f01",
+    "key": "50fbda13085dd5b48d0366d9debe183243ce26fed0d81a517a5c595f8a023b1a"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 7,
+    "candidateId": "13b1e8083784cc02c523b68d",
+    "programSha256": "478de59b2ab9861ea5e908e1aa63b8e9d27257e5e5e526c3fa2175182c0fd698",
+    "key": "b56b2bd972f0914dd2e17121934951455483930976ab4f74378f872f9e97b7a4"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 7,
+    "candidateId": "ec19bfb48c2f7c6c52a1e748",
+    "programSha256": "3ce320c6c8d6936ee5b3453af149d5cf74ca32ee2bab1d86a90081f41872f727",
+    "key": "fc5e25fd062004da8f600f8ee57aca910f627e396235a0e4f1c1f52a86392135"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 7,
+    "candidateId": "b53ec49c4631a190adb9b451",
+    "programSha256": "ff1daa2ca4874514a5ec96c4d2cc3f208f3433f12c6c5d65943cb8834fec20db",
+    "key": "34412a4025db7ae211b4b74030d85f1560d80d639d855a0b36c53567f494e1b1"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 7,
+    "candidateId": "fea6e3fbb201240d7a698826",
+    "programSha256": "5787d00c5a9d029058dafadc448b0b04992ba843352c037f9d79cb45dab62220",
+    "key": "df962ed6b7be481b995ee075409f968f1e67a0f482b0827c0425f2d3b7deef6a"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 7,
+    "candidateId": "5fb916a3ba447f2bbf2ec1d4efb5cb01d2842aa2c88fe158814d1f320a7da523",
+    "programSha256": "482f11590d25e10798610bccc56a7380785000e91ff4860c25f12b30ce30b4a3",
+    "key": "f54661af73c0b58a29d8c84444dc9f5dc767b150f7da3fc929693b5915b99c7d"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 7,
+    "candidateId": "16d50b2da2ae2e0b007ddb9b9c2996b65596c0f6494e28eea15b782ab1e1d56d",
+    "programSha256": "4f2df45207ab6cb0adb5709aa5fe8feae2a25f99d34eed590f1a1ccdc5f785ac",
+    "key": "007672f5330187d9cf78e080f08a33929c0e82abee80d3792a502ce48bb92ccd"
+  },
+  {
+    "subject": "cybersecurity-governance",
+    "lecture": 7,
+    "candidateId": "d5373d5de8a4798b65bf64ed5d35c9f16eb7cc22a300f431712e44d0104fc4c3",
+    "programSha256": "33d387893f7d82e7992440c9b10526215bf60212a300ed244a750a53055750c8",
+    "key": "95d891b31eb75b358f2aa0d37a31e681b299cd822cab4c1579653995c764ea4a"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 1,
+    "candidateId": "07503d3b5d5c960c2f066ac0",
+    "programSha256": "3130548feb441fc71256938527c7c4b83c60e0fcb060a69bc1c8f2757f483c1a",
+    "key": "7e1b71eb02632406c487ad242932bf8faae22595e73f1b22b8ec101638b004f4"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 1,
+    "candidateId": "8c6b99bc9094009063305d6a",
+    "programSha256": "460236373d5f87f2bf3ce9eb9ada51bd331541c0bbd51b621aeb2469c125c173",
+    "key": "dedeb6a7000d3aed0e571c2729a3a90d3d1fbf0e26595e697699b764e05a7172"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 1,
+    "candidateId": "aa96a7f6e8663237ebd5a76f",
+    "programSha256": "384e446971eda032c12ca211ce0096ac9714a53ff9527270ba930c58378a92ce",
+    "key": "b58166028970d3f3a733565a8d2258a6b5a46b39b7ceda1f83a514dadc5fe1de"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 1,
+    "candidateId": "3731941200163edea010d827",
+    "programSha256": "60ee704edef0838f561d8bf9a33dd7dae6d646e29c1cf69063349b2e92aa44a7",
+    "key": "97226228019511e7e2640aa630884e5fc67862ec02dbc73d10423372d092ba31"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 1,
+    "candidateId": "0d3b1e0f08c8eb012089e782",
+    "programSha256": "7deabf3995c24d68681abaebb244e3af61442ac1bec6d2ea542603db80bcff1e",
+    "key": "73ba2a808342fecdc2c923a87fe96eaa4bc9b920fbdbecc1fe522a9d267e54ac"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 1,
+    "candidateId": "2de05688745f9a21a7c0432d",
+    "programSha256": "b866cf799da2b4f2697b9d1b9ecdf3225013bb0bde5aebc4b9e492badaa93500",
+    "key": "42260b5be57bfd5463388076659165acfb3fcd6ba0beb33fdbb9674a32ff2e7d"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 1,
+    "candidateId": "d7a43a8fccda80ebd0d25ed320e8089057d240618aa5797cb32da4bc4f20243f",
+    "programSha256": "7aaed4b7eb129642ea4681c56675c98e798f762aa3ed728aa2b0f0436e563ba7",
+    "key": "a7740248d3c933eb001b33362530733dc7ecb8bd170ab0d6d2672ec00def9f95"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 1,
+    "candidateId": "0de4e4fd95bd000fa8615480391c8d536a2a4c49f878df512d54aee853cc272f",
+    "programSha256": "00135bfc6b3f3b9d9da0458e8d1eceb857590f6dd310e37eab04f8de565f72cd",
+    "key": "d0c247be9089ce61fafe2554b2af761e35869181d654995accbd80434c9850a3"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 1,
+    "candidateId": "cd27f0c101cf485bca4fa93b2f8b7f3da0dd1189a313aa008ee763d8ef2faf7a",
+    "programSha256": "aa07e0aa47d48613332e7a7d0d0362b4609d1ae9f02f88c7f4eb6eae0fb4ec46",
+    "key": "ced5d92343dd7c61e3310228d1b6be395e2cff5a0ca4b5c81a26fdc417bc876b"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 1,
+    "candidateId": "c1079495baa7fc54ae82a76a0192ddd531cbe05b223fe875027f09d6869cbd1f",
+    "programSha256": "4743e19dce8a78cc7450d6fd60fd846603806928db2156d3499492e62dc6782d",
+    "key": "98f2e13315ae695decc2cc06ccf90ab588d12e077199c4d0f13fafcaddf328dd"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 1,
+    "candidateId": "c77dab5616a6bdd8428bf36a45f28a2ec32a18af7b71b341eeb422f093948e3b",
+    "programSha256": "4d8a12cb9f895ad86565412d2ff523f67269609efa38bd6159f5d550e1a4131a",
+    "key": "631846571218f624c1595815ef4bd87f0c761cf39e94c4c752b1875a6a6102cc"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 2,
+    "candidateId": "553b2623fae023fa1b211894",
+    "programSha256": "a9ce2c46013b2b8c4bdf074e21f2f1ceb869851ed78ebd98c4762bf25ba4a292",
+    "key": "6cdd8defccc061cc99abb4c9bebda40c49428de0b69ff85f4308908ee449b800"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 2,
+    "candidateId": "4ae2885b7a16d86af188bd88",
+    "programSha256": "0061c1f4357b93127bb3553680381267d37f2d5d415b05a4521a5e5337339ca7",
+    "key": "f32d0d32162b950b3c1fcaa8c7f03426c748c5508e6645d09507e0e861ab8890"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 2,
+    "candidateId": "d71d6b4bfbf2217b44dca0af",
+    "programSha256": "e90f342cdfe868e765464ffda63ff92e808b5c4484cc5ef644c268ebf3914cf1",
+    "key": "eb1b738fe4f9874f72a18f55efc6922303300d62b2e54f24cccde99df45fbc94"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 2,
+    "candidateId": "21ac6ac277d7418a2196fd87",
+    "programSha256": "0daf861bc4558e636ac7b97c0294173261497af4a3224d2b98e68d40fe6d445b",
+    "key": "7cd8acac0fd06d55b700a2a06cbd4691dfba6df937a27c6404ad8d3f684eaac6"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 2,
+    "candidateId": "14ff58d26d29ca0024147caa",
+    "programSha256": "f5d44316b63ef4ebeeb41aa13cbafe7dbb01377d2d42da9da3b8b7c6969c8c1f",
+    "key": "96c981cbe14d841e99eaf4d2eae1ad0658027ae3599c252a96dfeb7011cdb270"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 2,
+    "candidateId": "6016a8ad655e07422700dfca9bf4b6c7a2431086de809f1f1bd1684dbcc9c747",
+    "programSha256": "105d49b39c583e70199968f4923e9c312953db1f2c60a0a8b0dd65948ae6be40",
+    "key": "82fd57f629baf5b6a9cb58be6c91bf4780137c86de19690d8750fb9c098efaa0"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 2,
+    "candidateId": "79e9c60a59568c7d902d93d3c3b198e963898fdf7dfdd9e23836bfb0304dedd4",
+    "programSha256": "16c774ef86e44bba61d0377b8f3c580eb14e530efef47cfc94c007d8ced16f16",
+    "key": "f577da0cbfb196ab1a1f4b39e0fd3e9e6663e956599e9aeba0fc724cf42f3452"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 2,
+    "candidateId": "70592f4b44eb60fbee0db198fc185e097ccc12c40b308a1d7cd5d0d1d2299d0c",
+    "programSha256": "124a30908b16689eb6348926bc196142176961edd499dae070831bee898bbdcb",
+    "key": "5ac270f3e9dc33c2de94fe4413f7d16ccddc428cbd993a71dddc7b0e6cf67862"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 3,
+    "candidateId": "ffd8d5280984018259417925",
+    "programSha256": "46597d2b423625363ac321d63c6394ba5e00d49315c933855738d90959584289",
+    "key": "743c60efdb1a5cb7836118c1eff145e7f54d5543ae046bcb8b77ab95899bb0ef"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 3,
+    "candidateId": "13fc5188624f3e8acd7d86b0",
+    "programSha256": "a8822891a7f5208f1afca1c10ef282ce398f12326bb662be7185c7523c04e57a",
+    "key": "c2d13390df75a784e7f7f5dd06d2bd0113ccca2e31a06ba0caccf36154afeb5b"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 3,
+    "candidateId": "52d752dbc54f3f8a6b0bcf78",
+    "programSha256": "54b41e62540c86047effacebef525666eb7016bf61b1f04af2c48e594b56e0c4",
+    "key": "299d204e0101411f1d1d0d0bc504025e097d5af06d85f1f5dab13868f8cf3540"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 3,
+    "candidateId": "87d7b4c9e1f71d1376188504",
+    "programSha256": "c50f078d94821274d349db74d92235d6acc51be9d96e2fd1c876969396ce21be",
+    "key": "1897ba02404bb5108ca4f6c04dd02f06c100d74ae05696f9f8605c6365e7e347"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 3,
+    "candidateId": "cc1f62fe0b7c715722e4fa25",
+    "programSha256": "d2b7280afecf3644edefd1730b5c33fd442660b8ea9a2434828e9f8b49c505bb",
+    "key": "f9c44acaba670b898ebc05ea9bff898c2a9a3d73104f4463289036bf98d8dd9e"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 3,
+    "candidateId": "dda10824c91023380613aafc",
+    "programSha256": "e215baa732f4e4ec9fea82e35709167c34a9c01b00015aaa1d587fb279dc4650",
+    "key": "4d6e9ad9a0f2915a3a5d559bb7af1e78bd7a3ab0d0f4af4df33418cace1b0343"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 3,
+    "candidateId": "ae2ccfa3ea18ea7926e1c37290db0b81ed18f22458b63acd422fc8f978027465",
+    "programSha256": "1a24cb2c481c4e38a2f1fde06133d0ff1e4019c86b786622187fa98b5576e5fd",
+    "key": "7e94c5dc864e8d90d52aa43aee888db8faf000dd5afd27a71b0de2390ce7663a"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 3,
+    "candidateId": "a0a8bc0a1c5079b4dc6e08e3be9ccf5dd0a82373eca47ff4a3c0e912eeb960c2",
+    "programSha256": "a5ec745db32462a4fa33057752148ab68e93b196fc483bbadc4e3b7ec48ae72f",
+    "key": "06501401682630adb2459dd35e91d95d0aa4febfe3cb7595a4c3763aa132aa68"
+  },
+  {
+    "subject": "risk-management",
+    "lecture": 3,
+    "candidateId": "a3a97ed288bf17918e8c894ddbebda530970b1a34119549514a0e6fded525c0f",
+    "programSha256": "c8cab405337bc068f51d9ce314655d0a0c4996ea2f180d87c475360477b29f42",
+    "key": "db5696555fa19e3a17bc82bbfc481ad988a84fffa8e6a4f02be0b419cf706e63"
+  }
+]

@@ -7,6 +7,7 @@ import { analyticalQuestionCandidates, prioritizeAnalyticalQuestions } from "./c
 import { exactSourceText, referenceFor, referenceLabel, validSourceReference, type GroundedQuestion, type SourceParagraph, type SourceReference } from "./sourceGrounding.js";
 import { readableSourcePassage } from "./sourceReadability.js";
 import { hasReviewedInnovationSource, reviewedInnovationQuestions, validReviewedInnovationQuestion } from "./reviewedInnovationAssessment.js";
+import { rewordCourseQuestions } from "./reviewedCourseQuestionWording.js";
 
 export const diverseAssessmentPolicy = "source-diverse-assessment-v1" as const;
 type Blueprint = {
@@ -178,11 +179,11 @@ export function legacyQuestionCandidates(paragraphs: SourceParagraph[]): Grounde
 
 export function diverseQuestionCandidates(paragraphs: SourceParagraph[]): GroundedQuestion[] {
   const reviewed = reviewedInnovationQuestions(paragraphs);
-  if (!hasReviewedInnovationSource(paragraphs)) return legacyQuestionCandidates(paragraphs);
+  if (!hasReviewedInnovationSource(paragraphs)) return rewordCourseQuestions(legacyQuestionCandidates(paragraphs), paragraphs);
   const hashes = new Set(reviewed.flatMap(question => question.references.map(reference => reference.sha256)));
   // Keep archived programs replayable below; only current generation replaces
   // the old Innovation bank. Other selected source files retain their programs.
-  return [...reviewed, ...legacyQuestionCandidates(paragraphs).filter(question => !question.references.some(reference => hashes.has(reference.sha256)))];
+  return [...reviewed, ...rewordCourseQuestions(legacyQuestionCandidates(paragraphs).filter(question => !question.references.some(reference => hashes.has(reference.sha256))), paragraphs)];
 }
 
 /** Exact replay covers every prompt, pair, position, model answer and key.
@@ -190,7 +191,16 @@ export function diverseQuestionCandidates(paragraphs: SourceParagraph[]): Ground
 export function validDiverseQuestion(question: GroundedQuestion, paragraphs: SourceParagraph[]): boolean {
   if (!question.references.every(reference => validSourceReference(reference, paragraphs))) return false;
   if (question.classification?.policy === "reviewed-innovation-curriculum-v1") return validReviewedInnovationQuestion(question, paragraphs);
-  return [...analyticalQuestionCandidates(paragraphs), ...legacyQuestionCandidates(paragraphs)].some(approved => approved.candidateId === question.candidateId && canonical(approved) === canonical(question));
+  const legacy = legacyQuestionCandidates(paragraphs);
+  const same = (approved: GroundedQuestion) => approved.candidateId === question.candidateId && canonical(approved) === canonical(question);
+  // Old snapshots own their original proof; they must not require additional
+  // paragraphs introduced only by a later manual-model clarification.
+  if ([...analyticalQuestionCandidates(paragraphs), ...legacy].some(same)) return true;
+  return legacy.some(original => {
+    if (original.type !== question.type || original.kind !== question.kind || original.difficulty !== question.difficulty) return false;
+    try { return rewordCourseQuestions([original], paragraphs).some(same); }
+    catch { return false; } // Incomplete current-edition proof cannot grade.
+  });
 }
 
 export async function prioritizeDiverseQuestions(candidates: GroundedQuestion[], paragraphs: SourceParagraph[]): Promise<GroundedQuestion[]> {

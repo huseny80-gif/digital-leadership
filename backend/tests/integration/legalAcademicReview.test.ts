@@ -26,7 +26,7 @@ describe("legal archive study repair using actual course PDFs", () => {
   it("uses the same reviewed text for new generation, old bookmarks, narration and export without rewriting historical records", async () => {
     const s = await seed(), group = await s.service.generate(s.subjectId, s.lectures, randomUUID(), s.admin);
     expect(group.summary.grounding?.summaryPolicy).toBe("visually-verified-legal-excerpts-v1");
-    expect(group.summary.sections.reduce((count, section) => count + section.topics!.length, 0)).toBe(64);
+    expect(group.summary.sections.reduce((count, section) => count + section.topics!.length, 0)).toBe(77);
     const noisy = structuredClone(group.summary);
     delete noisy.grounding!.summaryPolicy;
     noisy.sections.forEach(section => { section.text = "هذا نص قديم.\nI\n6800568008: تم المسح الضوئي ب CamScanner\n| -"; section.topics = [{ title: "العرض الأكاديمي للمحاضرة", text: section.text }]; });

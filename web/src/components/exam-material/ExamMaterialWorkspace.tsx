@@ -8,7 +8,6 @@ import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import { ExamInstructorGuide } from "./ExamInstructorGuide";
 import { ExamMaterialQuiz } from "./ExamMaterialQuiz";
 import { ExamGroupTitle } from "./ExamGroupTitle";
-import { ExamAcademicSummary } from "./ExamAcademicSummary";
 import { ExamMaterialHistory } from "./ExamMaterialHistory";
 import { ExamMindMap } from "./ExamMindMap";
 import { ExamRevisionPackage } from "./ExamRevisionPackage";
@@ -16,7 +15,7 @@ import { generateExamReviewArtifacts } from "@digital-leadership/shared";
 import { examHref, examRequest, type ExamMaterialTab } from "./request";
 import styles from "./examMaterial.module.css";
 
-const contentTabs: Array<{ id: ExamMaterialTab; label: string; icon: string }> = [{ id: "summary", label: "الملخص الشامل", icon: "document" }, { id: "map", label: "خريطة المفاهيم", icon: "network" }, { id: "quiz", label: "الاختبار التفاعلي المتقدم", icon: "quiz" }, { id: "package", label: "حزمة المراجعة", icon: "download" }];
+const contentTabs: Array<{ id: ExamMaterialTab; label: string; icon: string }> = [{ id: "quiz", label: "الاختبار التفاعلي المتقدم", icon: "quiz" }, { id: "map", label: "خريطة المفاهيم", icon: "network" }, { id: "package", label: "حزمة المراجعة", icon: "download" }];
 
 function selectionKey(group: ExamMaterialGroup) {
   return JSON.stringify([group.subjectId, [...new Set(group.lectures.map(lecture => lecture.id))].sort()]);
@@ -61,7 +60,7 @@ export function ExamMaterialWorkspace({ initialIndex, initialDetail }: { initial
   const generatingRef = useRef(false);
   const cache = useRef(new Map(initialDetail ? [[initialDetail.id, initialDetail]] : []));
   const groupId = query.get("group") ?? initialDetail?.id ?? groups[0]?.id ?? null;
-  const tab: ExamMaterialTab = contentTabs.find(item => item.id === query.get("tab"))?.id ?? "summary";
+  const tab: ExamMaterialTab = contentTabs.find(item => item.id === query.get("tab"))?.id ?? "quiz";
   const selectedDetail = detail?.id === groupId ? detail : null;
   const currentRevision = selectedDetail ? groups.find(group => selectionKey(group) === selectionKey(selectedDetail)) ?? selectedDetail.currentRevision ?? selectedDetail : null;
   const activeGroupId = currentRevision?.id ?? groupId;
@@ -88,7 +87,7 @@ export function ExamMaterialWorkspace({ initialIndex, initialDetail }: { initial
     return () => controller.abort();
   }, [groupId, subjectId, retry]);
 
-  function chooseGroup(id: string) { setMessage(null); window.history.pushState(null, "", examHref(subjectId, id, "summary")); }
+  function chooseGroup(id: string) { setMessage(null); window.history.pushState(null, "", examHref(subjectId, id, "quiz")); }
   function chooseTab(next: ExamMaterialTab) { if (groupId) window.history.pushState(null, "", examHref(subjectId, groupId, next, query.get("attempt") ?? undefined)); }
   function changeSelection(ids: string[]) { if (generatingRef.current) return; setSelection(ids); request.current = null; setGenerationError(null); setMessage(null); }
   async function refreshIndex() {
@@ -112,7 +111,7 @@ export function ExamMaterialWorkspace({ initialIndex, initialDetail }: { initial
       cache.current.set(group.id, group); setDetail(group);
       setGroups(previous => mergeGroups(previous, [group.currentRevision ?? group]));
       setTotal(previous => previous + (group.revisionCount === 1 ? 1 : 0));
-      window.history.pushState(null, "", examHref(subjectId, group.id, "summary"));
+      window.history.pushState(null, "", examHref(subjectId, group.id, "quiz"));
       request.current = null;
       setMessage("تم توليد المحتوى الامتحاني وحفظ المجموعة بنجاح. تظهر أحدث مراجعة للمحاضرات، وتُحفظ المراجعات السابقة في الأرشيف.");
       await refreshIndex();
@@ -134,7 +133,7 @@ export function ExamMaterialWorkspace({ initialIndex, initialDetail }: { initial
   }
 
   return <div className={styles.workspace}>
-    <div className={styles.banner}><span className={styles.largeIcon}><PlatformIcon name="clipboard" /></span><div><h2>مراجعتك الامتحانية في مكان واحد</h2><p>ملخص أكاديمي، وخريطة مفاهيم، واختبار بوضعَي التعلم والتحدي، مع حزمة PDF وأرشيف محفوظ.</p></div><Link href={`/subjects/${subjectId}`} className={styles.back}>العودة إلى المحاضرات <PlatformIcon name="arrow" /></Link></div>
+    <div className={styles.banner}><span className={styles.largeIcon}><PlatformIcon name="clipboard" /></span><div><h2>مراجعتك الامتحانية في مكان واحد</h2><p>اختبار بوضعَي التعلم والتحدي، وخريطة مفاهيم، مع حزمة PDF وأرشيف محفوظ.</p></div><Link href={`/subjects/${subjectId}`} className={styles.back}>العودة إلى المحاضرات <PlatformIcon name="arrow" /></Link></div>
     {initialIndex.canGenerate ? <section className={styles.admin} aria-labelledby="exam-admin-heading">
       <div className={styles.sectionHead}><div><span className={styles.eyebrow}>إعداد المحتوى — المدير</span><h2 id="exam-admin-heading">اختيار المحاضرات</h2></div><span className={styles.badge}>{selection.length} محاضرة محددة</span></div>
       <p className={styles.muted}>حدد المحاضرات المطلوبة ثم ولّد المحتوى. تظهر كل مجموعة محاضرات مرة واحدة بأحدث مراجعة، وتُحفظ مراجعاتها السابقة في الأرشيف.</p>
@@ -159,8 +158,8 @@ export function ExamMaterialWorkspace({ initialIndex, initialDetail }: { initial
             {initialIndex.canGenerate ? <div className={styles.refreshReview}><button className={styles.quiet} disabled={generating || selectedDetail.lectures.some(lecture => !initialIndex.lectures.some(current => current.id === lecture.id))} onClick={() => void generate(selectedDetail.lectures.map(lecture => lecture.id))}><PlatformIcon name="document" />{generating ? "جارٍ إعداد المراجعة…" : "إنشاء مراجعة محدّثة"}</button><span>تُحفظ المراجعة الحالية في الأرشيف.</span></div> : null}</div>
           {initialIndex.canGenerate ? <ExamInstructorGuide key={`instructor-${selectedDetail.id}`} subjectId={subjectId} groupId={selectedDetail.id} /> : null}
           <div className={styles.innerTabs} role="tablist" aria-label="محتوى المجموعة">{contentTabs.map(item => <button key={item.id} id={`exam-${item.id}-tab`} role="tab" aria-selected={tab === item.id} aria-controls={`exam-${item.id}-panel`} tabIndex={tab === item.id ? 0 : -1} onClick={() => chooseTab(item.id)} onKeyDown={event => tabKeys(event, contentTabs.map(tab => tab.id), item.id, id => chooseTab(id as ExamMaterialTab))}><PlatformIcon name={item.icon} />{item.label}</button>)}</div>
-          {tab === "summary" ? <ExamAcademicSummary key={selectedDetail.id} summary={selectedDetail.summary} subjectId={subjectId} /> : tab === "map" ? <ExamMindMap key={selectedDetail.id} map={review!.mindMap} /> : tab === "package" ? <ExamRevisionPackage key={selectedDetail.id} group={selectedDetail} /> : <div id="exam-quiz-panel" role="tabpanel" aria-labelledby="exam-quiz-tab"><ExamMaterialQuiz key={selectedDetail.id} group={selectedDetail} /></div>}
-        </> : <div className={styles.empty}><PlatformIcon name="book" /><h2>لا توجد مجموعة امتحانية بعد</h2><p>{initialIndex.canGenerate ? "اختر المحاضرات أعلاه لبدء إعداد أول مجموعة." : "ستتوفر الملخصات والاختبارات هنا فور نشر مجموعة امتحانية."}</p></div>}
+          {tab === "map" ? <ExamMindMap key={selectedDetail.id} map={review!.mindMap} subjectId={subjectId} /> : tab === "package" ? <ExamRevisionPackage key={selectedDetail.id} group={selectedDetail} /> : <div id="exam-quiz-panel" role="tabpanel" aria-labelledby="exam-quiz-tab"><ExamMaterialQuiz key={selectedDetail.id} group={selectedDetail} /></div>}
+        </> : <div className={styles.empty}><PlatformIcon name="book" /><h2>لا توجد مجموعة امتحانية بعد</h2><p>{initialIndex.canGenerate ? "اختر المحاضرات أعلاه لبدء إعداد أول مجموعة." : "ستتوفر الاختبارات هنا فور نشر مجموعة امتحانية."}</p></div>}
       </section>
     </div>
   </div>;

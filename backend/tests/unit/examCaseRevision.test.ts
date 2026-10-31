@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Pool } from "pg";
 import { refreshDiverseAssessments } from "../../src/examMaterials/refreshDiverseAssessments.js";
+import { assessmentRevisionForSubject } from "../../src/examMaterials/reviewedInnovationAssessment.js";
 import { diverseAssessmentPolicy } from "../../src/examMaterials/diverseAssessment.js";
 import { finquizRecordId } from "../../src/finquiz/recordIdentity.js";
 
@@ -8,7 +9,7 @@ const { generate } = vi.hoisted(() => ({ generate: vi.fn() }));
 vi.mock("../../src/examMaterials/examMaterialService.js", () => ({ ExamMaterialService: class { generate = generate; } }));
 const subject = "bc861a76-620d-4646-81ca-c49d24665b75";
 const revision = "reviewed-comparison-cases";
-const requestId = (ids: string[]) => finquizRecordId(`${diverseAssessmentPolicy}:selection:${subject}:${[...new Set(ids)].sort().join(":")}:source-revision:${revision}`);
+const requestId = (ids: string[]) => finquizRecordId(`${diverseAssessmentPolicy}:selection:${subject}:${[...new Set(ids)].sort().join(":")}:source-revision:${assessmentRevisionForSubject(subject, revision)}`);
 const selection = (extra = {}) => ({ id: "saved", subject_id: subject, lecture_ids: ["lecture-2", "lecture-1"], created_by: "admin", request_id: "earlier-request",
   summary: { grounding: { questionPolicy: diverseAssessmentPolicy, sourceScope: "catalog-primary" } }, ...extra });
 function database(rows: ReturnType<typeof selection>[], alreadyExists = false) {

@@ -9,11 +9,11 @@ export async function apiPostDownload(path: string, body: unknown): Promise<Resp
   return requestDownload(path, "POST", body);
 }
 
-export async function apiGetDownload(path: string, options?: { range?: string }): Promise<Response> {
-  return requestDownload(path, "GET", undefined, options?.range);
+export async function apiGetDownload(path: string, options?: { range?: string; timeoutMs?: number }): Promise<Response> {
+  return requestDownload(path, "GET", undefined, options?.range, options?.timeoutMs);
 }
 
-async function requestDownload(path: string, method: "GET" | "POST", body?: unknown, range?: string): Promise<Response> {
+async function requestDownload(path: string, method: "GET" | "POST", body?: unknown, range?: string, timeoutMs = 60_000): Promise<Response> {
   const token = await getCurrentAccessToken();
   const headers: Record<string, string> = method === "POST" ? { "content-type": "application/json" } : {};
   if (range) headers.range = range;
@@ -22,11 +22,13 @@ async function requestDownload(path: string, method: "GET" | "POST", body?: unkn
     const cookie = await readGuestSessionCookieValue();
     if (cookie) headers.cookie = `${GUEST_SESSION_COOKIE}=${cookie}`;
   }
-  const response = await fetch(`${getApiBaseUrl()}${path}`, { method, headers, ...(method === "POST" ? { body: JSON.stringify(body) } : {}), cache: "no-store", signal: AbortSignal.timeout(60_000) });
+  const response = await fetch(`${getApiBaseUrl()}${path}`, { method, headers, ...(method === "POST" ? { body: JSON.stringify(body) } : {}), cache: "no-store", signal: AbortSignal.timeout(timeoutMs) });
   if (!response.ok) {
     let error;
     try { error = await response.json(); } catch { error = { error: { code: "export_failed", message: "تعذر تصدير التقرير. حاول مرة أخرى." } }; }
-    throw new ApiError(error, response.status);
+    // Retain only public byte-range metadata, never upstream credentials or
+    // arbitrary response headers, for a binary proxy's 416 response.
+    throw new ApiError(error, response.status, response.headers.get("content-range"));
   }
   return response;
 }

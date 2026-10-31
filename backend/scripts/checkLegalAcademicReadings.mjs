@@ -17,7 +17,7 @@ const summary = await reviewedLegalSummary({ introduction: "", sections: legal.l
 const chapters = academicAudioChapters(summary), directory = await mkdtemp(join(tmpdir(), "legal-academic-audio-"));
 try {
   console.log(JSON.stringify(await probeLegalAcademicReadings()));
-  if (chapters.length !== 6) throw new Error("Incomplete legal narration");
+  if (chapters.length !== legal.lectures.length) throw new Error("Incomplete legal narration");
   for (let index = 0; index < chapters.length; index++) {
     const chapter = chapters[index], segment = chapter.segments.find(segment => segment.kind === "body");
     if (!segment || /CamScanner|6800568008|المسح الضوئي\s+ب|صفحات ملف PDF/u.test(segment.text)) throw new Error("Invalid legal narration text");

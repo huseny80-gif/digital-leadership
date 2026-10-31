@@ -5,6 +5,7 @@ on:
       - "exam-module.html"
       - "summaries.html"
       - "assets/audio/**"
+      - "assets/study-module-loader.js"
       - "exam-section/**"
       - "scripts/*exam*audio*"
       - "scripts/*lecture*audio*"
@@ -12,6 +13,7 @@ on:
       - "web/public/exam-module.html"
       - "web/public/summaries.html"
       - "web/public/assets/audio/**"
+      - "web/public/assets/study-module-loader.js"
       - "web/public/exam-section/**"
       - ".github/workflows/exam-audio-assets.yml"
   pull_request:
@@ -19,6 +21,7 @@ on:
       - "exam-module.html"
       - "summaries.html"
       - "assets/audio/**"
+      - "assets/study-module-loader.js"
       - "exam-section/**"
       - "scripts/*exam*audio*"
       - "scripts/*lecture*audio*"
@@ -26,6 +29,7 @@ on:
       - "web/public/exam-module.html"
       - "web/public/summaries.html"
       - "web/public/assets/audio/**"
+      - "web/public/assets/study-module-loader.js"
       - "web/public/exam-section/**"
       - ".github/workflows/exam-audio-assets.yml"
   workflow_dispatch:

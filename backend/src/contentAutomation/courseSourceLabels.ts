@@ -44,10 +44,14 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
   if (slug === "ai-data") for (const number of [3, 4]) {
     if (!source.lectures.some(lecture => lecture.number === number)) source.lectures.push({ id: `ai-reviewed-${number}`, number, title: titleOf(number), legacyTitles: [`مقرر الذكاء الاصطناعي${number}`, `Lecture ${number}`] });
   }
+  // A generic upload number alone is not evidence of an additional risk
+  // lecture. Extend this set only by registering an actual curriculum source.
+  const sourceNumbers = new Set(source.lectures.map(lecture => lecture.number));
+  const supportedNumber = (number: number | null) => number !== null && (slug !== "risk-management" || sourceNumbers.has(number)) ? number : null;
   const aliases = new Map(source.lectures.filter(lecture => lecture.id !== "cs-iso-roadmap" && lecture.id !== "ip-l2").flatMap(lecture => [lecture.title, ...(lecture.legacyTitles ?? [])].map(title => [normalizeText(title), lecture.number] as const)));
   const legacyNumber = (value: string) => {
     const text = normalizeText(cleanArabicDisplayLabel(value)).replace(/\.(?:pdf|pptx)$/i, "").trim();
-    const expression = slug === "ai-data" ? /^(?:ai|lecture|مقرر\s*الذكاء الاصطناعي|الذكاء الاصطناعي)[\s_-]*([1-9]|10)$/ : slug === "risk-management" ? /^(?:risk(?:\s*management)?)[\s_-]*([1-3])$/ : slug === "legal-regulatory" ? /^legal[\s_-]*([1-6])$/ : slug === "innovation-project-management" ? /^(?:innovation|project(?:\s*management)?)[\s_-]*([1-9]|10)$/ : /^(?:cyber\s*secur(?:i|e)ty|مقرر\s*(?:حوكمة\s*)?الامن السيبراني|(?:حوكمة\s*)?الامن السيبراني)[\s_-]*([1-9]|10)$/;
+    const expression = slug === "ai-data" ? /^(?:ai|lecture|مقرر\s*الذكاء الاصطناعي|الذكاء الاصطناعي)[\s_-]*([1-9]|10)$/ : slug === "risk-management" ? /^(?:risk(?:\s*management)?)[\s_-]*([1-6])$/ : slug === "legal-regulatory" ? /^legal[\s_-]*([1-8])$/ : slug === "innovation-project-management" ? /^(?:innovation|project(?:\s*management)?)[\s_-]*([1-9]|10)$/ : /^(?:cyber\s*secur(?:i|e)ty|مقرر\s*(?:حوكمة\s*)?الامن السيبراني|(?:حوكمة\s*)?الامن السيبراني)[\s_-]*([1-9]|10)$/;
     const match = expression.exec(text);
     return match ? Number(match[1]) : null;
   };
@@ -59,7 +63,7 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
     const generic = /^(?:lecture|المحاضرة|محاضرة)[\s_-]*(?:رقم\s*)?([1-9]|10)$/u.exec(text);
     const bareOrdinal = /^(?:المحاضرة|محاضرة)[\s_-]+/u.test(text)
       ? ordinals.map(normalizeText).indexOf(text.replace(/^(?:المحاضرة|محاضرة)[\s_-]+/u, "")) + 1 : 0;
-    return legacyNumber(text) ?? aliases.get(text) ?? (ordinal || bareOrdinal || (generic ? Number(generic[1]) : null));
+    return supportedNumber(legacyNumber(text) ?? aliases.get(text) ?? (ordinal || bareOrdinal || (generic ? Number(generic[1]) : null)));
   };
   const label = (value: string) => {
     value = cleanArabicDisplayLabel(value);
@@ -72,12 +76,12 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
     if (number) return titleOf(number) + extension;
     const pattern = slug === "ai-data"
       ? /(?<![\p{L}\p{N}])(?:Ai|Lecture|مقرر\s*الذكاء الاصطناعي)[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
-      : slug === "risk-management" ? /(?<![\p{L}\p{N}])Risk(?:\s*Management)?[\s_-]*([1-3])(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
-      : slug === "legal-regulatory" ? /(?<![\p{L}\p{N}])Legal[\s_-]*([1-6١-٦۱-۶])(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
+      : slug === "risk-management" ? /(?<![\p{L}\p{N}])Risk(?:\s*Management)?[\s_-]*([1-6])(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
+      : slug === "legal-regulatory" ? /(?<![\p{L}\p{N}])Legal[\s_-]*([1-8١-٨۱-۸])(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
       : slug === "innovation-project-management" ? /(?<![\p{L}\p{N}])(?:Innovation|Project(?:\s*Management)?)[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu
       : /(?<![\p{L}\p{N}])Cyber\s*secur(?:i|e)ty[\s_-]*([1-9]|10)(?![\p{L}\p{N}])/giu;
     let result = value.replace(pattern, (_, digit: string) => titleOf(Number(normalizeText(digit))));
-    if (slug !== "ai-data") result = result.replace(/(?<![\p{L}\p{N}])Lecture[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu, (_, digit: string) => titleOf(Number(digit)));
+    if (slug !== "ai-data") result = result.replace(/(?<![\p{L}\p{N}])Lecture[\s_-]*([1-9]|10)(?![\p{L}\p{N}]|\s*[-–]\s*\d)/giu, (match, digit: string) => supportedNumber(Number(digit)) ? titleOf(Number(digit)) : match);
     if (slug === "risk-management") for (const lecture of source.lectures) {
       for (const alias of [lecture.title, ...(lecture.legacyTitles ?? [])]) if (!legacyNumber(alias)) result = result.replaceAll(alias, titleOf(lecture.number));
     }

@@ -1,0 +1,14 @@
+{
+  "name": "platform-walkthrough",
+  "private": true,
+  "type": "module",
+  "description": "Captures a narrated screenshot tour of the platform (smooth cursor, Full HD) and renders it as a video deck.",
+  "scripts": {
+    "capture": "node capture.mjs",
+    "compose": "node compose.mjs",
+    "all": "node capture.mjs && node compose.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  }
+}

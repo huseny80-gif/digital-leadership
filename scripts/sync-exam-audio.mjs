@@ -14,7 +14,7 @@ const PROVIDER_VOICES = {
 };
 const AUDIO_RELATIVE = "exam-section/audio/digital-leadership-summary.mp3";
 const TRANSCRIPT_RELATIVE = "exam-section/audio/digital-leadership-summary.txt";
-const FILES = [EXAM, SUMMARIES, AUDIO_RELATIVE, TRANSCRIPT_RELATIVE];
+const FILES = [EXAM, SUMMARIES, "assets/study-module-loader.js", AUDIO_RELATIVE, TRANSCRIPT_RELATIVE];
 const RECORDING_METADATA = ["transcript", "transcriptSha256", "sha256", "bytes", "durationSeconds", "provider", "voiceId", "generatedAt", "sourceSummarySha256"];
 
 function dialectForVoice(voice) {

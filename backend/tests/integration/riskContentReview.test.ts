@@ -16,7 +16,9 @@ import { signGuestSessionCookieValue } from "../../src/trainingAccess/guestSessi
 import { createUser, createLecture, createFile, createLectureItem, createQuestionBankWithAnswer, addQuestionToQuiz } from "../helpers/seedFixtures.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const source = manifest.subjects.find(subject => subject.id === "risk-management")!;
+const fullCourse = manifest.subjects.find(subject => subject.id === "risk-management")!;
+// Lectures 4 and 5 were added after the pinned source review of the first three.
+const source = { ...fullCourse, lectures: fullCourse.lectures.slice(0, 3) };
 const subjectId = subjectMapping[source.id]!;
 beforeEach(async () => {
   if (!new URL(process.env.DATABASE_URL!).pathname.endsWith("_test")) throw new Error("Requires an isolated test database");

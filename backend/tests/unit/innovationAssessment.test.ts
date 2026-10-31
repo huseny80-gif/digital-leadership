@@ -90,9 +90,9 @@ describe("approved comprehensive Innovation bank bound to the five original PDF 
     expect(JSON.stringify(buildAcademicExam(input,false))).not.toMatch(/"(?:answerKey|modelAnswer|correctIndex|isCorrect|sourceProgram|matchingRightIds|excerpt)"/u);
   },30000);
 
-  it("changes the refresh revision only for Innovation", () => {
+  it("preserves Innovation's own revision independently from the other courses' wording revisions", () => {
     expect(assessmentRevisionForSubject(subjectId,"base")).toMatch(/^base:[a-f0-9]{16}$/u);
-    expect(assessmentRevisionForSubject(subjectMapping["cybersecurity-governance"]!,"base")).toBe("base");
+    expect(assessmentRevisionForSubject(subjectMapping["cybersecurity-governance"]!,"base")).toMatch(/^base:wording:[a-f0-9]{16}$/u);
     expect(assessmentRevisionForSubject(subjectId)).toBeUndefined();
   });
 
@@ -109,5 +109,5 @@ describe("approved comprehensive Innovation bank bound to the five original PDF 
       expect(createHash("sha256").update(canonical(question)).digest("hex")).toBe(entry.programSha256);
       expect(validGroundedQuestion(question,file.paragraphs)).toBe(true);
     }
-  });
+  },30000);
 });

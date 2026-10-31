@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { referenceFor, type GroundedQuestion, type SourceParagraph, type SourceReference } from "./sourceGrounding.js";
+import { courseQuestionWordingRevision } from "./reviewedCourseQuestionWording.js";
 
 /** Editorially reviewed questions, not an LLM completion. Approval covers the
  * entire program (wording, options, key, level, model and evidence) together. */
@@ -8,8 +9,12 @@ export const innovationAssessmentPolicy = "reviewed-innovation-curriculum-v1";
 const bytes = readFileSync(new URL("../../content/finquiz/innovationAssessments.json", import.meta.url));
 export const innovationAssessmentRevision = createHash("sha256").update(bytes).digest("hex").slice(0, 16);
 export const innovationAssessmentSubjectId = "7eb2b714-570f-4ed0-a00e-10efec7a20e5";
-export const assessmentRevisionForSubject = (subjectId: string, revision?: string): string | undefined => revision && subjectId === innovationAssessmentSubjectId
-  ? `${revision}:${innovationAssessmentRevision}` : revision;
+export const assessmentRevisionForSubject = (subjectId: string, revision?: string): string | undefined => {
+  if (!revision) return revision;
+  if (subjectId === innovationAssessmentSubjectId) return `${revision}:${innovationAssessmentRevision}`;
+  const wording = courseQuestionWordingRevision(subjectId);
+  return wording ? `${revision}:wording:${wording}` : revision;
+};
 type IndexedQuestion = Omit<GroundedQuestion, "candidateId" | "references" | "assessment"> & {
   references: number[];
   assessment?: Omit<NonNullable<GroundedQuestion["assessment"]>, "caseReferences" | "options"> & {

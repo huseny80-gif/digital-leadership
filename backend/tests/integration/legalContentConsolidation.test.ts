@@ -70,9 +70,9 @@ describe("canonical Arabic legal course content", () => {
     await normalizeLegalContent(pool);
     const result = await consolidateLegalContent(pool);
     expect(result.changed).toMatchObject({ lecturesArchived: 5, duplicateItemsArchived: 1, itemsRelinked: 1, questionsRelinked: 3, quizzesRelinked: 1, assignmentsRelinked: 1, importsRelinked: 1, completionsCarried: 2 });
-    expect(result).toMatchObject({ availableNumbers: [1, 2, 3, 4, 5, 6], duplicateNumbers: [], skippedNumbers: [], remainingLegacyLabels: 0 });
+    expect(result).toMatchObject({ availableNumbers: [1, 2, 3, 4, 5, 6, 7, 8], duplicateNumbers: [], skippedNumbers: [], remainingLegacyLabels: 0 });
     const content = new PgContentRepository(pool);
-    expect((await content.listLecturesForSubject(LEGAL_SUBJECT_ID, false, page)).items.map(lecture => lecture.title)).toEqual([1, 2, 3, 4, 5, 6].map(legalLectureTitle));
+    expect((await content.listLecturesForSubject(LEGAL_SUBJECT_ID, false, page)).items.map(lecture => lecture.title)).toEqual([1, 2, 3, 4, 5, 6, 7, 8].map(legalLectureTitle));
     expect(await content.getLectureById(previous, true)).toBeNull();
     expect((await content.listItemsForLecture(master, false, page)).items.map(item => item.id).sort()).toEqual([canonicalItem, summary].sort());
     expect((await pool.query("select lecture_id from assignments where id=$1", [assignment])).rows[0]!.lecture_id).toBe(master);
@@ -101,8 +101,8 @@ describe("canonical Arabic legal course content", () => {
     expect((await pool.query("select storage_key,checksum from files where id=$1", [files[1]])).rows[0]).toEqual({ storage_key: "source/Legal1.pdf", checksum: "a".repeat(64) });
     const library = await new LibraryService(new ContentService(content)).get(LEGAL_SUBJECT_ID, false);
     const currentSummaries = library.entries.filter(entry => entry.section === "summaries");
-    expect(currentSummaries).toHaveLength(6);
-    expect(new Set(currentSummaries.map(entry => entry.lectureId)).size).toBe(6);
+    expect(currentSummaries).toHaveLength(8);
+    expect(new Set(currentSummaries.map(entry => entry.lectureId)).size).toBe(8);
     expect(currentSummaries.every(entry => entry.files.some(file => file.id.startsWith("source-study-") && file.bodyHtml))).toBe(true);
     expect(library.entries.find(entry => entry.id === "lg-s2")!.lectureId).toBe(masters.get(4));
     expect((await synchronizeFinquizCore(pool)).inserted).toEqual({ lectures: 0, assignments: 0, quizzes: 0, questions: 0 });
@@ -133,7 +133,7 @@ describe("canonical Arabic legal course content", () => {
     await pool.query("update questions set lecture_id=$2 where id=$1", [questionId, old.get(1)]);
     await normalizeLegalContent(pool);
     await expect(consolidateLegalContent(pool)).rejects.toThrow("legal_consolidation_foreign_content_link");
-    expect((await pool.query("select count(*)::int n from lectures where subject_id=$1 and deleted_at is null", [LEGAL_SUBJECT_ID])).rows[0]!.n).toBe(11);
+    expect((await pool.query("select count(*)::int n from lectures where subject_id=$1 and deleted_at is null", [LEGAL_SUBJECT_ID])).rows[0]!.n).toBe(13);
     expect((await pool.query("select lecture_id from questions where id=$1", [questionId])).rows[0]!.lecture_id).toBe(old.get(1));
   });
 
@@ -165,7 +165,7 @@ describe("canonical Arabic legal course content", () => {
     await expect(assessments.getQuizOrThrow(quiz, false)).rejects.toMatchObject({ status: 404 });
     expect((await assessments.getQuizOrThrow(quiz, true)).lectureId).toBe(masters.get(1));
     expect((await pool.query("select lecture_id,status from assignments where id=$1", [assignment])).rows[0]).toEqual({ lecture_id: masters.get(1), status: "draft" });
-    expect((await content.listLecturesForSubject(LEGAL_SUBJECT_ID, false, page)).items).toHaveLength(6);
+    expect((await content.listLecturesForSubject(LEGAL_SUBJECT_ID, false, page)).items).toHaveLength(8);
   });
 
   it("routes future Legal1 uploads into the Arabic master instead of recreating the removed lecture", async () => {
