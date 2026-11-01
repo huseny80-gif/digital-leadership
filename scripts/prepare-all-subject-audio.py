@@ -27,10 +27,29 @@ def canonical(lecture, summary):
     ) + "\n"
 
 
+def extra_summary(lecture_id, source_summary):
+    """Convert a published source-summary body into the page's review schema."""
+    paragraphs = [part.strip() for part in source_summary["body"].split("\n\n") if part.strip()]
+    overview = paragraphs[0] if paragraphs else source_summary["title"]
+    sections = []
+    remaining = paragraphs[1:]
+    for offset in range(0, len(remaining), 8):
+        points = [
+            {"term": f"الفكرة {offset + index + 1}", "text": text}
+            for index, text in enumerate(remaining[offset:offset + 8])
+        ]
+        sections.append({"heading": f"محاور المحاضرة {offset // 8 + 1}", "points": points})
+    if not sections:
+        sections = [{"heading": "الملخص", "points": [{"term": "المحتوى", "text": overview}]}]
+    return {"lectureId": lecture_id, "overview": overview, "sections": sections}
+
+
 def prepare(root, check=False):
     catalog = json.loads((root / "backend/content/finquiz/catalog.json").read_text())
     summaries = json.loads((root / "backend/content/finquiz/academicSummaries.json").read_text())
     lookup = {summary["lectureId"]: summary for summary in summaries["summaries"]}
+    study_content = json.loads((root / "backend/content/finquiz/catalogStudyContent.json").read_text())
+    study_lookup = {entry["lectureId"]: entry for entry in study_content["sources"]}
     manifest_path = root / "assets/audio/manifest.json"
     previous = json.loads(manifest_path.read_text())
     old = {entry["id"]: entry for entry in previous["lectures"]}
@@ -42,8 +61,6 @@ def prepare(root, check=False):
     for subject in catalog["subjects"]:
         slug = subject["id"]
         uuid = SUBJECT_UUIDS[slug]
-        if uuid not in source_mapping:
-            raise ValueError(f"Subject UUID not present in source mapping: {slug}")
         subjects.append({"id": uuid, "slug": slug, "title": subject["title"]})
         for lecture in subject["lectures"]:
             summary = lookup.get(lecture["id"])
@@ -82,6 +99,50 @@ def prepare(root, check=False):
                     raise ValueError(f"Canonical summary differs: {id_}")
             else:
                 folder.mkdir(parents=True, exist_ok=True)
+                (folder / "summary.txt").write_text(text)
+            entries.append(entry)
+        # Some published risk-management summaries were approved before the
+        # lecture catalog was expanded. They must still appear in study-data.
+        catalog_ids = {lecture["id"] for lecture in subject["lectures"]}
+        for source_summary in subject.get("summaries", []):
+            lecture_id = source_summary.get("lectureId")
+            if source_summary.get("status") != "published" or lecture_id in catalog_ids:
+                continue
+            source = study_lookup.get(lecture_id)
+            if not source:
+                raise ValueError(f"Published source summary lacks study content: {lecture_id}")
+            content = source["content"]
+            summary = extra_summary(lecture_id, source_summary)
+            number_match = re.search(r"(\d+)", source_summary["title"])
+            number = int(number_match.group(1)) if number_match else len(lectures) + 1
+            title = source_summary["title"].replace("ملخص ", "", 1)
+            lecture = {"id": lecture_id, "number": number, "title": title}
+            id_ = lecture_id
+            text = canonical(lecture, summary)
+            display = {"id": id_, "number": number, "title": title,
+                       "overview": summary["overview"], "sections": summary["sections"],
+                       "transcript": text, "summarySha256": sha(text),
+                       "sha256": content["sha256"], "subjectId": uuid,
+                       "subjectSlug": slug, "catalogLectureId": lecture_id}
+            lectures.append(display)
+            folder = root / "assets/audio" / id_
+            entry = {"id": id_, "number": number, "title": title, "subjectId": uuid,
+                     "subjectSlug": slug, "catalogLectureId": lecture_id,
+                     "sourceSha256": content["sha256"], "summarySha256": sha(text),
+                     "transcript": f"assets/audio/{id_}/summary.txt", "recordings": {}}
+            prior = old.get(id_, {})
+            for voice in VOICES:
+                path = f"assets/audio/{id_}/{voice}.mp3"
+                recording = prior.get("recordings", {}).get(voice)
+                if recording and prior.get("summarySha256") == sha(text) and recording.get("path") == path:
+                    entry["recordings"][voice] = dict(recording)
+                else:
+                    entry["recordings"][voice] = {"path": path, "available": False}
+            folder.mkdir(parents=True, exist_ok=True)
+            if check:
+                if not (folder / "summary.txt").is_file() or (folder / "summary.txt").read_text() != text:
+                    raise ValueError(f"Canonical summary differs: {id_}")
+            else:
                 (folder / "summary.txt").write_text(text)
             entries.append(entry)
     stable = {"subjects": subjects, "lectures": lectures}
