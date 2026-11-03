@@ -17,7 +17,7 @@ import { examQuizVisible } from "../examMaterials/visibility.js";
 import { conflict } from "../lib/httpError.js";
 import { subjectMapping } from "../finquiz/catalog.js";
 
-export interface AttemptExperienceOptions { mode: "learning" | "challenge"; timeLimitSeconds?: number }
+export interface AttemptExperienceOptions { mode: "learning" | "challenge"; timeLimitSeconds?: number; /** Learner-chosen subset of the quiz's questions; omitted = the whole quiz. */ questionIds?: string[] }
 
 /** Source rubrics contain {text, keywords}; never display them through
  * String(object), JSON or heuristic grading. Plain legacy text is also supported. */
@@ -58,7 +58,7 @@ export interface AssessmentsRepository {
   isVerifiedQuizScopeRepair?(previousQuizId: string, nextQuizId: string): Promise<boolean>;
   listQuizzesForSubject(subjectId: string, isAdmin: boolean): Promise<Quiz[]>;
   getQuizById(quizId: string, isAdmin: boolean): Promise<Quiz | null>;
-  listQuestionsForAttempt(quizId: string): Promise<QuestionForAttempt[]>;
+  listQuestionsForAttempt(quizId: string, questionIds?: string[] | null): Promise<QuestionForAttempt[]>;
   isOptionValidForQuestion(questionId: string, optionId: string): Promise<boolean>;
   isQuestionInQuiz(quizId: string, questionId: string): Promise<boolean>;
   getQuestionType(questionId: string): Promise<QuestionType | null>;
@@ -115,11 +115,11 @@ export interface AssessmentsRepository {
     isCorrect: boolean;
     pointsAwarded: number;
   }): Promise<void>;
-  countQuestionsForQuiz(quizId: string): Promise<number>;
+  countQuestionsForQuiz(quizId: string, questionIds?: string[] | null): Promise<number>;
   /** True if the quiz behind this attempt contains at least one `open`
    * question. Used to decide whether submitAttempt should land on
    * `submitted` (pending manual review) instead of `graded`. */
-  quizHasOpenQuestion(quizId: string): Promise<boolean>;
+  quizHasOpenQuestion(quizId: string, questionIds?: string[] | null): Promise<boolean>;
   /** True if every `open`-type answer on this attempt has been manually
    * reviewed (points_awarded is no longer null). An attempt with zero
    * `open` questions is vacuously true. */
@@ -176,6 +176,7 @@ interface AttemptRow {
   experience_mode: "learning" | "challenge";
   time_limit_seconds: number | null;
   deadline_at: Date | null;
+  question_ids?: string[] | null;
 }
 
 function toAttempt(row: AttemptRow): QuizAttempt {
@@ -191,10 +192,16 @@ function toAttempt(row: AttemptRow): QuizAttempt {
     mode: row.experience_mode,
     timeLimitSeconds: row.time_limit_seconds,
     deadlineAt: row.deadline_at?.toISOString() ?? null,
+    ...(row.question_ids ? { questionIds: row.question_ids } : {}),
   };
 }
 
-const ATTEMPT_COLUMNS = "id, quiz_id, user_id, guest_session_id, status, started_at, submitted_at, score, experience_mode, time_limit_seconds, deadline_at";
+/** Canonical (sorted, de-duplicated) selection so identical choices share one in-progress attempt. */
+function selectedIds(options?: AttemptExperienceOptions): string[] | null {
+  return options?.questionIds?.length ? [...new Set(options.questionIds)].sort() : null;
+}
+
+const ATTEMPT_COLUMNS = "id, quiz_id, user_id, guest_session_id, status, started_at, submitted_at, score, experience_mode, time_limit_seconds, deadline_at, question_ids";
 
 /** Fisher-Yates shuffle, does not mutate the input array. Used only to
  * randomize the display order of match/order delivery items — never used
@@ -271,7 +278,7 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
    * dropped, never fetched in the first place — so no code path in this
    * method can leak it even by accident.
    */
-  async listQuestionsForAttempt(quizId: string): Promise<QuestionForAttempt[]> {
+  async listQuestionsForAttempt(quizId: string, questionIds?: string[] | null): Promise<QuestionForAttempt[]> {
     const questionsResult = await this.pool.query<{
       id: string;
       question_type: QuestionType;
@@ -292,9 +299,9 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
        from quiz_questions qq
        join questions qn on qn.id = qq.question_id and qn.deleted_at is null
        left join lectures l on l.id=qn.lecture_id
-       where qq.quiz_id = $1
+       where qq.quiz_id = $1 and ($2::uuid[] is null or qn.id = any($2::uuid[]))
        order by qq.order_index asc`,
-      [quizId],
+      [quizId, questionIds ?? null],
     );
 
     const optionsResult = await this.pool.query<{
@@ -615,9 +622,10 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
       `select ${ATTEMPT_COLUMNS}
        from quiz_attempts
        where quiz_id = $1 and ${ownerColumn} = $2 and status = 'in_progress' and experience_mode=$3
+         and question_ids is not distinct from $4::uuid[]
        order by started_at desc
        limit 1`,
-      [quizId, ownerId, options?.mode ?? "learning"],
+      [quizId, ownerId, options?.mode ?? "learning", selectedIds(options)],
     );
     return result.rows[0] ? toAttempt(result.rows[0]) : null;
   }
@@ -629,12 +637,12 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
     const client = await this.pool.connect();
     try {
       await client.query("begin");
-      await client.query("select pg_advisory_xact_lock(hashtext($1))", [`attempt:${quizId}:${userId ?? guestSessionId}:${mode}`]);
-      const existing = await client.query<AttemptRow>(`select ${ATTEMPT_COLUMNS} from quiz_attempts where quiz_id=$1 and (user_id=$2 or guest_session_id=$3) and experience_mode=$4 and status='in_progress' order by started_at desc limit 1`, [quizId, userId, guestSessionId, mode]);
+      await client.query("select pg_advisory_xact_lock(hashtext($1))", [`attempt:${quizId}:${userId ?? guestSessionId}:${mode}:${selectedIds(options)?.join(",") ?? "all"}`]);
+      const existing = await client.query<AttemptRow>(`select ${ATTEMPT_COLUMNS} from quiz_attempts where quiz_id=$1 and (user_id=$2 or guest_session_id=$3) and experience_mode=$4 and status='in_progress' and question_ids is not distinct from $5::uuid[] order by started_at desc limit 1`, [quizId, userId, guestSessionId, mode, selectedIds(options)]);
       const result = existing.rowCount ? existing : await client.query<AttemptRow>(
-        `insert into quiz_attempts (quiz_id,user_id,guest_session_id,status,experience_mode,time_limit_seconds,deadline_at)
-         values ($1,$2,$3,'in_progress',$4,$5,case when $5::integer is null then null else now()+make_interval(secs=>$5) end) returning ${ATTEMPT_COLUMNS}`,
-        [quizId, userId, guestSessionId, mode, seconds],
+        `insert into quiz_attempts (quiz_id,user_id,guest_session_id,status,experience_mode,time_limit_seconds,deadline_at,question_ids)
+         values ($1,$2,$3,'in_progress',$4,$5,case when $5::integer is null then null else now()+make_interval(secs=>$5) end,$6::uuid[]) returning ${ATTEMPT_COLUMNS}`,
+        [quizId, userId, guestSessionId, mode, seconds, selectedIds(options)],
       );
       await client.query("commit"); return toAttempt(result.rows[0]!);
     } catch (error) { await client.query("rollback"); throw error; }
@@ -897,10 +905,10 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
     return { isCorrect: row.is_correct, pointsAwarded: row.is_correct ? row.points : 0 };
   }
 
-  async countQuestionsForQuiz(quizId: string): Promise<number> {
+  async countQuestionsForQuiz(quizId: string, questionIds?: string[] | null): Promise<number> {
     const result = await this.pool.query<{ count: string }>(
-      `select count(*) from quiz_questions where quiz_id = $1`,
-      [quizId],
+      `select count(*) from quiz_questions where quiz_id = $1 and ($2::uuid[] is null or question_id = any($2::uuid[]))`,
+      [quizId, questionIds ?? null],
     );
     return Number(result.rows[0]?.count ?? 0);
   }
@@ -916,7 +924,8 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
          count(a.id) as answered,
          count(a.id) filter (where a.is_correct) as correct,
          coalesce(sum(a.points_awarded), 0) as total_score,
-         coalesce((select sum(qn.points) from quiz_questions qq join questions qn on qn.id = qq.question_id where qq.quiz_id = (select quiz_id from quiz_attempts where id = $1)), 0) as total_possible
+         coalesce((select sum(qn.points) from quiz_questions qq join questions qn on qn.id = qq.question_id where qq.quiz_id = (select quiz_id from quiz_attempts where id = $1)
+           and ((select question_ids from quiz_attempts where id = $1) is null or qq.question_id = any(coalesce((select question_ids from quiz_attempts where id = $1), '{}'::uuid[])))), 0) as total_possible
        from quiz_attempt_answers a
        where a.attempt_id = $1`,
       [attemptId],
@@ -946,14 +955,14 @@ export class PgAssessmentsRepository implements AssessmentsRepository {
    * decide whether submitAttempt should land on `submitted` (pending
    * manual review) instead of `graded` (PHASE 12F-BE contract review §F).
    */
-  async quizHasOpenQuestion(quizId: string): Promise<boolean> {
+  async quizHasOpenQuestion(quizId: string, questionIds?: string[] | null): Promise<boolean> {
     const result = await this.pool.query(
       `select 1
        from quiz_questions qq
        join questions qn on qn.id = qq.question_id
-       where qq.quiz_id = $1 and qn.question_type = 'open'
+       where qq.quiz_id = $1 and qn.question_type = 'open' and ($2::uuid[] is null or qq.question_id = any($2::uuid[]))
        limit 1`,
-      [quizId],
+      [quizId, questionIds ?? null],
     );
     return result.rowCount !== null && result.rowCount > 0;
   }

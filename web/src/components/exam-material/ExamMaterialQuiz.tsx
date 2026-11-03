@@ -13,6 +13,12 @@ import { ExamChallengeRunner } from "./ExamChallengeRunner";
 import { ExamAcademicPaper } from "./ExamAcademicPaper";
 import styles from "./examMaterial.module.css";
 
+const QUESTION_TYPES = [
+  ["multiple_choice", "اختيار من متعدد"], ["true_false", "صح وخطأ"], ["match", "مطابقة"],
+  ["order", "ترتيب"], ["fill", "إكمال"], ["open", "مقالي"],
+] as const;
+type QuestionTypeId = typeof QUESTION_TYPES[number][0];
+
 export function ExamMaterialQuiz({ group }: { group: ExamMaterialDetail }) {
   const query = useSearchParams();
   const attemptId = query.get("attempt");
@@ -21,6 +27,8 @@ export function ExamMaterialQuiz({ group }: { group: ExamMaterialDetail }) {
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
   const [mode, setMode] = useState<ExamExperienceMode>("learning");
+  const [types, setTypes] = useState<QuestionTypeId[]>(QUESTION_TYPES.map(([id]) => id));
+  const [lectureIds, setLectureIds] = useState<string[]>(group.lectures.map(lecture => lecture.id));
   const endpoint = `/api/exam-material/${group.subjectId}/${group.id}/attempts/`;
 
   useEffect(() => {
@@ -47,7 +55,10 @@ export function ExamMaterialQuiz({ group }: { group: ExamMaterialDetail }) {
     } catch (err) { setError(err instanceof Error ? err.message : "تعذر بدء الاختبار."); setBusy(false); }
   }
   function createAttempt(experience: ExamExperienceMode) {
-    return examRequest<QuizAttempt>(endpoint.slice(0, -1), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: experience }) });
+    // Everything selected = the whole quiz, so legacy attempts and the default flow are unchanged.
+    const allTypes = types.length === QUESTION_TYPES.length, allLectures = lectureIds.length === group.lectures.length;
+    const selection = { ...(allTypes ? {} : { questionTypes: types }), ...(allLectures ? {} : { lectureIds }) };
+    return examRequest<QuizAttempt>(endpoint.slice(0, -1), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: experience, ...selection }) });
   }
   const refreshResult = useCallback(async (id: string) => {
     const bundle = await examRequest<ExamMaterialAttempt>(endpoint + id);
@@ -67,8 +78,10 @@ export function ExamMaterialQuiz({ group }: { group: ExamMaterialDetail }) {
     <h3>الاختبار التفاعلي المتقدم</h3>
     <p>{group.questionCount} سؤالًا من المحاضرات المختارة. اختر تجربة المراجعة المناسبة لك.</p>
     <fieldset className={styles.experienceModes}><legend className={styles.srOnly}>وضع الاختبار</legend><label data-selected={mode === "learning"}><input type="radio" name="exam-mode" value="learning" checked={mode === "learning"} onChange={() => setMode("learning")} /><PlatformIcon name="book" /><strong>وضع التعلم</strong><span>تصحيح فوري وتعليل بعد كل سؤال. راجع وتدرّب بالوتيرة التي تناسبك.</span></label><label data-selected={mode === "challenge"}><input type="radio" name="exam-mode" value="challenge" checked={mode === "challenge"} onChange={() => setMode("challenge")} /><PlatformIcon name="clock" /><strong>وضع التحدي</strong><span>محاكاة بوقت محدد ({Math.ceil(examChallengeSeconds(group.questionCount) / 60)} دقيقة)، مع التقييم والتصحيح عند النهاية.</span></label></fieldset>
+    <fieldset className={styles.experienceModes}><legend>أنواع الأسئلة</legend>{QUESTION_TYPES.map(([id, label]) => <label key={id} data-selected={types.includes(id)}><input type="checkbox" checked={types.includes(id)} onChange={event => setTypes(event.target.checked ? [...types, id] : types.filter(item => item !== id))} /><strong>{label}</strong></label>)}</fieldset>
+    {group.lectures.length > 1 ? <fieldset className={styles.experienceModes}><legend>المحاضرات</legend>{group.lectures.map(lecture => <label key={lecture.id} data-selected={lectureIds.includes(lecture.id)}><input type="checkbox" checked={lectureIds.includes(lecture.id)} onChange={event => setLectureIds(event.target.checked ? [...lectureIds, lecture.id] : lectureIds.filter(item => item !== lecture.id))} /><strong>{lecture.title}</strong></label>)}</fieldset> : null}
     <p>تُحفظ محاولة مستقلة لكل وضع؛ يبدأ وقت التحدي عند الضغط على بدء الاختبار.</p>
-    <button className={styles.action} onClick={() => void start()}>بدء الاختبار أو متابعة المحاولة</button>
+    <button className={styles.action} disabled={!types.length || !lectureIds.length} onClick={() => void start()}>بدء الاختبار أو متابعة المحاولة</button>
   </div><ExamAcademicPaper subjectId={group.subjectId} groupId={group.id} /></>;
   return <div className={styles.quiz}>
     {current.result ? <div className={styles.result} role="status" aria-label="نتيجة الاختبار">
