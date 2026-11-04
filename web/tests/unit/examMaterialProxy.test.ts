@@ -48,7 +48,7 @@ describe("exam material authenticated GET proxy", () => {
 describe("exam challenge and PDF proxies", () => {
   it("starts a validated mode without accepting an owner, role, deadline or arbitrary path", async () => {
     const call = (body: unknown, path = [id, id, "attempts"], query = "") => POST(new Request(`http://test/api/exam-material${query}`, { method: "POST", body: JSON.stringify(body) }), ctx(path));
-    for (const body of [{}, { mode: "bad" }, { mode: "challenge", userId: id }, { mode: "challenge", deadlineAt: "later" }]) expect((await call(body)).status).toBe(400);
+    for (const body of [{}, { mode: "bad" }, { mode: "challenge", userId: id }, { mode: "challenge", deadlineAt: "later" }, { mode: "learning", questionTypes: [] }, { mode: "learning", questionTypes: ["bad"] }, { mode: "learning", questionTypes: ["match", "match"] }, { mode: "learning", lectureIds: ["x"] }]) expect((await call(body)).status).toBe(400);
     expect((await call({ mode: "learning" }, [id, id, "answers"])).status).toBe(404);
     expect((await call({ mode: "challenge" }, undefined, "?role=admin")).status).toBe(400);
     expect(apiPost).not.toHaveBeenCalled();
@@ -56,6 +56,9 @@ describe("exam challenge and PDF proxies", () => {
     const response = await call({ mode: "challenge" });
     expect(response.status).toBe(201); expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(apiPost).toHaveBeenCalledWith(`/api/v1/subjects/${id}/exam-material/${id}/attempts`, { mode: "challenge" });
+    const selection = { mode: "learning", questionTypes: ["match", "true_false"], lectureIds: [id] };
+    expect((await call(selection)).status).toBe(201);
+    expect(apiPost).toHaveBeenLastCalledWith(`/api/v1/subjects/${id}/exam-material/${id}/attempts`, selection);
   });
   it("streams an authorized private PDF and forwards 403 instead of returning a fake file", async () => {
     vi.mocked(apiGetDownload).mockResolvedValue(new Response("%PDF-1.7", { headers: { "content-type": "application/pdf" } }));
