@@ -52,12 +52,24 @@ export async function GET(request: Request, context: Context) {
   }
 }
 
+const attemptTypes = new Set(["multiple_choice", "true_false", "fill", "match", "order", "open"]);
+const uniqueList = (value: unknown, max: number, ok: (item: unknown) => boolean) => Array.isArray(value) && value.length >= 1 && value.length <= max && new Set(value).size === value.length && value.every(ok);
+/** `mode` is required; the learner's optional question-type and lecture selection is validated again by the backend. */
+function validAttemptBody(body: unknown): boolean {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return false;
+  const record = body as Record<string, unknown>;
+  if (Object.keys(record).some(key => !["mode", "questionTypes", "lectureIds"].includes(key))) return false;
+  if (!["learning", "challenge"].includes(String(record.mode))) return false;
+  if ("questionTypes" in record && !uniqueList(record.questionTypes, 6, item => typeof item === "string" && attemptTypes.has(item))) return false;
+  return !("lectureIds" in record) || uniqueList(record.lectureIds, 50, item => typeof item === "string" && uuid.test(item));
+}
+
 export async function POST(request: Request, context: Context) {
   const { path } = await context.params;
   if (path.length !== 3 || !uuid.test(path[0]!) || !uuid.test(path[1]!) || path[2] !== "attempts") return NextResponse.json({ error: { code: "not_found", message: "المحتوى غير متاح." } }, { status: 404, headers });
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: { code: "validation_error", message: "اختر وضع الاختبار." } }, { status: 400, headers }); }
-  if (new URL(request.url).searchParams.size || !body || typeof body !== "object" || Object.keys(body).length !== 1 || !("mode" in body) || !["learning", "challenge"].includes(String(body.mode))) return NextResponse.json({ error: { code: "validation_error", message: "بيانات وضع الاختبار غير صالحة." } }, { status: 400, headers });
+  if (new URL(request.url).searchParams.size || !validAttemptBody(body)) return NextResponse.json({ error: { code: "validation_error", message: "بيانات وضع الاختبار غير صالحة." } }, { status: 400, headers });
   try { return NextResponse.json(await apiPost(`/api/v1/subjects/${path[0]}/exam-material/${path[1]}/attempts`, body), { status: 201, headers }); }
   catch (error) {
     if (error instanceof ApiError) return NextResponse.json(error.body, { status: error.status, headers });
