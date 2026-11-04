@@ -41,6 +41,8 @@ beforeEach(() => {
 const renderWorkspace = (extra: Partial<ExamMaterialIndex> = {}) => render(<ExamMaterialWorkspace initialIndex={{ ...index, ...extra }} initialDetail={group} />);
 const generateButton = () => screen.getByRole("button", { name: "توليد المحتوى الامتحاني الذكي" });
 
+/** The learner quiz intro also lists lecture checkboxes; admin tests target the publisher fieldset only. */
+const adminBoxes = () => { const group = screen.queryByRole("group", { name: "المحاضرات المنشورة" }); return group ? within(group) : { queryAllByRole: () => [], getAllByRole: () => [], getByRole: () => { throw new Error("no admin fieldset"); } } as unknown as ReturnType<typeof within>; };
 describe("exam material selection and archive navigation", () => {
   it.each([false, true])("opens the quiz without the academic review or podcast for learners and admins (admin: %s)", async canGenerate => {
     renderWorkspace({ canGenerate });
@@ -57,9 +59,23 @@ describe("exam material selection and archive navigation", () => {
     expect(screen.getByRole("button", { name: "بدء الاختبار أو متابعة المحاولة" })).toBeInTheDocument();
   });
 
+  it("sends only the chosen question types and lectures when starting the interactive quiz", async () => {
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) => Promise.resolve(reply(init?.method === "POST" ? bundle.attempt : bundle)));
+    vi.stubGlobal("fetch", fetchMock); renderWorkspace({ canGenerate: false });
+    fireEvent.click(screen.getByRole("tab", { name: "الاختبار التفاعلي المتقدم" }));
+    const types = within(screen.getByRole("group", { name: "أنواع الأسئلة" }));
+    for (const name of ["اختيار من متعدد", "صح وخطأ", "مطابقة"]) expect(types.getByRole("checkbox", { name })).toBeChecked();
+    for (const name of ["ترتيب", "إكمال", "مقالي"]) fireEvent.click(types.getByRole("checkbox", { name }));
+    fireEvent.click(within(screen.getByRole("group", { name: "المحاضرات" })).getByRole("checkbox", { name: /المحاضرة الثانية/ }));
+    fireEvent.click(screen.getByRole("button", { name: "بدء الاختبار أو متابعة المحاولة" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const post = fetchMock.mock.calls.find(([, init]) => init?.method === "POST")!;
+    expect(JSON.parse(String(post[1]!.body))).toEqual({ mode: "learning", questionTypes: ["multiple_choice", "true_false", "match"], lectureIds: ["l1"] });
+  });
+
   it("hides admin controls from visitors and retains links to the course and original lecture", async () => {
     renderWorkspace({ canGenerate: false });
-    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "المحاضرات المنشورة" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /توليد المحتوى/ })).not.toBeInTheDocument();
     expect(screen.queryByText("دليل المناقشة الذكي للمدير")).not.toBeInTheDocument();
     await screen.findByRole("heading", { level: 2, name: group.title });
@@ -72,10 +88,10 @@ describe("exam material selection and archive navigation", () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(reply(second)).mockResolvedValueOnce(reply({ ...index, groups: [second, group], total: 2 })); vi.stubGlobal("fetch", fetchMock);
     renderWorkspace(); expect(generateButton()).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "تحديد الكل" }));
-    expect(screen.getAllByRole("checkbox").every(c => (c as HTMLInputElement).checked)).toBe(true);
+    expect((adminBoxes().getAllByRole("checkbox") as HTMLInputElement[]).every(c => c.checked)).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "إلغاء التحديد" }));
     expect(generateButton()).toBeDisabled();
-    fireEvent.click(screen.getByRole("checkbox", { name: /المحاضرة الثانية/ }));
+    fireEvent.click(adminBoxes().getByRole("checkbox", { name: /المحاضرة الثانية/ }));
     fireEvent.click(generateButton());
     await screen.findByText(/تم توليد المحتوى الامتحاني وحفظ المجموعة بنجاح/);
     const tabs = within(screen.getByRole("tablist", { name: "مجموعات المحاضرات" }));
@@ -91,9 +107,9 @@ describe("exam material selection and archive navigation", () => {
     const revised = { ...second, id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", sequence: 3, revisionCount: 2 };
     const fetchMock = vi.fn().mockResolvedValueOnce(reply(null, 503)).mockResolvedValueOnce(reply(second)).mockResolvedValueOnce(reply({ ...index, groups: [second, group], total: 2 })).mockResolvedValueOnce(reply(revised)).mockResolvedValueOnce(reply({ ...index, groups: [revised, group], total: 2 }));
     vi.stubGlobal("fetch", fetchMock); renderWorkspace();
-    fireEvent.click(screen.getByRole("checkbox", { name: /المحاضرة الثانية/ })); fireEvent.click(generateButton());
+    fireEvent.click(adminBoxes().getByRole("checkbox", { name: /المحاضرة الثانية/ })); fireEvent.click(generateButton());
     await screen.findByRole("alert");
-    expect(screen.getByRole("checkbox", { name: /المحاضرة الثانية/ })).toBeChecked();
+    expect(adminBoxes().getByRole("checkbox", { name: /المحاضرة الثانية/ })).toBeChecked();
     fireEvent.click(generateButton()); await screen.findByText(/تم توليد المحتوى الامتحاني وحفظ المجموعة بنجاح/);
     const initialBody = JSON.parse(fetchMock.mock.calls[0]![1].body), retriedBody = JSON.parse(fetchMock.mock.calls[1]![1].body);
     expect(retriedBody.requestId).toBe(initialBody.requestId);
@@ -172,7 +188,7 @@ describe("exam material selection and archive navigation", () => {
   it("keeps a successful generation visible when refreshing the list fails, without repeating the POST", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(reply(second)).mockResolvedValueOnce(reply(null, 503)).mockResolvedValueOnce(reply({ ...index, groups: [second, group], total: 2 }));
     vi.stubGlobal("fetch", fetchMock); renderWorkspace();
-    fireEvent.click(screen.getByRole("checkbox", { name: /المحاضرة الثانية/ })); fireEvent.click(generateButton());
+    fireEvent.click(adminBoxes().getByRole("checkbox", { name: /المحاضرة الثانية/ })); fireEvent.click(generateButton());
     await screen.findByRole("heading", { level: 2, name: second.title });
     fireEvent.click(await screen.findByRole("button", { name: "تحديث قائمة المجموعات" }));
     await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());

@@ -90,6 +90,8 @@ export interface QuizAttempt {
   score: number | null;
   /** Absent on legacy attempts; treated as learning. Deadlines are server-owned. */
   mode?: "learning" | "challenge";
+  /** Learner-chosen subset of the quiz questions; absent = the whole quiz. */
+  questionIds?: string[];
   timeLimitSeconds?: number | null;
   deadlineAt?: string | null;
 }

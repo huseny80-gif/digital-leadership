@@ -193,6 +193,9 @@ export class AssessmentsService {
     if (!belongsToQuiz) {
       throw new ValidationError("This question does not belong to the quiz being attempted.");
     }
+    if (attempt.questionIds && !attempt.questionIds.includes(input.questionId)) {
+      throw new ValidationError("This question was not selected for this attempt.");
+    }
 
     if (submittedFieldCount(input) !== 1) {
       throw new ValidationError("Exactly one of 'selectedOptionId', 'answerText', 'matchAnswer', or 'orderAnswer' is required.");
@@ -310,10 +313,10 @@ export class AssessmentsService {
       return this.getResultOrThrow(attemptId, principal, false);
     }
     const attempt = await this.getOwnedActiveAttemptOrThrow(attemptId, principal);
-    const totalQuestions = await this.repository.countQuestionsForQuiz(attempt.quizId);
+    const totalQuestions = await this.repository.countQuestionsForQuiz(attempt.quizId, attempt.questionIds);
     const grading = await this.repository.gradeAttempt(attemptId);
 
-    const hasOpenQuestion = await this.repository.quizHasOpenQuestion(attempt.quizId);
+    const hasOpenQuestion = await this.repository.quizHasOpenQuestion(attempt.quizId, attempt.questionIds);
     if (hasOpenQuestion) {
       // At least one open question exists: land on `submitted` (pending
       // manual review) instead of `graded`, and exclude unreviewed open
@@ -373,7 +376,7 @@ export class AssessmentsService {
     if (attempt.status === "in_progress") {
       throw forbidden();
     }
-    const totalQuestions = await this.repository.countQuestionsForQuiz(attempt.quizId);
+    const totalQuestions = await this.repository.countQuestionsForQuiz(attempt.quizId, attempt.questionIds);
     const grading = await this.repository.gradeAttempt(attemptId);
 
     // A `submitted` attempt is pending manual review (at least one open

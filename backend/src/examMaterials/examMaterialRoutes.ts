@@ -14,7 +14,11 @@ import { weeklyExamRoutes } from "./weeklyExamRoutes.js";
 
 const generateSchema = z.object({ lectureIds: z.array(z.string().uuid()).min(1).max(50).refine(ids => new Set(ids).size === ids.length), requestId: z.string().uuid() }).strict();
 const academicPaperQuery = z.object({ attemptId: z.string().uuid().optional() }).strict();
-const attemptSchema = z.object({ mode: z.enum(["learning", "challenge"]) }).strict();
+const attemptSchema = z.object({
+  mode: z.enum(["learning", "challenge"]),
+  questionTypes: z.array(z.enum(["multiple_choice", "true_false", "fill", "match", "order", "open"])).min(1).max(6).refine(items => new Set(items).size === items.length).optional(),
+  lectureIds: z.array(z.string().uuid()).min(1).max(50).refine(ids => new Set(ids).size === ids.length).optional(),
+}).strict();
 const audioSchema = z.object({ chapter: z.union([z.literal("introduction"), z.string().uuid()]), segment: z.string().regex(/^(?:0|[1-9]\d{0,4})$/).transform(Number), voice: z.string().refine(id => ACADEMIC_VOICES.some(voice => voice.id === id)) }).strict();
 export function examMaterialRoutes(): Router {
   const router = Router();
@@ -65,7 +69,7 @@ export function examMaterialRoutes(): Router {
       const parsed = attemptSchema.safeParse(req.body);
       if (!parsed.success) throw new ValidationError("اختر وضع التعلم أو وضع التحدي فقط.");
       const principal = req.user ? { kind: "user" as const, userId: req.user.id } : { kind: "guest" as const, guestSessionId: req.guestSession!.id };
-      res.status(201).json({ data: await service().startAttempt(req.params.subjectId as string, req.params.groupId as string, principal, req.user?.role === "admin", parsed.data.mode) });
+      res.status(201).json({ data: await service().startAttempt(req.params.subjectId as string, req.params.groupId as string, principal, req.user?.role === "admin", parsed.data.mode, { questionTypes: parsed.data.questionTypes, lectureIds: parsed.data.lectureIds }) });
     } catch (error) { next(error); }
   });
   router.get("/subjects/:subjectId/exam-material/:groupId/review-package.pdf", requireLearnerPrincipal, requireUuidParam("subjectId"), requireUuidParam("groupId"), exportLimit, async (req, res, next) => {
