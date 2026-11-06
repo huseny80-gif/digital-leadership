@@ -1,6 +1,8 @@
 import { VirtualOfficeGrid } from "@/components/virtual-office/VirtualOfficeGrid";
 import { VirtualOfficeSummary } from "@/components/virtual-office/VirtualOfficeSummary";
 import { VirtualOfficeAutoRefresh } from "@/components/virtual-office/VirtualOfficeAutoRefresh";
+import { VirtualOfficeFilter } from "@/components/virtual-office/VirtualOfficeFilter";
+import { Suspense } from "react";
 
 export const metadata = { title: "المكتب الافتراضي | لوحة الإدارة" };
 export const dynamic = "force-dynamic";
@@ -33,8 +35,13 @@ async function fetchOfficeState(): Promise<OfficeState | null> {
   }
 }
 
-export default async function VirtualOfficePage() {
+export default async function VirtualOfficePage({
+  searchParams,
+}: {
+  searchParams: { status?: string };
+}) {
   const state = await fetchOfficeState();
+  const statusFilter = searchParams.status ?? "";
 
   if (!state) {
     return (
@@ -55,6 +62,15 @@ export default async function VirtualOfficePage() {
     id,
   }));
 
+  const counts = employees.reduce<Record<string, number>>((acc, e) => {
+    acc[e.status] = (acc[e.status] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const filtered = statusFilter
+    ? employees.filter((e) => e.status === statusFilter)
+    : employees;
+
   return (
     <div className="vo-page" dir="rtl">
       <header className="vo-header">
@@ -70,7 +86,10 @@ export default async function VirtualOfficePage() {
       </header>
 
       <VirtualOfficeAutoRefresh />
-      <VirtualOfficeGrid employees={employees} />
+      <Suspense>
+        <VirtualOfficeFilter counts={counts} />
+      </Suspense>
+      <VirtualOfficeGrid employees={filtered} />
     </div>
   );
 }
