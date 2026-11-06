@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const baseUrl = process.env.OFFICE_STATE_URL ?? "http://localhost:5050/api/state";
-  const tasksUrl = baseUrl.replace(/\/api\/state\/?$/, `/api/tasks/${params.id}`);
+  const tasksUrl = baseUrl.replace(/\/api\/state\/?$/, `/api/tasks/${id}`);
 
   try {
     const res = await fetch(tasksUrl, { signal: AbortSignal.timeout(4000) });

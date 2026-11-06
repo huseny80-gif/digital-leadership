@@ -51,10 +51,11 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
   offline: { label: "غير متصل", color: "#64748b" },
 };
 
-export default async function EmployeeDetailPage({ params }: { params: { id: string } }) {
+export default async function EmployeeDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const [emp, tasks] = await Promise.all([
-    fetchEmployee(params.id),
-    fetchTasks(params.id),
+    fetchEmployee(id),
+    fetchTasks(id),
   ]);
 
   const meta = emp ? (STATUS_META[emp.status] ?? STATUS_META.offline) : null;

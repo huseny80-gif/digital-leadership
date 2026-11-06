@@ -38,10 +38,12 @@ async function fetchOfficeState(): Promise<OfficeState | null> {
 export default async function VirtualOfficePage({
   searchParams,
 }: {
-  searchParams: { status?: string };
+  searchParams: Promise<{ status?: string }>;
 }) {
-  const state = await fetchOfficeState();
-  const statusFilter = searchParams.status ?? "";
+  const [state, { status: statusFilter = "" }] = await Promise.all([
+    fetchOfficeState(),
+    searchParams,
+  ]);
 
   if (!state) {
     return (
