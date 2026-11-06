@@ -67,7 +67,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <Link href="/admin/virtual-office" className="vo-back-link">← العودة</Link>
           <h1 className="vo-title" style={{ margin: 0 }}>
-            {emp ? emp.name : params.id}
+            {emp ? emp.name : id}
           </h1>
           {emp && meta && (
             <span className={`vo-status-badge vo-status-badge--${emp.status}`}>
