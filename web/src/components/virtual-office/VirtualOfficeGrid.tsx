@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useOptimistic, useTransition } from "react";
 import type { OfficeEmployee } from "@/app/(app)/admin/virtual-office/page";
 
@@ -38,7 +39,11 @@ function EmployeeCard({ emp, onStatusChange }: { emp: OfficeEmployee; onStatusCh
         {emp.name.charAt(0)}
       </div>
       <div className="vo-card-body">
-        <h3 className="vo-card-name">{emp.name}</h3>
+        <h3 className="vo-card-name">
+          <Link href={`/admin/virtual-office/${emp.id}`} style={{ color: "inherit", textDecoration: "none" }}>
+            {emp.name}
+          </Link>
+        </h3>
         <p className="vo-card-role">{emp.role}</p>
         <span className={`vo-status-badge vo-status-badge--${emp.status}`}>
           {meta.icon} {meta.label}

@@ -36,6 +36,23 @@ def update_state(emp_id):
 def get_employees():
     return jsonify(read_json(EMPLOYEES_FILE))
 
+@app.route("/api/tasks/<emp_id>", methods=["GET"])
+def get_tasks(emp_id):
+    tasks_dir = OFFICE_DIR / "tasks"
+    limit = int(request.args.get("limit", 20))
+    files = sorted(tasks_dir.glob(f"{emp_id}_*.md"), reverse=True)[:limit]
+    results = []
+    for f in files:
+        parts = f.stem.split("_", 2)
+        task_id = parts[1] if len(parts) > 1 else "unknown"
+        ts = parts[2] if len(parts) > 2 else ""
+        try:
+            content = f.read_text(encoding="utf-8")
+        except Exception:
+            content = ""
+        results.append({"filename": f.name, "task_id": task_id, "timestamp": ts, "content": content})
+    return jsonify({"emp_id": emp_id, "tasks": results})
+
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})
