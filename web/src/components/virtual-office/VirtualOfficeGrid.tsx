@@ -4,18 +4,18 @@ import Link from "next/link";
 import { useOptimistic, useTransition, useEffect, useState } from "react";
 import type { OfficeEmployee } from "@/app/(app)/admin/virtual-office/page";
 
+function formatRelative(iso: string): string {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return `منذ ${diff} ث`;
+  if (diff < 3600) return `منذ ${Math.floor(diff / 60)} د`;
+  return `منذ ${Math.floor(diff / 3600)} س`;
+}
+
 function useRelativeTime(iso: string | undefined) {
-  const [label, setLabel] = useState("");
+  const [label, setLabel] = useState(() => (iso ? formatRelative(iso) : ""));
   useEffect(() => {
-    if (!iso) { setLabel(""); return; }
-    function fmt() {
-      const diff = Math.floor((Date.now() - new Date(iso!).getTime()) / 1000);
-      if (diff < 60) setLabel(`منذ ${diff} ث`);
-      else if (diff < 3600) setLabel(`منذ ${Math.floor(diff / 60)} د`);
-      else setLabel(`منذ ${Math.floor(diff / 3600)} س`);
-    }
-    fmt();
-    const id = setInterval(fmt, 15_000);
+    if (!iso) return;
+    const id = setInterval(() => setLabel(formatRelative(iso)), 15_000);
     return () => clearInterval(id);
   }, [iso]);
   return label;
