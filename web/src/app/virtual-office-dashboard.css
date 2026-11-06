@@ -185,6 +185,13 @@
   text-overflow: ellipsis;
 }
 
+.vo-card-last-seen {
+  font-size: 0.7rem;
+  color: var(--vo-muted);
+  margin: 4px 0 0;
+  opacity: 0.7;
+}
+
 /* Status select */
 .vo-status-select {
   display: block;
