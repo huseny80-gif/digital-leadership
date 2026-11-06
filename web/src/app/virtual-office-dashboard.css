@@ -1,0 +1,194 @@
+/* ── Virtual Office Dashboard ─────────────────────────────────────────────── */
+
+:root {
+  --vo-bg:        #0f0f1a;
+  --vo-surface:   #1a1a2e;
+  --vo-border:    #2a2a4e;
+  --vo-header-bg: #12122a;
+  --vo-text:      #e0e0f0;
+  --vo-muted:     #888;
+  --vo-idle:      #22c55e;
+  --vo-working:   #f59e0b;
+  --vo-meeting:   #3b82f6;
+  --vo-offline:   #64748b;
+  --vo-accent:    #7c3aed;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --vo-bg:        #f4f4fb;
+    --vo-surface:   #ffffff;
+    --vo-border:    #dde0f0;
+    --vo-header-bg: #eeeef9;
+    --vo-text:      #1a1a3a;
+    --vo-muted:     #666;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --vo-bg:        #f4f4fb;
+  --vo-surface:   #ffffff;
+  --vo-border:    #dde0f0;
+  --vo-header-bg: #eeeef9;
+  --vo-text:      #1a1a3a;
+  --vo-muted:     #666;
+  color-scheme: light;
+}
+:root[data-theme="dark"] { color-scheme: dark; }
+
+/* Page */
+.vo-page {
+  min-height: 100vh;
+  background: var(--vo-bg);
+  color: var(--vo-text);
+  padding: 0 0 48px;
+}
+
+/* Header */
+.vo-header {
+  background: var(--vo-header-bg);
+  border-bottom: 1px solid var(--vo-border);
+  padding: 20px max(16px, env(safe-area-inset-right, 0px)) 20px max(16px, env(safe-area-inset-left, 0px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.vo-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--vo-text);
+  margin: 0;
+}
+
+.vo-last-updated {
+  font-size: 0.75rem;
+  color: var(--vo-muted);
+  margin: 4px 0 0;
+}
+
+/* Summary chips */
+.vo-summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.vo-chip--working { background: color-mix(in srgb, var(--vo-working) 15%, transparent); color: var(--vo-working); border: 1px solid color-mix(in srgb, var(--vo-working) 40%, transparent); }
+.vo-chip--meeting { background: color-mix(in srgb, var(--vo-meeting) 15%, transparent); color: var(--vo-meeting); border: 1px solid color-mix(in srgb, var(--vo-meeting) 40%, transparent); }
+.vo-chip--idle    { background: color-mix(in srgb, var(--vo-idle)    15%, transparent); color: var(--vo-idle);    border: 1px solid color-mix(in srgb, var(--vo-idle)    40%, transparent); }
+.vo-chip--offline { background: color-mix(in srgb, var(--vo-offline) 15%, transparent); color: var(--vo-offline); border: 1px solid color-mix(in srgb, var(--vo-offline) 40%, transparent); }
+
+/* Offline banner */
+.vo-offline-banner {
+  margin: 32px max(16px, env(safe-area-inset-right, 0px));
+  background: color-mix(in srgb, var(--vo-working) 10%, var(--vo-surface));
+  border: 1px solid color-mix(in srgb, var(--vo-working) 40%, transparent);
+  border-radius: 10px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--vo-text);
+}
+
+.vo-offline-icon { font-size: 1.4rem; flex-shrink: 0; }
+.vo-offline-banner code { background: var(--vo-border); border-radius: 4px; padding: 1px 6px; font-size: 0.85em; }
+
+/* Grid */
+.vo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  padding: 24px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+}
+
+/* Employee card */
+.vo-card {
+  background: var(--vo-surface);
+  border: 1px solid var(--vo-border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  transition: border-color 0.2s;
+}
+
+.vo-card--working { border-color: color-mix(in srgb, var(--vo-working) 50%, transparent); }
+.vo-card--meeting { border-color: color-mix(in srgb, var(--vo-meeting) 50%, transparent); }
+.vo-card--idle    { border-color: var(--vo-border); }
+.vo-card--offline { opacity: 0.55; }
+
+.vo-card-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--vo-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.vo-card-body { flex: 1; min-width: 0; }
+
+.vo-card-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 2px;
+  color: var(--vo-text);
+}
+
+.vo-card-role {
+  font-size: 0.78rem;
+  color: var(--vo-muted);
+  margin: 0 0 10px;
+}
+
+.vo-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.vo-status-badge--idle    { background: color-mix(in srgb, var(--vo-idle)    12%, transparent); color: var(--vo-idle); }
+.vo-status-badge--working { background: color-mix(in srgb, var(--vo-working) 12%, transparent); color: var(--vo-working); }
+.vo-status-badge--meeting { background: color-mix(in srgb, var(--vo-meeting) 12%, transparent); color: var(--vo-meeting); }
+.vo-status-badge--offline { background: color-mix(in srgb, var(--vo-offline) 12%, transparent); color: var(--vo-offline); }
+
+.vo-card-task {
+  font-size: 0.75rem;
+  color: var(--vo-muted);
+  margin: 8px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Empty */
+.vo-empty {
+  color: var(--vo-muted);
+  text-align: center;
+  padding: 48px 16px;
+  font-style: italic;
+}

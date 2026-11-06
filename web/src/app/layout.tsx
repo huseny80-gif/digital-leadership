@@ -7,6 +7,7 @@ import "./content-automation.css";
 import "./participant-feedback.css";
 import "./learning-dashboard.css";
 import "./training-access.css";
+import "./virtual-office-dashboard.css";
 
 export const metadata: Metadata = {
   title: "القيادة الرقمية | Digital Leadership",
