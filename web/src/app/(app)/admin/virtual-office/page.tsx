@@ -1,8 +1,6 @@
-import { apiGet, ApiError } from "@/lib/api/client";
-import { toSafeErrorMessage } from "@/lib/api/errorMessage";
-import { ErrorState } from "@/components/ui/States";
 import { VirtualOfficeGrid } from "@/components/virtual-office/VirtualOfficeGrid";
 import { VirtualOfficeSummary } from "@/components/virtual-office/VirtualOfficeSummary";
+import { VirtualOfficeAutoRefresh } from "@/components/virtual-office/VirtualOfficeAutoRefresh";
 
 export const metadata = { title: "المكتب الافتراضي | لوحة الإدارة" };
 export const dynamic = "force-dynamic";
@@ -71,6 +69,7 @@ export default async function VirtualOfficePage() {
         <VirtualOfficeSummary employees={employees} />
       </header>
 
+      <VirtualOfficeAutoRefresh />
       <VirtualOfficeGrid employees={employees} />
     </div>
   );

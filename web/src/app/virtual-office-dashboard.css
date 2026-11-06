@@ -185,6 +185,22 @@
   text-overflow: ellipsis;
 }
 
+/* Status select */
+.vo-status-select {
+  display: block;
+  margin-top: 10px;
+  width: 100%;
+  background: var(--vo-border);
+  color: var(--vo-text);
+  border: 1px solid var(--vo-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  appearance: auto;
+}
+.vo-status-select:focus { outline: 2px solid var(--vo-accent); outline-offset: 2px; }
+
 /* Empty */
 .vo-empty {
   color: var(--vo-muted);
