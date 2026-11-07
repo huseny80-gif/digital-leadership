@@ -1,11 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { VirtualOfficeGrid } from "./VirtualOfficeGrid";
 import type { OfficeEmployee } from "@/app/(app)/admin/virtual-office/page";
 
 export function VirtualOfficeSearchGrid({ employees }: { employees: OfficeEmployee[] }) {
   const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      e.preventDefault();
+      inputRef.current?.focus();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   const filtered = query.trim()
     ? employees.filter((e) =>
@@ -17,9 +30,10 @@ export function VirtualOfficeSearchGrid({ employees }: { employees: OfficeEmploy
     <>
       <div className="vo-search-bar">
         <input
+          ref={inputRef}
           className="vo-search-input"
           type="search"
-          placeholder="ابحث عن موظف…"
+          placeholder="ابحث عن موظف… ( / )"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           aria-label="بحث عن موظف بالاسم"
