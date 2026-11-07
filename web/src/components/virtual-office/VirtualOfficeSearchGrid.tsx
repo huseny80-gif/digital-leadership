@@ -10,11 +10,15 @@ export function VirtualOfficeSearchGrid({ employees }: { employees: OfficeEmploy
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       const tag = (e.target as HTMLElement).tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-      e.preventDefault();
-      inputRef.current?.focus();
+      if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT") {
+        e.preventDefault();
+        inputRef.current?.focus();
+      } else if (e.key === "Escape" && e.target === inputRef.current) {
+        setQuery("");
+        inputRef.current?.blur();
+      }
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
