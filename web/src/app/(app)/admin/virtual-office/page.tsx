@@ -1,4 +1,4 @@
-import { VirtualOfficeGrid } from "@/components/virtual-office/VirtualOfficeGrid";
+import { VirtualOfficeSearchGrid } from "@/components/virtual-office/VirtualOfficeSearchGrid";
 import { VirtualOfficeSummary } from "@/components/virtual-office/VirtualOfficeSummary";
 import { VirtualOfficeAutoRefresh } from "@/components/virtual-office/VirtualOfficeAutoRefresh";
 import { VirtualOfficeFilter } from "@/components/virtual-office/VirtualOfficeFilter";
@@ -91,7 +91,7 @@ export default async function VirtualOfficePage({
       <Suspense>
         <VirtualOfficeFilter counts={counts} />
       </Suspense>
-      <VirtualOfficeGrid employees={filtered} />
+      <VirtualOfficeSearchGrid employees={filtered} />
     </div>
   );
 }
