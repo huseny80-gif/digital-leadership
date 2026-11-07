@@ -281,6 +281,16 @@
   font-style: italic;
 }
 
+/* Sticky controls wrapper (filter + search) */
+.vo-sticky-controls {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--vo-bg);
+  border-bottom: 1px solid var(--vo-border);
+  padding-bottom: 12px;
+}
+
 /* Filter bar */
 .vo-filter-bar {
   display: flex;

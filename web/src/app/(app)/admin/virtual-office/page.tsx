@@ -88,10 +88,14 @@ export default async function VirtualOfficePage({
       </header>
 
       <VirtualOfficeAutoRefresh />
-      <Suspense>
-        <VirtualOfficeFilter counts={counts} />
-      </Suspense>
-      <VirtualOfficeSearchGrid employees={filtered} />
+      <VirtualOfficeSearchGrid
+        employees={filtered}
+        filterSlot={
+          <Suspense>
+            <VirtualOfficeFilter counts={counts} />
+          </Suspense>
+        }
+      />
     </div>
   );
 }
