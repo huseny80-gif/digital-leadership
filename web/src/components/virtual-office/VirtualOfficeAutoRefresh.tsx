@@ -7,9 +7,10 @@ export function VirtualOfficeAutoRefresh({ intervalMs = 15_000 }: { intervalMs?:
   const router = useRouter();
   const [elapsed, setElapsed] = useState(0);
   const [flashing, setFlashing] = useState(false);
-  const lastRefresh = useRef(Date.now());
+  const lastRefresh = useRef(0);
 
   useEffect(() => {
+    lastRefresh.current = Date.now();
     const refreshId = setInterval(() => {
       router.refresh();
       lastRefresh.current = Date.now();
