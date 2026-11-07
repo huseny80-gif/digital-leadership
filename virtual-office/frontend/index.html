@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المكتب الافتراضي</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d0d1a; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; }
+  #canvas { display: block; width: 100vw; height: 100vh; }
+
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px; background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px); z-index: 10;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  #hud h1 { color: #fff; font-size: 18px; font-weight: 600; }
+  #time { color: #aaa; font-size: 13px; }
+  #status-bar { color: #4fc; font-size: 12px; }
+
+  #panel {
+    position: fixed; bottom: 20px; left: 20px;
+    background: rgba(0,0,0,0.75); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+    padding: 14px; min-width: 220px; z-index: 10;
+    color: #fff; font-size: 13px;
+  }
+  #panel h2 { font-size: 14px; color: #aef; margin-bottom: 10px; }
+  .emp-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .emp-row:last-child { border-bottom: none; }
+  .emp-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot-idle    { background: #4fc; }
+  .dot-working { background: #fa0; animation: pulse 1s infinite; }
+  .dot-offline { background: #555; }
+  .emp-name { flex: 1; color: #ddd; }
+  .emp-anim { color: #888; font-size: 11px; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  #controls {
+    position: fixed; bottom: 20px; right: 20px;
+    display: flex; flex-direction: column; gap: 8px; z-index: 10;
+  }
+  .ctrl-btn {
+    padding: 8px 16px; border-radius: 8px; border: none;
+    cursor: pointer; font-size: 13px; font-weight: 600;
+    transition: opacity 0.2s;
+  }
+  .ctrl-btn:hover { opacity: 0.85; }
+  .btn-meet  { background: #7c3aed; color: #fff; }
+  .btn-reset { background: #1e40af; color: #fff; }
+</style>
+</head>
+<body>
+<div id="hud">
+  <h1>🏢 المكتب الافتراضي</h1>
+  <span id="time"></span>
+  <span id="status-bar">جاري الاتصال...</span>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<div id="panel">
+  <h2>👥 الموظفون</h2>
+  <div id="emp-list">جاري التحميل...</div>
+</div>
+
+<div id="controls">
+  <button class="ctrl-btn btn-meet" onclick="callMeeting()">📋 اجتماع</button>
+  <button class="ctrl-btn btn-reset" onclick="resetCamera()">🎥 إعادة الكاميرا</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const API = 'http://localhost:5050/api';
+const POLL_MS = 5000;
+
+// ── Renderer ──────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d0d1a);
+scene.fog = new THREE.Fog(0x0d0d1a, 25, 60);
+
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 18, 22);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 0);
+controls.maxPolarAngle = Math.PI / 2.1;
+controls.update();
+
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+// ── Lights ────────────────────────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const sun = new THREE.DirectionalLight(0xfff5e0, 1.2);
+sun.position.set(10, 20, 10);
+sun.castShadow = true;
+scene.add(sun);
+
+// ── Floor ─────────────────────────────────────────────────────────────────────
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(40, 30),
+  new THREE.MeshLambertMaterial({ color: 0x1a1a2e })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// Grid
+const grid = new THREE.GridHelper(40, 20, 0x222244, 0x222244);
+scene.add(grid);
+
+// ── Office layout helper ───────────────────────────────────────────────────────
+function box(w, h, d, color, x, y, z) {
+  const m = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshToonMaterial({ color })
+  );
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  scene.add(m);
+  return m;
+}
+
+// Walls
+box(40, 0.3, 0.3, 0x2d2d4e, 0, 0.15, -15);  // back
+box(0.3, 4, 30, 0x2d2d4e, -20, 2, 0);        // left
+box(0.3, 4, 30, 0x2d2d4e, 20, 2, 0);         // right
+
+// Desks (8 desks in 2 rows)
+const deskPositions = [
+  [-7,-4],[-3,-4],[3,-4],[7,-4],
+  [-7, 2],[-3, 2],[3, 2],[7, 2]
+];
+deskPositions.forEach(([x,z]) => {
+  box(2.2, 0.15, 1.1, 0x3a2a1a, x, 0.75, z);  // desk top
+  box(0.1, 0.75, 0.1, 0x2a1a0a, x-0.9, 0.37, z-0.4);  // leg
+  box(0.1, 0.75, 0.1, 0x2a1a0a, x+0.9, 0.37, z-0.4);
+  box(0.3, 0.3, 0.2, 0x1a3a5a, x, 1.07, z-0.1);        // monitor
+  box(0.5, 0.05, 0.1, 0x1a3a5a, x, 0.85, z+0.2);       // keyboard
+});
+
+// Meeting room (back-centre)
+const mrX = 0, mrZ = -11, mrW = 10, mrD = 5;
+box(mrW, 0.1, mrD, 0x1a2a3a, mrX, 0.05, mrZ);  // floor
+// Glass panels
+[[mrX-mrW/2,0,mrZ],[mrX+mrW/2,0,mrZ]].forEach(([x,,z]) => {
+  box(0.1, 2.5, mrD, 0x334466, x, 1.25, z);
+});
+// Conference table
+box(5, 0.15, 2, 0x4a3010, mrX, 0.9, mrZ);
+// 6 chairs
+[-1.8,0,1.8].forEach(dx => {
+  [-1.2,1.2].forEach(dz => {
+    box(0.6, 0.6, 0.6, 0x223355, mrX+dx, 0.6, mrZ+dz);
+  });
+});
+// Sign
+const signGeo = new THREE.PlaneGeometry(3, 0.6);
+const signMat = new THREE.MeshBasicMaterial({ color: 0x7c3aed });
+const sign = new THREE.Mesh(signGeo, signMat);
+sign.position.set(mrX, 2.8, mrZ - mrD/2 - 0.05);
+scene.add(sign);
+
+// Plants
+[[18,0,-13],[-18,0,-13],[18,0,13],[-18,0,13]].forEach(([x,y,z]) => {
+  box(0.4, 1.2, 0.4, 0x1a4a1a, x, 0.6, z);
+  box(0.8, 0.8, 0.8, 0x2d8a2d, x, 1.4, z);
+});
+
+// ── Employee avatars ───────────────────────────────────────────────────────────
+const AVATAR_COLORS = {
+  emp_001: 0xe74c3c, emp_002: 0x3498db, emp_003: 0x2ecc71,
+  emp_004: 0xf39c12, emp_005: 0x9b59b6, emp_006: 0x1abc9c,
+  emp_007: 0xe67e22, emp_008: 0x34495e, emp_009: 0xf1c40f,
+  lion: 0xffd700
+};
+
+const avatars = {};
+
+function createAvatar(id, color, x, z) {
+  const g = new THREE.Group();
+  // Body
+  const body = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.25, 0.5, 4, 8),
+    new THREE.MeshToonMaterial({ color })
+  );
+  body.position.y = 0.75;
+  g.add(body);
+  // Head
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.22, 12, 8),
+    new THREE.MeshToonMaterial({ color })
+  );
+  head.position.y = 1.4;
+  g.add(head);
+  g.position.set(x, 0, z);
+  scene.add(g);
+  avatars[id] = { group: g, home: { x, z }, phase: Math.random() * Math.PI * 2 };
+  return g;
+}
+
+// Place avatars at their desks
+deskPositions.forEach((pos, i) => {
+  const id = `emp_00${i + 1}`;
+  const color = AVATAR_COLORS[id] || 0xffffff;
+  createAvatar(id, color, pos[0], pos[1] + 0.8);
+});
+// Lion supervisor
+createAvatar('lion', AVATAR_COLORS.lion, 0, 7);
+
+// ── State management ──────────────────────────────────────────────────────────
+let officeState = {};
+let employeesData = {};
+const empNames = {};
+
+async function fetchState() {
+  try {
+    const r = await fetch(`${API}/state`);
+    officeState = await r.json();
+    document.getElementById('status-bar').textContent = '✅ متصل';
+    updatePanel();
+  } catch {
+    document.getElementById('status-bar').textContent = '❌ غير متصل — تأكد من تشغيل state_server.py';
+  }
+}
+
+async function fetchEmployees() {
+  try {
+    const r = await fetch(`${API}/employees`);
+    employeesData = await r.json();
+    // Build name map
+    Object.values(employeesData.departments || {}).forEach(dept => {
+      (dept.employees || []).forEach(e => { empNames[e.id] = e.name; });
+    });
+    if (employeesData.supervisor) empNames[employeesData.supervisor.id] = employeesData.supervisor.name;
+  } catch {}
+}
+
+function updatePanel() {
+  const list = document.getElementById('emp-list');
+  list.innerHTML = Object.entries(officeState).map(([id, s]) => {
+    const dotClass = s.status === 'working' ? 'dot-working' : s.status === 'offline' ? 'dot-offline' : 'dot-idle';
+    const name = empNames[id] || id;
+    const animLabel = { typing: '⌨️', sleep: '💤', idle: '☕', meeting: '📋' }[s.animation] || s.animation;
+    return `<div class="emp-row">
+      <span class="emp-dot ${dotClass}"></span>
+      <span class="emp-name">${name}</span>
+      <span class="emp-anim">${animLabel}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Animation loop ────────────────────────────────────────────────────────────
+const clock = new THREE.Clock();
+
+function animateAvatars(t) {
+  Object.entries(avatars).forEach(([id, av]) => {
+    const s = officeState[id];
+    if (!s) return;
+    const g = av.group;
+    if (s.animation === 'typing') {
+      // Slight forward bob
+      g.children[0].position.y = 0.75 + Math.sin(t * 4 + av.phase) * 0.04;
+    } else if (s.animation === 'sleep') {
+      // Lean down
+      g.rotation.x = 0.4 + Math.sin(t * 0.5 + av.phase) * 0.05;
+      g.children[1].position.y = 1.2;
+    } else {
+      // Idle sway
+      g.rotation.y = Math.sin(t * 0.8 + av.phase) * 0.15;
+      g.children[0].position.y = 0.75 + Math.sin(t * 1.2 + av.phase) * 0.03;
+      g.rotation.x = 0;
+      g.children[1].position.y = 1.4;
+    }
+  });
+}
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('time').textContent =
+    now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+  animateAvatars(t);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+// ── Meeting ───────────────────────────────────────────────────────────────────
+const meetSeats = [
+  [mrX - 1.8, mrZ - 1.2], [mrX, mrZ - 1.2], [mrX + 1.8, mrZ - 1.2],
+  [mrX - 1.8, mrZ + 1.2], [mrX, mrZ + 1.2], [mrX + 1.8, mrZ + 1.2],
+];
+
+function callMeeting() {
+  const idle = Object.entries(officeState)
+    .filter(([, s]) => s.status === 'idle')
+    .map(([id]) => id)
+    .slice(0, 6);
+
+  idle.forEach((id, i) => {
+    const av = avatars[id];
+    if (!av) return;
+    const [tx, tz] = meetSeats[i];
+    moveTo(av.group, tx, tz, 2000 + i * 300);
+    officeState[id] = { ...officeState[id], animation: 'meeting', location: 'meeting' };
+    fetch(`${API}/state/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ animation: 'meeting', location: 'meeting' })
+    }).catch(() => {});
+  });
+  updatePanel();
+}
+
+function moveTo(group, tx, tz, delay) {
+  setTimeout(() => {
+    const startX = group.position.x, startZ = group.position.z;
+    const steps = 60; let step = 0;
+    const id = setInterval(() => {
+      step++;
+      const p = step / steps;
+      group.position.x = startX + (tx - startX) * p;
+      group.position.z = startZ + (tz - startZ) * p;
+      if (step >= steps) clearInterval(id);
+    }, 16);
+  }, delay);
+}
+
+function resetCamera() {
+  camera.position.set(0, 18, 22);
+  controls.target.set(0, 0, 0);
+  controls.update();
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
+fetchEmployees().then(fetchState);
+setInterval(fetchState, POLL_MS);
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+</body>
+</html>

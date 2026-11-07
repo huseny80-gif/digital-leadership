@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Cairo, Tajawal } from "next/font/google";
 import { connection } from "next/server";
 import "./globals.css";
 import "./reference-dashboard.css";
@@ -8,26 +7,7 @@ import "./content-automation.css";
 import "./participant-feedback.css";
 import "./learning-dashboard.css";
 import "./training-access.css";
-
-/**
- * Phase 18.1 — Finquiz Visual Identity Foundation: typography pairing
- * ported from Finquiz's styles.css (Cairo for headings/brand/buttons,
- * Tajawal for body text), loaded via next/font for self-hosting +
- * automatic subsetting instead of a runtime Google Fonts <link>.
- */
-const cairo = Cairo({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-heading",
-  display: "swap",
-});
-
-const tajawal = Tajawal({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-body",
-  display: "swap",
-});
+import "./virtual-office-dashboard.css";
 
 export const metadata: Metadata = {
   title: "القيادة الرقمية | Digital Leadership",
@@ -44,7 +24,7 @@ export default async function RootLayout({
   // cannot contain the current request's nonce.
   await connection();
   return (
-    <html lang="ar" dir="rtl" className={`${cairo.variable} ${tajawal.variable}`}>
+    <html lang="ar" dir="rtl">
       <body>{children}</body>
     </html>
   );
