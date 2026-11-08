@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { STUDY_VOICES } from "@digital-leadership/shared";
 import { LecturePodcast } from "@/components/content/LecturePodcast";
 import { audioResponse, jsonResponse, summaryFixture } from "./fixtures/subjectSummaries";
@@ -16,9 +16,17 @@ beforeEach(() => {
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
   vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
 });
-afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+afterEach(() => {
+  // Unmount while media mocks still exist: cleanup can flush passive effects.
+  cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals();
+});
 
 const mount = () => render(<LecturePodcast subjectId={data.subjectId} lecture={lecture} voices={data.voices} onRefreshSummary={vi.fn()} />);
+async function playingLecture() {
+  const player = await screen.findByLabelText<HTMLAudioElement>(`تسجيل ${lecture.title}`);
+  await waitFor(() => expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce());
+  return player;
+}
 
 describe("one lecture's source-bound podcast", () => {
   it.each(STUDY_VOICES)("prepares $id only after the learner requests playback with that lecture's revision", async voice => {
@@ -27,7 +35,7 @@ describe("one lecture's source-bound podcast", () => {
     fireEvent.change(screen.getByLabelText("الصوت واللهجة"), { target: { value: voice.id } });
     expect(fetch).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "تشغيل البودكاست" }));
-    const player = await screen.findByLabelText(`تسجيل ${lecture.title}`);
+    const player = await playingLecture();
     expect(player).toHaveAttribute("src", "blob:local-podcast-fixture");
     expect(player).not.toHaveAttribute("autoplay");
     expect(fetch).toHaveBeenCalledWith(`${lecture.audioUrl}&voice=${voice.id}`, expect.objectContaining({ credentials: "same-origin", signal: expect.any(AbortSignal) }));
@@ -46,7 +54,7 @@ describe("one lecture's source-bound podcast", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "تشغيل البودكاست" })).toBeInTheDocument());
     expect(makeUrl).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "تشغيل البودكاست" }));
-    await screen.findByLabelText(`تسجيل ${lecture.title}`);
+    await playingLecture();
     expect(vi.mocked(fetch).mock.calls[1][0]).toBe(`${lecture.audioUrl}&voice=iraqi-female`);
   });
 
@@ -57,7 +65,7 @@ describe("one lecture's source-bound podcast", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(screen.queryByLabelText(`تسجيل ${lecture.title}`)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "إعادة تجهيز البودكاست" }));
-    await screen.findByLabelText(`تسجيل ${lecture.title}`);
+    await playingLecture();
   });
 
   it("requests a summary refresh after a stale audio revision", async () => {
@@ -71,7 +79,7 @@ describe("one lecture's source-bound podcast", () => {
 
   it("enables native seek and speed only on the loaded recording and revokes it on voice change", async () => {
     mount(); fireEvent.click(screen.getByRole("button", { name: "تشغيل البودكاست" }));
-    const player = await screen.findByLabelText<HTMLAudioElement>(`تسجيل ${lecture.title}`);
+    const player = await playingLecture();
     expect(screen.getByRole("button", { name: "رجوع ١٥ ثانية" })).toBeDisabled();
     Object.defineProperty(player, "duration", { value: 300 }); player.currentTime = 20;
     fireEvent.loadedMetadata(player);
