@@ -11,6 +11,7 @@ export async function ensureExamMaterialSchema(pool: Pool): Promise<void> {
     await client.query(await readFile(new URL("../../../supabase/migrations/00000000000024_exam_challenge.sql", import.meta.url), "utf8"));
     await client.query(await readFile(new URL("../../../supabase/migrations/00000000000025_exam_instructor_guides.sql", import.meta.url), "utf8"));
     await client.query(await readFile(new URL("../../../supabase/migrations/00000000000028_reviewed_assessment_bank.sql", import.meta.url), "utf8"));
+    await client.query(await readFile(new URL("../../../supabase/migrations/00000000000029_attempt_question_selection.sql", import.meta.url), "utf8"));
     await client.query("commit");
   } catch (error) { await client.query("rollback"); throw error; }
   finally { client.release(); }

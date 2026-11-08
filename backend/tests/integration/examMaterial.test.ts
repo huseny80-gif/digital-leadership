@@ -185,6 +185,28 @@ describe("independent exam material archives", () => {
     } finally { client.release(); }
   });
 
+  it("limits one attempt to the chosen question types and lectures and grades only that selection", async () => {
+    const s = await seed(), group = await s.generate([s.lectures[0]!, s.lectures[1]!]);
+    const all = (await pool.query<{ id: string; question_type: string; lecture_id: string }>("select q.id,q.question_type,q.lecture_id from quiz_questions qq join questions q on q.id=qq.question_id where qq.quiz_id=$1", [group.quizId])).rows;
+    const pick = (types: string[], lecture: string) => all.filter(q => types.includes(q.question_type) && q.lecture_id === lecture).map(q => q.id).sort();
+    const types = ["multiple_choice", "true_false"], lecture = group.lectures[0]!.id, expected = pick(types, lecture);
+    expect(expected.length).toBeGreaterThan(0);
+    const start = (body: object) => request(s.app).post(`${s.path}/${group.id}/attempts`).set("Cookie", s.cookie).send({ mode: "learning", ...body });
+    const attempt = (await start({ questionTypes: types, lectureIds: [lecture] }).expect(201)).body.data;
+    expect([...attempt.questionIds].sort()).toEqual(expected);
+    // Same choice resumes the same attempt; a different choice is a separate attempt.
+    expect((await start({ questionTypes: [...types].reverse(), lectureIds: [lecture] }).expect(201)).body.data.id).toBe(attempt.id);
+    expect((await start({}).expect(201)).body.data.id).not.toBe(attempt.id);
+    const bundle = (await request(s.app).get(`${s.path}/${group.id}/attempts/${attempt.id}`).set("Cookie", s.cookie).expect(200)).body.data;
+    expect(bundle.questions.map((q: { id: string }) => q.id).sort()).toEqual(expected);
+    const outside = all.find(q => !expected.includes(q.id))!;
+    await request(s.app).post(`/api/v1/attempts/${attempt.id}/answers`).set("Cookie", s.cookie).send({ questionId: outside.id, answerText: "x" }).expect(400);
+    const result = (await request(s.app).post(`/api/v1/attempts/${attempt.id}/submit`).set("Cookie", s.cookie).expect(200)).body.data;
+    expect(result.totalQuestions).toBe(expected.length);
+    await start({ questionTypes: ["match"], lectureIds: ["ffffffff-ffff-4fff-8fff-ffffffffffff"] }).expect(400);
+    await start({ questionTypes: ["unknown"] }).expect(400);
+  });
+
   it("reveals source-linked knowledge gaps only after final grading and only to the attempt owner", async () => {
     const s = await seed(), group = await s.generate([s.lectures[0]!]);
     const attempt = (await request(s.app).post(`${s.path}/${group.id}/attempts`).set("Cookie", s.cookie).send({ mode: "challenge" }).expect(201)).body.data;

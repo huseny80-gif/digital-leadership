@@ -35,7 +35,7 @@ describe("one subject's academic summaries and lecture podcasts", () => {
     vi.mocked(fetch).mockResolvedValue(jsonResponse({ data }));
     const { container } = render(<SubjectSummaries subjectId={data.subjectId} subjectTitle={data.courseTitle} />);
     await waitFor(() => expect(container.querySelectorAll("details")).toHaveLength(6));
-    expect(container.querySelector("#lecture-6")).toHaveProperty("open", true);
+    await waitFor(() => expect(container.querySelector("#lecture-6")).toHaveProperty("open", true));
     expect(container.querySelector("#summary-text-6")).toHaveTextContent("شرح أكاديمي تجريبي خاص بالمحاضرة 6.");
     expect(screen.getByRole("navigation", { name: `فهرس ملخصات ${data.courseTitle}` }).querySelectorAll("a")).toHaveLength(6);
   });
@@ -53,7 +53,7 @@ describe("one subject's academic summaries and lecture podcasts", () => {
     vi.mocked(fetch).mockResolvedValue(jsonResponse({ data }));
     const { container } = render(<SubjectSummaries subjectId={course.id} subjectTitle={data.courseTitle} />);
     await waitFor(() => expect(container.querySelectorAll("details")).toHaveLength(course.lectures));
-    expect(container.querySelector(`#lecture-${currentNumber}`)).toHaveProperty("open", true);
+    await waitFor(() => expect(container.querySelector(`#lecture-${currentNumber}`)).toHaveProperty("open", true));
   });
 
   it.each([401, 404, 500])("shows an actionable status %s without rendering another course", async status => {

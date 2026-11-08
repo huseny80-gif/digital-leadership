@@ -33,8 +33,19 @@ beforeEach(() => {
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); document.documentElement.innerHTML = ""; localStorage.clear(); window.history.replaceState(null, "", "/"); });
 
-describe("subject-bound comprehensive exam legacy document", () => {
-  it.each(STUDY_COURSES)("loads $slug's comprehensive exam with all six formats and source feedback", async course => {
+describe("source-backed course inventory and comprehensive exams", () => {
+  // The legacy page redirects to the protected subject UI. Keep the published
+  // audio inventory complete independently of that document's presentation.
+  it.each(STUDY_COURSES)("retains every published lecture of $slug in the offline audio inventory", course => {
+    const inventory = JSON.parse(readFileSync(resolve(process.cwd(), "..", "assets/audio/study-data.json"), "utf8")) as { subjects: Array<{ id: string }>; lectures: Array<{ subjectId: string; catalogLectureId: string; number: number }> };
+    const catalog = JSON.parse(readFileSync(resolve(process.cwd(), "..", "backend/content/finquiz/catalog.json"), "utf8")) as { subjects: Array<{ id: string; lectures: Array<{ id: string; status: string; number: number }> }> };
+    const published = catalog.subjects.find(subject => subject.id === course.slug)!.lectures.filter(lecture => lecture.status === "published");
+    const shown = inventory.lectures.filter(lecture => lecture.subjectId === course.id);
+    expect(inventory.subjects.some(subject => subject.id === course.id)).toBe(true);
+    expect(shown.map(lecture => lecture.catalogLectureId).sort()).toEqual(published.map(lecture => lecture.id).sort());
+    expect(new Set(shown.map(lecture => lecture.number)).size).toBe(shown.length);
+  });
+  it.each(STUDY_COURSES)("loads $slug's comprehensive exam with all six formats and source-based feedback", async course => {
     const data = fixture(course.id).exam; await render("exam", course.id, data);
     expect(document.querySelector("main .eyebrow")!.textContent).toBe(data.courseTitle);
     expect(document.querySelector("#bank-count")!.textContent).toBe("٦");

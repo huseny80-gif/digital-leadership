@@ -178,7 +178,7 @@ export class ExamMaterialService {
     const attempt = await this.assessments.getAttemptOrThrow(attemptId, principal);
     if (attempt.quizId !== group.quizId) throw notFound("Quiz attempt");
     const [questions, answers, feedback, result] = await Promise.all([
-      this.assessmentRepository.listQuestionsForAttempt(group.quizId),
+      this.assessmentRepository.listQuestionsForAttempt(group.quizId, attempt.questionIds),
       this.assessments.getAnswersOrThrow(attemptId, principal),
       this.assessments.getFeedbackOrThrow(attemptId, principal, isAdmin),
       attempt.status === "in_progress" ? Promise.resolve(null) : this.assessments.getResultOrThrow(attemptId, principal, isAdmin),
@@ -186,7 +186,7 @@ export class ExamMaterialService {
     let knowledgeGaps: ExamMaterialAttempt["knowledgeGaps"];
     if (attempt.status !== "in_progress") {
       const evidence = await this.pool.query<{ id: string; lecture_id: string; rubric: unknown }>(`select q.id,q.lecture_id,q.rubric from questions q
-        join quiz_questions qq on qq.question_id=q.id where qq.quiz_id=$1 order by qq.order_index`, [group.quizId]);
+        join quiz_questions qq on qq.question_id=q.id where qq.quiz_id=$1 and ($2::uuid[] is null or q.id=any($2::uuid[])) order by qq.order_index`, [group.quizId, attempt.questionIds ?? null]);
       knowledgeGaps = knowledgeGapReport({ attemptId, questions, answers, feedback, sources: evidence.rows.map(question => ({
         questionId: question.id, lectureId: question.lecture_id,
         lectureTitle: group.lectures.find(lecture => lecture.id === question.lecture_id)?.title ?? "المحاضرة الأصلية",
@@ -200,9 +200,23 @@ export class ExamMaterialService {
     }) };
   }
 
-  async startAttempt(subjectId: string, groupId: string, principal: AssessmentPrincipal, isAdmin: boolean, mode: ExamExperienceMode): Promise<QuizAttempt> {
+  async startAttempt(subjectId: string, groupId: string, principal: AssessmentPrincipal, isAdmin: boolean, mode: ExamExperienceMode, selection: { questionTypes?: QuestionType[] | undefined; lectureIds?: string[] | undefined } = {}): Promise<QuizAttempt> {
     const group = await this.detail(subjectId, groupId, isAdmin);
-    return this.assessments.startAttempt(group.quizId, principal, isAdmin, { mode, ...(mode === "challenge" ? { timeLimitSeconds: examChallengeSeconds(group.questionCount) } : {}) });
+    const questionIds = await this.selectedQuestionIds(group, selection);
+    const count = questionIds?.length ?? group.questionCount;
+    return this.assessments.startAttempt(group.quizId, principal, isAdmin, { mode, ...(questionIds ? { questionIds } : {}), ...(mode === "challenge" ? { timeLimitSeconds: examChallengeSeconds(count) } : {}) });
+  }
+
+  /** null = the whole group's quiz (no filter, or the filter covers everything). */
+  private async selectedQuestionIds(group: ExamMaterialDetail, selection: { questionTypes?: QuestionType[] | undefined; lectureIds?: string[] | undefined }): Promise<string[] | null> {
+    const { questionTypes, lectureIds } = selection;
+    if (!questionTypes?.length && !lectureIds?.length) return null;
+    if (lectureIds?.some(id => !group.lectures.some(lecture => lecture.id === id))) throw new ValidationError("اختر محاضرات من هذه المجموعة فقط.");
+    const rows = (await this.pool.query<{ id: string }>(`select q.id from quiz_questions qq join questions q on q.id=qq.question_id and q.deleted_at is null
+      where qq.quiz_id=$1 and ($2::text[] is null or q.question_type::text=any($2::text[])) and ($3::uuid[] is null or q.lecture_id=any($3::uuid[]))
+      order by qq.order_index,q.id`, [group.quizId, questionTypes?.length ? questionTypes : null, lectureIds?.length ? lectureIds : null])).rows;
+    if (!rows.length) throw new ValidationError("لا توجد أسئلة تطابق أنواع الأسئلة والمحاضرات المختارة.");
+    return rows.length === group.questionCount ? null : rows.map(row => row.id);
   }
 
   /** Called exclusively behind requireAdmin; never part of a public detail. */

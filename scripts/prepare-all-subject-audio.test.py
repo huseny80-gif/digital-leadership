@@ -35,6 +35,7 @@ class InventoryTests(unittest.TestCase):
         self.write("backend/content/finquiz/catalog.json", {"sourceCommit": "fixture", "subjects": [
             {"id": "ai-data", "title": "مادة تجريبية", "lectures": [self.lecture]}]})
         self.write("backend/content/finquiz/academicSummaries.json", {"summaries": [self.summary]})
+        self.write("backend/content/finquiz/catalogStudyContent.json", {"sources": []})
         self.write("assets/audio/study-data.json", {"lectures": [], "voices": []})
         self.write("assets/audio/manifest.json", self.previous)
 
@@ -72,6 +73,31 @@ class InventoryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "identities are invalid"):
             self.result()
         self.assertEqual(before, (self.root / "assets/audio/manifest.json").read_bytes())
+
+    def test_retains_published_summary_outside_lecture_catalog_without_reusing_a_changed_source(self):
+        source_summary = {"lectureId": "ai-l2", "title": "ملخص المحاضرة 2", "status": "published",
+                          "body": "تمهيد الملخص المنشور.\n\nشرح معتمد من مصدره."}
+        self.write("backend/content/finquiz/catalog.json", {"sourceCommit": "fixture", "subjects": [
+            {"id": "ai-data", "title": "مادة تجريبية", "lectures": [self.lecture], "summaries": [source_summary]}]})
+        self.write("backend/content/finquiz/catalogStudyContent.json", {"sources": [
+            {"lectureId": "ai-l2", "content": {"sha256": "b" * 64}}]})
+        summary = prepare_audio.extra_summary("ai-l2", source_summary)
+        lecture = {"id": "ai-l2", "title": "المحاضرة 2", "number": 2}
+        prior = {"id": "ai-l2", "sourceSha256": "c" * 64,
+                 "summarySha256": prepare_audio.sha(prepare_audio.canonical(lecture, summary)),
+                 "recordings": {"msa-male": {"path": "assets/audio/ai-l2/msa-male.mp3", "available": True}}}
+        self.previous["lectures"].append(prior)
+        self.write("assets/audio/manifest.json", self.previous)
+        prepare_audio.prepare(self.root)
+        data = json.loads((self.root / "assets/audio/study-data.json").read_text())
+        extra = data["lectures"][1]
+        self.assertEqual(extra["catalogLectureId"], "ai-l2")
+        self.assertEqual(extra["number"], 2)
+        self.assertEqual(extra["sha256"], "b" * 64)
+        self.assertEqual(extra["overview"], "تمهيد الملخص المنشور.")
+        manifest = json.loads((self.root / "assets/audio/manifest.json").read_text())
+        self.assertFalse(manifest["lectures"][1]["recordings"]["msa-male"]["available"])
+        prepare_audio.prepare(self.root, check=True)
 
 
 if __name__ == "__main__":
