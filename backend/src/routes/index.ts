@@ -18,6 +18,7 @@ import { studyToolsRoutes } from "../studyTools/studyToolsRoutes.js";
 import { academicPresentation } from "../middleware/academicPresentation.js";
 import { summaryVisualRoutes } from "../mindMaps/summaryVisualRoutes.js";
 import { courseStudyRoutes } from "../studyTools/courseStudyRoutes.js";
+import { loginNotificationsRoutes } from "../notifications/loginNotificationsRoutes.js";
 
 /**
  * Assembles the versioned API surface under `/api/v1` (API_V1.md,
@@ -47,6 +48,7 @@ export function apiV1Router(): Router {
   router.use("/analytics", analyticsRoutes());
   router.use("/admin/content-imports", contentImportRoutes());
   router.use("/admin", adminRoutes());
+  router.use("/admin/login-notifications", loginNotificationsRoutes());
   // Mounts /admin/training-access (admin), /training-access/join/:token
   // (public), and /guest/* (guest-session-gated) — see
   // trainingAccessRoutes.ts's own header comment.

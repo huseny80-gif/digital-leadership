@@ -446,8 +446,10 @@
 .dl-workspace .dl-notifications-hub {
   width: 370px;
   max-width: calc(100vw - 24px);
+  max-height: min(680px, calc(100dvh - 100px));
   padding: 0;
   overflow: hidden;
+  overflow-y: auto;
   border-radius: 16px;
 }
 .dl-notifications-heading {

@@ -7,6 +7,8 @@ import { requireUuidParam, ValidationError } from "../lib/validation.js";
 import { forbidden } from "../lib/httpError.js";
 import { LearningRepository } from "./learningRepository.js";
 import { SearchService } from "./searchService.js";
+import { LoginNotificationsRepository, type LoginNotificationsStore } from "../notifications/loginNotificationsRepository.js";
+import { recordLearnerEntry } from "../notifications/learnerEntry.js";
 
 const heartbeatSchema = z
   .object({
@@ -16,6 +18,7 @@ const heartbeatSchema = z
   })
   .strict();
 const progressSchema = z.object({ completed: z.boolean() }).strict();
+const entrySchema = z.object({}).strict();
 const searchSchema = z
   .object({
     q: z
@@ -27,7 +30,9 @@ const searchSchema = z
   })
   .strict();
 
-export function learningRoutes(): Router {
+export function learningRoutes(
+  getLoginNotifications: () => Pick<LoginNotificationsStore, "recordEntry"> = () => new LoginNotificationsRepository(getPool()),
+): Router {
   const router = Router();
   router.use(
     ["/learning", "/search"],
@@ -49,6 +54,13 @@ export function learningRoutes(): Router {
     req.user
       ? { kind: "user", userId: req.user.id }
       : { kind: "guest", guestSessionId: req.guestSession!.id };
+  router.post("/learning/entry", async (req, res, next) => {
+    try {
+      if (!entrySchema.safeParse(req.body).success) throw new ValidationError("بيانات الدخول غير صالحة.");
+      // Keep the pool lazy for staff/older sessions that produce no event.
+      res.json({ data: await recordLearnerEntry(req, { recordEntry: (entry) => getLoginNotifications().recordEntry(entry) }) });
+    } catch (error) { next(error); }
+  });
   router.get("/learning/overview", async (req, res, next) => {
     try {
       res.json({ data: await repository().overview(principal(req)) });

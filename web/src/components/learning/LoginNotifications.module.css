@@ -1,0 +1,17 @@
+.section { border-bottom: 1px solid var(--color-border-soft); }
+.heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; }
+.heading h3 { margin: 0; font-size: 14px; line-height: 1.8; color: var(--color-text); }
+.heading button, .error button { min-height: 44px; padding: 8px 10px; font: inherit; font-size: 12px; color: var(--color-primary); border: 1px solid var(--color-border); background: var(--color-surface); border-radius: 8px; cursor: pointer; }
+.heading button:disabled { cursor: default; opacity: .65; }
+.list { max-height: min(310px, 35dvh); overflow-y: auto; overscroll-behavior: contain; }
+.row { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-top: 1px solid var(--color-border-soft); overflow-wrap: anywhere; }
+.row[data-unread="true"] { background: color-mix(in srgb, var(--color-primary) 9%, transparent); }
+.row svg { width: 20px; height: 20px; flex-shrink: 0; margin-top: 4px; color: var(--color-primary); }
+.copy { min-width: 0; flex: 1; }
+.copy strong, .copy small, .copy time { display: block; line-height: 1.8; }
+.copy strong { font-size: 14px; }
+.copy small, .copy time { font-size: 12px; color: var(--color-text-muted); }
+.unread { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--color-primary); margin-top: 10px; }
+.message, .error { margin: 0; padding: 12px 14px; font-size: 13px; line-height: 1.9; color: var(--color-text-muted); }
+.error button { display: block; margin-block-start: 8px; }
+.all { display: block; padding: 12px 14px; color: var(--color-primary); font-size: 13px; border-top: 1px solid var(--color-border-soft); }

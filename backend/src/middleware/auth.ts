@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { createHash } from "node:crypto";
 import type { UserProfile } from "@shared/index";
 import { verifySupabaseToken } from "../auth/verifySupabaseToken.js";
 import { resolveOrProvisionUser } from "../users/provisioning.js";
@@ -15,6 +16,9 @@ declare global {
        * — and never overridable by — any client-supplied header, body
        * field, cookie, or query parameter (PHASE 06 §3). */
       user?: UserProfile;
+      /** Derived only from a verified stable Supabase session and bound to
+       * the resolved application user. No token or raw session ID is kept. */
+      authSession?: { userId: string; fingerprint: string };
     }
   }
 }
@@ -51,6 +55,8 @@ export function createAuthMiddleware(getRepository: () => UsersRepository) {
    * unambiguously an attack or a broken client, not "just anonymous".
    */
   async function authenticate(req: Request, _res: Response, next: NextFunction) {
+    // Clear stale context even if a caller reuses a request in middleware tests.
+    delete req.authSession;
     const token = extractBearerToken(req);
     if (!token) {
       next();
@@ -61,6 +67,14 @@ export function createAuthMiddleware(getRepository: () => UsersRepository) {
       const user = await resolveOrProvisionUser(getRepository(), claims);
       if (user.status !== "active") throw forbidden();
       req.user = user;
+      if (claims.sessionId) {
+        req.authSession = {
+          userId: user.id,
+          fingerprint: createHash("sha256")
+            .update(`supabase:${claims.sub}:${claims.sessionId}`)
+            .digest("hex"),
+        };
+      }
       next();
     } catch (err) {
       next(err);
