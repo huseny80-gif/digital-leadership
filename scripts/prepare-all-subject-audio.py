@@ -94,7 +94,7 @@ def prepare(root, check=False):
             if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", id_):
                 raise ValueError(f"Unsafe audio asset identifier: {id_}")
             folder = root / "assets/audio" / id_
-            if id_.startswith("innovation-"):
+            if id_.startswith("innovation-") and (folder / "summary.txt").is_file() and id_ in old_display:
                 # Preserve exact approved source bytes and existing recording paths.
                 text = (folder / "summary.txt").read_text()
                 display = dict(old_display[id_])
