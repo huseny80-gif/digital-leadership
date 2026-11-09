@@ -25,6 +25,9 @@ export interface SupabaseTokenClaims {
   provider: string;
   displayName: string | null;
   avatarUrl: string | null;
+  /** Stable Supabase login session, extracted only after signature verification.
+   * Optional for older tokens; never returned to clients or persisted as-is. */
+  sessionId?: string;
 }
 
 export class InvalidSessionError extends HttpError {
@@ -129,5 +132,9 @@ export async function verifySupabaseToken(token: string): Promise<SupabaseTokenC
       (typeof userMetadata?.name === "string" && userMetadata.name) ||
       null,
     avatarUrl: typeof userMetadata?.avatar_url === "string" ? userMetadata.avatar_url : null,
+    ...(typeof payload.session_id === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.session_id)
+      ? { sessionId: payload.session_id.toLowerCase() }
+      : {}),
   };
 }

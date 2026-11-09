@@ -4,21 +4,27 @@ import { useEffect, useRef } from "react";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import { activityStatusLabels, formatDeadline } from "@/lib/learning";
 import { useLearning } from "./LearningProvider";
+import { useLoginNotifications } from "./useLoginNotifications";
+import styles from "./LoginNotifications.module.css";
 
 export function NotificationsHub({
   open,
   onToggle,
   onClose,
+  isAdmin = false,
 }: {
   open: boolean;
   onToggle: () => void;
   onClose: () => void;
+  isAdmin?: boolean;
 }) {
   const { overview, loading, error, refresh } = useLearning();
   const root = useRef<HTMLDivElement>(null);
+  const logins = useLoginNotifications(isAdmin, open);
   const activities = (overview?.activities ?? []).filter(
     (item) => item.dueAt && item.status !== "completed",
   );
+  const count = activities.length + (logins.data?.unreadCount ?? 0);
   useEffect(() => {
     if (!open) return;
     const outside = (event: PointerEvent) => {
@@ -33,7 +39,7 @@ export function NotificationsHub({
         type="button"
         className="dl-header-control dl-notifications-button"
         aria-label={
-          activities.length
+          isAdmin ? `الإشعارات — الدخول غير المقروء: ${logins.data?.unreadCount ?? 0}، المواعيد: ${activities.length}` : activities.length
             ? `الإشعارات — المواعيد: ${activities.length}`
             : "الإشعارات"
         }
@@ -42,11 +48,11 @@ export function NotificationsHub({
         onClick={onToggle}
       >
         <PlatformIcon name="bell" />
-        {activities.length ? (
+        {count ? (
           <span className="dl-notification-count">
-            {activities.length > 9
+            {count > 9
               ? "+٩"
-              : activities.length.toLocaleString("ar")}
+              : count.toLocaleString("ar-IQ")}
           </span>
         ) : null}
       </button>
@@ -67,6 +73,18 @@ export function NotificationsHub({
               <PlatformIcon name="close" />
             </button>
           </div>
+          {isAdmin ? <section className={styles.section} aria-label="دخول المتدربين والزوار">
+            <div className={styles.heading}><h3>دخول المتدربين والزوار</h3>
+              {logins.data?.unreadCount ? <button type="button" disabled={logins.marking} onClick={() => void logins.markAllRead()}>{logins.marking ? "جارٍ حفظ القراءة…" : "تحديد الكل كمقروء"}</button> : null}
+            </div>
+            {logins.error ? <div className={styles.error} role="status">{logins.error}<button type="button" onClick={() => void logins.refresh()}>إعادة تحميل إشعارات الدخول</button></div> : null}
+            {logins.data?.items.length ? <div className={styles.list}>{logins.data.items.map(item => <div className={styles.row} key={item.id} data-unread={!item.read}>
+              <PlatformIcon name="user" /><span className={styles.copy}><strong>{item.displayName}</strong><small>{item.kind === "trainee" ? "دخول متدرب" : "دخول زائر"}</small>
+                <time dateTime={item.enteredAt}>{new Date(item.enteredAt).toLocaleString("ar-IQ", { dateStyle: "short", timeStyle: "short" })}</time></span>
+              {!item.read ? <span className={styles.unread} aria-label="غير مقروء" /> : null}
+            </div>)}</div> : !logins.error ? <p className={styles.message} role="status">{logins.loading ? "جارٍ تحميل إشعارات الدخول…" : "لا توجد إشعارات دخول جديدة بعد."}</p> : null}
+            <a className={styles.all} href="/admin/audit-logs" onClick={onClose}>عرض سجل الدخول والنشاط ←</a>
+          </section> : null}
           {error ? (
             <div className="dl-learning-error" role="status">
               {error}

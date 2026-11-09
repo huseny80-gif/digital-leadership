@@ -16,6 +16,7 @@ import { Footer } from "./Footer";
 import { SmartSearch } from "@/components/search/SmartSearch";
 import { LearningProvider } from "@/components/learning/LearningProvider";
 import { NotificationsHub } from "@/components/learning/NotificationsHub";
+import { LearnerEntryReporter } from "@/components/learning/LearnerEntryReporter";
 import { useThemePreference } from "@/lib/themePreference";
 import { StudyAssistantWidget } from "@/components/study-tools/StudyAssistantWidget";
 
@@ -63,6 +64,7 @@ export function AppShell({ children, isAdmin, isInstructor = false, userEmail, u
   const toggleMenu = (next: typeof menu) => setMenu(menu === next ? null : next);
 
   return <LearningProvider><div className="app-shell dl-workspace" dir="rtl" data-navigation-open={navigationOpen} data-theme={dark ? "dark" : "light"}>
+    <LearnerEntryReporter key={guestSession?.id ?? userEmail ?? "anonymous"} enabled={!isAdmin && !isInstructor} />
     <a href="#main-content" className="skip-link">Skip to main content</a>
     <header className="app-header">
       <div className="app-header-inner">
@@ -75,7 +77,7 @@ export function AppShell({ children, isAdmin, isInstructor = false, userEmail, u
             {menu === "language" ? <div className="dl-header-popover" id="language-menu"><button type="button" onClick={() => setMenu(null)} lang="ar">العربية <span aria-hidden="true">✓</span></button></div> : null}
           </div>
           <button type="button" className="dl-header-control dl-theme-control" aria-label={dark ? "تفعيل الوضع الفاتح" : "تفعيل الوضع الداكن"} aria-pressed={dark} onClick={toggleTheme}><PlatformIcon name={dark ? "moon" : "sun"} /></button>
-          <NotificationsHub open={menu === "notifications"} onToggle={() => toggleMenu("notifications")} onClose={() => setMenu(null)} />
+          <NotificationsHub key={`${guestSession?.id ?? userEmail ?? "anonymous"}:${isAdmin}`} isAdmin={!isGuest && isAdmin} open={menu === "notifications"} onToggle={() => toggleMenu("notifications")} onClose={() => setMenu(null)} />
           <div className="dl-control-wrap">
             <button type="button" className="dl-account-button" aria-label="قائمة الحساب" aria-expanded={menu === "account"} aria-controls="account-menu" onClick={() => toggleMenu("account")}>
               <span className="dl-user-avatar">{userAvatarUrl ? <Image src={userAvatarUrl} alt="" width={38} height={38} unoptimized /> : isPlatformOwner ? <ReferenceArtwork x={1101} y={24} width={38} height={38} /> : <PlatformIcon name="user" />}</span>
