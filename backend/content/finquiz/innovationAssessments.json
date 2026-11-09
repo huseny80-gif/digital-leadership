@@ -2,19 +2,19 @@
   "version": "reviewed-innovation-curriculum-v1",
   "sourceCommit": "57033f33ad48f2bb0a53e664eb7ce6839382f557",
   "subjectSlug": "innovation-project-management",
-  "total": 220,
-  "coveredTopics": 64,
+  "total": 242,
+  "coveredTopics": 72,
   "formatCounts": {
-    "short_scenario": 28,
-    "multiple_choice": 64,
-    "match": 26,
-    "essay": 66,
-    "true_false": 28,
-    "order": 8
+    "short_scenario": 31,
+    "multiple_choice": 70,
+    "match": 29,
+    "essay": 71,
+    "true_false": 32,
+    "order": 9
   },
   "difficultyCounts": {
-    "medium": 90,
-    "easy": 103,
+    "medium": 104,
+    "easy": 111,
     "hard": 22,
     "very_hard": 5
   },
@@ -43,6 +43,11 @@
       "sha256": "c549a1727941f8e8cd95d29fbbe8c67e3ad037a2b309d9edca822531aeb2790e",
       "lectureNumber": 5,
       "questionCount": 42
+    },
+    {
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "lectureNumber": 6,
+      "questionCount": 22
     }
   ],
   "questions": [
@@ -9190,6 +9195,784 @@
           "keywords": []
         }
       ]
+    },
+    {
+      "type": "multiple_choice",
+      "kind": "curriculum_concept",
+      "difficulty": "easy",
+      "prompt": "ما المعنى الاستراتيجي للجودة وفق المحاضرة؟",
+      "excerpt": "المعنى الاستراتيجي (Quality): مفتاح النجاح وبوابة البقاء والتوسع محلياً وعالمياً، عبر منظمة التجارة العالمية ودليل لجميع المنتوجات.",
+      "explanation": "تنص المحاضرة على أن الجودة مفتاح النجاح وبوابة البقاء والتوسع محليًا وعالميًا.",
+      "references": [
+        228
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-001",
+        "number": 221,
+        "bloom": "remember",
+        "reason": "يتطلب استرجاع تعريف أو عناصر محددة من المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-00"
+        ]
+      },
+      "options": [
+        "مجرد فحص المنتوجات لمعرفة درجة مطابقتها للمواصفات.",
+        "استخدام الأساليب الإحصائية في ضبط الإنتاج منذ عام 1922.",
+        "مفتاح النجاح وبوابة البقاء والتوسع محلياً وعالمياً.",
+        "ملائمة المنتوج للاستعمال كما يراها الزبون وحده."
+      ],
+      "correctIndex": 2
+    },
+    {
+      "type": "multiple_choice",
+      "kind": "curriculum_concept",
+      "difficulty": "easy",
+      "prompt": "أي عالم عرّف الجودة بأنها «ملائمة المنتوج للاستعمال»؟",
+      "excerpt": "جوران (Juran): ملائمة المنتوج للاستعمال.",
+      "explanation": "تنسب المحاضرة هذا التعريف إلى جوران، وتنسب تعريفات أخرى إلى كروسبي وديمنغ وإشيكاوا وباسترفيلد.",
+      "references": [
+        229
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-002",
+        "number": 222,
+        "bloom": "remember",
+        "reason": "يتطلب استرجاع تعريف أو عناصر محددة من المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-01"
+        ]
+      },
+      "options": [
+        "كروسبي (Crosby)",
+        "ديمنغ (Deming)",
+        "جوران (Juran)",
+        "إشيكاوا (Ishikawa)"
+      ],
+      "correctIndex": 2
+    },
+    {
+      "type": "multiple_choice",
+      "kind": "curriculum_concept",
+      "difficulty": "medium",
+      "prompt": "أي تعريف تنسبه المحاضرة إلى باسترفيلد (Basterfield)؟",
+      "excerpt": "باستر فيلد (Basterfield): مميزات تلبي توقعات الزبون.",
+      "explanation": "تعرّف المحاضرة الجودة عند باسترفيلد بأنها مميزات تلبي توقعات الزبون، بينما تنسب إلى غيره تعريفات مجاورة.",
+      "references": [
+        230
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-003",
+        "number": 223,
+        "bloom": "analyze",
+        "reason": "التحليل: تمييز المفهوم من المفاهيم المجاورة له في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-01"
+        ]
+      },
+      "options": [
+        "مطابقة الاحتياجات.",
+        "درجة وفاء المنتوج لاحتياجات الزبون.",
+        "التوافق مع احتياجات الزبون ومتطلباته.",
+        "مميزات تلبي توقعات الزبون."
+      ],
+      "correctIndex": 3
+    },
+    {
+      "type": "multiple_choice",
+      "kind": "curriculum_concept",
+      "difficulty": "medium",
+      "prompt": "أي عصر من عصور الجودة الأربعة يقوم على الأساليب الإحصائية (العينات وخرائط الجودة) منذ عام 1922؟",
+      "excerpt": "2. ضبط الجودة: استخدام الأساليب الإحصائية (العينات وخرائط الجودة) منذ عام 1922.",
+      "explanation": "تربط المحاضرة ضبط الجودة باستخدام الأساليب الإحصائية كالعينات وخرائط الجودة منذ عام 1922.",
+      "references": [
+        231
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-004",
+        "number": 224,
+        "bloom": "understand",
+        "reason": "يتطلب فهم علاقة أو مقارنة أو وظيفة وتسلسل موضح في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-04"
+        ]
+      },
+      "options": [
+        "الفحص.",
+        "ضبط الجودة.",
+        "ضمان الجودة.",
+        "الإدارة الشاملة."
+      ],
+      "correctIndex": 1
+    },
+    {
+      "type": "multiple_choice",
+      "kind": "curriculum_concept",
+      "difficulty": "easy",
+      "prompt": "أي بُعد من أبعاد جودة السلع يقيس العمر الفني والاقتصادي للمنتج؟",
+      "excerpt": "4. المتانة أو التحمل: قياس العمر الفني والاقتصادي للمنتج.",
+      "explanation": "تحدد المحاضرة المتانة أو التحمل بأنها قياس العمر الفني والاقتصادي للمنتج.",
+      "references": [
+        232
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-005",
+        "number": 225,
+        "bloom": "remember",
+        "reason": "يتطلب استرجاع تعريف أو عناصر محددة من المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-06"
+        ]
+      },
+      "options": [
+        "المعولية (الاعتمادية).",
+        "المتانة أو التحمل.",
+        "المطابقة.",
+        "الأداء."
+      ],
+      "correctIndex": 1
+    },
+    {
+      "type": "multiple_choice",
+      "kind": "curriculum_concept",
+      "difficulty": "medium",
+      "prompt": "أي مما يأتي من أبعاد جودة الخدمة غير الملموسة في المحاضرة؟",
+      "excerpt": "الملموسية: مظهر المعدات وتسهيلات الخدمة.",
+      "explanation": "تعدد المحاضرة للخدمة ثلاثة أبعاد هي المعولية والملموسية والتعاطف والاستجابة، أما إمكانية الصيانة والمتانة والخصائص الجمالية فمن أبعاد السلع.",
+      "references": [
+        233
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-006",
+        "number": 226,
+        "bloom": "analyze",
+        "reason": "التحليل: تمييز المفهوم من المفاهيم المجاورة له في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-07"
+        ]
+      },
+      "options": [
+        "إمكانية الصيانة.",
+        "المتانة أو التحمل.",
+        "الملموسية.",
+        "الخصائص الجمالية."
+      ],
+      "correctIndex": 2
+    },
+    {
+      "type": "true_false",
+      "kind": "curriculum_concept",
+      "difficulty": "easy",
+      "prompt": "حدّد صحة العبارة الآتية، وفق المحاضرة:\nربطت المحاضرة التطور التاريخي للجودة بحضارة وادي الرافدين، ومنها قوانين حمورابي، في مرحلة ما قبل الميلاد.",
+      "excerpt": "مرحلة ما قبل الميلاد: حضارة وادي الرافدين (قوانين حمورابي: المادة 229 وعقوبة البناء) ووادي النيل (بناء الأهرامات ومراقبة العمليات الإنتاجية).",
+      "explanation": "تذكر المحاضرة وادي الرافدين وقوانين حمورابي ووادي النيل ضمن مرحلة ما قبل الميلاد.",
+      "references": [
+        234
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-007",
+        "number": 227,
+        "bloom": "remember",
+        "reason": "يتطلب استرجاع تعريف أو عناصر محددة من المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-03"
+        ]
+      },
+      "options": [
+        "صح",
+        "خطأ"
+      ],
+      "correctIndex": 0
+    },
+    {
+      "type": "true_false",
+      "kind": "curriculum_concept",
+      "difficulty": "medium",
+      "prompt": "حدّد صحة العبارة الآتية، وفق المحاضرة:\nتُعرَّف إدارة الجودة الشاملة بأنها منهج تنظيمي شامل يهدف لتحقيق حاجات وتوقعات الزبون والمجتمع عبر التحسين المستمر بتعاون الإدارة والعاملين.",
+      "excerpt": "الفلسفة والتوجه الحديث: منهج تنظيمي شامل يهدف لتحقيق حاجات وتوقعات الزبون والمجتمع، من خلال التحسين المستمر للعمليات والخدمات والسلع بتعاون الإدارة والعاملين.",
+      "explanation": "يطابق هذا نص المحاضرة في فلسفة إدارة الجودة الشاملة وتوجهها الحديث.",
+      "references": [
+        235
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-008",
+        "number": 228,
+        "bloom": "understand",
+        "reason": "يتطلب فهم علاقة أو مقارنة أو وظيفة وتسلسل موضح في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-02"
+        ]
+      },
+      "options": [
+        "صح",
+        "خطأ"
+      ],
+      "correctIndex": 0
+    },
+    {
+      "type": "true_false",
+      "kind": "curriculum_concept",
+      "difficulty": "medium",
+      "prompt": "حدّد صحة العبارة الآتية، وفق المحاضرة:\nظهر معيار ISO 9000 في عصر الفحص، وهو العصر الأول من عصور الجودة.",
+      "excerpt": "3. ضمان الجودة: تطوير الأنظمة وبناء معايير ISO 9000 كسلاح استراتيجي تنافسي.",
+      "explanation": "تربط المحاضرة بناء معايير ISO 9000 بعصر ضمان الجودة، أما عصر الفحص فيركز على فحص المنتوجات لمعرفة درجة المطابقة للمواصفات.",
+      "references": [
+        236
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-009",
+        "number": 229,
+        "bloom": "understand",
+        "reason": "يتطلب فهم علاقة أو مقارنة أو وظيفة وتسلسل موضح في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-04"
+        ]
+      },
+      "options": [
+        "صح",
+        "خطأ"
+      ],
+      "correctIndex": 1
+    },
+    {
+      "type": "true_false",
+      "kind": "curriculum_concept",
+      "difficulty": "easy",
+      "prompt": "حدّد صحة العبارة الآتية، وفق المحاضرة:\nتُعدّ المتانة أو التحمل من أبعاد جودة الخدمة غير الملموسة.",
+      "excerpt": "4. المتانة أو التحمل: قياس العمر الفني والاقتصادي للمنتج.",
+      "explanation": "المتانة من أبعاد جودة السلع، وأبعاد الخدمة غير الملموسة هي المعولية والملموسية والتعاطف والاستجابة.",
+      "references": [
+        232
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-010",
+        "number": 230,
+        "bloom": "remember",
+        "reason": "يتطلب استرجاع تعريف أو عناصر محددة من المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-07"
+        ]
+      },
+      "options": [
+        "صح",
+        "خطأ"
+      ],
+      "correctIndex": 1
+    },
+    {
+      "type": "match",
+      "kind": "curriculum_concept",
+      "difficulty": "medium",
+      "prompt": "طابق كل عالم من رواد الجودة بتعريفه للجودة كما ورد في المحاضرة.",
+      "excerpt": "كروسبي (Crosby): مطابقة الاحتياجات.",
+      "explanation": "تستند المطابقة إلى تعريفات الرواد الواردة في المحاضرة.",
+      "references": [
+        237,
+        229,
+        238,
+        239
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-011",
+        "number": 231,
+        "bloom": "understand",
+        "reason": "يتطلب فهم علاقة أو مقارنة أو وظيفة وتسلسل موضح في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-01"
+        ]
+      },
+      "pairs": [
+        {
+          "left": "كروسبي",
+          "right": "مطابقة الاحتياجات."
+        },
+        {
+          "left": "جوران",
+          "right": "ملائمة المنتوج للاستعمال."
+        },
+        {
+          "left": "ديمنغ",
+          "right": "التوافق مع احتياجات الزبون ومتطلباته."
+        },
+        {
+          "left": "إشيكاوا",
+          "right": "درجة وفاء المنتوج لاحتياجات الزبون."
+        }
+      ]
+    },
+    {
+      "type": "match",
+      "kind": "curriculum_concept",
+      "difficulty": "medium",
+      "prompt": "طابق كل عصر من عصور الجودة الأربعة بما يميزه في المحاضرة.",
+      "excerpt": "1. الفحص: التركيز على فحص المنتوجات لمعرفة درجة المطابقة للمواصفات.",
+      "explanation": "تستند المطابقة إلى ما تنسبه المحاضرة لكل عصر.",
+      "references": [
+        240,
+        231,
+        236,
+        241
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-012",
+        "number": 232,
+        "bloom": "understand",
+        "reason": "يتطلب فهم علاقة أو مقارنة أو وظيفة وتسلسل موضح في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-04"
+        ]
+      },
+      "pairs": [
+        {
+          "left": "الفحص",
+          "right": "التركيز على فحص المنتوجات لمعرفة درجة المطابقة للمواصفات."
+        },
+        {
+          "left": "ضبط الجودة",
+          "right": "استخدام الأساليب الإحصائية (العينات وخرائط الجودة) منذ عام 1922."
+        },
+        {
+          "left": "ضمان الجودة",
+          "right": "تطوير الأنظمة وبناء معايير ISO 9000 كسلاح استراتيجي تنافسي."
+        },
+        {
+          "left": "الإدارة الشاملة",
+          "right": "التكامل الاستراتيجي الشامل ورضا العملاء وإسعاد الزبون مستقبلاً."
+        }
+      ]
+    },
+    {
+      "type": "match",
+      "kind": "curriculum_concept",
+      "difficulty": "medium",
+      "prompt": "طابق كل أهمية من أهمية الجودة للمنظمات بوصفها في المحاضرة.",
+      "excerpt": "تعزيز سمعة المنظمة: بناء شهرة واسعة محلياً وعالمياً كشركة مرسيدس.",
+      "explanation": "تستند المطابقة إلى وصف المحاضرة لكل أهمية.",
+      "references": [
+        242,
+        243,
+        244,
+        245
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-013",
+        "number": 233,
+        "bloom": "understand",
+        "reason": "يتطلب فهم علاقة أو مقارنة أو وظيفة وتسلسل موضح في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-05"
+        ]
+      },
+      "pairs": [
+        {
+          "left": "تعزيز سمعة المنظمة",
+          "right": "بناء شهرة واسعة محلياً وعالمياً كشركة مرسيدس."
+        },
+        {
+          "left": "المنافسة العالمية",
+          "right": "الحصول على حصة سوقية أكبر عبر الأبعاد التنافسية."
+        },
+        {
+          "left": "المسؤولية القانونية والبيئية",
+          "right": "حماية البيئة والمجتمع ودعم الإنتاج الأخضر."
+        },
+        {
+          "left": "تخفيض الكلف والأرباح",
+          "right": "تقليل التلف والنفايات والاحتفاظ بالزبائن."
+        }
+      ]
+    },
+    {
+      "type": "order",
+      "kind": "curriculum_concept",
+      "difficulty": "medium",
+      "prompt": "رتّب عصور الجودة الأربعة الحديثة وفق ترقيمها في المحاضرة.",
+      "excerpt": "1. الفحص: التركيز على فحص المنتوجات لمعرفة درجة المطابقة للمواصفات.",
+      "explanation": "التصحيح يتبع الترقيم الصريح للعصور الأربعة في المحاضرة.",
+      "references": [
+        240,
+        231,
+        236,
+        241
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-014",
+        "number": 234,
+        "bloom": "understand",
+        "reason": "يتطلب فهم علاقة أو مقارنة أو وظيفة وتسلسل موضح في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-04"
+        ]
+      },
+      "items": [
+        "الفحص.",
+        "ضبط الجودة.",
+        "ضمان الجودة.",
+        "الإدارة الشاملة."
+      ]
+    },
+    {
+      "type": "open",
+      "kind": "essay",
+      "difficulty": "easy",
+      "prompt": "عدّد أبعاد جودة السلع الثمانية الواردة في المحاضرة.",
+      "excerpt": "1. الأداء: الخصائص التشغيلية الأساسية للسلعة.",
+      "explanation": "تتحدد الإجابة بعناصر الحل الموثقة في المحاضرة، مع حفظ التعريفات والقيود الواردة فيها.\nتُراجع الإجابة الكتابية وفق النموذج، ولا تُصحّح تلقائيًا.",
+      "references": [
+        246,
+        247,
+        248,
+        232,
+        249,
+        250,
+        251,
+        252
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-015",
+        "number": 235,
+        "bloom": "remember",
+        "reason": "يتطلب استرجاع تعريف أو عناصر محددة من المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-06"
+        ]
+      },
+      "rubric": [
+        {
+          "text": "الأداء: الخصائص التشغيلية الأساسية للسلعة.",
+          "keywords": []
+        },
+        {
+          "text": "السمات والملامح: الخصائص الثانوية المساندة للوظيفة الأساسية.",
+          "keywords": []
+        },
+        {
+          "text": "المعولية (الاعتمادية): احتمالية أداء المنتج بكفاءة بدون توقف.",
+          "keywords": []
+        },
+        {
+          "text": "المتانة أو التحمل: قياس العمر الفني والاقتصادي للمنتج.",
+          "keywords": []
+        },
+        {
+          "text": "المطابقة: مدى مطابقة المنتج للمواصفات الموضوعة.",
+          "keywords": []
+        },
+        {
+          "text": "الخصائص الجمالية: المظهر والترتيب وتوافقها مع ذوق الزبون.",
+          "keywords": []
+        },
+        {
+          "text": "إمكانية الصيانة: سرعة وكفاءة خدمات الإصلاح وتوافر قطع الغيار.",
+          "keywords": []
+        },
+        {
+          "text": "الجودة المدركة: صورة وانطباع الزبون والسمعة والدعاية.",
+          "keywords": []
+        }
+      ]
+    },
+    {
+      "type": "open",
+      "kind": "essay",
+      "difficulty": "easy",
+      "prompt": "اذكر أبعاد جودة الخدمة غير الملموسة مع المقصود بكل بُعد.",
+      "excerpt": "المعولية: أداء الخدمة بطريقة ملائمة.",
+      "explanation": "تتحدد الإجابة بعناصر الحل الموثقة في المحاضرة، مع حفظ التعريفات والقيود الواردة فيها.\nتُراجع الإجابة الكتابية وفق النموذج، ولا تُصحّح تلقائيًا.",
+      "references": [
+        253,
+        233,
+        254
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-016",
+        "number": 236,
+        "bloom": "remember",
+        "reason": "يتطلب استرجاع تعريف أو عناصر محددة من المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-07"
+        ]
+      },
+      "rubric": [
+        {
+          "text": "المعولية: أداء الخدمة بطريقة ملائمة.",
+          "keywords": []
+        },
+        {
+          "text": "الملموسية: مظهر المعدات وتسهيلات الخدمة.",
+          "keywords": []
+        },
+        {
+          "text": "التعاطف والاستجابة: الاهتمام الشخصي والسرعة.",
+          "keywords": []
+        }
+      ]
+    },
+    {
+      "type": "open",
+      "kind": "essay",
+      "difficulty": "easy",
+      "prompt": "عدّد أهمية الجودة للمنظمات كما وردت في المحاضرة.",
+      "excerpt": "تعزيز سمعة المنظمة: بناء شهرة واسعة محلياً وعالمياً كشركة مرسيدس.",
+      "explanation": "تتحدد الإجابة بعناصر الحل الموثقة في المحاضرة، مع حفظ التعريفات والقيود الواردة فيها.\nتُراجع الإجابة الكتابية وفق النموذج، ولا تُصحّح تلقائيًا.",
+      "references": [
+        242,
+        243,
+        244,
+        245
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-017",
+        "number": 237,
+        "bloom": "remember",
+        "reason": "يتطلب استرجاع تعريف أو عناصر محددة من المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-05"
+        ]
+      },
+      "rubric": [
+        {
+          "text": "تعزيز سمعة المنظمة: بناء شهرة واسعة محلياً وعالمياً كشركة مرسيدس.",
+          "keywords": []
+        },
+        {
+          "text": "المنافسة العالمية: الحصول على حصة سوقية أكبر عبر الأبعاد التنافسية.",
+          "keywords": []
+        },
+        {
+          "text": "المسؤولية القانونية والبيئية: حماية البيئة والمجتمع ودعم الإنتاج الأخضر.",
+          "keywords": []
+        },
+        {
+          "text": "تخفيض الكلف والأرباح: تقليل التلف والنفايات والاحتفاظ بالزبائن.",
+          "keywords": []
+        }
+      ]
+    },
+    {
+      "type": "open",
+      "kind": "essay",
+      "difficulty": "medium",
+      "prompt": "اذكر المعنى اللغوي للجودة والمعنى الاستراتيجي لها كما وردا في المحاضرة.",
+      "excerpt": "المعنى اللغوي (لسان العرب): الجودة مشتقة (جاد ويجود) وتعني الإجادة والإتقان في العمل الحسن وكل ما هو ضد الرديء والباطل.",
+      "explanation": "تتحدد الإجابة بعناصر الحل الموثقة في المحاضرة، مع حفظ التعريفات والقيود الواردة فيها.\nتُراجع الإجابة الكتابية وفق النموذج، ولا تُصحّح تلقائيًا.",
+      "references": [
+        255,
+        228
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-018",
+        "number": 238,
+        "bloom": "understand",
+        "reason": "يتطلب فهم علاقة أو مقارنة أو وظيفة وتسلسل موضح في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-00"
+        ]
+      },
+      "rubric": [
+        {
+          "text": "المعنى اللغوي (لسان العرب): الجودة مشتقة (جاد ويجود) وتعني الإجادة والإتقان.",
+          "keywords": []
+        },
+        {
+          "text": "المعنى الاستراتيجي: مفتاح النجاح وبوابة البقاء والتوسع محلياً وعالمياً.",
+          "keywords": []
+        }
+      ]
+    },
+    {
+      "type": "open",
+      "kind": "essay",
+      "difficulty": "medium",
+      "prompt": "عرّف إدارة الجودة الشاملة، وبيّن تعريف عقيلي وتعريف Heizer & Render.",
+      "excerpt": "الفلسفة والتوجه الحديث: منهج تنظيمي شامل يهدف لتحقيق حاجات وتوقعات الزبون والمجتمع، من خلال التحسين المستمر للعمليات والخدمات والسلع بتعاون الإدارة والعاملين.",
+      "explanation": "تتحدد الإجابة بعناصر الحل الموثقة في المحاضرة، مع حفظ التعريفات والقيود الواردة فيها.\nتُراجع الإجابة الكتابية وفق النموذج، ولا تُصحّح تلقائيًا.",
+      "references": [
+        235,
+        256,
+        257
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-019",
+        "number": 239,
+        "bloom": "understand",
+        "reason": "يتطلب فهم علاقة أو مقارنة أو وظيفة وتسلسل موضح في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-02"
+        ]
+      },
+      "rubric": [
+        {
+          "text": "الفلسفة والتوجه الحديث: منهج تنظيمي شامل يهدف لتحقيق حاجات وتوقعات الزبون والمجتمع، من خلال التحسين المستمر للعمليات والخدمات والسلع بتعاون الإدارة والعاملين.",
+          "keywords": []
+        },
+        {
+          "text": "عقيلي: تغيير جذري في الفكر والسلوك والنظم التنظيمية للوصول لأعلى جودة.",
+          "keywords": []
+        },
+        {
+          "text": "Heizer & Render: التركيز الشامل ابتداءً من المجهز وصولاً إلى المستهلك.",
+          "keywords": []
+        }
+      ]
+    },
+    {
+      "type": "open",
+      "kind": "short_scenario",
+      "difficulty": "medium",
+      "prompt": "تقتصر منشأة على فحص منتوجاتها لمعرفة درجة مطابقتها للمواصفات. حدّد عصر الجودة الذي يمثله عملها، وبيّن ما يميّز العصر الرابع (الإدارة الشاملة) عنه.",
+      "excerpt": "1. الفحص: التركيز على فحص المنتوجات لمعرفة درجة المطابقة للمواصفات.",
+      "explanation": "تتحدد الإجابة بعناصر الحل الموثقة في المحاضرة، مع حفظ التعريفات والقيود الواردة فيها.\nتُراجع الإجابة الكتابية وفق النموذج، ولا تُصحّح تلقائيًا.",
+      "references": [
+        240,
+        241
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-020",
+        "number": 240,
+        "bloom": "apply",
+        "reason": "التطبيق: ربط موقف قصير بالبعد أو العصر الملائم في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-04"
+        ]
+      },
+      "rubric": [
+        {
+          "text": "الفحص: التركيز على فحص المنتوجات لمعرفة درجة المطابقة للمواصفات.",
+          "keywords": []
+        },
+        {
+          "text": "الإدارة الشاملة: التكامل الاستراتيجي الشامل ورضا العملاء وإسعاد الزبون مستقبلاً.",
+          "keywords": []
+        }
+      ]
+    },
+    {
+      "type": "open",
+      "kind": "short_scenario",
+      "difficulty": "medium",
+      "prompt": "جهاز مطابق للمواصفات الموضوعة لكنه يتوقف كثيرًا أثناء التشغيل. أي بُعدين من أبعاد جودة السلع يفسّران الموقف؟",
+      "excerpt": "3. المعولية (الاعتمادية): احتمالية أداء المنتج بكفاءة بدون توقف.",
+      "explanation": "تتحدد الإجابة بعناصر الحل الموثقة في المحاضرة، مع حفظ التعريفات والقيود الواردة فيها.\nتُراجع الإجابة الكتابية وفق النموذج، ولا تُصحّح تلقائيًا.",
+      "references": [
+        248,
+        249
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-021",
+        "number": 241,
+        "bloom": "apply",
+        "reason": "التطبيق: ربط موقف قصير بالبعد أو العصر الملائم في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-06"
+        ]
+      },
+      "rubric": [
+        {
+          "text": "المطابقة: مدى مطابقة المنتج للمواصفات الموضوعة.",
+          "keywords": []
+        },
+        {
+          "text": "المعولية (الاعتمادية): احتمالية أداء المنتج بكفاءة بدون توقف.",
+          "keywords": []
+        }
+      ]
+    },
+    {
+      "type": "open",
+      "kind": "short_scenario",
+      "difficulty": "medium",
+      "prompt": "منظمة تقلّل التلف والنفايات وتحمي البيئة وتدعم الإنتاج الأخضر. أي أهميتين من أهمية الجودة للمنظمات تعكسهما هذه الممارسات؟",
+      "excerpt": "المسؤولية القانونية والبيئية: حماية البيئة والمجتمع ودعم الإنتاج الأخضر.",
+      "explanation": "تتحدد الإجابة بعناصر الحل الموثقة في المحاضرة، مع حفظ التعريفات والقيود الواردة فيها.\nتُراجع الإجابة الكتابية وفق النموذج، ولا تُصحّح تلقائيًا.",
+      "references": [
+        244,
+        245
+      ],
+      "classification": {
+        "policy": "reviewed-innovation-curriculum-v1",
+        "approvedId": "innovation-comprehensive-l6-022",
+        "number": 242,
+        "bloom": "apply",
+        "reason": "التطبيق: ربط موقف قصير بالبعد أو العصر الملائم في المحاضرة.",
+        "difficultyProvenance": "editorial_review_2026_11",
+        "bloomProvenance": "editorial_design_not_measured_metadata",
+        "topics": [
+          "l6-05"
+        ]
+      },
+      "rubric": [
+        {
+          "text": "المسؤولية القانونية والبيئية: حماية البيئة والمجتمع ودعم الإنتاج الأخضر.",
+          "keywords": []
+        },
+        {
+          "text": "تخفيض الكلف والأرباح: تقليل التلف والنفايات والاحتفاظ بالزبائن.",
+          "keywords": []
+        }
+      ]
     }
   ],
   "evidence": [
@@ -11472,6 +12255,306 @@
       "startLine": 74,
       "endLine": 78,
       "excerpt": "عقلية التغيير المستمر\nقبول التجربة والتعلم السريع في بيئة عمل سريعة التطور."
+    },
+    {
+      "paragraphId": "3b3aad52d40787b5b6879cdf",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 5,
+      "startLine": 11,
+      "endLine": 11,
+      "excerpt": "المعنى الاستراتيجي (Quality): مفتاح النجاح وبوابة البقاء والتوسع محلياً وعالمياً، عبر منظمة التجارة العالمية ودليل لجميع المنتوجات."
+    },
+    {
+      "paragraphId": "b3eaad19cc6a7550a6c7ee9e",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 8,
+      "startLine": 17,
+      "endLine": 17,
+      "excerpt": "جوران (Juran): ملائمة المنتوج للاستعمال."
+    },
+    {
+      "paragraphId": "6f3e3d5887ac6e4df7f5029e",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 11,
+      "startLine": 23,
+      "endLine": 23,
+      "excerpt": "باستر فيلد (Basterfield): مميزات تلبي توقعات الزبون."
+    },
+    {
+      "paragraphId": "a4c06271cc7412d9f5cc878e",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 22,
+      "startLine": 45,
+      "endLine": 45,
+      "excerpt": "2. ضبط الجودة: استخدام الأساليب الإحصائية (العينات وخرائط الجودة) منذ عام 1922."
+    },
+    {
+      "paragraphId": "5bdcc2ebff75f732a918b215",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 34,
+      "startLine": 69,
+      "endLine": 69,
+      "excerpt": "4. المتانة أو التحمل: قياس العمر الفني والاقتصادي للمنتج."
+    },
+    {
+      "paragraphId": "b0d4fdc405397e7c127263de",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 43,
+      "startLine": 87,
+      "endLine": 87,
+      "excerpt": "الملموسية: مظهر المعدات وتسهيلات الخدمة."
+    },
+    {
+      "paragraphId": "5b4fc20c912ae93f5e48e042",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 18,
+      "startLine": 37,
+      "endLine": 37,
+      "excerpt": "مرحلة ما قبل الميلاد: حضارة وادي الرافدين (قوانين حمورابي: المادة 229 وعقوبة البناء) ووادي النيل (بناء الأهرامات ومراقبة العمليات الإنتاجية)."
+    },
+    {
+      "paragraphId": "ca73e56badb9796fce64e2fd",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 14,
+      "startLine": 29,
+      "endLine": 29,
+      "excerpt": "الفلسفة والتوجه الحديث: منهج تنظيمي شامل يهدف لتحقيق حاجات وتوقعات الزبون والمجتمع، من خلال التحسين المستمر للعمليات والخدمات والسلع بتعاون الإدارة والعاملين."
+    },
+    {
+      "paragraphId": "3cadf43059586b2b18d20ef5",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 23,
+      "startLine": 47,
+      "endLine": 47,
+      "excerpt": "3. ضمان الجودة: تطوير الأنظمة وبناء معايير ISO 9000 كسلاح استراتيجي تنافسي."
+    },
+    {
+      "paragraphId": "26d341931bbe13828d550ef2",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 7,
+      "startLine": 15,
+      "endLine": 15,
+      "excerpt": "كروسبي (Crosby): مطابقة الاحتياجات."
+    },
+    {
+      "paragraphId": "7345317fd331e18436a72da7",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 9,
+      "startLine": 19,
+      "endLine": 19,
+      "excerpt": "ديمنغ (Deming): التوافق مع احتياجات الزبون ومتطلباته."
+    },
+    {
+      "paragraphId": "f66827bb83d88cabaeb87c23",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 10,
+      "startLine": 21,
+      "endLine": 21,
+      "excerpt": "إشيكاوا (Ishikawa): درجة وفاء المنتوج لاحتياجات الزبون."
+    },
+    {
+      "paragraphId": "e4ba45b8346739246702cbc1",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 21,
+      "startLine": 43,
+      "endLine": 43,
+      "excerpt": "1. الفحص: التركيز على فحص المنتوجات لمعرفة درجة المطابقة للمواصفات."
+    },
+    {
+      "paragraphId": "7e573ca70d11f7e476a2b857",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 24,
+      "startLine": 49,
+      "endLine": 49,
+      "excerpt": "4. الإدارة الشاملة: التكامل الاستراتيجي الشامل ورضا العملاء وإسعاد الزبون مستقبلاً."
+    },
+    {
+      "paragraphId": "9fdb6a973c8e56bfb3b2b90d",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 26,
+      "startLine": 53,
+      "endLine": 53,
+      "excerpt": "تعزيز سمعة المنظمة: بناء شهرة واسعة محلياً وعالمياً كشركة مرسيدس."
+    },
+    {
+      "paragraphId": "04d6179a2fef998934cacf52",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 27,
+      "startLine": 55,
+      "endLine": 55,
+      "excerpt": "المنافسة العالمية: الحصول على حصة سوقية أكبر عبر الأبعاد التنافسية."
+    },
+    {
+      "paragraphId": "95862254556cb0377184b3c6",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 28,
+      "startLine": 57,
+      "endLine": 57,
+      "excerpt": "المسؤولية القانونية والبيئية: حماية البيئة والمجتمع ودعم الإنتاج الأخضر."
+    },
+    {
+      "paragraphId": "bcec91b82ba2b69a5342c26c",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 29,
+      "startLine": 59,
+      "endLine": 59,
+      "excerpt": "تخفيض الكلف والأرباح: تقليل التلف والنفايات والاحتفاظ بالزبائن."
+    },
+    {
+      "paragraphId": "ab396d0bf7fbe75966a32ac4",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 31,
+      "startLine": 63,
+      "endLine": 63,
+      "excerpt": "1. الأداء: الخصائص التشغيلية الأساسية للسلعة."
+    },
+    {
+      "paragraphId": "9748a3213d40323879be3258",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 32,
+      "startLine": 65,
+      "endLine": 65,
+      "excerpt": "2. السمات والملامح: الخصائص الثانوية المساندة للوظيفة الأساسية."
+    },
+    {
+      "paragraphId": "c5e466b68221e09a8542aaa6",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 33,
+      "startLine": 67,
+      "endLine": 67,
+      "excerpt": "3. المعولية (الاعتمادية): احتمالية أداء المنتج بكفاءة بدون توقف."
+    },
+    {
+      "paragraphId": "62eeaaeb8ab626d5ea31d2ee",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 35,
+      "startLine": 71,
+      "endLine": 71,
+      "excerpt": "5. المطابقة: مدى مطابقة المنتج للمواصفات الموضوعة."
+    },
+    {
+      "paragraphId": "336b411ef8daed8a0b72d2d8",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 36,
+      "startLine": 73,
+      "endLine": 73,
+      "excerpt": "6. الخصائص الجمالية: المظهر والترتيب وتوافقها مع ذوق الزبون."
+    },
+    {
+      "paragraphId": "6173f71897426f926b0104d1",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 39,
+      "startLine": 79,
+      "endLine": 79,
+      "excerpt": "7. إمكانية الصيانة: سرعة وكفاءة خدمات الإصلاح وتوافر قطع الغيار."
+    },
+    {
+      "paragraphId": "89b48486660077048e861c08",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 40,
+      "startLine": 81,
+      "endLine": 81,
+      "excerpt": "8. الجودة المدركة: صورة وانطباع الزبون والسمعة والدعاية."
+    },
+    {
+      "paragraphId": "12e6e6d1294d445e247afbae",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 42,
+      "startLine": 85,
+      "endLine": 85,
+      "excerpt": "المعولية: أداء الخدمة بطريقة ملائمة."
+    },
+    {
+      "paragraphId": "b923895ed915d0d476e7d1a9",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 44,
+      "startLine": 89,
+      "endLine": 89,
+      "excerpt": "التعاطف والاستجابة: الاهتمام الشخصي والسرعة."
+    },
+    {
+      "paragraphId": "0d345cbadf8443d4336768ef",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 4,
+      "startLine": 9,
+      "endLine": 9,
+      "excerpt": "المعنى اللغوي (لسان العرب): الجودة مشتقة (جاد ويجود) وتعني الإجادة والإتقان في العمل الحسن وكل ما هو ضد الرديء والباطل."
+    },
+    {
+      "paragraphId": "0304ca0d4064249c9e7b0008",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 15,
+      "startLine": 31,
+      "endLine": 31,
+      "excerpt": "عقيلي: تغيير جذري في الفكر والسلوك والنظم التنظيمية للوصول لأعلى جودة."
+    },
+    {
+      "paragraphId": "e7b53cd055598c8ec00096af",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 16,
+      "startLine": 33,
+      "endLine": 33,
+      "excerpt": "Heizer & Render: التركيز الشامل ابتداءً من المجهز وصولاً إلى المستهلك."
     }
   ]
 }

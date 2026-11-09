@@ -36,7 +36,7 @@ describe("independent fourth and renumbered fifth innovation originals", () => {
   }, 30000);
 
   it("uses the former sixth original as fifth while retaining its permanent identities", () => {
-    expect(course.lectures.map(lecture => lecture.number)).toEqual([1, 2, 3, 4, 5]);
+    expect(course.lectures.map(lecture => lecture.number)).toEqual([1, 2, 3, 4, 5, 6]);
     const fifth = course.lectures.find(lecture => lecture.number === 5)!;
     expect(fifth.id).toBe("ip-l6");
     expect(fifth.title).toBe("المحاضرة الخامسة في الابتكار وإدارة المشاريع");

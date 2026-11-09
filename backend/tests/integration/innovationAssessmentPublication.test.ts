@@ -20,7 +20,7 @@ async function reset() {
 beforeEach(reset);afterEach(reset);afterAll(() => pool.end());
 
 describe("publish the complete approved Innovation assessment bank safely", () => {
-  it("publishes 220 questions, grades each format, archives selections and preserves every old attempt",async () => {
+  it("publishes 242 questions, grades each format, archives selections and preserves every old attempt",async () => {
     const admin=await createUser(pool,{email:"innovation-bank@example.test",providerSubject:"innovation-bank",roleName:"admin"});
     const source=manifest.subjects.find(s => s.id==="innovation-project-management")!;
     await pool.query("insert into subjects(id,title,status,created_by) values($1,$2,'published',$3)",[subjectId,source.title,admin]);
@@ -43,12 +43,12 @@ describe("publish the complete approved Innovation assessment bank safely", () =
     const repository=new PgAssessmentsRepository(pool), service=new AssessmentsService(repository);
     const quizzes=await repository.listQuizzesForSubject(subjectId,false), current=quizzes.find(q => !q.lectureId)!;
     const questions=await repository.listQuestionsForAttempt(current.id);
-    expect(questions).toHaveLength(220);
+    expect(questions).toHaveLength(242);
     expect(new Set(questions.map(q => q.difficulty))).toEqual(new Set(["easy","medium","hard","very_hard"]));
     expect(new Set(questions.map(assessmentFormat))).toEqual(new Set(["multiple_choice","true_false","match","order","essay","short_scenario"]));
     expect(questions.every(q => q.bloom)).toBe(true);
     expect(JSON.stringify(questions)).not.toMatch(/sourceProgram|sourceReferences|rubric|isCorrect|correctIndex|matchingRightIds/);
-    for (const [index,lecture] of lectures.entries()) expect(questions.filter(q => q.lectureId===lecture)).toHaveLength([63,33,38,44,42][index]!);
+    for (const [index,lecture] of lectures.entries()) expect(questions.filter(q => q.lectureId===lecture)).toHaveLength([63,33,38,44,42,22][index]!);
     const principal={kind:"user" as const,userId:admin}, attempt=await service.startAttempt(oldQuiz,principal,false);
     expect(attempt.quizId).toBe(current.id);
     for (const format of ["multiple_choice","true_false","match","order","essay","short_scenario"]) {
@@ -66,9 +66,9 @@ describe("publish the complete approved Innovation assessment bank safely", () =
     expect((await pool.query("select count(*)::int n from quizzes")).rows[0].n).toBe(count);
     const exams=new ExamMaterialService(pool);
     const group=await exams.generate(subjectId,lectures,randomUUID(),admin,"catalog");
-    expect(group.questionCount).toBe(220);
+    expect(group.questionCount).toBe(242);
     const paper=await exams.academicPaper(subjectId,group.id,principal,true);
-    expect(paper.questions).toHaveLength(220);expect(paper.answerKey).toHaveLength(220);
+    expect(paper.questions).toHaveLength(242);expect(paper.answerKey).toHaveLength(242);
     const selection=await exams.generate(subjectId,lectures.slice(1,3),randomUUID(),admin,"catalog");
     expect(selection.questionCount).toBe(71);
     const selectedPaper=await exams.academicPaper(subjectId,selection.id,principal,true);
