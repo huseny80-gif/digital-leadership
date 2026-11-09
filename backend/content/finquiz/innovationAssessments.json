@@ -12257,14 +12257,24 @@
       "excerpt": "عقلية التغيير المستمر\nقبول التجربة والتعلم السريع في بيئة عمل سريعة التطور."
     },
     {
-      "paragraphId": "26d341931bbe13828d550ef2",
+      "paragraphId": "3b3aad52d40787b5b6879cdf",
       "fileId": "8621cdc8f2fbfffacf80d45f",
       "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
       "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 7,
-      "startLine": 15,
-      "endLine": 15,
+      "number": 5,
+      "startLine": 11,
+      "endLine": 11,
       "excerpt": "المعنى الاستراتيجي (Quality): مفتاح النجاح وبوابة البقاء والتوسع محلياً وعالمياً، عبر منظمة التجارة العالمية ودليل لجميع المنتوجات."
+    },
+    {
+      "paragraphId": "b3eaad19cc6a7550a6c7ee9e",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 8,
+      "startLine": 17,
+      "endLine": 17,
+      "excerpt": "جوران (Juran): ملائمة المنتوج للاستعمال."
     },
     {
       "paragraphId": "6f3e3d5887ac6e4df7f5029e",
@@ -12274,137 +12284,17 @@
       "number": 11,
       "startLine": 23,
       "endLine": 23,
-      "excerpt": "جوران (Juran): ملائمة المنتوج للاستعمال."
-    },
-    {
-      "paragraphId": "ca73e56badb9796fce64e2fd",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 14,
-      "startLine": 29,
-      "endLine": 29,
       "excerpt": "باستر فيلد (Basterfield): مميزات تلبي توقعات الزبون."
     },
     {
-      "paragraphId": "95862254556cb0377184b3c6",
+      "paragraphId": "a4c06271cc7412d9f5cc878e",
       "fileId": "8621cdc8f2fbfffacf80d45f",
       "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
       "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 28,
-      "startLine": 57,
-      "endLine": 57,
+      "number": 22,
+      "startLine": 45,
+      "endLine": 45,
       "excerpt": "2. ضبط الجودة: استخدام الأساليب الإحصائية (العينات وخرائط الجودة) منذ عام 1922."
-    },
-    {
-      "paragraphId": "12e6e6d1294d445e247afbae",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 42,
-      "startLine": 85,
-      "endLine": 85,
-      "excerpt": "4. المتانة أو التحمل: قياس العمر الفني والاقتصادي للمنتج."
-    },
-    {
-      "paragraphId": "ea620574d286cfb00509b571",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 52,
-      "startLine": 105,
-      "endLine": 105,
-      "excerpt": "الملموسية: مظهر المعدات وتسهيلات الخدمة."
-    },
-    {
-      "paragraphId": "3cadf43059586b2b18d20ef5",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 23,
-      "startLine": 47,
-      "endLine": 47,
-      "excerpt": "مرحلة ما قبل الميلاد: حضارة وادي الرافدين (قوانين حمورابي: المادة 229 وعقوبة البناء) ووادي النيل (بناء الأهرامات ومراقبة العمليات الإنتاجية)."
-    },
-    {
-      "paragraphId": "5b4fc20c912ae93f5e48e042",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 18,
-      "startLine": 37,
-      "endLine": 37,
-      "excerpt": "الفلسفة والتوجه الحديث: منهج تنظيمي شامل يهدف لتحقيق حاجات وتوقعات الزبون والمجتمع، من خلال التحسين المستمر للعمليات والخدمات والسلع بتعاون الإدارة والعاملين."
-    },
-    {
-      "paragraphId": "bcec91b82ba2b69a5342c26c",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 29,
-      "startLine": 59,
-      "endLine": 59,
-      "excerpt": "3. ضمان الجودة: تطوير الأنظمة وبناء معايير ISO 9000 كسلاح استراتيجي تنافسي."
-    },
-    {
-      "paragraphId": "f66827bb83d88cabaeb87c23",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 10,
-      "startLine": 21,
-      "endLine": 21,
-      "excerpt": "كروسبي (Crosby): مطابقة الاحتياجات."
-    },
-    {
-      "paragraphId": "46ebe1659e088759608b54c8",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 12,
-      "startLine": 25,
-      "endLine": 25,
-      "excerpt": "ديمنغ (Deming): التوافق مع احتياجات الزبون ومتطلباته."
-    },
-    {
-      "paragraphId": "d96b7a815a08df8777fa7d8a",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 13,
-      "startLine": 27,
-      "endLine": 27,
-      "excerpt": "إشيكاوا (Ishikawa): درجة وفاء المنتوج لاحتياجات الزبون."
-    },
-    {
-      "paragraphId": "04d6179a2fef998934cacf52",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 27,
-      "startLine": 55,
-      "endLine": 55,
-      "excerpt": "1. الفحص: التركيز على فحص المنتوجات لمعرفة درجة المطابقة للمواصفات."
-    },
-    {
-      "paragraphId": "0ac8d6aea0a65b1ca3452b78",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 30,
-      "startLine": 61,
-      "endLine": 61,
-      "excerpt": "4. الإدارة الشاملة: التكامل الاستراتيجي الشامل ورضا العملاء وإسعاد الزبون مستقبلاً."
-    },
-    {
-      "paragraphId": "c5e466b68221e09a8542aaa6",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 33,
-      "startLine": 67,
-      "endLine": 67,
-      "excerpt": "تعزيز سمعة المنظمة: بناء شهرة واسعة محلياً وعالمياً كشركة مرسيدس."
     },
     {
       "paragraphId": "5bdcc2ebff75f732a918b215",
@@ -12414,57 +12304,7 @@
       "number": 34,
       "startLine": 69,
       "endLine": 69,
-      "excerpt": "المنافسة العالمية: الحصول على حصة سوقية أكبر عبر الأبعاد التنافسية."
-    },
-    {
-      "paragraphId": "62eeaaeb8ab626d5ea31d2ee",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 35,
-      "startLine": 71,
-      "endLine": 71,
-      "excerpt": "المسؤولية القانونية والبيئية: حماية البيئة والمجتمع ودعم الإنتاج الأخضر."
-    },
-    {
-      "paragraphId": "336b411ef8daed8a0b72d2d8",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 36,
-      "startLine": 73,
-      "endLine": 73,
-      "excerpt": "تخفيض الكلف والأرباح: تقليل التلف والنفايات والاحتفاظ بالزبائن."
-    },
-    {
-      "paragraphId": "6173f71897426f926b0104d1",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 39,
-      "startLine": 79,
-      "endLine": 79,
-      "excerpt": "1. الأداء: الخصائص التشغيلية الأساسية للسلعة."
-    },
-    {
-      "paragraphId": "89b48486660077048e861c08",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 40,
-      "startLine": 81,
-      "endLine": 81,
-      "excerpt": "2. السمات والملامح: الخصائص الثانوية المساندة للوظيفة الأساسية."
-    },
-    {
-      "paragraphId": "b5a047ad9fdac842eee35a9e",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 41,
-      "startLine": 83,
-      "endLine": 83,
-      "excerpt": "3. المعولية (الاعتمادية): احتمالية أداء المنتج بكفاءة بدون توقف."
+      "excerpt": "4. المتانة أو التحمل: قياس العمر الفني والاقتصادي للمنتج."
     },
     {
       "paragraphId": "b0d4fdc405397e7c127263de",
@@ -12474,7 +12314,207 @@
       "number": 43,
       "startLine": 87,
       "endLine": 87,
+      "excerpt": "الملموسية: مظهر المعدات وتسهيلات الخدمة."
+    },
+    {
+      "paragraphId": "5b4fc20c912ae93f5e48e042",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 18,
+      "startLine": 37,
+      "endLine": 37,
+      "excerpt": "مرحلة ما قبل الميلاد: حضارة وادي الرافدين (قوانين حمورابي: المادة 229 وعقوبة البناء) ووادي النيل (بناء الأهرامات ومراقبة العمليات الإنتاجية)."
+    },
+    {
+      "paragraphId": "ca73e56badb9796fce64e2fd",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 14,
+      "startLine": 29,
+      "endLine": 29,
+      "excerpt": "الفلسفة والتوجه الحديث: منهج تنظيمي شامل يهدف لتحقيق حاجات وتوقعات الزبون والمجتمع، من خلال التحسين المستمر للعمليات والخدمات والسلع بتعاون الإدارة والعاملين."
+    },
+    {
+      "paragraphId": "3cadf43059586b2b18d20ef5",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 23,
+      "startLine": 47,
+      "endLine": 47,
+      "excerpt": "3. ضمان الجودة: تطوير الأنظمة وبناء معايير ISO 9000 كسلاح استراتيجي تنافسي."
+    },
+    {
+      "paragraphId": "26d341931bbe13828d550ef2",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 7,
+      "startLine": 15,
+      "endLine": 15,
+      "excerpt": "كروسبي (Crosby): مطابقة الاحتياجات."
+    },
+    {
+      "paragraphId": "7345317fd331e18436a72da7",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 9,
+      "startLine": 19,
+      "endLine": 19,
+      "excerpt": "ديمنغ (Deming): التوافق مع احتياجات الزبون ومتطلباته."
+    },
+    {
+      "paragraphId": "f66827bb83d88cabaeb87c23",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 10,
+      "startLine": 21,
+      "endLine": 21,
+      "excerpt": "إشيكاوا (Ishikawa): درجة وفاء المنتوج لاحتياجات الزبون."
+    },
+    {
+      "paragraphId": "e4ba45b8346739246702cbc1",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 21,
+      "startLine": 43,
+      "endLine": 43,
+      "excerpt": "1. الفحص: التركيز على فحص المنتوجات لمعرفة درجة المطابقة للمواصفات."
+    },
+    {
+      "paragraphId": "7e573ca70d11f7e476a2b857",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 24,
+      "startLine": 49,
+      "endLine": 49,
+      "excerpt": "4. الإدارة الشاملة: التكامل الاستراتيجي الشامل ورضا العملاء وإسعاد الزبون مستقبلاً."
+    },
+    {
+      "paragraphId": "9fdb6a973c8e56bfb3b2b90d",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 26,
+      "startLine": 53,
+      "endLine": 53,
+      "excerpt": "تعزيز سمعة المنظمة: بناء شهرة واسعة محلياً وعالمياً كشركة مرسيدس."
+    },
+    {
+      "paragraphId": "04d6179a2fef998934cacf52",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 27,
+      "startLine": 55,
+      "endLine": 55,
+      "excerpt": "المنافسة العالمية: الحصول على حصة سوقية أكبر عبر الأبعاد التنافسية."
+    },
+    {
+      "paragraphId": "95862254556cb0377184b3c6",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 28,
+      "startLine": 57,
+      "endLine": 57,
+      "excerpt": "المسؤولية القانونية والبيئية: حماية البيئة والمجتمع ودعم الإنتاج الأخضر."
+    },
+    {
+      "paragraphId": "bcec91b82ba2b69a5342c26c",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 29,
+      "startLine": 59,
+      "endLine": 59,
+      "excerpt": "تخفيض الكلف والأرباح: تقليل التلف والنفايات والاحتفاظ بالزبائن."
+    },
+    {
+      "paragraphId": "ab396d0bf7fbe75966a32ac4",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 31,
+      "startLine": 63,
+      "endLine": 63,
+      "excerpt": "1. الأداء: الخصائص التشغيلية الأساسية للسلعة."
+    },
+    {
+      "paragraphId": "9748a3213d40323879be3258",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 32,
+      "startLine": 65,
+      "endLine": 65,
+      "excerpt": "2. السمات والملامح: الخصائص الثانوية المساندة للوظيفة الأساسية."
+    },
+    {
+      "paragraphId": "c5e466b68221e09a8542aaa6",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 33,
+      "startLine": 67,
+      "endLine": 67,
+      "excerpt": "3. المعولية (الاعتمادية): احتمالية أداء المنتج بكفاءة بدون توقف."
+    },
+    {
+      "paragraphId": "62eeaaeb8ab626d5ea31d2ee",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 35,
+      "startLine": 71,
+      "endLine": 71,
       "excerpt": "5. المطابقة: مدى مطابقة المنتج للمواصفات الموضوعة."
+    },
+    {
+      "paragraphId": "336b411ef8daed8a0b72d2d8",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 36,
+      "startLine": 73,
+      "endLine": 73,
+      "excerpt": "6. الخصائص الجمالية: المظهر والترتيب وتوافقها مع ذوق الزبون."
+    },
+    {
+      "paragraphId": "6173f71897426f926b0104d1",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 39,
+      "startLine": 79,
+      "endLine": 79,
+      "excerpt": "7. إمكانية الصيانة: سرعة وكفاءة خدمات الإصلاح وتوافر قطع الغيار."
+    },
+    {
+      "paragraphId": "89b48486660077048e861c08",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 40,
+      "startLine": 81,
+      "endLine": 81,
+      "excerpt": "8. الجودة المدركة: صورة وانطباع الزبون والسمعة والدعاية."
+    },
+    {
+      "paragraphId": "12e6e6d1294d445e247afbae",
+      "fileId": "8621cdc8f2fbfffacf80d45f",
+      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
+      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
+      "number": 42,
+      "startLine": 85,
+      "endLine": 85,
+      "excerpt": "المعولية: أداء الخدمة بطريقة ملائمة."
     },
     {
       "paragraphId": "b923895ed915d0d476e7d1a9",
@@ -12484,76 +12524,36 @@
       "number": 44,
       "startLine": 89,
       "endLine": 89,
-      "excerpt": "6. الخصائص الجمالية: المظهر والترتيب وتوافقها مع ذوق الزبون."
-    },
-    {
-      "paragraphId": "4385205c75cc65c392be6c74",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 48,
-      "startLine": 97,
-      "endLine": 97,
-      "excerpt": "7. إمكانية الصيانة: سرعة وكفاءة خدمات الإصلاح وتوافر قطع الغيار."
-    },
-    {
-      "paragraphId": "3abcc3124f75705bf280bda2",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 49,
-      "startLine": 99,
-      "endLine": 99,
-      "excerpt": "8. الجودة المدركة: صورة وانطباع الزبون والسمعة والدعاية."
-    },
-    {
-      "paragraphId": "7669269cf6f4c25f2e8ebbc6",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 51,
-      "startLine": 103,
-      "endLine": 103,
-      "excerpt": "المعولية: أداء الخدمة بطريقة ملائمة."
-    },
-    {
-      "paragraphId": "7877e34d4da8df113230ecd3",
-      "fileId": "8621cdc8f2fbfffacf80d45f",
-      "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
-      "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 53,
-      "startLine": 107,
-      "endLine": 107,
       "excerpt": "التعاطف والاستجابة: الاهتمام الشخصي والسرعة."
     },
     {
-      "paragraphId": "e35f6eb1a042fb1521802f84",
+      "paragraphId": "0d345cbadf8443d4336768ef",
       "fileId": "8621cdc8f2fbfffacf80d45f",
       "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
       "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 6,
-      "startLine": 13,
-      "endLine": 13,
+      "number": 4,
+      "startLine": 9,
+      "endLine": 9,
       "excerpt": "المعنى اللغوي (لسان العرب): الجودة مشتقة (جاد ويجود) وتعني الإجادة والإتقان في العمل الحسن وكل ما هو ضد الرديء والباطل."
     },
     {
-      "paragraphId": "fba16a11fd3738d7367dc29c",
+      "paragraphId": "0304ca0d4064249c9e7b0008",
       "fileId": "8621cdc8f2fbfffacf80d45f",
       "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
       "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 19,
-      "startLine": 39,
-      "endLine": 39,
+      "number": 15,
+      "startLine": 31,
+      "endLine": 31,
       "excerpt": "عقيلي: تغيير جذري في الفكر والسلوك والنظم التنظيمية للوصول لأعلى جودة."
     },
     {
-      "paragraphId": "ea831baaf4b232d05a8ec13e",
+      "paragraphId": "e7b53cd055598c8ec00096af",
       "fileId": "8621cdc8f2fbfffacf80d45f",
       "filename": "المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf",
       "sha256": "64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78",
-      "number": 20,
-      "startLine": 41,
-      "endLine": 41,
+      "number": 16,
+      "startLine": 33,
+      "endLine": 33,
       "excerpt": "Heizer & Render: التركيز الشامل ابتداءً من المجهز وصولاً إلى المستهلك."
     }
   ]
