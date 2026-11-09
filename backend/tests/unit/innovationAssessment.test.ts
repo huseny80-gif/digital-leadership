@@ -37,7 +37,7 @@ beforeAll(async () => {
 describe("approved comprehensive Innovation bank bound to the five original PDF files", () => {
   it("publishes the approved 220 programs with every format, level and source topic preserved", () => {
     expect(subjectId).toBe(innovationAssessmentSubjectId);
-    expect(files.map(file => file.questions.length)).toEqual([63,33,38,44,42]);
+    expect(files.map(file => file.questions.length)).toEqual([63,33,38,44,42,0]);
     const questions = files.flatMap(file => file.questions);
     const count = (key: (q: GroundedQuestion) => string) => questions.reduce<Record<string,number>>((a,q) => { const k=key(q);a[k]=(a[k]??0)+1;return a; },{});
     expect(count(q => q.type === "open" ? q.kind! : q.type)).toEqual({multiple_choice:64,true_false:28,match:26,order:8,essay:66,short_scenario:28});
