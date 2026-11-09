@@ -1,5 +1,6 @@
 import type { AnchorHTMLAttributes } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { STUDY_COURSES } from "@digital-leadership/shared";
 import { render, screen } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -23,8 +24,8 @@ describe("approved course study module navigation", () => {
   it("maps summaries for all five UUIDs while keeping the comprehensive exam Innovation-only", () => {
     expect(ALLOWLISTED_STUDY_SUBJECT_IDS).toHaveLength(5);
     for (const subjectId of ALLOWLISTED_STUDY_SUBJECT_IDS) {
-      expect(studyModulesForSubject(subjectId)?.summaries).toBe(`/summaries.html?subject=${subjectId}`);
-      expect(subjectTabs(subjectId).find(tab => tab.key === "summaries")?.href).toBe(`/summaries.html?subject=${subjectId}`);
+      expect(studyModulesForSubject(subjectId)?.summaries).toBe(`/subjects/${subjectId}/summaries`);
+      expect(subjectTabs(subjectId).find(tab => tab.key === "summaries")?.href).toBe(`/subjects/${subjectId}/summaries`);
     }
     expect(studyModulesForSubject(INNOVATION_STUDY_SUBJECT_ID)?.comprehensive).toBe("/exam-module.html");
     for (const subjectId of ALLOWLISTED_STUDY_SUBJECT_IDS.filter(id => id !== INNOVATION_STUDY_SUBJECT_ID)) {
@@ -43,34 +44,28 @@ describe("approved course study module navigation", () => {
     expect(tabs.some(tab => tab.key === "comprehensive")).toBe(false);
   });
 
-  it("uses native document links for every published subject summary", () => {
+  it("uses app navigation for each subject-owned summary page", () => {
     render(<SubjectTabs tabs={subjectTabs(INNOVATION_STUDY_SUBJECT_ID)} activeKey="exam-material" />);
     const link = screen.getByRole("link", { name: /الملخصات/ });
-    expect(link).toHaveAttribute("href", `/summaries.html?subject=${INNOVATION_STUDY_SUBJECT_ID}`);
-    expect(link).not.toHaveAttribute("data-app-route");
+    expect(link).toHaveAttribute("href", `/subjects/${INNOVATION_STUDY_SUBJECT_ID}/summaries`);
+    expect(link).toHaveAttribute("data-app-route", "true");
     expect(screen.getByRole("link", { name: /المادة الامتحانية/ })).toHaveAttribute("aria-current", "page");
   });
 
-  it("resolves the published lecture order, including the legal and ISO exceptions", () => {
-    const expected = {
-      "2d6c0980-e4d2-4687-9027-cf090b3d1a67": ["ai-l1", "ai-l2", "ai-l3", "ai-l4", "ai-l5", "ai-l6"],
-      "bc861a76-620d-4646-81ca-c49d24665b75": ["cs-l1", "cs-l2", "cs-l3", "cs-l4", "cs-l5", "cs-iso-roadmap"],
-      [INNOVATION_STUDY_SUBJECT_ID]: ["innovation-01", "innovation-02", "innovation-03", "innovation-04", "innovation-05"],
-      "ade09563-02ec-4a09-a97b-58857f6cd876": ["lg-l1", "lg-l3", "lg-l4", "lg-l2", "lg-l5", "lg-l6"],
-      "1f4d2071-d1c9-46ee-a848-d5c90eedf287": ["rm-l1", "rm-l2", "rm-l3"],
-    } as Record<string, string[]>;
-    for (const [subjectId, ids] of Object.entries(expected)) {
-      ids.forEach((id, index) => expect(lectureSummaryHref(subjectId, "entry", index + 1)).toBe(`/summaries.html?subject=${subjectId}#${id}`));
+  it("links current lecture numbers within their subject and preserves safe legacy document recognition", () => {
+    for (const course of STUDY_COURSES) {
+      for (let number = 1; number <= course.lectures; number++) expect(lectureSummaryHref(course.id, "entry", number)).toBe(`/subjects/${course.id}/summaries#lecture-${number}`);
     }
     expect(lectureSummaryHref(INNOVATION_STUDY_SUBJECT_ID, "future entry", 6)).toBe(`/subjects/${INNOVATION_STUDY_SUBJECT_ID}/library?section=summaries&entry=future%20entry`);
     expect(lectureSummaryHref("another", "entry/#", 1)).toBe("/subjects/another/library?section=summaries&entry=entry%2F%23");
     expect(isStudyModuleDocument(`/summaries.html?subject=${INNOVATION_STUDY_SUBJECT_ID}#innovation-02`)).toBe(true);
+    expect(isStudyModuleDocument(`/subjects/${INNOVATION_STUDY_SUBJECT_ID}/summaries`)).toBe(false);
     for (const value of ["https://example.com/summaries.html", "//example.com/exam-module.html", "/summaries.html.evil", "/exam-module.html/extra"]) expect(isStudyModuleDocument(value)).toBe(false);
   });
 
   it.each(["summaries", "comprehensive"] as const)("shows the %s entry only where approved", section => {
     const { rerender } = render(<StudyModuleEntry subjectId={INNOVATION_STUDY_SUBJECT_ID} section={section} />);
-    expect(screen.getByRole("link")).toHaveAttribute("href", section === "summaries" ? `/summaries.html?subject=${INNOVATION_STUDY_SUBJECT_ID}` : "/exam-module.html");
+    expect(screen.getByRole("link")).toHaveAttribute("href", section === "summaries" ? `/subjects/${INNOVATION_STUDY_SUBJECT_ID}/summaries` : "/exam-module.html");
     rerender(<StudyModuleEntry subjectId="other" section={section} />);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
@@ -78,7 +73,7 @@ describe("approved course study module navigation", () => {
   it.each(ALLOWLISTED_STUDY_SUBJECT_IDS)("offers the summary entry for %s", async subjectId => {
     vi.mocked(apiGet).mockImplementation(async path => ({ data: path.endsWith("/library") ? { entries: [] } : { id: subjectId, title: "مادة" } }));
     render(await LibraryPage({ params: Promise.resolve({ subjectId }), searchParams: Promise.resolve({ section: "summaries" }) }));
-    expect(screen.getByRole("link", { name: /افتح الملخصات والبودكاست/ })).toHaveAttribute("href", `/summaries.html?subject=${subjectId}`);
+    expect(screen.getByRole("link", { name: /افتح الملخصات والبودكاست/ })).toHaveAttribute("href", `/subjects/${subjectId}/summaries`);
   });
 
   it("adds a comprehensive entry while preserving the exam group workspace", async () => {
@@ -97,7 +92,7 @@ describe("approved course study module navigation", () => {
 
   it.each(["exam-module.html", "summaries.html"])("keeps %s under its own parent with no cross-link in summaries", page => {
     const html = readFileSync(resolve(process.cwd(), "public", page), "utf8");
-    const parent = `/subjects/${INNOVATION_STUDY_SUBJECT_ID}${page === "exam-module.html" ? "/exam-material" : ""}`;
+    const parent = page === "exam-module.html" ? `/subjects/${INNOVATION_STUDY_SUBJECT_ID}/exam-material` : "/subjects";
     expect(html.match(/class="platform-link" href="([^"]+)"/)?.[1]).toBe(`https://web-husen4.vercel.app${parent}`);
     if (page === "summaries.html") expect(/href=["'][^"']*exam-module\.html/.test(html)).toBe(false);
   });

@@ -6,6 +6,9 @@ on:
       - "summaries.html"
       - "assets/audio/**"
       - "assets/study-module-loader.js"
+      - "shared/src/studyCourses.ts"
+      - "backend/content/finquiz/catalog.json"
+      - "backend/content/finquiz/academicSummaries.json"
       - "exam-section/**"
       - "scripts/*exam*audio*"
       - "scripts/*lecture*audio*"
@@ -22,6 +25,9 @@ on:
       - "summaries.html"
       - "assets/audio/**"
       - "assets/study-module-loader.js"
+      - "shared/src/studyCourses.ts"
+      - "backend/content/finquiz/catalog.json"
+      - "backend/content/finquiz/academicSummaries.json"
       - "exam-section/**"
       - "scripts/*exam*audio*"
       - "scripts/*lecture*audio*"
@@ -46,6 +52,8 @@ jobs:
           node-version: "22"
       - name: Test asset synchronization
         run: node --test scripts/sync-exam-audio.test.mjs
+      - name: Test source-bound recording inventory preservation
+        run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/prepare-all-subject-audio.test.py
       - name: Verify all published subjects match approved catalog summaries
         run: python3 scripts/prepare-all-subject-audio.py --check
       - name: Verify published assets match canonical sources

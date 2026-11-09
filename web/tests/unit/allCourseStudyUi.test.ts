@@ -33,15 +33,15 @@ beforeEach(() => {
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); document.documentElement.innerHTML = ""; localStorage.clear(); window.history.replaceState(null, "", "/"); });
 
-describe("shared study experience for every course", () => {
-  // The summaries page no longer loads a course from the API: it embeds study-data.json and
-  // selects the course by ?subject. A lecture missing from that data never appears on the page.
-  it.each(STUDY_COURSES)("lists every published lecture of $slug in the summaries page data", course => {
-    const embedded = JSON.parse(summaryHtml.match(/<script type="application\/json" id="summaries-data">([\s\S]*?)<\/script>/)![1]!) as { subjects: Array<{ id: string }>; lectures: Array<{ subjectId: string; catalogLectureId: string; number: number }> };
+describe("source-backed course inventory and comprehensive exams", () => {
+  // The legacy page redirects to the protected subject UI. Keep the published
+  // audio inventory complete independently of that document's presentation.
+  it.each(STUDY_COURSES)("retains every published lecture of $slug in the offline audio inventory", course => {
+    const inventory = JSON.parse(readFileSync(resolve(process.cwd(), "..", "assets/audio/study-data.json"), "utf8")) as { subjects: Array<{ id: string }>; lectures: Array<{ subjectId: string; catalogLectureId: string; number: number }> };
     const catalog = JSON.parse(readFileSync(resolve(process.cwd(), "..", "backend/content/finquiz/catalog.json"), "utf8")) as { subjects: Array<{ id: string; lectures: Array<{ id: string; status: string; number: number }> }> };
     const published = catalog.subjects.find(subject => subject.id === course.slug)!.lectures.filter(lecture => lecture.status === "published");
-    const shown = embedded.lectures.filter(lecture => lecture.subjectId === course.id);
-    expect(embedded.subjects.some(subject => subject.id === course.id)).toBe(true);
+    const shown = inventory.lectures.filter(lecture => lecture.subjectId === course.id);
+    expect(inventory.subjects.some(subject => subject.id === course.id)).toBe(true);
     expect(shown.map(lecture => lecture.catalogLectureId).sort()).toEqual(published.map(lecture => lecture.id).sort());
     expect(new Set(shown.map(lecture => lecture.number)).size).toBe(shown.length);
   });
@@ -57,5 +57,16 @@ describe("shared study experience for every course", () => {
     expect(document.querySelector("audio")).toBeNull();
     expect(document.querySelector<HTMLAnchorElement>(".platform-link")!.href).toContain(`/subjects/${course.id}/exam-material`);
     expect(fetch).toHaveBeenCalledWith(`/api/study-modules/${course.id}/exam`, expect.objectContaining({ credentials: "same-origin" }));
+  });
+  it.each([401, 404, 503])("shows actionable exam status %s without another course as fallback", async status => {
+    const subject = STUDY_COURSES[1].id; await render("exam", subject, null, status);
+    expect(document.querySelector<HTMLElement>("#main")!.hidden).toBe(true);
+    expect(document.querySelector("#study-load-status")!.getAttribute("role")).toBe("alert");
+    expect(document.querySelector("#study-load-status button")!.textContent).toBe("إعادة المحاولة");
+  });
+  it("rejects another course's question bank", async () => {
+    const requested = STUDY_COURSES[1].id;
+    await render("exam", requested, fixture(STUDY_COURSES[0].id).exam);
+    expect(document.querySelector<HTMLElement>("#main")!.hidden).toBe(true);
   });
 });

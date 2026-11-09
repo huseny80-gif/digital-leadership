@@ -12,10 +12,10 @@ const subject = { id: "allowed", title: "التقنية" } as Subject;
 beforeEach(() => { api.mockReset(); vi.mocked(apiGet).mockReset(); vi.mocked(apiGet).mockImplementation(async path => ({ data: path.endsWith("/assessments") ? [{ id: "q1", title: "الأمن السيبراني" }] : { entries: [] } })); });
 
 describe("content navigation and search", () => {
-  it("includes the standalone summaries and podcast in its authorized list", async () => {
+  it("links to each authorized subject's own summaries and podcast page", async () => {
     api.mockResolvedValue({ data: [], page: 1, limit: 50, total: 0 });
     render(await ContentHub({ subjects: [{ ...subject, id: INNOVATION_STUDY_SUBJECT_ID, title: "الابتكار وإدارة المشاريع" }], view: "summaries" }));
-    expect(screen.getByRole("link", { name: /الملخصات والبودكاست القيادي/ })).toHaveAttribute("href", `/summaries.html?subject=${INNOVATION_STUDY_SUBJECT_ID}`);
+    expect(screen.getByRole("link", { name: /الملخصات والبودكاست القيادي/ })).toHaveAttribute("href", `/subjects/${INNOVATION_STUDY_SUBJECT_ID}/summaries`);
     expect(screen.queryByRole("link", { name: /الاختبار الشامل/ })).not.toBeInTheDocument();
   });
   it("keeps the comprehensive test out of the general quiz list", async () => {

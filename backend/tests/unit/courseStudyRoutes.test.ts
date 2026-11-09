@@ -10,7 +10,7 @@ import { ValidationError } from "../../src/lib/validation.js";
 
 const subject = STUDY_COURSES[0].id, lecture = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", revision = "b".repeat(64);
 const path = `/subjects/${subject}/study-modules`;
-function fixture(identity: "user" | "guest" | "anonymous" = "user") {
+function fixture(identity: "user" | "guest" | "anonymous" = "user", prepareWaitMs = 20_000) {
   let userId = "fixture", userStatus = "active";
   const documents = vi.fn().mockResolvedValue({ summaries: { subjectId: subject, transcript: "األمن", summarySha256: revision }, exam: { subjectId: subject } });
   const narration = vi.fn().mockResolvedValue({ bytes: Buffer.from("0123456789"), voice: "ar-IQ-BasselNeural" });
@@ -22,7 +22,7 @@ function fixture(identity: "user" | "guest" | "anonymous" = "user") {
     next();
   });
   app.use(academicPresentation);
-  app.use(courseStudyRoutes(() => ({ documents, narration })));
+  app.use(courseStudyRoutes(() => ({ documents, narration }), prepareWaitMs));
   const errors: ErrorRequestHandler = (error, _req, res, _next) => { res.status(error instanceof HttpError ? error.status : error instanceof ValidationError ? 400 : 500).json({ error: { code: error.code ?? "validation_error", message: error.message } }); };
   app.use(errors);
   return { app, documents, narration, setUser: (id: string, status = "active") => { userId = id; userStatus = status; } };
@@ -65,6 +65,26 @@ describe("protected all-course study routes", () => {
     const response = await request(f.app).get(url).expect(503);
     expect(response.body.error.code).toBe("audio_unavailable");
     expect(response.body.error.message).toContain("أعد المحاولة");
+  });
+  it("bounds cold lecture audio with an explicit preparation response before serving a ready range", async () => {
+    const f = fixture("user", 10), url = `${path}/${lecture}/audio.mp3?revision=${revision}&voice=iraqi-male`;
+    let finish!: () => void;
+    const work = new Promise<{ bytes: Buffer; voice: string }>(resolve => { finish = () => resolve({ bytes: Buffer.from("0123456789"), voice: "ar-IQ-BasselNeural" }); });
+    let release: NodeJS.Timeout | undefined;
+    f.narration.mockImplementation(() => { release ??= setTimeout(finish, 100); return work; });
+    // Release the external boundary even on the old implementation: its
+    // observable defect is a late 200 instead of the bounded 503 response.
+    try {
+      const preparing = await request(f.app).get(url).expect(503);
+      expect(preparing.body.error.code).toBe("audio_preparing");
+      expect(preparing.headers["retry-after"]).toBe("10");
+      expect(preparing.headers["cache-control"]).toBe("private, no-store");
+      finish();
+      const ready = await request(f.app).get(url).set("Range", "bytes=2-4").expect(206);
+      expect(ready.body).toEqual(Buffer.from("234"));
+      expect(ready.headers["x-audio-voice"]).toBe("ar-IQ-BasselNeural");
+      expect(ready.headers["content-range"]).toBe("bytes 2-4/10");
+    } finally { clearTimeout(release); finish(); }
   });
   it("propagates a stale-source conflict and a hidden course instead of exposing other content", async () => {
     const f = fixture();

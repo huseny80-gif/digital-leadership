@@ -1,0 +1,81 @@
+.workspace {
+  --study-ground: #052223;
+  --study-card: #0b3b3c;
+  --study-gold: #d4af37;
+  --study-heading: #f3e5ab;
+  --study-ink: #f8fafc;
+  --study-muted: #cbd5e1;
+  --study-error: #ffb4ab;
+  --study-space: 16px;
+  max-width: 1120px;
+  min-width: 0;
+  margin-inline: auto;
+  padding: var(--study-space);
+  border-radius: 20px;
+  background: var(--study-ground);
+  color: var(--study-ink);
+  color-scheme: dark;
+  line-height: 1.9;
+}
+.workspace *, .workspace *::before, .workspace *::after { box-sizing: border-box; min-width: 0; }
+.workspace :focus-visible { outline: 3px solid var(--study-heading); outline-offset: 4px; }
+.introduction { padding-block-end: 24px; }
+.introduction h2 { color: var(--study-heading); font-size: clamp(22px, 2.3vw, 28px); line-height: 1.6; margin-block-end: 12px; }
+.introduction p { max-width: 72ch; }
+.helper { color: var(--study-muted); font-size: 14px; line-height: 1.8; margin-block: 8px 16px; }
+.notice { margin-block: 16px; padding: 16px; border: 1px solid var(--study-gold); border-radius: 12px; background: var(--study-card); overflow-wrap: anywhere; }
+.notice ul { padding-inline-start: 24px; }
+.notice .primaryButton { margin-block-start: 12px; }
+.courseStatus { margin-block: 8px 24px; }
+.courseStatus strong { color: var(--study-heading); font-size: 24px; }
+.courseStatus .secondaryButton { margin-block-start: 12px; }
+.lectureIndex { margin-block-end: 24px; }
+.lectureIndex a { display: inline-block; margin-inline-end: 8px; margin-block-end: 8px; padding: 8px 12px; border: 1px solid var(--study-gold); border-radius: 12px; color: var(--study-heading); font-size: 14px; line-height: 1.8; }
+.lectureIndex a:hover { background: var(--study-card); }
+.lectures { display: block; }
+.lecture { margin-block-end: 16px; border: 1px solid var(--study-gold); border-radius: 20px; background: var(--study-card); overflow: clip; scroll-margin-block-start: 100px; }
+.lectureHeading { padding: 16px; cursor: pointer; overflow-wrap: anywhere; }
+.lectureHeading::marker { color: var(--study-gold); }
+.lectureHeading h2 { display: inline; font-size: 18px; line-height: 1.8; color: var(--study-heading); }
+.lectureNumber { display: inline-block; margin-inline-end: 8px; color: var(--study-heading); font-weight: 700; }
+.lectureHint { display: block; margin-block-start: 8px; color: var(--study-muted); font-size: 13px; }
+.lecture[open] .lectureHeading { border-block-end: 1px solid var(--study-gold); }
+.lectureBody { padding: 16px; }
+.podcast { padding: 16px; margin-block-end: 24px; border: 1px solid var(--study-gold); border-radius: 12px; background: var(--study-ground); align-self: start; }
+.podcast h3 { margin: 0; color: var(--study-heading); font-size: 18px; line-height: 1.7; }
+.field { display: block; margin-block: 16px; font-size: 14px; line-height: 1.8; }
+.field > span { display: block; margin-block-end: 8px; color: var(--study-muted); }
+.field select { display: block; width: 100%; max-width: 100%; min-height: 44px; padding: 10px 12px; font: inherit; color: var(--study-ink); background: var(--study-card); border: 1px solid var(--study-gold); border-radius: 12px; }
+.primaryButton, .secondaryButton { display: block; width: 100%; max-width: 100%; min-height: 44px; padding: 10px 14px; border: 1px solid var(--study-gold); border-radius: 12px; font: inherit; font-size: 14px; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; }
+.primaryButton { color: var(--study-ground); background: var(--study-gold); }
+.primaryButton:hover { background: var(--study-heading); }
+.secondaryButton { color: var(--study-heading); background: transparent; }
+.secondaryButton:hover:not(:disabled) { background: var(--study-card); }
+.secondaryButton:disabled { cursor: default; color: var(--study-muted); border-color: var(--study-muted); opacity: .65; }
+.podcast audio { display: block; width: 100%; max-width: 100%; margin-block: 16px; }
+.seekButtons { margin-block: 16px; }
+.seekButtons button + button { margin-block-start: 8px; }
+.audioStatus { margin-block: 16px; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+.errorText { color: var(--study-error); }
+.textLink { display: inline-block; padding-block: 8px; color: var(--study-heading); text-decoration: underline; text-underline-offset: 4px; overflow-wrap: anywhere; }
+.summaryText { font-size: 16px; line-height: 1.9; max-width: 72ch; scroll-margin-block-start: 100px; overflow-wrap: anywhere; }
+.summaryText h3 { font-size: 18px; line-height: 1.8; color: var(--study-heading); margin-block: 24px 12px; }
+.summaryText ul { margin: 0; padding-inline-start: 24px; }
+.summaryText li + li { margin-block-start: 12px; }
+.summaryText strong { color: var(--study-ink); font-weight: 700; }
+.overview { margin-block: 0 24px; }
+.source { margin-block-start: 24px; padding-block-start: 16px; border-block-start: 1px solid var(--study-gold); color: var(--study-muted); font-size: 14px; }
+@media (min-width: 768px) {
+  .workspace { --study-space: 24px; }
+  .courseStatus { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .courseStatus .secondaryButton { width: auto; margin: 0; }
+  .lectureHeading { padding: 24px; }
+  .lectureBody { padding: 24px; }
+  .lectureHint { display: inline-block; margin-inline-start: 16px; }
+}
+@media (min-width: 960px) {
+  .lectureBody { display: grid; grid-template-columns: minmax(240px, 280px) minmax(0, 1fr); gap: 24px; }
+  .podcast { margin: 0; }
+}
+@supports (backdrop-filter: blur(12px)) { .lecture { background: rgba(11, 59, 60, .96); backdrop-filter: blur(12px); } }
+@media (prefers-reduced-motion: reduce) { .workspace { scroll-behavior: auto; } }

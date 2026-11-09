@@ -18,6 +18,8 @@ export const STUDY_VOICES = [
 
 export interface StudyModuleLecture {
   id: string; lectureId: string; number: number; title: string; filename: string;
+  /** Source catalogue identity for resolving historical bookmarks after reordering. */
+  catalogId?: string;
   sha256: string; sourceHref: string; overview: string;
   sections: Array<{ heading: string; points: Array<{ term: string; text: string }> }>;
   transcript: string; summarySha256: string; audioUrl: string;

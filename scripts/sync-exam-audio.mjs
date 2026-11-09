@@ -79,11 +79,14 @@ async function validateStudyPages(root, contents) {
     throw new Error("exam-module.html must not contain an audio/podcast player");
   }
   const summaries = contents[SUMMARIES].toString("utf8");
-  const embedded = summaries.match(/<script type="application\/json" id="summaries-data">([\s\S]*?)<\/script>/)?.[1];
-  if (!embedded || !summaries.includes('id="summaries-script"') || !summaries.includes('"audio/mpeg"')) {
-    throw new Error("summaries.html must contain the lecture-linked MP3 player and summary data");
+  if (!summaries.includes("data-summary-redirect") || !summaries.includes('id="summaries-script"')
+    || /<audio\b|id=["']subject-select["']|id=["']summaries-data["']/i.test(summaries)) {
+    throw new Error("summaries.html must delegate to the subject-owned summaries page");
   }
-  const data = JSON.parse(embedded);
+  // Existing prerecorded assets keep their own byte-verified metadata. The
+  // application reads the current subject's live document instead of this
+  // cross-course offline production snapshot.
+  const data = JSON.parse(contents["assets/audio/study-data.json"].toString("utf8"));
   const manifest = JSON.parse(contents[MANIFEST].toString("utf8"));
   if (manifest.version !== 1 || manifest.summaryRevision !== data.revision || !Array.isArray(manifest.lectures) || !Array.isArray(data.lectures) || manifest.lectures.length !== data.lectures.length || data.lectures.length === 0) {
     throw new Error("Audio manifest must match the published summaries revision");
