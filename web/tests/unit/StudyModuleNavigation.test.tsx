@@ -56,7 +56,7 @@ describe("approved course study module navigation", () => {
     for (const course of STUDY_COURSES) {
       for (let number = 1; number <= course.lectures; number++) expect(lectureSummaryHref(course.id, "entry", number)).toBe(`/subjects/${course.id}/summaries#lecture-${number}`);
     }
-    expect(lectureSummaryHref(INNOVATION_STUDY_SUBJECT_ID, "future entry", 6)).toBe(`/subjects/${INNOVATION_STUDY_SUBJECT_ID}/library?section=summaries&entry=future%20entry`);
+    expect(lectureSummaryHref(INNOVATION_STUDY_SUBJECT_ID, "future entry", 7)).toBe(`/subjects/${INNOVATION_STUDY_SUBJECT_ID}/library?section=summaries&entry=future%20entry`);
     expect(lectureSummaryHref("another", "entry/#", 1)).toBe("/subjects/another/library?section=summaries&entry=entry%2F%23");
     expect(isStudyModuleDocument(`/summaries.html?subject=${INNOVATION_STUDY_SUBJECT_ID}#innovation-02`)).toBe(true);
     expect(isStudyModuleDocument(`/subjects/${INNOVATION_STUDY_SUBJECT_ID}/summaries`)).toBe(false);
