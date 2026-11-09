@@ -48,7 +48,7 @@ describe("publish the complete approved Innovation assessment bank safely", () =
     expect(new Set(questions.map(assessmentFormat))).toEqual(new Set(["multiple_choice","true_false","match","order","essay","short_scenario"]));
     expect(questions.every(q => q.bloom)).toBe(true);
     expect(JSON.stringify(questions)).not.toMatch(/sourceProgram|sourceReferences|rubric|isCorrect|correctIndex|matchingRightIds/);
-    for (const [index,lecture] of lectures.entries()) expect(questions.filter(q => q.lectureId===lecture)).toHaveLength([63,33,38,44,42][index]!);
+    for (const [index,lecture] of lectures.entries()) expect(questions.filter(q => q.lectureId===lecture)).toHaveLength([63,33,38,44,42,22][index]!);
     const principal={kind:"user" as const,userId:admin}, attempt=await service.startAttempt(oldQuiz,principal,false);
     expect(attempt.quizId).toBe(current.id);
     for (const format of ["multiple_choice","true_false","match","order","essay","short_scenario"]) {
