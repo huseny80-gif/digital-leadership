@@ -22,8 +22,7 @@ const paperProgram=(question:GroundedQuestion,index:number):AcademicExamSourceQu
  rubric:{grounding:groundingVersion,sourceReferences:question.references,assessment:question.assessment,points:question.rubric??[],sourceProgram:question},
  options:(question.options??[]).map((text,index)=>({text,isCorrect:index===question.correctIndex})),pairs:question.pairs??[],items:question.items??[]});
 describe('reviewed banks across every provided lecture file',()=>{
- // The innovation lecture-6 slide deck yields no generated exam programs, so it is skipped here.
- for(const [i,source] of sources.entries()) (source.sha256==='64cdfcc50c8b558e77b457393c20d58a60fe62249367f7f97927778ed514eb78'?it.skip:it)(`keeps provenance, fluent distinct prompts and written models for source ${i}`,()=>{
+ for(const [i,source] of sources.entries()) it(`keeps provenance, fluent distinct prompts and written models for source ${i}`,()=>{
   const paragraphs=sourceParagraphs({id:'file-'+i,filename:'المحاضرة.pdf',sha256:source.sha256,text:source.text});
   const questions=diverseQuestionCandidates(paragraphs);
   const formats=new Set(questions.map(q=>q.type==='open'?q.kind:q.type));

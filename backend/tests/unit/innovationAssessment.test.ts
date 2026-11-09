@@ -35,18 +35,17 @@ beforeAll(async () => {
 }, 30000);
 
 describe("approved comprehensive Innovation bank bound to the five original PDF files", () => {
-  it("publishes the approved 220 programs with every format, level and source topic preserved", () => {
+  it("publishes the approved 242 programs with every format, level and source topic preserved", () => {
     expect(subjectId).toBe(innovationAssessmentSubjectId);
-    expect(files.map(file => file.questions.length)).toEqual([63,33,38,44,42,0]);
+    expect(files.map(file => file.questions.length)).toEqual([63,33,38,44,42,22]);
     const questions = files.flatMap(file => file.questions);
     const count = (key: (q: GroundedQuestion) => string) => questions.reduce<Record<string,number>>((a,q) => { const k=key(q);a[k]=(a[k]??0)+1;return a; },{});
-    expect(count(q => q.type === "open" ? q.kind! : q.type)).toEqual({multiple_choice:64,true_false:28,match:26,order:8,essay:66,short_scenario:28});
-    expect(count(q => q.difficulty)).toEqual({easy:103,medium:90,hard:22,very_hard:5});
-    expect(new Set(questions.map(q => q.classification!.number)).size).toBe(220);
-    expect(new Set(questions.map(q => q.prompt)).size).toBe(220);
-    expect(new Set(questions.flatMap(q => q.classification!.topics ?? [])).size).toBe(64);
+    expect(count(q => q.type === "open" ? q.kind! : q.type)).toEqual({multiple_choice:70,true_false:32,match:29,order:9,essay:71,short_scenario:31});
+    expect(count(q => q.difficulty)).toEqual({easy:111,medium:104,hard:22,very_hard:5});
+    expect(new Set(questions.map(q => q.classification!.number)).size).toBe(242);
+    expect(new Set(questions.map(q => q.prompt)).size).toBe(242);
+    expect(new Set(questions.flatMap(q => q.classification!.topics ?? [])).size).toBe(72);
     for (const file of files) {
-      if (!file.questions.length) continue; // lecture 6 is a slide deck without a reviewed bank
       expect(() => assertCompleteInnovationBank(file.paragraphs, file.questions)).not.toThrow();
       expect(() => assertCompleteInnovationBank(file.paragraphs, file.questions.slice(1))).toThrow(/evidence_incomplete/);
       for (const question of file.questions) expect(validGroundedQuestion(question, file.paragraphs)).toBe(true);
@@ -74,7 +73,7 @@ describe("approved comprehensive Innovation bank bound to the five original PDF 
     expect(validGroundedQuestion(file.questions[0]!,forged)).toBe(false);
   });
 
-  it("replays all 220 archived programs and exports a complete paper without leaking keys", () => {
+  it("replays all 242 archived programs and exports a complete paper without leaking keys", () => {
     const questions = files.flatMap(file => file.questions.map((q,index) => ({ id:file.lecture.id+":"+index,lectureId:file.lecture.id,
       prompt:q.prompt,questionType:q.type,kind:q.kind??null,explanation:q.explanation,
       rubric:{grounding:groundingVersion,sourceReferences:q.references,assessment:q.assessment,points:q.rubric??[],sourceProgram:q},
@@ -85,7 +84,7 @@ describe("approved comprehensive Innovation bank bound to the five original PDF 
     // JSONB object key order must not change the approved program signature.
     const reorder=(value:unknown):unknown => Array.isArray(value)?value.map(reorder):value&&typeof value==="object"?Object.fromEntries(Object.entries(value).reverse().map(([k,v]) => [k,reorder(v)])):value;
     const paper=buildAcademicExam(reorder(input) as typeof input,true);
-    expect(paper.questions).toHaveLength(220);expect(paper.answerKey).toHaveLength(220);
+    expect(paper.questions).toHaveLength(242);expect(paper.answerKey).toHaveLength(242);
     expect(paper.questions.filter(q => q.difficulty==="very_hard")).toHaveLength(5);
     expect(paper.answerKey!.every(answer => answer.rubric.length > 0 && answer.rubric.every(point => point.references.length>0))).toBe(true);
     expect(JSON.stringify(buildAcademicExam(input,false))).not.toMatch(/"(?:answerKey|modelAnswer|correctIndex|isCorrect|sourceProgram|matchingRightIds|excerpt)"/u);

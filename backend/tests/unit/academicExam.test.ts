@@ -72,8 +72,6 @@ describe("archived academic papers across the actual curriculum", () => {
     // A retired edition (e.g. the full cyber lecture-1 PDF split into lectures
     // 1 and 2) keeps its transcript only so earlier exam archives stay verifiable.
     if (!lecture) continue;
-    // Lecture 6 of innovation is a 10-slide bullet deck: it carries a summary, cases and the PDF, but yields no generated exam programs.
-    if (lecture.id === "ip-l7") continue;
     it(`revalidates the source programs and marking evidence for ${asset.filename}`, () => {
       const scoped = scopeSharedSource({ id: asset.id, filename: asset.filename, ...source }, { title: lecture.title, orderIndex: lecture.number }, false);
       const sourceParagraphList = sourceParagraphs(scoped.document, scoped.lineOffset);
