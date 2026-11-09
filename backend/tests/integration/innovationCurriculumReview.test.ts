@@ -83,7 +83,7 @@ describe("innovation current lecture numbering and marked duplicate cleanup", ()
     const legacyOptions = (await pool.query("select * from question_options where question_id=$1 order by id", [s.legacyBank.questionId])).rows;
     const result = await reviewInnovationCurriculum(pool);
     expect(result.consolidation?.changed).toMatchObject({ lecturesArchived: 3, duplicateItemsArchived: 1, quizzesRelinked: 1, completionsCarried: 1 });
-    expect(result).toMatchObject({ availableNumbers: [1, 2, 3, 4, 5], missingNumbers: [], issues: [] });
+    expect(result).toMatchObject({ availableNumbers: [1, 2, 3, 4, 5, 6], missingNumbers: [], issues: [] });
     expect(result.groupId).toBeTruthy();
     const root = (await pool.query("select z.id,count(q.id)::int questions,count(distinct q.lecture_id)::int lectures from quizzes z join quiz_questions qq on qq.quiz_id=z.id join questions q on q.id=qq.question_id where z.subject_id=$1 and z.purpose='course' and z.lecture_id is null and z.superseded_by is null and z.deleted_at is null group by z.id", [subjectId])).rows;
     expect(root).toHaveLength(1);
@@ -122,7 +122,7 @@ describe("innovation current lecture numbering and marked duplicate cleanup", ()
       await attach(s.storage, s.actor, lecture, bytes, `Innovation${number}.pdf`, "draft");
     }
     const result = await reviewInnovationCurriculum(pool);
-    expect(result.availableNumbers).toEqual([1, 2, 3, 4, 5]); expect(result.missingNumbers).toEqual([]);
+    expect(result.availableNumbers).toEqual([1, 2, 3, 4, 5, 6]); expect(result.missingNumbers).toEqual([]);
     expect((await pool.query("select title,order_index,status from lectures where id=$1", [ids.get(6)])).rows[0]).toEqual({ title: "المحاضرة السادسة في الابتكار وإدارة المشاريع", order_index: 6, status: "draft" });
     const sixth = (await pool.query("select f.original_filename,f.storage_key from files f join lecture_items i on i.file_id=f.id where i.lecture_id=$1", [ids.get(6)])).rows[0];
     expect(sixth.original_filename).toBe("المحاضرة السادسة في الابتكار وإدارة المشاريع.pdf"); expect(sixth.storage_key).toContain("Innovation6.pdf");
