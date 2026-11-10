@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-xoC5J0iViaNCkAiMbq26uy7Azdvz7rhKNe3DgfNvmd8='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; object-src 'none'; base-uri 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-g1IYNPP4t1Bk/vKWOKDKYtKgvdnirQk7tennQUuGvno='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; object-src 'none'; base-uri 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>تحدي الدبلوم — من سيربح الدبلوم</title>
 <style>
@@ -521,6 +521,7 @@ function curQ(s,run){if(!run.orders[run.lv])run.orders[run.lv]=shuffle([0,1,2,3]
 $('nameInp').value=mem.name||'';
 $('nameForm').onsubmit=e=>{e.preventDefault();mem.name=$('nameInp').value.trim();save();toast(mem.name?('أهلاً '+mem.name+' 👋'):'تم الحفظ')};
 function renderHome(){
+ gen++;closeModal();
  show('home');const box=$('subjects');box.innerHTML='';
  ORDER.forEach(s=>{
   const r=mem.runs[s];const prog=r?(r.done?12:(r.lv-1)+r.qi/4):0;
@@ -542,6 +543,7 @@ function show(id){['home','game','win'].forEach(x=>$(x).classList.toggle('hidden
 $('homeBtn').onclick=()=>{stopTimer();renderHome()};
 
 /* ---------- game ---------- */
+let gen=0;/* bumps on every navigation; stale answer/lose callbacks check it */
 let S=null,R=null,Q=null,view=[],locked=false,tLeft=60,tMax=60,tInt=null,removed=[],qStart=0;
 function start(s,reset){if(reset||!mem.runs[s]||mem.runs[s].done)mem.runs[s]=newRun();S=s;R=getRun(s);save();show('game');renderQ()}
 function renderPyr(){
@@ -559,7 +561,7 @@ function renderHud(){
  $('lfPh').disabled=!R.life.p||locked;$('lfPh').classList.toggle('used',!R.life.p);
 }
 function renderQ(){
- locked=false;removed=[];Q=curQ(S,R);
+ gen++;locked=false;removed=[];Q=curQ(S,R);
  $('qType').textContent=TL[Q.t];
  $('qSrc').textContent='📘 '+(S==='mix'?SUBJ[Q.sub].n+' — ':'')+Q.src;
  $('qText').textContent=Q.q;
@@ -580,7 +582,9 @@ function pick(i){
  if(locked)return;locked=true;stopTimer();R.time+=Math.round((Date.now()-qStart)/1000);
  const btns=[...$('answers').children];btns.forEach(b=>b.disabled=true);renderHud();
  if(i>=0){btns[i].classList.add('sel');sfx.sel()}
+ const myGen=gen,myS=S,myR=R,myQ=Q,myView=view;
  setTimeout(()=>{
+  if(myGen!==gen||myS!==S||myR!==R||myQ!==Q||myView!==view)return;
   const ci=correctIdx();btns[ci].classList.remove('sel');btns[ci].classList.add('ok');
   const good=i===ci;
   if(!good&&i>=0){btns[i].classList.remove('sel');btns[i].classList.add('bad')}
@@ -602,7 +606,7 @@ function pick(i){
   }else{
    const b=document.createElement('button');b.className='btn';b.textContent='↻ تابع من حيث أخطأت';b.onclick=()=>renderQ();row.appendChild(b);
    const h=document.createElement('button');h.className='btn ghost';h.textContent='🏠 القائمة';h.onclick=()=>renderHome();row.appendChild(h);
-   setTimeout(()=>modalLose(),900);
+   setTimeout(()=>{if(myGen===gen)modalLose()},900);
   }
   $('explain').innerHTML='';$('explain').appendChild(ex);$('hScore').textContent=fmt(R.score);
   ex.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -632,7 +636,7 @@ $('lfPh').onclick=()=>{if(locked||!R.life.p)return;R.life.p=false;R.lifeUsed++;s
 /* ---------- win ---------- */
 function grade(m){if(m===0)return['ممتاز — أداء أسطوري',5];if(m<=2)return['امتياز',4];if(m<=5)return['جيد جداً',3];if(m<=10)return['جيد',2];return['مقبول — واصل المراجعة',1]}
 function showWin(){
- stopTimer();const r=mem.runs[S];const [g,st]=grade(r.mistakes);const acc=Math.round(48/(48+r.mistakes)*100);
+ gen++;stopTimer();const r=mem.runs[S];const [g,st]=grade(r.mistakes);const acc=Math.round(48/(48+r.mistakes)*100);
  const mins=Math.max(1,Math.round(r.time/60));const nm=mem.name||'المتسابق';
  $('win').innerHTML='<div class="win"><div class="trophy">🏆</div><h2>مبروك يا '+esc(nm)+'! لقد ربحت الدبلوم</h2><p style="color:var(--mut)">أتممت المستويات الاثني عشر في «'+SUBJ[S].n+'» وأجبت عن 48 سؤالاً صعباً بنجاح</p>'+
  '<div class="cert"><div style="color:var(--mut)">التقييم النهائي</div><div class="stars">'+'★'.repeat(st)+'<span style="opacity:.25">'+'★'.repeat(5-st)+'</span></div><div style="font-size:1.4rem;font-weight:900;color:var(--gold2)">'+g+'</div>'+
