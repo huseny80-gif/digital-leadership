@@ -8,6 +8,7 @@ describe("standalone study page script policy", () => {
   it.each([
     ["exam-module.html", "module-script"],
     ["summaries.html", "summaries-script"],
+    ["diploma-challenge.html", "diploma-challenge-script"],
   ])("trusts the published %s script and its matching canonical source", (page, scriptId) => {
     const canonical = readFileSync(resolve(process.cwd(), "..", page), "utf8");
     const published = readFileSync(resolve(process.cwd(), "public", page), "utf8");
@@ -26,7 +27,7 @@ describe("standalone study page script policy", () => {
 
   it("keeps the existing nonce policy on all other paths", () => {
     const standard = browserCsp("unique-nonce", true);
-    for (const path of ["/login", "/admin", "/subjects", "/exam-module.html/extra", "/exam-module.html.evil", "/summaries.html/extra", "/summaries.html.evil"]) {
+    for (const path of ["/login", "/admin", "/subjects", "/exam-module.html/extra", "/exam-module.html.evil", "/summaries.html/extra", "/summaries.html.evil", "/diploma-challenge.html/extra", "/diploma-challenge.html.evil"]) {
       expect(browserCsp("unique-nonce", true, path)).toBe(standard);
     }
     expect(standard).not.toContain("sha256-");
@@ -55,7 +56,7 @@ describe("standalone study page script policy", () => {
     expect(browserCsp("nonce", true, "/subjects")).not.toContain(hash);
   });
 
-  it.each(["/exam-module.html", "/summaries.html"])("keeps framing, mixed-content and object protections on %s", path => {
+  it.each(["/exam-module.html", "/summaries.html", "/diploma-challenge.html"])("keeps framing, mixed-content and object protections on %s", path => {
     const csp = browserCsp("nonce", true, path);
     for (const directive of ["frame-ancestors 'self'", "object-src 'none'", "upgrade-insecure-requests"]) {
       expect(csp).toContain(directive);

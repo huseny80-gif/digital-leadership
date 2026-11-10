@@ -41,6 +41,7 @@ export function AppShell({ children, isAdmin, isInstructor = false, userEmail, u
     { href: "/subjects?view=summaries", label: "الملخصات", icon: "document" },
     { href: "/subjects?view=assignments", label: "الواجبات والأنشطة", icon: "document" },
     { href: "/subjects?view=assessments", label: "الاختبارات", icon: "quiz" },
+    { href: "/diploma-challenge", label: "تحدي الدبلوم", icon: "trophy" },
     { href: "/subjects?view=files", label: "المصادر والملفات", icon: "folder" },
     { href: "/subjects/reports", label: "التقارير الأكاديمية", icon: "document" },
     { href: "/training", label: "المجتمع التدريبي", icon: "users" },

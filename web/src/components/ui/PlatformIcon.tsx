@@ -9,6 +9,7 @@ const paths: Record<string, ReactNode> = {
   book: <><path d="M12 5c-3-3-7-3-10-2v17c3-1 7-1 10 2 3-3 7-3 10-2V3c-3-1-7-1-10 2Z" /><path d="M12 5v17" /></>,
   video: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m10 8 6 4-6 4Z" /></>,
   document: <><path d="M5 2h9l5 5v15H5Z" /><path d="M14 2v6h5M8 12h8M8 16h8" /></>,
+  trophy: <><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0Z" /><path d="M7 6H3v2a4 4 0 0 0 4 4M17 6h4v2a4 4 0 0 1-4 4" /></>,
   quiz: <><rect x="3" y="2" width="18" height="20" rx="2" /><path d="M9 8a3 3 0 0 1 6 0c0 2-3 2-3 5M12 17v.5" /></>,
   folder: <path d="M2 5h8l2 3h10v13H2ZM2 8h20" />,
   users: <><circle cx="12" cy="7" r="3" /><path d="M7 21v-5a5 5 0 0 1 10 0v5M3 21v-4a4 4 0 0 1 3-4M21 21v-4a4 4 0 0 0-3-4M4 3a3 3 0 0 1 0 6M20 3a3 3 0 0 0 0 6M9 17h6" /></>,
