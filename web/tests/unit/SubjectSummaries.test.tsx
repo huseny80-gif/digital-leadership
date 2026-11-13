@@ -17,7 +17,7 @@ describe("one subject's academic summaries and lecture podcasts", () => {
     const data = summaryFixture(course.id, course.lectures);
     vi.mocked(fetch).mockResolvedValue(jsonResponse({ data }));
     const { container } = render(<SubjectSummaries subjectId={course.id} subjectTitle={data.courseTitle} />);
-    await screen.findByText(`${course.lectures === 6 ? "٦" : course.lectures === 7 ? "٧" : course.lectures === 8 ? "٨" : "٥"}`, { selector: "strong" });
+    await screen.findByText(`${course.lectures === 6 ? "٦" : course.lectures === 7 ? "٧" : course.lectures === 8 ? "٨" : course.lectures === 9 ? "٩" : "٥"}`, { selector: "strong" });
     expect(container.querySelectorAll("details")).toHaveLength(course.lectures);
     expect(screen.queryByRole("combobox", { name: "المادة الدراسية" })).not.toBeInTheDocument();
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -43,7 +43,7 @@ describe("one subject's academic summaries and lecture podcasts", () => {
   it.each([
     ["legal-regulatory", "lg-l3", 2],
     ["legal-regulatory", "lg-l2", 4],
-    ["cybersecurity-governance", "cs-iso-roadmap", 8],
+    ["cybersecurity-governance", "cs-iso-roadmap", 9],
     ["risk-management", "rm-l3", 3],
   ] as const)("resolves %s's old #%s bookmark using the current source catalogue", async (slug, catalogId, currentNumber) => {
     const course = STUDY_COURSES.find(item => item.slug === slug)!;

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "summaryRevision": "bbce4718e810f5db7144",
+  "summaryRevision": "2e3876d39fec43eb76b4",
   "defaultSubjectId": "7eb2b714-570f-4ed0-a00e-10efec7a20e5",
   "subjects": [
     {
@@ -481,8 +481,45 @@
       }
     },
     {
-      "id": "cs-iso-roadmap",
+      "id": "cs-l8",
       "number": 8,
+      "title": "المحاضرة الثامنة في حوكمة الأمن السيبراني",
+      "subjectId": "bc861a76-620d-4646-81ca-c49d24665b75",
+      "subjectSlug": "cybersecurity-governance",
+      "catalogLectureId": "cs-l8",
+      "sourceSha256": "9adaf42b87c2a8100906ce68eea6480d58ab59c3523c33efd0a650a973dbb656",
+      "summarySha256": "a16a693fe69cb0f63a2a7bf6c12bdb2f6fff29616ae40a59a488c697c253feba",
+      "transcript": "assets/audio/cs-l8/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/cs-l8/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/cs-l8/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/cs-l8/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/cs-l8/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/cs-l8/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/cs-l8/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "cs-iso-roadmap",
+      "number": 9,
       "title": "خارطة الطريق للحصول على الشهادة الدولية ISO 27001",
       "subjectId": "bc861a76-620d-4646-81ca-c49d24665b75",
       "subjectSlug": "cybersecurity-governance",
