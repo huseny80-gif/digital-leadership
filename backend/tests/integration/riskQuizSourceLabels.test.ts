@@ -55,7 +55,7 @@ describe("risk quiz labels follow verified question sources, not legacy lecture 
     expect(successor).toBeTruthy();
     const quiz = await s.repository.getQuizById(successor, false);
     expect(quiz).toMatchObject({ lectureId: null, timeLimitSeconds: 600, dueAt: "2027-11-01T12:00:00.000Z" });
-    expect(quiz!.title).toBe("اختبار شامل — إدارة المخاطر واتخاذ القرار (المحاضرات 1، 2، 3، 4، 5، 6)");
+    expect(quiz!.title).toBe("اختبار شامل — إدارة المخاطر واتخاذ القرار (المحاضرات 1، 2، 3، 4، 5، 6، 7)");
     expect((await s.repository.listQuizzesForSubject(subjectId, false)).some(quiz => quiz.id === old)).toBe(false);
     expect((await pool.query("select question_id,order_index,points_override from quiz_questions where quiz_id=$1 order by order_index", [successor])).rows)
       .toEqual(before.memberships.map(({ quiz_id: _quiz, ...row }) => row));
