@@ -56,7 +56,7 @@ describe("publishing the original seventh cybersecurity governance lecture", () 
     const roadmap = view.entries.find(entry => entry.id === "cs-iso-roadmap")!;
     expect(roadmap.lectureId).toBe(roadmapId);
     expect(roadmap.files.some(file => file.filename.includes("ISO 27001"))).toBe(true);
-    expect((await pool.query("select order_index from lectures where id=$1", [roadmapId])).rows[0].order_index).toBe(8);
+    expect((await pool.query("select order_index from lectures where id=$1", [roadmapId])).rows[0].order_index).toBe(9);
     const documents = await new CourseStudyModules(pool).documents(subjectId);
     const seventh = documents.summaries.lectures.find(lecture => lecture.number === 7)!;
     expect(seventh.sha256).toBe(checksum);

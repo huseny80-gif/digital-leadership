@@ -46,7 +46,7 @@ describe("the original seventh cybersecurity governance lecture", () => {
     expect(createHash("sha256").update(item.bytes).digest("hex")).toBe(checksum);
     expect(item.asset.sizeBytes).toBe(2492855);
     const roadmap = course.lectures.find(lecture => lecture.id === "cs-iso-roadmap")!;
-    expect(roadmap.number).toBe(8);
+    expect(roadmap.number).toBe(9);
     expect(roadmap.title).toContain("ISO 27001");
     expect(roadmap.files!.every(file => file.url !== item.asset.path)).toBe(true);
   });
