@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "summaryRevision": "1fe62c84ef0db7d8b784",
+  "summaryRevision": "bbce4718e810f5db7144",
   "defaultSubjectId": "7eb2b714-570f-4ed0-a00e-10efec7a20e5",
   "subjects": [
     {
@@ -1797,6 +1797,43 @@
         },
         "saudi-female": {
           "path": "assets/audio/rm-l6/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "rm-l7",
+      "number": 7,
+      "title": "المحاضرة السابعة مخاطر",
+      "subjectId": "1f4d2071-d1c9-46ee-a848-d5c90eedf287",
+      "subjectSlug": "risk-management",
+      "catalogLectureId": "rm-l7",
+      "sourceSha256": "bf493aceb53eaf7478e1833dca2c03a09eed14a3dc937292bf3856db385c84b4",
+      "summarySha256": "ae235085cd2aa5d4ff95d20bb19724e8c42e99227f11c0d5f9f248be6f09eb7f",
+      "transcript": "assets/audio/rm-l7/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/rm-l7/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/rm-l7/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/rm-l7/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/rm-l7/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/rm-l7/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/rm-l7/saudi-female.mp3",
           "available": false
         }
       }
