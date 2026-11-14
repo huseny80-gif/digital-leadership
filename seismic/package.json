@@ -1,0 +1,37 @@
+{
+  "name": "seismic",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "7th Seismic Crew operations & digital leadership platform — dashboards, 3D virtual field office and multi-agent acquisition simulation.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@react-three/fiber": "^9.8.2",
+    "@supabase/supabase-js": "^2.116.0",
+    "idb": "^8.0.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "three": "^0.187.0",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.3",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.187.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "fake-indexeddb": "^6.2.8",
+    "jsdom": "^30.0.1",
+    "typescript": "^5",
+    "vite": "^6.4.3",
+    "vitest": "^3.2.7"
+  }
+}
