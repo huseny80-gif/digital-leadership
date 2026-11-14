@@ -1,0 +1,9 @@
+{
+  "name": "7th Seismic Crew · Operations Center",
+  "short_name": "Seismic Crew",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#00251F",
+  "theme_color": "#004D40",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
