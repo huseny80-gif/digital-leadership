@@ -60,6 +60,14 @@ describe("reference application shell", () => {
     expect(screen.queryByRole("link", { name: "آراء المشاركين" })).not.toBeInTheDocument();
   });
 
+  it("puts a diploma-challenge shortcut in the header beside the notifications bell", () => {
+    const { container } = render(<AppShell isAdmin={false} userEmail="learner@example.com"><p>Content</p></AppShell>);
+    const shortcut = container.querySelector(".app-header-actions a.dl-diploma-shortcut");
+    expect(shortcut).toHaveAttribute("href", "/diploma-challenge");
+    expect(shortcut).toHaveAccessibleName("تحدي الدبلوم");
+    expect(shortcut!.nextElementSibling).toContainElement(container.querySelector(".dl-notifications-button"));
+  });
+
   it("opens in dark mode and preserves an explicit light theme preference", () => {
     const { container } = render(<AppShell isAdmin={false} userEmail="learner@example.com"><p>Content</p></AppShell>);
     fireEvent.click(screen.getByRole("button", { name: "تصفح المنصة" }));

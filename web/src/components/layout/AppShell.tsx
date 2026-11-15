@@ -78,6 +78,7 @@ export function AppShell({ children, isAdmin, isInstructor = false, userEmail, u
             {menu === "language" ? <div className="dl-header-popover" id="language-menu"><button type="button" onClick={() => setMenu(null)} lang="ar">العربية <span aria-hidden="true">✓</span></button></div> : null}
           </div>
           <button type="button" className="dl-header-control dl-theme-control" aria-label={dark ? "تفعيل الوضع الفاتح" : "تفعيل الوضع الداكن"} aria-pressed={dark} onClick={toggleTheme}><PlatformIcon name={dark ? "moon" : "sun"} /></button>
+          <Link href="/diploma-challenge" className="dl-header-control dl-diploma-shortcut" aria-label="تحدي الدبلوم" title="تحدي الدبلوم"><PlatformIcon name="trophy" /></Link>
           <NotificationsHub key={`${guestSession?.id ?? userEmail ?? "anonymous"}:${isAdmin}`} isAdmin={!isGuest && isAdmin} open={menu === "notifications"} onToggle={() => toggleMenu("notifications")} onClose={() => setMenu(null)} />
           <div className="dl-control-wrap">
             <button type="button" className="dl-account-button" aria-label="قائمة الحساب" aria-expanded={menu === "account"} aria-controls="account-menu" onClick={() => toggleMenu("account")}>

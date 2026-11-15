@@ -76,6 +76,15 @@
 .dl-workspace .app-sidebar-icon { display: grid; place-items: center; width: 22px; height: 26px; }
 .dl-workspace .app-sidebar-icon svg { width: 22px; height: 22px; }
 .dl-workspace .app-sidebar-link[href="/about"] { padding-inline-start: 14px; gap: 10px; }
+/* «تحدي الدبلوم»: a glowing turquoise tab, larger than the other sidebar links. */
+.dl-workspace .app-sidebar-link[href="/diploma-challenge"] { min-height: 56px; margin-block: 6px; font-size: 17px; font-weight: 700; color: #7ff5ff; border-color: #2de2f0; background: linear-gradient(270deg, rgb(24 214 232 / 24%), rgb(0 96 120 / 38%)); box-shadow: 0 0 14px rgb(45 226 240 / 55%), inset -5px 0 #2de2f0; text-shadow: 0 0 8px rgb(45 226 240 / 70%); }
+.dl-workspace .app-sidebar-link[href="/diploma-challenge"]:hover { color: #fff; background: linear-gradient(270deg, rgb(24 214 232 / 40%), rgb(0 120 145 / 55%)); box-shadow: 0 0 20px rgb(45 226 240 / 80%), inset -5px 0 #2de2f0; }
+.dl-workspace .app-sidebar-link[href="/diploma-challenge"][aria-current="page"] { color: #fff; border-color: #7ff5ff; background: linear-gradient(270deg, #14b8c8, #006a82); }
+.dl-workspace .app-sidebar-link[href="/diploma-challenge"] .app-sidebar-icon { width: 30px; height: 32px; }
+.dl-workspace .app-sidebar-link[href="/diploma-challenge"] .app-sidebar-icon svg { width: 28px; height: 28px; filter: drop-shadow(0 0 5px rgb(45 226 240 / 85%)); }
+.dl-diploma-shortcut { color: #7ff5ff; border-color: #2de2f0; background: rgb(24 214 232 / 14%); box-shadow: 0 0 12px rgb(45 226 240 / 55%); }
+.dl-diploma-shortcut:hover { color: #fff; background: rgb(24 214 232 / 32%); box-shadow: 0 0 18px rgb(45 226 240 / 80%); }
+.dl-diploma-shortcut svg { width: 22px; height: 22px; }
 .dl-workspace .app-sidebar-link[href="/about"] .app-sidebar-icon { width: 42px; height: 42px; border-radius: 50%; border: 1px solid #827d60; background: linear-gradient(135deg, #5d6261, #293a43); }
 .dl-workspace .app-sidebar-link[href="/about"] svg { width: 27px; height: 27px; fill: #f8fafb; stroke: #16323f; stroke-width: 2.5; }
 .dl-workspace .app-main { min-width: 0; width: 100%; padding-block: 14px 24px; padding-inline: 14px 12px; direction: rtl; background: var(--color-bg); }
