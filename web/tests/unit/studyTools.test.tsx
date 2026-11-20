@@ -45,6 +45,26 @@ describe("study assistant widget", () => {
     expect(screen.getByText("أهلاً بك، كيف يمكنني مساعدتك")).toBeInTheDocument();
   });
 });
+describe("floating study assistant button", () => {
+  it("can be dragged anywhere on screen without opening, remembers its spot, and still opens on a plain click", () => {
+    window.localStorage.removeItem("dl-study-assistant-position");
+    const { container } = render(<StudyAssistantWidget />);
+    const root = container.firstElementChild as HTMLElement;
+    vi.spyOn(root, "getBoundingClientRect").mockReturnValue({ left: 24, top: 600, width: 180, height: 56, right: 204, bottom: 656, x: 24, y: 600, toJSON: () => ({}) });
+    const button = screen.getByRole("button", { name: "فتح المساعد الدراسي" });
+    fireEvent.pointerDown(button, { pointerId: 1, clientX: 40, clientY: 620, button: 0 });
+    fireEvent.pointerMove(button, { pointerId: 1, clientX: 340, clientY: 220 });
+    fireEvent.pointerUp(button, { pointerId: 1, clientX: 340, clientY: 220 });
+    expect(root.style.left).toBe("324px"); expect(root.style.top).toBe("200px");
+    fireEvent.click(button);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(JSON.parse(window.localStorage.getItem("dl-study-assistant-position")!)).toEqual({ left: 24, top: 600 });
+    fireEvent.pointerDown(button, { pointerId: 2, clientX: 10, clientY: 10, button: 0 });
+    fireEvent.pointerUp(button, { pointerId: 2, clientX: 10, clientY: 10 });
+    return new Promise<void>(resolve => requestAnimationFrame(() => { fireEvent.click(button); expect(screen.getByRole("dialog")).toBeInTheDocument(); resolve(); }));
+  });
+});
+
 describe("report selection, preview and download", () => {
   it("previews selected sources, exposes their references and disables export when the selection changes", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(reply(catalog)).mockResolvedValueOnce(reply(report)); vi.stubGlobal("fetch", fetchMock);

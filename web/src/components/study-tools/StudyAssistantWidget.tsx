@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type { StudyAssistantMode, StudyAssistantRequest, StudyAssistantResponse, StudyCatalog } from "@shared/index";
 import { PlatformIcon } from "@/components/ui/PlatformIcon";
 import { StudyReviewQuiz } from "./StudyReviewQuiz";
@@ -11,6 +11,14 @@ import styles from "./studyTools.module.css";
 
 interface Message { id: string; role: "user" | "assistant"; text: string; response?: StudyAssistantResponse }
 const modes: Array<{ id: StudyAssistantMode; label: string }> = [{ id: "answer", label: "اسأل عن مفهوم" }, { id: "summary", label: "لخّص" }, { id: "quiz", label: "أسئلة مراجعة" }];
+const POSITION_KEY = "dl-study-assistant-position";
+const DRAG_THRESHOLD = 5;
+interface Position { left: number; top: number }
+/** Keeps the floating assistant fully inside the viewport. */
+function clampPosition(position: Position, width: number, height: number): Position {
+  const maxLeft = Math.max(0, window.innerWidth - width), maxTop = Math.max(0, window.innerHeight - height);
+  return { left: Math.min(Math.max(0, position.left), maxLeft), top: Math.min(Math.max(0, position.top), maxTop) };
+}
 export function StudyAssistantWidget({ welcomeOnEntry = false }: { welcomeOnEntry?: boolean }) {
   const pathname = usePathname();
   const contextSubject = pathname.match(/^\/subjects\/([a-f0-9-]{36})(?:\/|$)/i)?.[1];
@@ -27,6 +35,11 @@ export function StudyAssistantWidget({ welcomeOnEntry = false }: { welcomeOnEntr
   const [messages, setMessages] = useState<Message[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [position, setPosition] = useState<Position | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const container = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ pointer: number; startX: number; startY: number; left: number; top: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
   const input = useRef<HTMLTextAreaElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const end = useRef<HTMLDivElement>(null);
@@ -50,6 +63,52 @@ export function StudyAssistantWidget({ welcomeOnEntry = false }: { welcomeOnEntr
   }, [open]);
   useEffect(() => { if (open) end.current?.scrollIntoView?.({ block: "end", behavior: "instant" }); }, [messages, busy, open]);
   useEffect(() => () => active.current?.abort(), []);
+  // The assistant may be dragged anywhere on screen; the last spot is a per-viewer convenience.
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(POSITION_KEY) ?? "null") as Position | null;
+      const box = container.current?.getBoundingClientRect();
+      if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top) && box) setPosition(clampPosition(saved, box.width, box.height));
+    } catch { /* storage unavailable: keep the default corner */ }
+  }, []);
+  useEffect(() => {
+    if (!position) return;
+    const keepInside = () => { const box = container.current?.getBoundingClientRect(); if (box) setPosition(current => current ? clampPosition(current, box.width, box.height) : current); };
+    window.addEventListener("resize", keepInside);
+    return () => window.removeEventListener("resize", keepInside);
+  }, [position !== null]); // eslint-disable-line react-hooks/exhaustive-deps
+  function remember(next: Position) { try { window.localStorage.setItem(POSITION_KEY, JSON.stringify(next)); } catch { /* ignore */ } }
+  function startDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0 && event.pointerType === "mouse") return;
+    const box = container.current?.getBoundingClientRect(); if (!box) return;
+    drag.current = { pointer: event.pointerId, startX: event.clientX, startY: event.clientY, left: box.left, top: box.top, moved: false };
+    try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* pointer capture is optional */ }
+  }
+  function moveDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const state = drag.current, box = container.current?.getBoundingClientRect();
+    if (!state || state.pointer !== event.pointerId || !box) return;
+    const dx = event.clientX - state.startX, dy = event.clientY - state.startY;
+    if (!state.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    state.moved = true; setDragging(true);
+    setPosition(clampPosition({ left: state.left + dx, top: state.top + dy }, box.width, box.height));
+  }
+  function endDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const state = drag.current; if (!state || state.pointer !== event.pointerId) return;
+    drag.current = null; setDragging(false);
+    if (state.moved) {
+      suppressClick.current = true; requestAnimationFrame(() => { suppressClick.current = false; });
+      const box = container.current?.getBoundingClientRect(); if (box) remember({ left: box.left, top: box.top });
+    }
+  }
+  function nudge(event: ReactKeyboardEvent<HTMLButtonElement>) {
+    if (!event.altKey) return;
+    const step = 24, delta = event.key === "ArrowLeft" ? [-step, 0] : event.key === "ArrowRight" ? [step, 0] : event.key === "ArrowUp" ? [0, -step] : event.key === "ArrowDown" ? [0, step] : null;
+    const box = container.current?.getBoundingClientRect(); if (!delta || !box) return;
+    event.preventDefault();
+    const next = clampPosition({ left: box.left + delta[0]!, top: box.top + delta[1]! }, box.width, box.height); setPosition(next); remember(next);
+  }
+  const nearTop = position ? position.top + 28 < window.innerHeight / 2 : false;
+  const nearRight = position ? position.left + 60 > window.innerWidth / 2 : false;
 
   async function send(payload: StudyAssistantRequest) {
     if (busyRef.current) return;
@@ -69,7 +128,7 @@ export function StudyAssistantWidget({ welcomeOnEntry = false }: { welcomeOnEntr
   }
   function clear() { active.current?.abort(); busyRef.current = false; setBusy(false); setMessages([]); setError(null); lastRequest.current = null; input.current?.focus(); }
 
-  return <div className={styles.assistant} dir="rtl">
+  return <div ref={container} className={styles.assistant} dir="rtl" data-moved={position ? "true" : undefined} data-vertical={nearTop ? "below" : "above"} data-horizontal={nearRight ? "right" : "left"} style={position ? { left: position.left, top: position.top, insetInlineEnd: "auto", bottom: "auto" } : undefined}>
     {welcoming ? <StudyAssistantWelcome onChoose={destination => {
       setWelcoming(false);
       if (destination === "assistant") setOpen(true);
@@ -97,6 +156,6 @@ export function StudyAssistantWidget({ welcomeOnEntry = false }: { welcomeOnEntr
         <div className={styles.composerActions}><button type="submit" className={styles.action} disabled={busy || draft.trim().length < (pasted ? 70 : 2)}>إرسال <PlatformIcon name="arrow" /></button><button type="button" className={styles.quiet} onClick={clear} disabled={!messages.length && !busy}>مسح المحادثة</button><small>{draft.length}/{pasted ? 12000 : 2000}</small></div>
       </form>
     </section> : null}
-    {!welcoming ? <button ref={trigger} type="button" className={styles.floatingButton} aria-label={open ? "إغلاق المساعد الدراسي" : "فتح المساعد الدراسي"} aria-expanded={open} aria-controls={id} onClick={() => setOpen(value => !value)}><PlatformIcon name={open ? "close" : "assistant"} /><span>مساعدك الدراسي</span></button> : null}
+    {!welcoming ? <button ref={trigger} type="button" className={styles.floatingButton} data-dragging={dragging ? "true" : undefined} aria-label={open ? "إغلاق المساعد الدراسي" : "فتح المساعد الدراسي"} aria-expanded={open} aria-controls={id} title="اسحبه لتحريكه في أي مكان من الشاشة" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onKeyDown={nudge} onClick={() => { if (suppressClick.current) return; setOpen(value => !value); }}><PlatformIcon name={open ? "close" : "assistant"} /><span>مساعدك الدراسي</span></button> : null}
   </div>;
 }
