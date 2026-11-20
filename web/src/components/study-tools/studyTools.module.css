@@ -2,9 +2,14 @@
 .assistant button, .reportWorkspace button, .assistant input, .assistant select, .assistant textarea, .reportWorkspace input, .reportWorkspace select, .reportWorkspace textarea { font: inherit; }
 .assistant button:focus-visible, .assistant a:focus-visible, .assistant input:focus-visible, .assistant select:focus-visible, .assistant textarea:focus-visible, .reportWorkspace button:focus-visible, .reportWorkspace a:focus-visible, .reportWorkspace input:focus-visible, .reportWorkspace select:focus-visible, .reportWorkspace textarea:focus-visible { outline: 2px solid #82e9ec; outline-offset: 3px; }
 .assistant { position: fixed; inset-inline-end: 24px; bottom: 24px; z-index: 60; font-size: .9rem; }
-.floatingButton { display: flex; align-items: center; gap: .65rem; padding: .85rem 1rem; border: 1px solid rgba(102, 226, 230, .45); border-radius: 18px; color: #e6ffff; background: linear-gradient(120deg, rgba(15, 94, 107, .94), rgba(9, 33, 55, .95)); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 8px 32px rgba(0, 0, 0, .35), inset 0 1px rgba(216, 255, 255, .08); cursor: pointer; }
-.floatingButton > svg { width: 27px; height: 27px; color: #8af1ed; }
-.floatingButton:hover { border-color: #8af1ed; box-shadow: 0 0 28px rgba(73, 211, 222, .15); }
+.floatingButton { display: flex; align-items: center; gap: .65rem; padding: .85rem 1rem; border: 1px solid rgba(255, 255, 255, .6); border-radius: 18px; color: #04303a; font-weight: 800; background: linear-gradient(120deg, #18d6e8 0%, #5ff0d0 48%, #f6c852 100%); box-shadow: 0 0 22px rgba(45, 226, 240, .7), 0 0 38px rgba(246, 200, 82, .38), 0 8px 24px rgba(0, 0, 0, .35), inset 0 1px rgba(255, 255, 255, .55); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.floatingButton > svg { width: 27px; height: 27px; color: #04303a; }
+.floatingButton:hover { border-color: #fff; box-shadow: 0 0 30px rgba(45, 226, 240, .9), 0 0 48px rgba(246, 200, 82, .55), 0 8px 24px rgba(0, 0, 0, .35), inset 0 1px rgba(255, 255, 255, .6); }
+.floatingButton[data-dragging="true"] { cursor: grabbing; }
+/* The drawer opens away from the screen edge nearest the dragged assistant. */
+.assistant[data-vertical="below"] .drawer { bottom: auto; top: calc(100% + 12px); }
+.assistant[data-horizontal="right"] .drawer { inset-inline-end: auto; inset-inline-start: 0; left: auto; right: 0; }
+.assistant[data-horizontal="left"][data-moved="true"] .drawer { right: auto; left: 0; inset-inline-start: auto; inset-inline-end: auto; }
 .welcomeDialog { position: fixed; inset: 0; box-sizing: border-box; width: min(800px, calc(100vw - 32px)); height: fit-content; max-height: calc(100dvh - 32px); margin: auto; padding: 35px 30px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid rgba(212, 175, 55, .3); border-radius: 20px; color: #e2e8f0; background: linear-gradient(135deg, #0b131f 0%, #060a10 100%); box-shadow: 0 15px 35px rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 .welcomeDialog[open] { display: grid; justify-items: center; animation: studyWelcomeIn .2s ease-out; }
 .welcomeDialog::backdrop { background: rgba(3, 11, 24, .86); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
