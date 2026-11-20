@@ -17,7 +17,8 @@ describe("one subject's academic summaries and lecture podcasts", () => {
     const data = summaryFixture(course.id, course.lectures);
     vi.mocked(fetch).mockResolvedValue(jsonResponse({ data }));
     const { container } = render(<SubjectSummaries subjectId={course.id} subjectTitle={data.courseTitle} />);
-    await screen.findByText(`${course.lectures === 6 ? "٦" : course.lectures === 7 ? "٧" : course.lectures === 8 ? "٨" : course.lectures === 9 ? "٩" : course.lectures === 10 ? "١٠" : "٥"}`, { selector: "strong" });
+    const arabicDigits = String(course.lectures).replace(/\d/g, digit => "٠١٢٣٤٥٦٧٨٩"[Number(digit)]!);
+    await screen.findByText(arabicDigits, { selector: "strong" });
     expect(container.querySelectorAll("details")).toHaveLength(course.lectures);
     expect(screen.queryByRole("combobox", { name: "المادة الدراسية" })).not.toBeInTheDocument();
     expect(fetch).toHaveBeenCalledTimes(1);
