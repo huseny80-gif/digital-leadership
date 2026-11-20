@@ -21,7 +21,7 @@ const stem = z.object({ key: checksum, prompt: z.string().trim().min(8).max(20_0
 }).strict().refine(edit => (!edit.manualModel && !edit.supportingEvidence) || Boolean(edit.supportingEvidence && edit.sourceClarification));
 const schema = z.object({ version: z.literal(courseQuestionWordingPolicy), courses: z.array(z.object({
   slug: z.string().refine(slug => targets.some(course => course.slug === slug)), sourceHashes: z.array(checksum).min(1), edits: z.array(stem).min(1),
-}).strict()).length(targets.length), weekly: z.array(z.object({ key: z.string().regex(/^weekly:(?:week-[13456]|open-book):(?:week-[13456]|open-book)-q\d+$/u),
+}).strict()).length(targets.length), weekly: z.array(z.object({ key: z.string().regex(/^weekly:(?:week-[1345-9]|open-book):(?:week-[1345-9]|open-book)-q\d+$/u),
   originalDigest: checksum, prompt: z.string().trim().min(8).max(20_000), cognitiveReview }).strict()).min(1) }).strict();
 const stored = schema.parse(JSON.parse(readFileSync(new URL("../../content/finquiz/courseQuestionEditorial.json", import.meta.url), "utf8")));
 if (new Set(stored.courses.map(course => course.slug)).size !== targets.length) throw new Error("course_wording_subjects_incomplete");
@@ -33,6 +33,7 @@ for (const course of stored.courses) for (const sha of course.sourceHashes) {
 }
 if (byKey.size !== stored.courses.reduce((sum, course) => sum + course.edits.length, 0)) throw new Error("course_wording_duplicate_program");
 const weekly = new Map(stored.weekly.map(edit => [edit.key, edit]));
+const reviewedWeeklyPapers = new Set(stored.weekly.map(edit => edit.key.split(":")[1]!));
 if (weekly.size !== stored.weekly.length) throw new Error("course_wording_duplicate_weekly_question");
 
 /** Identity covers the original task and every grading fact. File identities,
@@ -93,6 +94,8 @@ export function courseQuestionWordingRevision(subjectId: string): string | undef
 /** Weekly source transcription and answer keys stay canonical; only its
  * reviewed public stem changes, after the entire original question matches. */
 export function rewordWeeklyQuestion<T extends { id: string; prompt: string }>(paperId: string, original: T): T {
+  // Papers added after the wording review (weeks 7-9) keep their transcribed stems as supplied.
+  if (!reviewedWeeklyPapers.has(paperId)) return original;
   const edit = weekly.get(`weekly:${paperId}:${original.id}`);
   if (!edit || edit.originalDigest !== digest(original) || edit.prompt === original.prompt) throw new Error("weekly_question_wording_incomplete");
   return { ...original, prompt: edit.prompt };
