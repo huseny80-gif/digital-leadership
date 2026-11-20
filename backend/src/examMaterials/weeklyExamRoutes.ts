@@ -10,7 +10,7 @@ import { WeeklyCyberExams } from "./weeklyCyberExams.js";
 import { studyPdf } from "../studyTools/reportExport.js";
 import { forbidden } from "../lib/httpError.js";
 
-const checkSchema = z.object({ questionId: z.string().regex(/^(?:week-[13456]|open-book)-q[1-9][0-9]?$/u), selectedIndex: z.number().int().min(0).max(3).optional() }).strict();
+const checkSchema = z.object({ questionId: z.string().regex(/^(?:week-[1345-9]|open-book)-q[1-9][0-9]?$/u), selectedIndex: z.number().int().min(0).max(3).optional() }).strict();
 const prefix = "/subjects/:subjectId/exam-material/weekly-tests";
 export function weeklyExamRoutes(publishedSubject: (id: string) => Promise<unknown> = id => new ContentService(new PgContentRepository(getPool())).getSubjectOrThrow(id, false)) {
   const router = Router(), service = new WeeklyCyberExams();

@@ -172,11 +172,16 @@ describe("complete four-course preservation and archive contract",()=>{
   }
   expect(assessmentRevisionForSubject("unrelated","base")).toBe("base");
  });
- it("rewords all71weekly stems while retaining every private solution, point and original option",()=>{
+ it("rewords all71weekly stems of the reviewed papers while retaining every private solution, point and original option",()=>{
   const raw=JSON.parse(readFileSync(new URL("../../content/finquiz/weeklyCyberExams.json",import.meta.url),"utf8"));
   const before=canon(raw),service=new WeeklyCyberExams();let count=0;
   for(const paper of raw.papers){
    const shown=service.paper(weeklyCyberSubjectId,paper.id),solutions=service.solutions(weeklyCyberSubjectId,paper.id);
+   if(!["week-1","week-3","week-4","week-5","week-6","open-book"].includes(paper.id)){
+    // Weeks 7-9 were added after the wording review and keep their transcribed stems.
+    for(const [index,original] of paper.questions.entries()){expect(rewordWeeklyQuestion(paper.id,original)).toBe(original);expect(shown.questions[index]!.prompt).toBe(original.prompt);}
+    continue;
+   }
    for(const [index,original] of paper.questions.entries()){
     const revised=rewordWeeklyQuestion(paper.id,original);
     expect(revised.prompt).not.toBe(original.prompt);

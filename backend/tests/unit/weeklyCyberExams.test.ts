@@ -4,17 +4,17 @@ import { WeeklyCyberExams, validateWeeklyBank, weeklyCyberSubjectId, weeklyPaper
 
 const service = new WeeklyCyberExams();
 const raw = JSON.parse(readFileSync(new URL("../../content/finquiz/weeklyCyberExams.json", import.meta.url), "utf8"));
-const checksums = ["8bbedbcae8586042855de8d7ac38619cf6404080b3db2cc4ef034c52bc3cf54f", "82e489f5bd897537947330a6fd8fe61d8efae5586851c16ead27816121a8164d", "cbc5290a812f6e4cdceb52f55fb28c530da54aaba7db088b4f7ea4adfdf9f707", "be3743a48d88333e80119e9c937cc4ddebe41f2f57e6044e3deb95838cedcdd1", "ca3928b49991e7c6ffc65f6600f0fd6ba67b9b36395478de50e65165c11289f3", "23c8915bd5b06d93e064ff8820cc9510c97910a926d25900c6c44a2ae7ab3471"];
+const checksums = ["8bbedbcae8586042855de8d7ac38619cf6404080b3db2cc4ef034c52bc3cf54f", "82e489f5bd897537947330a6fd8fe61d8efae5586851c16ead27816121a8164d", "cbc5290a812f6e4cdceb52f55fb28c530da54aaba7db088b4f7ea4adfdf9f707", "be3743a48d88333e80119e9c937cc4ddebe41f2f57e6044e3deb95838cedcdd1", "ca3928b49991e7c6ffc65f6600f0fd6ba67b9b36395478de50e65165c11289f3", "8f27bfa6a01eb0e500de552fb75e6b1fb60fe0a396c4698ecb30b99c6db7d00d", "b5c8071ef01e9b984e7c3277a7240d96aff2f4ec3ab514b485169cbf0c5c506b", "43af5534a83572b653126361210db365b513ae2cd419447b61e63111117eb417", "23c8915bd5b06d93e064ff8820cc9510c97910a926d25900c6c44a2ae7ab3471"];
 
-describe("the six supplied Dr Dhia weekly quiz files", () => {
-  it("keeps the supplied chronological order and all 70 MCQs, with the pictured open question separate", () => {
+describe("the nine supplied Dr Dhia weekly quiz files", () => {
+  it("keeps the supplied chronological order and all 115 MCQs, with the pictured open question separate", () => {
     const collection = service.index(weeklyCyberSubjectId);
     expect(collection.title).toBe("اختبارات د. ضياء الأسبوعية");
     expect(collection.papers.map(paper => paper.id)).toEqual(weeklyPaperIds);
-    expect(collection.papers.map(paper => paper.week)).toEqual([1, 3, 4, 5, 6, null]);
-    expect(collection.papers.map(paper => paper.questionCount)).toEqual([15, 10, 10, 20, 15, 1]);
+    expect(collection.papers.map(paper => paper.week)).toEqual([1, 3, 4, 5, 6, 7, 8, 9, null]);
+    expect(collection.papers.map(paper => paper.questionCount)).toEqual([15, 10, 10, 20, 15, 15, 15, 15, 1]);
     expect(collection.papers.map(paper => paper.source.sha256)).toEqual(checksums);
-    expect(collection.papers.reduce((sum, paper) => sum + paper.questionCount, 0)).toBe(71);
+    expect(collection.papers.reduce((sum, paper) => sum + paper.questionCount, 0)).toBe(116);
     expect(JSON.stringify(raw)).not.toMatch(/الاسم\s+الثلاثي|huseny80|gmail|Google Forms|Switch account|Submit|Your answer|[\u202a-\u202e\u2066-\u2069]/u);
   });
   it("builds question DTOs without answers, rationales, hidden rubrics or mutable shared arrays", () => {
@@ -43,6 +43,17 @@ describe("the six supplied Dr Dhia weekly quiz files", () => {
     expect(cobit[1]!.modelAnswer).toBe("3"); expect(cobit[10]!.modelAnswer).toBe("6");
     expect(service.solutions(weeklyCyberSubjectId, "week-6")[0]!.modelAnswer).toBe("الخطر = التهديد × الثغرة × التأثير");
   });
+  it("adds weeks 7-9: weeks 7 and 8 share one 15-question set whose key matches the checked answers in the graded copy, and no learner name is stored", () => {
+    const seven = service.solutions(weeklyCyberSubjectId, "week-7"), eight = service.solutions(weeklyCyberSubjectId, "week-8");
+    const stems = (id: string) => service.paper(weeklyCyberSubjectId, id).questions.map(question => question.prompt).sort();
+    expect(stems("week-7")).toEqual(stems("week-8"));
+    expect([...seven.map(answer => answer.modelAnswer)].sort()).toEqual([...eight.map(answer => answer.modelAnswer)].sort());
+    expect(eight[0]!.modelAnswer).toBe("التدقيق الداخلي (Internal Audit)"); expect(eight[3]!.modelAnswer).toBe("ISO/IEC 27001");
+    expect(eight[6]!.modelAnswer).toBe("جميع ما ذكر"); expect(eight[7]!.modelAnswer).toBe("> 70%");
+    const nine = service.solutions(weeklyCyberSubjectId, "week-9");
+    expect(nine).toHaveLength(15); expect(nine[0]!.modelAnswer).toContain("موردي الموردين"); expect(nine[14]!.modelAnswer).toContain("مفتوحة المصدر");
+    expect(JSON.stringify(raw)).not.toContain("بيداء");
+  });
   it("keeps the image-only CISO scenario intact, distinguishes allowed assumptions and never invents an automatic essay grade", () => {
     const paper = service.paper(weeklyCyberSubjectId, "open-book"), question = paper.questions[0]!;
     expect(question.type).toBe("case_study"); expect(question.questionReference.page).toBe(2);
@@ -66,7 +77,7 @@ describe("the six supplied Dr Dhia weekly quiz files", () => {
       value => { value.papers[0].questions[0].correctIndex = 9; }, value => { value.papers[0].questions[0].questionReference.page = 99; },
       value => { value.papers[0].questions[0].options[1] = value.papers[0].questions[0].options[0]; },
       value => { value.papers[0].questions[0].modelAnswer = "معلومة غير موجودة ضمن الخيارات"; },
-      value => { value.papers[5].questions[0].rubric[0].points = 100; },
+      value => { value.papers[8].questions[0].rubric[0].points = 100; },
     ];
     for (const mutate of mutations) { const copy = structuredClone(raw); mutate(copy); expect(() => validateWeeklyBank(copy)).toThrow(); }
   });

@@ -5,7 +5,7 @@ import { apiGetDownload } from "@/lib/api/download";
 type Context = { params: Promise<{ path: string[] }> };
 const headers = { "Cache-Control": "private, no-store" };
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/iu;
-const paperId = /^(?:week-[13456]|open-book)$/u;
+const paperId = /^(?:week-[1345-9]|open-book)$/u;
 const fail = (status: number) => NextResponse.json({ error: { code: status === 404 ? "not_found" : "validation_error", message: "بيانات الاختبار غير صالحة." } }, { status, headers });
 export async function GET(request: Request, context: Context) {
   const { path } = await context.params, query = new URL(request.url).searchParams;

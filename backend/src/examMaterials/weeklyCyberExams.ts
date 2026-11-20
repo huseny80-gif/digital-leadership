@@ -13,7 +13,7 @@ interface StoredPaper extends Omit<WeeklyExamPaper, "questionCount" | "totalPoin
 interface StoredBank { policy: string; title: string; subjectId: string; solutionNote: string; papers: StoredPaper[] }
 const bank = JSON.parse(readFileSync(new URL("../../content/finquiz/weeklyCyberExams.json", import.meta.url), "utf8")) as StoredBank;
 export const weeklyCyberSubjectId = WEEKLY_CYBER_SUBJECT_ID;
-export const weeklyPaperIds = ["week-1", "week-3", "week-4", "week-5", "week-6", "open-book"] as const;
+export const weeklyPaperIds = ["week-1", "week-3", "week-4", "week-5", "week-6", "week-7", "week-8", "week-9", "open-book"] as const;
 
 export function validateWeeklyBank(value: StoredBank): void {
   if (value.subjectId !== weeklyCyberSubjectId || value.policy !== "dr-dhia-weekly-transcription-v1-2026-10-16"
