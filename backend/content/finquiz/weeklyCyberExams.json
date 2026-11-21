@@ -1622,7 +1622,7 @@
       "suggestedMinutes": 10,
       "source": {
         "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-        "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
+        "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
         "pages": 8
       },
       "questions": [
@@ -1644,8 +1644,8 @@
           "modelAnswer": "الخلط بين الثغرة (Vulnerability) والتهديد (Threat)",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 1
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 2
           }
         },
         {
@@ -1666,8 +1666,8 @@
           "modelAnswer": "تطبيق نظام PAM + إلزامية MFA + توقيع اتفاقيات NDA",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 2
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 6
           }
         },
         {
@@ -1688,8 +1688,8 @@
           "modelAnswer": "قبول الخطر المتبقي كما هو بشرط وقوعه ضمن حدود تحمل المخاطر (Risk Appetite)",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 2
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 1
           }
         },
         {
@@ -1710,8 +1710,8 @@
           "modelAnswer": "تفعيل أدوات CSPM للمسح التلقائي وحظر الوصول العام المباشر",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 3
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 4
           }
         },
         {
@@ -1732,8 +1732,8 @@
           "modelAnswer": "التجنب (Avoid)",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 3
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 4
           }
         },
         {
@@ -1754,8 +1754,8 @@
           "modelAnswer": "كبير (Major)",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 4
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 5
           }
         },
         {
@@ -1776,8 +1776,8 @@
           "modelAnswer": "الخطر القائم بعد تطبيق الضوابط الأمنية والذي يُعرض على القيادة للقبول",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 4
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 7
           }
         },
         {
@@ -1798,8 +1798,8 @@
           "modelAnswer": "التحديد والإدخال",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 5
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 6
           }
         },
         {
@@ -1820,8 +1820,8 @@
           "modelAnswer": "NIST SP 800-30 Rev. 1",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 5
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 2
           }
         },
         {
@@ -1842,8 +1842,8 @@
           "modelAnswer": "عزل الخادوم بشبكة وهمية (VLAN) وتطبيق الحماية الافتراضية (vPatch)",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 6
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 8
           }
         },
         {
@@ -1864,8 +1864,8 @@
           "modelAnswer": "الخطر = التهديد × الثغرة × الأثر",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 6
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 3
           }
         },
         {
@@ -1886,8 +1886,8 @@
           "modelAnswer": "لأنه يزود الإدارة العليا بالرؤية المباشرة لتوجيه ميزانيات الاستثمار في ضوابط الحماية",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 7
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 1
           }
         },
         {
@@ -1908,8 +1908,8 @@
           "modelAnswer": "تفعيل نظام EDR + تدريب الوعي + النسخ الاحتياطي المعزول",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 7
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 3
           }
         },
         {
@@ -1930,8 +1930,8 @@
           "modelAnswer": "غياب مالك الخطر الفعلي من مالكي أصول الأعمال",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 8
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 5
           }
         },
         {
@@ -1952,8 +1952,8 @@
           "modelAnswer": "لأن التهديدات والبيئة التقنية تتغير باستمرار وتتطلب تحديثاً ومراجعة دورية",
           "questionReference": {
             "filename": "اختبار الأسبوع السابع (الأربعاء) — سجل المخاطر السيبرانية ومعالجتها.pdf",
-            "sha256": "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f",
-            "page": 8
+            "sha256": "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b",
+            "page": 7
           }
         }
       ]
@@ -1966,8 +1966,8 @@
       "suggestedMinutes": 10,
       "source": {
         "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-        "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
-        "pages": 8
+        "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
+        "pages": 7
       },
       "questions": [
         {
@@ -1988,8 +1988,8 @@
           "modelAnswer": "التدقيق الداخلي (Internal Audit)",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
-            "page": 1
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
+            "page": 7
           }
         },
         {
@@ -2010,8 +2010,8 @@
           "modelAnswer": "تحديث سنوي أو عند التغيرات التقنية",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
-            "page": 1
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
+            "page": 6
           }
         },
         {
@@ -2032,7 +2032,7 @@
           "modelAnswer": "السياسات (Policies)",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
             "page": 2
           }
         },
@@ -2054,8 +2054,8 @@
           "modelAnswer": "ISO/IEC 27001",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
-            "page": 2
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
+            "page": 4
           }
         },
         {
@@ -2076,7 +2076,7 @@
           "modelAnswer": "الإدارة التشغيلية، مهندسي الشبكات والمطورين والمستخدمين",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
             "page": 3
           }
         },
@@ -2098,8 +2098,8 @@
           "modelAnswer": "تحديد تصنيف البيانات وصلاحيات الوصول والأنظمة",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
-            "page": 3
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
+            "page": 1
           }
         },
         {
@@ -2120,8 +2120,8 @@
           "modelAnswer": "جميع ما ذكر",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
-            "page": 4
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
+            "page": 2
           }
         },
         {
@@ -2142,8 +2142,8 @@
           "modelAnswer": "> 70%",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
-            "page": 4
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
+            "page": 3
           }
         },
         {
@@ -2164,7 +2164,7 @@
           "modelAnswer": "المعايير (Standards)",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
             "page": 5
           }
         },
@@ -2186,8 +2186,8 @@
           "modelAnswer": "السياسة الخاصة بالنظام (System-Specific Policy)",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
-            "page": 5
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
+            "page": 1
           }
         },
         {
@@ -2208,8 +2208,8 @@
           "modelAnswer": "الحوكمة (Governance)",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
-            "page": 6
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
+            "page": 5
           }
         },
         {
@@ -2230,7 +2230,7 @@
           "modelAnswer": "الامتثال (Compliance)",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
             "page": 6
           }
         },
@@ -2252,8 +2252,8 @@
           "modelAnswer": "السياسة الموضوعية (Issue-Specific Policy)",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
-            "page": 7
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
+            "page": 2
           }
         },
         {
@@ -2274,8 +2274,8 @@
           "modelAnswer": "الإرشادات (Guidelines)",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
-            "page": 7
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
+            "page": 4
           }
         },
         {
@@ -2296,8 +2296,8 @@
           "modelAnswer": "الاستمرار",
           "questionReference": {
             "filename": "اختبار الأسبوع الثامن — السياسات والهياكل التنظيمية والامتثال والوعي الأمني.pdf",
-            "sha256": "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6",
-            "page": 7
+            "sha256": "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91",
+            "page": 6
           }
         }
       ]

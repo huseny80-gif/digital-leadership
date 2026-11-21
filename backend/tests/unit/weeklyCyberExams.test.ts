@@ -4,7 +4,7 @@ import { WeeklyCyberExams, validateWeeklyBank, weeklyCyberSubjectId, weeklyPaper
 
 const service = new WeeklyCyberExams();
 const raw = JSON.parse(readFileSync(new URL("../../content/finquiz/weeklyCyberExams.json", import.meta.url), "utf8"));
-const checksums = ["8bbedbcae8586042855de8d7ac38619cf6404080b3db2cc4ef034c52bc3cf54f", "82e489f5bd897537947330a6fd8fe61d8efae5586851c16ead27816121a8164d", "cbc5290a812f6e4cdceb52f55fb28c530da54aaba7db088b4f7ea4adfdf9f707", "be3743a48d88333e80119e9c937cc4ddebe41f2f57e6044e3deb95838cedcdd1", "ca3928b49991e7c6ffc65f6600f0fd6ba67b9b36395478de50e65165c11289f3", "e5a1b2e0116e4d0b9a1cc1f91dc2452ce965ec0484f0eb6fda1d715448cf423f", "c092cb814ad1cbc9598356d68b395275e076d97fd6e73d018f5067cd9babdab6", "43af5534a83572b653126361210db365b513ae2cd419447b61e63111117eb417", "23c8915bd5b06d93e064ff8820cc9510c97910a926d25900c6c44a2ae7ab3471"];
+const checksums = ["8bbedbcae8586042855de8d7ac38619cf6404080b3db2cc4ef034c52bc3cf54f", "82e489f5bd897537947330a6fd8fe61d8efae5586851c16ead27816121a8164d", "cbc5290a812f6e4cdceb52f55fb28c530da54aaba7db088b4f7ea4adfdf9f707", "be3743a48d88333e80119e9c937cc4ddebe41f2f57e6044e3deb95838cedcdd1", "ca3928b49991e7c6ffc65f6600f0fd6ba67b9b36395478de50e65165c11289f3", "c6a9072eac596fe905d9510aa2fb9d18496ca62cc91e4af19a1bca6b7296bf6b", "7f4cc544839e233de13c27465106f3d6da52afd1e2d90fa8494de29a6a1c8d91", "43af5534a83572b653126361210db365b513ae2cd419447b61e63111117eb417", "23c8915bd5b06d93e064ff8820cc9510c97910a926d25900c6c44a2ae7ab3471"];
 
 describe("the nine supplied Dr Dhia weekly quiz files", () => {
   it("keeps the supplied chronological order and all 115 MCQs, with the pictured open question separate", () => {
