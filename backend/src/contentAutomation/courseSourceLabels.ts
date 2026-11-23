@@ -48,7 +48,7 @@ function makeLabels(slug: string, topic: string): CourseSourceLabels {
   // lecture. Extend this set only by registering an actual curriculum source.
   const sourceNumbers = new Set(source.lectures.map(lecture => lecture.number));
   const supportedNumber = (number: number | null) => number !== null && (slug !== "risk-management" || sourceNumbers.has(number)) ? number : null;
-  const aliases = new Map(source.lectures.filter(lecture => lecture.id !== "cs-iso-roadmap" && lecture.id !== "ip-l2").flatMap(lecture => [lecture.title, ...(lecture.legacyTitles ?? [])].map(title => [normalizeText(title), lecture.number] as const)));
+  const aliases = new Map(source.lectures.filter(lecture => lecture.id !== "cs-iso-roadmap" && lecture.id !== "ip-l2" && lecture.id !== "lg-l9").flatMap(lecture => [lecture.title, ...(lecture.legacyTitles ?? [])].map(title => [normalizeText(title), lecture.number] as const)));
   const legacyNumber = (value: string) => {
     const text = normalizeText(cleanArabicDisplayLabel(value)).replace(/\.(?:pdf|pptx)$/i, "").trim();
     const expression = slug === "ai-data" ? /^(?:ai|lecture|مقرر\s*الذكاء الاصطناعي|الذكاء الاصطناعي)[\s_-]*([1-9]|10)$/ : slug === "risk-management" ? /^(?:risk(?:\s*management)?)[\s_-]*([1-7])$/ : slug === "legal-regulatory" ? /^legal[\s_-]*([1-8])$/ : slug === "innovation-project-management" ? /^(?:innovation|project(?:\s*management)?)[\s_-]*([1-9]|10)$/ : /^(?:cyber\s*secur(?:i|e)ty|مقرر\s*(?:حوكمة\s*)?الامن السيبراني|(?:حوكمة\s*)?الامن السيبراني)[\s_-]*([1-9]|10)$/;
