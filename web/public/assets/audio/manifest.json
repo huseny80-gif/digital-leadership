@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "summaryRevision": "50a24a8cd1676a13fc00",
+  "summaryRevision": "d86f9badb6c0bba05236",
   "defaultSubjectId": "7eb2b714-570f-4ed0-a00e-10efec7a20e5",
   "subjects": [
     {
@@ -1649,6 +1649,43 @@
         },
         "saudi-female": {
           "path": "assets/audio/lg-l8/saudi-female.mp3",
+          "available": false
+        }
+      }
+    },
+    {
+      "id": "lg-l9",
+      "number": 9,
+      "title": "المحاضرة الأولى ثقافة تنظيمية",
+      "subjectId": "ade09563-02ec-4a09-a97b-58857f6cd876",
+      "subjectSlug": "legal-regulatory",
+      "catalogLectureId": "lg-l9",
+      "sourceSha256": "d3b5f96a918fd384e60b986c02caedcc1b9514366ac8902d80e6b6928db835f0",
+      "summarySha256": "e10a10abf4b696c45019e0828d999a0979f3b170dcd457e999b95ecdad866f42",
+      "transcript": "assets/audio/lg-l9/summary.txt",
+      "recordings": {
+        "msa-male": {
+          "path": "assets/audio/lg-l9/msa-male.mp3",
+          "available": false
+        },
+        "msa-female": {
+          "path": "assets/audio/lg-l9/msa-female.mp3",
+          "available": false
+        },
+        "iraqi-male": {
+          "path": "assets/audio/lg-l9/iraqi-male.mp3",
+          "available": false
+        },
+        "iraqi-female": {
+          "path": "assets/audio/lg-l9/iraqi-female.mp3",
+          "available": false
+        },
+        "saudi-male": {
+          "path": "assets/audio/lg-l9/saudi-male.mp3",
+          "available": false
+        },
+        "saudi-female": {
+          "path": "assets/audio/lg-l9/saudi-female.mp3",
           "available": false
         }
       }
