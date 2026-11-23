@@ -1,0 +1,24 @@
+.workspace { --rq-ground: #052223; --rq-card: #0b3b3c; --rq-gold: #d4af37; --rq-heading: #f3e5ab; --rq-ink: #f8fafc; --rq-muted: #cbd5e1;
+  max-width: 1120px; margin-inline: auto; padding: 16px; border-radius: 20px; background: var(--rq-ground); color: var(--rq-ink); color-scheme: dark; line-height: 1.9; }
+.workspace *, .workspace *::before, .workspace *::after { box-sizing: border-box; min-width: 0; }
+.workspace :focus-visible { outline: 3px solid var(--rq-heading); outline-offset: 4px; }
+.intro h2 { color: var(--rq-heading); font-size: clamp(22px, 2.3vw, 28px); line-height: 1.6; margin-block-end: 8px; }
+.intro p { color: var(--rq-muted); max-width: 72ch; }
+.index { margin-block: 16px 24px; display: flex; flex-wrap: wrap; gap: 8px; }
+.index a { display: inline-block; padding: 6px 12px; border: 1px solid var(--rq-gold); border-radius: 12px; color: var(--rq-heading); font-size: 14px; text-decoration: none; }
+.index a:hover { background: var(--rq-card); }
+.question { margin-block-end: 16px; border: 1px solid var(--rq-gold); border-radius: 20px; background: var(--rq-card); overflow: clip; scroll-margin-block-start: 100px; }
+.question summary { padding: 16px; cursor: pointer; overflow-wrap: anywhere; }
+.question summary::marker { color: var(--rq-gold); }
+.number { display: inline-block; margin-inline-end: 8px; color: var(--rq-gold); font-weight: 700; }
+.question h3 { display: inline; font-size: 18px; line-height: 1.8; color: var(--rq-heading); }
+.body { padding: 0 16px 16px; display: grid; gap: 12px; overflow-wrap: anywhere; }
+.short { padding: 12px 16px; border-inline-start: 4px solid var(--rq-gold); border-radius: 8px; background: rgba(255, 255, 255, 0.06); }
+.body h4 { color: var(--rq-heading); font-size: 16px; margin-block-end: 4px; }
+.body p { margin: 0; }
+.body ul { margin: 0; padding-inline-start: 24px; }
+.conclusion { padding: 12px 16px; border-radius: 12px; background: var(--rq-gold); color: #1a1405; font-weight: 700; }
+.references { margin-block-start: 24px; direction: ltr; text-align: left; color: var(--rq-muted); font-size: 14px; }
+.references h2 { direction: rtl; text-align: right; color: var(--rq-heading); font-size: 20px; }
+.references ul { padding-inline-start: 20px; }
+@media (max-width: 640px) { .workspace { padding: 12px; border-radius: 14px; } .question h3 { font-size: 16px; } }

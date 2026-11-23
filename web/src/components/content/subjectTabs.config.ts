@@ -1,4 +1,5 @@
-import { studyModulesForSubject } from "./studyModules";
+import { SUBJECT_STUDY_IDS, studyModulesForSubject } from "./studyModules";
+import { reflectiveQuestions } from "@/content/reflectiveQuestions";
 
 export interface SubjectTabDef {
   key: string;
@@ -25,7 +26,7 @@ export function subjectTabs(
   counts: { lectures?: number; assessments?: number; assignments?: number } = {},
 ): SubjectTabDef[] {
   const modules = studyModulesForSubject(subjectId);
-  return [
+  const tabs: SubjectTabDef[] = [
     {
       key: "lectures",
       href: `/subjects/${subjectId}`,
@@ -55,4 +56,11 @@ export function subjectTabs(
     { key: "resources", href: `/subjects/${subjectId}/library?section=resources`, label: "الموارد", icon: "📁" },
     { key: "updates", href: `/subjects/${subjectId}/library?section=updates`, label: "التحديثات", icon: "🗓️" },
   ];
+  // The reviewed reflective-question bank belongs to the legal and organizational course only.
+  if (subjectId === SUBJECT_STUDY_IDS.legal) {
+    tabs.splice(tabs.findIndex(tab => tab.key === "exam-material") + 1, 0, {
+      key: "reflective-questions", href: `/subjects/${subjectId}/reflective-questions`, label: reflectiveQuestions.title, icon: "💭", count: reflectiveQuestions.questions.length,
+    });
+  }
+  return tabs;
 }
