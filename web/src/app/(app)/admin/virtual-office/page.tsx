@@ -1,0 +1,101 @@
+import { VirtualOfficeSearchGrid } from "@/components/virtual-office/VirtualOfficeSearchGrid";
+import { VirtualOfficeSummary } from "@/components/virtual-office/VirtualOfficeSummary";
+import { VirtualOfficeAutoRefresh } from "@/components/virtual-office/VirtualOfficeAutoRefresh";
+import { VirtualOfficeFilter } from "@/components/virtual-office/VirtualOfficeFilter";
+import { Suspense } from "react";
+
+export const metadata = { title: "المكتب الافتراضي | لوحة الإدارة" };
+export const dynamic = "force-dynamic";
+
+export interface OfficeEmployee {
+  id: string;
+  name: string;
+  role: string;
+  status: "idle" | "working" | "offline" | "meeting";
+  current_task: string | null;
+  last_updated?: string;
+}
+
+export interface OfficeState {
+  employees: Record<string, OfficeEmployee>;
+  last_updated: string | null;
+}
+
+async function fetchOfficeState(): Promise<OfficeState | null> {
+  const officeUrl = process.env.OFFICE_STATE_URL ?? "http://localhost:5050/api/state";
+  try {
+    const res = await fetch(officeUrl, {
+      next: { revalidate: 0 },
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as OfficeState;
+  } catch {
+    return null;
+  }
+}
+
+export default async function VirtualOfficePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const [state, { status: statusFilter = "" }] = await Promise.all([
+    fetchOfficeState(),
+    searchParams,
+  ]);
+
+  if (!state) {
+    return (
+      <div className="vo-page" dir="rtl">
+        <header className="vo-header">
+          <h1 className="vo-title">🏢 المكتب الافتراضي</h1>
+        </header>
+        <div className="vo-offline-banner">
+          <span className="vo-offline-icon">⚠️</span>
+          <p>خادم المكتب غير متاح حالياً. تأكد من تشغيل <code>./start.sh</code> في مجلد <code>virtual-office/</code>.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const employees = Object.entries(state.employees).map(([id, emp]) => ({
+    ...emp,
+    id,
+  }));
+
+  const counts = employees.reduce<Record<string, number>>((acc, e) => {
+    acc[e.status] = (acc[e.status] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const filtered = statusFilter
+    ? employees.filter((e) => e.status === statusFilter)
+    : employees;
+
+  return (
+    <div className="vo-page" dir="rtl">
+      <header className="vo-header">
+        <div className="vo-header-text">
+          <h1 className="vo-title">🏢 المكتب الافتراضي</h1>
+          {state.last_updated && (
+            <p className="vo-last-updated">
+              آخر تحديث: {new Date(state.last_updated).toLocaleTimeString("ar-SA")}
+            </p>
+          )}
+        </div>
+        <VirtualOfficeSummary employees={employees} />
+      </header>
+
+      <VirtualOfficeAutoRefresh />
+      <VirtualOfficeSearchGrid
+        employees={filtered}
+        filterSlot={
+          <Suspense>
+            <VirtualOfficeFilter counts={counts} />
+          </Suspense>
+        }
+      />
+    </div>
+  );
+}
